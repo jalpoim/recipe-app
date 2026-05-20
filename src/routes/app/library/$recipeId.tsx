@@ -636,7 +636,7 @@ function RecipeDetailPage() {
     <div className="min-h-screen bg-[#FAFAF8] pb-56">
       <div className="mx-auto w-full max-w-md">
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-[#FAFAF8]/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
+        <div className="sticky top-0 z-10 bg-[#FAFAF8] px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
           <button
             onClick={() => navigate({ to: isFromPlan ? '/app/plan' : '/app/library' })}
             aria-label={t('recipe.back')}
