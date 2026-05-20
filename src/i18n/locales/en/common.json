@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "recipes": "Recipes",
+    "plan": "Plan",
+    "list": "List"
+  },
+  "proteins": {
+    "chicken": "Chicken",
+    "salmon": "Salmon",
+    "tuna": "Tuna",
+    "turkey": "Turkey",
+    "cod": "Cod",
+    "eggs": "Eggs",
+    "beef": "Beef",
+    "pork": "Pork",
+    "whey": "Whey",
+    "tofu": "Tofu",
+    "shrimp": "Shrimp",
+    "clams": "Clams",
+    "sea-bream": "Sea Bream",
+    "squid": "Squid",
+    "fish": "Fish"
+  },
+  "categories": {
+    "meat": "Meat & Fish",
+    "produce": "Fruit & Veg",
+    "dairy": "Dairy",
+    "grains": "Pantry",
+    "other": "Other"
+  },
+  "filters": {
+    "protein": "Protein",
+    "time": "Time",
+    "calories": "Calories",
+    "tags": "Tags",
+    "ingredients": "Ingredients",
+    "clearFilters": "Clear filters",
+    "timeLt15": "< 15 min",
+    "timeLt30": "< 30 min",
+    "timeLt60": "< 60 min",
+    "calLt300": "< 300 cal",
+    "calLt500": "< 500 cal",
+    "calLt700": "< 700 cal",
+    "searchRecipe": "Recipe name…",
+    "searchIngredient": "Search ingredient…",
+    "noResults": "No results"
+  },
+  "sort": {
+    "label": "Sort",
+    "pcal": "P/Cal ↓",
+    "protein": "Protein ↓",
+    "calories": "Calories ↑",
+    "time": "Time ↑"
+  },
+  "recipe": {
+    "servings": "Servings",
+    "base": "base serving",
+    "bases": "base servings",
+    "ingredients": "Ingredients",
+    "steps": "Preparation",
+    "back": "Back",
+    "addToPlan": "Add to plan",
+    "removeFromPlan": "Remove from plan",
+    "replace": "Replace",
+    "cook": "Cook"
+  },
+  "plan": {
+    "title": "My plan",
+    "empty": "Your plan is empty",
+    "addRecipe": "Add recipe",
+    "clearPlan": "Clear plan",
+    "clearConfirm": "Are you sure? Your current plan will be archived.",
+    "totalCalories": "Total calories",
+    "totalProtein": "Total protein",
+    "totalTime": "Total time",
+    "multiplier": "Multiplier",
+    "addedToast": "Added to plan ✓"
+  },
+  "shopping": {
+    "title": "Shopping list",
+    "perRecipe": "By recipe",
+    "global": "All items",
+    "clearChecks": "Clear checked",
+    "clearCustom": "Clear extra items",
+    "addItem": "Add item",
+    "itemName": "Item name…",
+    "extraItems": "Extra items"
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "recipes_one": "recipe",
+    "recipes_other": "recipes"
+  }
+}

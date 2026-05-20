@@ -1,0 +1,100 @@
+{
+  "nav": {
+    "recipes": "Receitas",
+    "plan": "Plano",
+    "list": "Lista"
+  },
+  "proteins": {
+    "chicken": "Frango",
+    "salmon": "Salmão",
+    "tuna": "Atum",
+    "turkey": "Peru",
+    "cod": "Bacalhau",
+    "eggs": "Ovos",
+    "beef": "Carne",
+    "pork": "Porco",
+    "whey": "Whey",
+    "tofu": "Tofu",
+    "shrimp": "Camarão",
+    "clams": "Amêijoas",
+    "sea-bream": "Dourada",
+    "squid": "Lulas",
+    "fish": "Peixe"
+  },
+  "categories": {
+    "meat": "Talho/Peixaria",
+    "produce": "Frutas/Legumes",
+    "dairy": "Lacticínios",
+    "grains": "Mercearia",
+    "other": "Outros"
+  },
+  "filters": {
+    "protein": "Proteína",
+    "time": "Tempo",
+    "calories": "Calorias",
+    "tags": "Tags",
+    "ingredients": "Ingredientes",
+    "clearFilters": "Limpar filtros",
+    "timeLt15": "< 15 min",
+    "timeLt30": "< 30 min",
+    "timeLt60": "< 60 min",
+    "calLt300": "< 300 cal",
+    "calLt500": "< 500 cal",
+    "calLt700": "< 700 cal",
+    "searchRecipe": "Nome da receita…",
+    "searchIngredient": "Pesquisar ingrediente…",
+    "noResults": "Sem resultados"
+  },
+  "sort": {
+    "label": "Ordenar",
+    "pcal": "P/Cal ↓",
+    "protein": "Proteína ↓",
+    "calories": "Calorias ↑",
+    "time": "Tempo ↑"
+  },
+  "recipe": {
+    "servings": "Porções",
+    "base": "dose base",
+    "bases": "doses base",
+    "ingredients": "Ingredientes",
+    "steps": "Preparação",
+    "back": "Voltar",
+    "addToPlan": "Adicionar ao plano",
+    "removeFromPlan": "Remover do plano",
+    "replace": "Substituir",
+    "cook": "Cozinhar"
+  },
+  "plan": {
+    "title": "Meu plano",
+    "empty": "O teu plano está vazio",
+    "addRecipe": "Adicionar receita",
+    "clearPlan": "Limpar plano",
+    "clearConfirm": "Tens a certeza? O plano atual será arquivado.",
+    "totalCalories": "Calorias totais",
+    "totalProtein": "Proteína total",
+    "totalTime": "Tempo total",
+    "multiplier": "Multiplicador",
+    "addedToast": "Adicionado ao plano ✓"
+  },
+  "shopping": {
+    "title": "Lista de compras",
+    "perRecipe": "Por receita",
+    "global": "Lista global",
+    "clearChecks": "Limpar marcações",
+    "clearCustom": "Limpar itens extra",
+    "addItem": "Adicionar item",
+    "itemName": "Nome do item…",
+    "extraItems": "Itens extra"
+  },
+  "common": {
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Fechar",
+    "loading": "A carregar…",
+    "error": "Algo correu mal",
+    "retry": "Tentar novamente",
+    "recipes_one": "receita",
+    "recipes_other": "receitas"
+  }
+}
