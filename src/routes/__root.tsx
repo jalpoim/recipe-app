@@ -59,6 +59,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="pt">
       <head>
         <HeadContent />
+        {/* Restore theme before first paint to avoid FOUC */}
+        <script dangerouslySetInnerHTML={{ __html: `(function(){var t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t);})()` }} />
       </head>
       <body className="bg-[#FAFAF8] text-[#1A1A1A] min-h-screen font-sans antialiased">
         {children}

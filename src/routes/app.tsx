@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { getAuthUser } from '../lib/supabase/server'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 
@@ -14,6 +15,7 @@ export const Route = createFileRoute('/app')({
 })
 
 function BottomNav() {
+  const { t } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const { data: plan } = useQuery({
@@ -24,9 +26,9 @@ function BottomNav() {
   const itemCount = plan?.item_count ?? 0
 
   const tabs = [
-    { label: 'Receitas', icon: BookOpen, to: '/app/library' as const, disabled: false },
-    { label: 'Plano', icon: CalendarDays, to: '/app/plan' as const, badge: itemCount, disabled: false },
-    { label: 'Lista', icon: ShoppingCart, to: '/app/shopping' as const, disabled: false },
+    { label: t('nav.recipes'), icon: BookOpen, to: '/app/library' as const, disabled: false },
+    { label: t('nav.plan'), icon: CalendarDays, to: '/app/plan' as const, badge: itemCount, disabled: false },
+    { label: t('nav.list'), icon: ShoppingCart, to: '/app/shopping' as const, disabled: false },
   ]
 
   return (
@@ -60,9 +62,9 @@ function BottomNav() {
             >
               <div className="relative">
                 <Icon size={22} aria-hidden="true" />
-                {'badge' in tab && tab.badge > 0 && (
+                {'badge' in tab && (tab.badge ?? 0) > 0 && (
                   <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                    {tab.badge > 99 ? '99+' : tab.badge}
+                    {(tab.badge ?? 0) > 99 ? '99+' : tab.badge}
                   </span>
                 )}
               </div>

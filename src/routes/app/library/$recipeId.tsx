@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
 import { useToast } from '../../../components/Toast'
 import {
@@ -539,6 +540,7 @@ function CookingMode({
 // ---------- RecipeDetailPage ----------
 
 function RecipeDetailPage() {
+  const { t } = useTranslation()
   const { recipe, planItem } = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate()
@@ -637,11 +639,11 @@ function RecipeDetailPage() {
         <div className="sticky top-0 z-10 bg-[#FAFAF8]/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
           <button
             onClick={() => navigate({ to: isFromPlan ? '/app/plan' : '/app/library' })}
-            aria-label="Voltar"
+            aria-label={t('recipe.back')}
             className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
-            Voltar
+            {t('recipe.back')}
           </button>
         </div>
 
@@ -686,7 +688,7 @@ function RecipeDetailPage() {
           {/* Portion stepper */}
           <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#1A1A1A]">Porções</span>
+              <span className="text-sm font-medium text-[#1A1A1A]">{t('recipe.servings')}</span>
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setMultiplier((m) => Math.max(1, m - 1))}
@@ -718,18 +720,18 @@ function RecipeDetailPage() {
           <div className="grid grid-cols-4 gap-2">
             {(
               [
-                { label: 'Calorias', value: cal, unit: 'kcal' },
-                { label: 'Proteína', value: pro, unit: 'g' },
-                { label: 'Hidratos', value: carb, unit: 'g' },
-                { label: 'Gordura', value: fat, unit: 'g' },
-              ] as const
-            ).map(({ label, value, unit }) => (
+                { key: 'recipe.calories' as const, value: cal, unit: 'kcal' },
+                { key: 'recipe.protein' as const, value: pro, unit: 'g' },
+                { key: 'recipe.carbs' as const, value: carb, unit: 'g' },
+                { key: 'recipe.fat' as const, value: fat, unit: 'g' },
+              ]
+            ).map(({ key, value, unit }) => (
               <div
-                key={label}
+                key={key}
                 className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-3 text-center"
               >
                 <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide leading-tight font-medium">
-                  {label}
+                  {t(key)}
                 </div>
                 <div className="text-lg font-bold text-[#1A1A1A] mt-0.5">{fmt(value, 0)}</div>
                 <div className="text-[9px] text-[#9CA3AF] font-medium">{unit}</div>
@@ -740,7 +742,7 @@ function RecipeDetailPage() {
           {/* Ingredients */}
           {recipe.recipe_ingredients.length > 0 && (
             <div>
-              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">Ingredientes</h2>
+              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.ingredients')}</h2>
               <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm divide-y divide-[#F3F4F6]">
                 {recipe.recipe_ingredients.map((ing) => (
                   <div key={ing.id} className="px-4 py-3">
@@ -756,7 +758,7 @@ function RecipeDetailPage() {
           {/* Steps */}
           {recipe.recipe_steps.length > 0 && (
             <div>
-              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">Preparação</h2>
+              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.steps')}</h2>
               <ol className="space-y-4">
                 {recipe.recipe_steps.map((step, i) => (
                   <li key={step.id} className="flex gap-3">
@@ -781,7 +783,7 @@ function RecipeDetailPage() {
               disabled={replaceMutation.isPending}
               className="w-full rounded-2xl bg-[#B45309] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#92400e] transition-colors focus-visible:ring-2 focus-visible:ring-[#B45309]/40 focus:outline-none"
             >
-              {replaceMutation.isPending ? 'A substituir…' : 'Usar para substituir'}
+              {replaceMutation.isPending ? t('recipe.replacingAction') : t('recipe.useForReplace')}
             </button>
           ) : isFromPlan ? (
             <div className="flex gap-2">
@@ -791,14 +793,14 @@ function RecipeDetailPage() {
                     onClick={() => setConfirmRemove(false)}
                     className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white text-[#6B7280] py-3.5 text-sm font-semibold hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
-                    Cancelar
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={() => removeMutation.mutate()}
                     disabled={removeMutation.isPending}
                     className="flex-1 rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                   >
-                    {removeMutation.isPending ? 'A remover…' : 'Confirmar'}
+                    {t('common.confirm')}
                   </button>
                 </>
               ) : (
@@ -807,14 +809,14 @@ function RecipeDetailPage() {
                     onClick={() => setConfirmRemove(true)}
                     className="flex-1 rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                   >
-                    Remover
+                    {t('recipe.removeFromPlan')}
                   </button>
                   <Link
                     to="/app/library"
                     search={{ replacing: search.planItemId }}
                     className="flex-1 rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] text-[#1A1A1A] py-3.5 text-sm font-semibold text-center hover:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
-                    Substituir
+                    {t('recipe.replace')}
                   </Link>
                 </>
               )}
@@ -825,7 +827,7 @@ function RecipeDetailPage() {
               disabled={addMutation.isPending}
               className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
-              {addMutation.isPending ? 'A adicionar…' : 'Adicionar ao plano'}
+              {addMutation.isPending ? t('recipe.adding') : t('recipe.addToPlan')}
             </button>
           )}
 
@@ -835,7 +837,7 @@ function RecipeDetailPage() {
               className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none flex items-center justify-center gap-2"
             >
               <UtensilsCrossed size={15} aria-hidden="true" />
-              Cozinhar
+              {t('recipe.cook')}
             </button>
           )}
         </div>

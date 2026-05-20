@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { Check, Plus, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { ensureActivePlan, fetchPlanItems } from '../../lib/supabase/plan-queries'
 import {
   fetchShoppingChecks,
@@ -111,6 +112,7 @@ function scaleQty(qty: number | null, portionMult: number, defaultMult: number, 
 // ---------- sub-components ----------
 
 function ViewToggle({ view, onChange }: { view: 'recipe' | 'global'; onChange: (v: 'recipe' | 'global') => void }) {
+  const { t } = useTranslation()
   return (
     <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden bg-white">
       {(['recipe', 'global'] as const).map((v) => (
@@ -121,7 +123,7 @@ function ViewToggle({ view, onChange }: { view: 'recipe' | 'global'; onChange: (
             view === v ? 'bg-[#16A34A] text-white' : 'text-[#6B7280] hover:bg-[#F9FAFB]'
           }`}
         >
-          {v === 'recipe' ? 'Por receita' : 'Lista global'}
+          {v === 'recipe' ? t('shopping.perRecipe') : t('shopping.global')}
         </button>
       ))}
     </div>
@@ -195,6 +197,7 @@ function CategoryPicker({
   onSelect: (cat: Category) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
       <div
@@ -204,7 +207,7 @@ function CategoryPicker({
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
         </div>
-        <p className="text-sm font-semibold text-[#1A1A1A] px-4 pb-3">Alterar categoria</p>
+        <p className="text-sm font-semibold text-[#1A1A1A] px-4 pb-3">{t('shopping.changeCategory')}</p>
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
@@ -369,6 +372,7 @@ function GlobalView({
   onRemoveCustom: (key: string) => void
   onCategoryChange: (ingredientName: string, cat: Category) => void
 }) {
+  const { t } = useTranslation()
   const [editingCategory, setEditingCategory] = useState<{ name: string; current: string } | null>(null)
 
   const grouped = buildGlobalList(items, defaultMult, categoryOverrides)
@@ -416,7 +420,7 @@ function GlobalView({
           <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
             <div className="px-4 py-2.5 border-b border-[#F3F4F6]">
               <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
-                Itens extra
+                {t('shopping.extraItems')}
               </span>
             </div>
             <div className="divide-y divide-[#F9FAFB]">
@@ -461,6 +465,7 @@ function AddCustomItemForm({
   onAdd: (label: string, category: Category) => void
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const [label, setLabel] = useState('')
   const [category, setCategory] = useState<Category | null>(null)
   const [showCatPicker, setShowCatPicker] = useState(false)
@@ -501,7 +506,7 @@ function AddCustomItemForm({
           value={label}
           onChange={(e) => handleLabelChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          placeholder="Nome do item…"
+          placeholder={t('shopping.itemName')}
           className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
         />
         <button
@@ -518,14 +523,14 @@ function AddCustomItemForm({
           onClick={() => setShowCatPicker(true)}
           className="flex-1 text-left text-xs px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
-          {category ?? 'Categoria…'}
+          {category ?? t('shopping.categoryPlaceholder')}
         </button>
         <button
           onClick={handleSubmit}
           disabled={!label.trim()}
           className="px-4 py-1.5 rounded-xl bg-[#16A34A] text-white text-xs font-semibold disabled:opacity-40 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
-          Adicionar
+          {t('shopping.add')}
         </button>
       </div>
 
@@ -543,6 +548,7 @@ function AddCustomItemForm({
 // ---------- ShoppingPage ----------
 
 function ShoppingPage() {
+  const { t } = useTranslation()
   const { plan, items, checks: loaderChecks } = Route.useLoaderData()
   const { view } = Route.useSearch()
   const navigate = useNavigate()
@@ -680,17 +686,19 @@ function ShoppingPage() {
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
         <div className="py-5">
-          <h1 className="text-xl font-bold text-[#1A1A1A]">Lista de compras</h1>
+          <h1 className="text-xl font-bold text-[#1A1A1A]">{t('shopping.title')}</h1>
           {!isEmpty && (
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              {checkedCount > 0 ? `${checkedCount} marcado${checkedCount !== 1 ? 's' : ''}` : 'Toca para marcar o que já tens'}
+              {checkedCount > 0
+                ? t('plan.itemCount', { count: checkedCount })
+                : t('shopping.tapToMark')}
             </p>
           )}
         </div>
 
         {isEmpty ? (
           <div className="py-16 text-center">
-            <p className="text-[#6B7280] text-sm">Adiciona receitas ao plano para gerar a lista</p>
+            <p className="text-[#6B7280] text-sm">{t('shopping.emptyHint')}</p>
           </div>
         ) : (
           <>
@@ -734,7 +742,7 @@ function ShoppingPage() {
                   className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                 >
                   <Plus size={16} aria-hidden="true" />
-                  Adicionar item extra
+                  {t('shopping.addExtra')}
                 </button>
               )}
             </div>
@@ -748,13 +756,13 @@ function ShoppingPage() {
                       onClick={() => setConfirmClearChecks(false)}
                       className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                     >
-                      Cancelar
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => { handleClearChecks(); setConfirmClearChecks(false) }}
                       className="flex-1 py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] text-sm font-medium hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                     >
-                      Confirmar
+                      {t('common.confirm')}
                     </button>
                   </div>
                 ) : (
@@ -762,7 +770,7 @@ function ShoppingPage() {
                     onClick={() => setConfirmClearChecks(true)}
                     className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
-                    Limpar marcações
+                    {t('shopping.clearChecks')}
                   </button>
                 )
               )}
@@ -773,13 +781,13 @@ function ShoppingPage() {
                       onClick={() => setConfirmClearCustom(false)}
                       className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                     >
-                      Cancelar
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => { handleClearCustomItems(); setConfirmClearCustom(false) }}
                       className="flex-1 py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] text-sm font-medium hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                     >
-                      Confirmar
+                      {t('common.confirm')}
                     </button>
                   </div>
                 ) : (
@@ -787,7 +795,7 @@ function ShoppingPage() {
                     onClick={() => setConfirmClearCustom(true)}
                     className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#9CA3AF] hover:text-[#DC2626] hover:border-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                   >
-                    Limpar itens extra
+                    {t('shopping.clearCustom')}
                   </button>
                 )
               )}

@@ -19,7 +19,8 @@
     "clams": "Amêijoas",
     "sea-bream": "Dourada",
     "squid": "Lulas",
-    "fish": "Peixe"
+    "fish": "Peixe",
+    "legumes": "Leguminosas"
   },
   "categories": {
     "meat": "Talho/Peixaria",
@@ -43,7 +44,11 @@
     "calLt700": "< 700 cal",
     "searchRecipe": "Nome da receita…",
     "searchIngredient": "Pesquisar ingrediente…",
-    "noResults": "Sem resultados"
+    "noResults": "Sem resultados",
+    "empty": "Sem receitas com estes filtros",
+    "sheetTitle": "Filtros",
+    "choosingReplacement": "A escolher substituto — toca numa receita",
+    "cancelReplacement": "Cancelar substituição"
   },
   "sort": {
     "label": "Ordenar",
@@ -62,11 +67,19 @@
     "addToPlan": "Adicionar ao plano",
     "removeFromPlan": "Remover do plano",
     "replace": "Substituir",
-    "cook": "Cozinhar"
+    "cook": "Cozinhar",
+    "adding": "A adicionar…",
+    "replacingAction": "A substituir…",
+    "useForReplace": "Usar para substituir",
+    "calories": "Calorias",
+    "protein": "Proteína",
+    "carbs": "Hidratos",
+    "fat": "Gordura"
   },
   "plan": {
     "title": "Meu plano",
     "empty": "O teu plano está vazio",
+    "noItems": "Nenhuma receita adicionada",
     "addRecipe": "Adicionar receita",
     "clearPlan": "Limpar plano",
     "clearConfirm": "Tens a certeza? O plano atual será arquivado.",
@@ -74,7 +87,9 @@
     "totalProtein": "Proteína total",
     "totalTime": "Tempo total",
     "multiplier": "Multiplicador",
-    "addedToast": "Adicionado ao plano ✓"
+    "addedToast": "Adicionado ao plano ✓",
+    "itemCount_one": "{{count}} receita",
+    "itemCount_other": "{{count}} receitas"
   },
   "shopping": {
     "title": "Lista de compras",
@@ -84,7 +99,13 @@
     "clearCustom": "Limpar itens extra",
     "addItem": "Adicionar item",
     "itemName": "Nome do item…",
-    "extraItems": "Itens extra"
+    "extraItems": "Itens extra",
+    "changeCategory": "Alterar categoria",
+    "add": "Adicionar",
+    "addExtra": "Adicionar item extra",
+    "categoryPlaceholder": "Categoria…",
+    "tapToMark": "Toca para marcar o que já tens",
+    "emptyHint": "Adiciona receitas ao plano para gerar a lista"
   },
   "common": {
     "confirm": "Confirmar",
@@ -96,5 +117,12 @@
     "retry": "Tentar novamente",
     "recipes_one": "receita",
     "recipes_other": "receitas"
+  },
+  "settings": {
+    "title": "Definições",
+    "language": "Idioma",
+    "theme": "Aparência",
+    "light": "Claro",
+    "dark": "Escuro"
   }
 }

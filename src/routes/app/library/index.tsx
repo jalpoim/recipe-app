@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Clock, Search, X } from 'lucide-react'
+import { Clock, Search, Settings, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { fetchLibrary, type RecipeWithIngredients } from '../../../lib/supabase/queries'
@@ -383,10 +383,10 @@ function FilterSheet({
 
           {/* sheet header */}
           <div className="flex-shrink-0 flex items-center justify-between px-4 pt-1 pb-3">
-            <span className="text-base font-semibold text-[#1A1A1A]">Filtros</span>
+            <span className="text-base font-semibold text-[#1A1A1A]">{t('filters.sheetTitle')}</span>
             <button
               onClick={() => onOpenChange(false)}
-              aria-label="Fechar filtros"
+              aria-label={t('common.close')}
               className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
               <X size={16} aria-hidden="true" />
@@ -397,7 +397,7 @@ function FilterSheet({
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-4 space-y-6">
             {/* Proteína */}
             <div ref={proteinRef}>
-              <p className={sectionHeader}>Proteína</p>
+              <p className={sectionHeader}>{t('filters.protein')}</p>
               <div className="flex flex-wrap gap-2">
                 {allProteins.map((slug) => (
                   <button
@@ -414,7 +414,7 @@ function FilterSheet({
 
             {/* Tempo */}
             <div ref={timeRef}>
-              <p className={sectionHeader}>Tempo</p>
+              <p className={sectionHeader}>{t('filters.time')}</p>
               <div className="flex flex-wrap gap-2">
                 {([15, 30, 60] as const).map((mins) => (
                   <button
@@ -433,7 +433,7 @@ function FilterSheet({
 
             {/* Calorias */}
             <div ref={caloriesRef}>
-              <p className={sectionHeader}>Calorias</p>
+              <p className={sectionHeader}>{t('filters.calories')}</p>
               <div className="flex flex-wrap gap-2">
                 {([300, 500, 700] as const).map((cal) => (
                   <button
@@ -453,7 +453,7 @@ function FilterSheet({
             {/* Tags */}
             {allTags.length > 0 && (
               <div ref={tagsRef}>
-                <p className={sectionHeader}>Tags</p>
+                <p className={sectionHeader}>{t('filters.tags')}</p>
                 <div className="flex flex-wrap gap-2">
                   {allTags.map((tag) => (
                     <button
@@ -471,7 +471,7 @@ function FilterSheet({
 
             {/* Ingredientes */}
             <div ref={ingredientsRef}>
-              <p className={sectionHeader}>Ingredientes</p>
+              <p className={sectionHeader}>{t('filters.ingredients')}</p>
 
               {search.ingredients.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-3">
@@ -491,7 +491,7 @@ function FilterSheet({
                 type="text"
                 value={ingSearch}
                 onChange={(e) => setIngSearch(e.target.value)}
-                placeholder="Pesquisar ingrediente…"
+                placeholder={t('filters.searchIngredient')}
                 className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
               />
 
@@ -510,7 +510,7 @@ function FilterSheet({
               )}
 
               {ingSearch.length > 0 && filteredIngs.length === 0 && (
-                <p className="mt-2 text-xs text-[#9CA3AF] px-1">Sem resultados</p>
+                <p className="mt-2 text-xs text-[#9CA3AF] px-1">{t('filters.noResults')}</p>
               )}
             </div>
           </div>
@@ -525,14 +525,14 @@ function FilterSheet({
                 }}
                 className="w-full text-sm font-medium text-[#DC2626] py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
               >
-                Limpar filtros
+                {t('filters.clearFilters')}
               </button>
             ) : (
               <button
                 onClick={() => onOpenChange(false)}
                 className="w-full text-sm font-medium text-[#6B7280] py-2.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
               >
-                Fechar
+                {t('common.close')}
               </button>
             )}
           </div>
@@ -625,11 +625,11 @@ function LibraryPage() {
           <div className="pt-4 pb-0">
             <div className="flex items-center justify-between rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2.5">
               <p className="text-xs text-[#B45309] font-medium">
-                A escolher substituto — toca numa receita
+                {t('filters.choosingReplacement')}
               </p>
               <button
                 onClick={() => update({ replacing: undefined })}
-                aria-label="Cancelar substituição"
+                aria-label={t('filters.cancelReplacement')}
                 className="text-[#B45309] hover:text-[#92400e] ml-2 focus-visible:ring-2 focus-visible:ring-[#B45309]/30 focus:outline-none rounded"
               >
                 <X size={14} aria-hidden="true" />
@@ -640,7 +640,16 @@ function LibraryPage() {
 
         {/* Header */}
         <div className="py-5">
-          <h1 className="text-xl font-bold text-[#1A1A1A] mb-3">Receitas</h1>
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-bold text-[#1A1A1A]">{t('nav.recipes')}</h1>
+            <Link
+              to="/app/settings"
+              aria-label={t('settings.title')}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <Settings size={18} aria-hidden="true" />
+            </Link>
+          </div>
 
           {/* Persistent search bar */}
           <div className="relative">
@@ -653,8 +662,8 @@ function LibraryPage() {
               type="text"
               value={search.q}
               onChange={(e) => update({ q: e.target.value })}
-              placeholder="Nome da receita…"
-              aria-label="Pesquisar receita"
+              placeholder={t('filters.searchRecipe')}
+              aria-label={t('filters.searchRecipe')}
               className="w-full rounded-xl border border-[#E5E7EB] bg-white pl-9 pr-9 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] shadow-sm transition-colors"
             />
             {search.q && (
@@ -690,17 +699,19 @@ function LibraryPage() {
 
         {/* Sort + count row */}
         <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-[#9CA3AF]">{sorted.length} receitas</span>
+          <span className="text-xs text-[#9CA3AF]">
+            {t('plan.itemCount', { count: sorted.length })}
+          </span>
           <select
             value={search.sort}
             onChange={(e) => update({ sort: e.target.value as Sort })}
-            aria-label="Ordenar receitas"
+            aria-label={t('sort.label')}
             className="text-xs bg-white border border-[#E5E7EB] text-[#1A1A1A] rounded-xl px-2 py-1.5 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
           >
-            <option value="pcal">P/Cal ↓</option>
-            <option value="protein">Proteína ↓</option>
-            <option value="calories">Calorias ↑</option>
-            <option value="time">Tempo ↑</option>
+            <option value="pcal">{t('sort.pcal')}</option>
+            <option value="protein">{t('sort.protein')}</option>
+            <option value="calories">{t('sort.calories')}</option>
+            <option value="time">{t('sort.time')}</option>
           </select>
         </div>
 
@@ -713,10 +724,10 @@ function LibraryPage() {
           </div>
         ) : (
           <div className="py-16 text-center">
-            <p className="text-[#6B7280] text-sm">Sem receitas com estes filtros</p>
+            <p className="text-[#6B7280] text-sm">{t('filters.empty')}</p>
             {hasActiveFilters && (
               <button onClick={clearFilters} className="mt-2 text-xs text-[#16A34A] underline">
-                Limpar filtros
+                {t('filters.clearFilters')}
               </button>
             )}
           </div>

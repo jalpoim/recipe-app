@@ -14,6 +14,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AppShoppingRouteImport } from './routes/app/shopping'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppPlanRouteImport } from './routes/app/plan'
 import { Route as AppLibraryIndexRouteImport } from './routes/app/library/index'
 import { Route as AppLibraryRecipeIdRouteImport } from './routes/app/library/$recipeId'
@@ -43,6 +44,11 @@ const AppShoppingRoute = AppShoppingRouteImport.update({
   path: '/shopping',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppPlanRoute = AppPlanRouteImport.update({
   id: '/plan',
   path: '/plan',
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/app/plan': typeof AppPlanRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/plan': typeof AppPlanRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app': typeof AppIndexRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/app': typeof AppRouteWithChildren
   '/app/plan': typeof AppPlanRoute
+  '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/app/': typeof AppIndexRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app/plan'
+    | '/app/settings'
     | '/app/shopping'
     | '/auth/callback'
     | '/app/'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/app/plan'
+    | '/app/settings'
     | '/app/shopping'
     | '/auth/callback'
     | '/app'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app'
     | '/app/plan'
+    | '/app/settings'
     | '/app/shopping'
     | '/auth/callback'
     | '/app/'
@@ -164,6 +176,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppShoppingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/plan': {
       id: '/app/plan'
       path: '/plan'
@@ -190,6 +209,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppPlanRoute: typeof AppPlanRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppShoppingRoute: typeof AppShoppingRoute
   AppIndexRoute: typeof AppIndexRoute
   AppLibraryRecipeIdRoute: typeof AppLibraryRecipeIdRoute
@@ -198,6 +218,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppPlanRoute: AppPlanRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppShoppingRoute: AppShoppingRoute,
   AppIndexRoute: AppIndexRoute,
   AppLibraryRecipeIdRoute: AppLibraryRecipeIdRoute,

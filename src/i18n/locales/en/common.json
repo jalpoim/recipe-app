@@ -19,7 +19,8 @@
     "clams": "Clams",
     "sea-bream": "Sea Bream",
     "squid": "Squid",
-    "fish": "Fish"
+    "fish": "Fish",
+    "legumes": "Legumes"
   },
   "categories": {
     "meat": "Meat & Fish",
@@ -43,7 +44,11 @@
     "calLt700": "< 700 cal",
     "searchRecipe": "Recipe name…",
     "searchIngredient": "Search ingredient…",
-    "noResults": "No results"
+    "noResults": "No results",
+    "empty": "No recipes with these filters",
+    "sheetTitle": "Filters",
+    "choosingReplacement": "Choosing replacement — tap a recipe",
+    "cancelReplacement": "Cancel replacement"
   },
   "sort": {
     "label": "Sort",
@@ -62,11 +67,19 @@
     "addToPlan": "Add to plan",
     "removeFromPlan": "Remove from plan",
     "replace": "Replace",
-    "cook": "Cook"
+    "cook": "Cook",
+    "adding": "Adding…",
+    "replacingAction": "Replacing…",
+    "useForReplace": "Use as replacement",
+    "calories": "Calories",
+    "protein": "Protein",
+    "carbs": "Carbs",
+    "fat": "Fat"
   },
   "plan": {
     "title": "My plan",
     "empty": "Your plan is empty",
+    "noItems": "No recipes added",
     "addRecipe": "Add recipe",
     "clearPlan": "Clear plan",
     "clearConfirm": "Are you sure? Your current plan will be archived.",
@@ -74,7 +87,9 @@
     "totalProtein": "Total protein",
     "totalTime": "Total time",
     "multiplier": "Multiplier",
-    "addedToast": "Added to plan ✓"
+    "addedToast": "Added to plan ✓",
+    "itemCount_one": "{{count}} recipe",
+    "itemCount_other": "{{count}} recipes"
   },
   "shopping": {
     "title": "Shopping list",
@@ -84,7 +99,13 @@
     "clearCustom": "Clear extra items",
     "addItem": "Add item",
     "itemName": "Item name…",
-    "extraItems": "Extra items"
+    "extraItems": "Extra items",
+    "changeCategory": "Change category",
+    "add": "Add",
+    "addExtra": "Add extra item",
+    "categoryPlaceholder": "Category…",
+    "tapToMark": "Tap to mark what you already have",
+    "emptyHint": "Add recipes to your plan to generate the list"
   },
   "common": {
     "confirm": "Confirm",
@@ -96,5 +117,12 @@
     "retry": "Try again",
     "recipes_one": "recipe",
     "recipes_other": "recipes"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Appearance",
+    "light": "Light",
+    "dark": "Dark"
   }
 }

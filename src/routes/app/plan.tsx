@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Clock, ChevronRight } from 'lucide-react'
@@ -152,9 +152,10 @@ function MultiplierControl({
   value: number
   onChange: (v: number) => void
 }) {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center justify-between rounded-2xl bg-white border border-[#E5E7EB] shadow-sm px-4 py-3">
-      <span className="text-sm font-medium text-[#1A1A1A]">Multiplicador</span>
+      <span className="text-sm font-medium text-[#1A1A1A]">{t('plan.multiplier')}</span>
       <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
         {([1, 2, 3, 4] as const).map((n) => (
           <button
@@ -178,9 +179,9 @@ function MultiplierControl({
 // ---------- PlanPage ----------
 
 function PlanPage() {
+  const { t } = useTranslation()
   const { plan: loaderPlan, items: loaderItems } = Route.useLoaderData()
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const { showToast } = useToast()
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -257,11 +258,11 @@ function PlanPage() {
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
         <div className="py-5">
-          <h1 className="text-xl font-bold text-[#1A1A1A]">Meu plano</h1>
+          <h1 className="text-xl font-bold text-[#1A1A1A]">{t('plan.title')}</h1>
           <p className="text-xs text-[#9CA3AF] mt-0.5">
             {items.length === 0
-              ? 'Nenhuma receita adicionada'
-              : `${items.length} receita${items.length !== 1 ? 's' : ''}`}
+              ? t('plan.noItems')
+              : t('plan.itemCount', { count: items.length })}
           </p>
         </div>
 
@@ -276,12 +277,13 @@ function PlanPage() {
         {/* Empty state */}
         {items.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-[#6B7280] text-sm mb-4">O teu plano está vazio</p>
+            <p className="text-[#6B7280] text-sm mb-4">{t('plan.empty')}</p>
             <Link
               to="/app/library"
+              search={{} as never}
               className="inline-block px-5 py-2.5 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
-              Adicionar receita
+              {t('plan.addRecipe')}
             </Link>
           </div>
         ) : (
@@ -303,21 +305,21 @@ function PlanPage() {
               {confirmClear ? (
                 <div className="rounded-2xl border border-[#fecaca] bg-[#fee2e2]/50 p-4 text-center space-y-3">
                   <p className="text-sm text-[#1A1A1A]">
-                    Tens a certeza? O plano atual será arquivado.
+                    {t('plan.clearConfirm')}
                   </p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirmClear(false)}
                       className="flex-1 py-2 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                     >
-                      Cancelar
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => clearMutation.mutate()}
                       disabled={clearMutation.isPending}
                       className="flex-1 py-2 rounded-xl bg-[#DC2626] text-white text-sm font-semibold disabled:opacity-50 hover:bg-[#b91c1c] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                     >
-                      Confirmar
+                      {t('common.confirm')}
                     </button>
                   </div>
                 </div>
@@ -326,7 +328,7 @@ function PlanPage() {
                   onClick={() => setConfirmClear(true)}
                   className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#9CA3AF] hover:text-[#DC2626] hover:border-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                 >
-                  Limpar plano
+                  {t('plan.clearPlan')}
                 </button>
               )}
             </div>

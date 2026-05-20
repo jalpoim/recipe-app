@@ -14,7 +14,6 @@
     "tags": [
       "forno",
       "meal-prep",
-      "alto-proteíno",
       "sem-glúten",
       "frango"
     ],
@@ -114,7 +113,6 @@
     ],
     "tags": [
       "fogão",
-      "alto-proteíno",
       "sem-glúten",
       "peixe",
       "rápido",
@@ -225,7 +223,6 @@
     "tags": [
       "fogão",
       "meal-prep",
-      "alto-proteíno",
       "frango",
       "arroz"
     ],
@@ -343,7 +340,6 @@
     "tags": [
       "sem-forno",
       "rápido",
-      "alto-proteíno",
       "sem-glúten",
       "meal-prep",
       "frio",
@@ -449,15 +445,13 @@
     "carbs": 52,
     "fat": 18,
     "proteins": [
-      "chicken"
+      "shrimp"
     ],
     "tags": [
       "português",
-      "alto-proteíno",
       "rápido",
       "peixe",
-      "sopa",
-      "mel-prep"
+      "sopa"
     ],
     "ingredients": [
       {
@@ -564,7 +558,6 @@
     "tags": [
       "português",
       "sopa",
-      "alto-proteíno",
       "forno",
       "meal-prep",
       "sem-glúten"
@@ -668,7 +661,6 @@
     "tags": [
       "português",
       "rápido",
-      "alto-proteíno",
       "uma-frigideira",
       "sem-glúten",
       "pequeno-almoço",
@@ -771,7 +763,6 @@
     "tags": [
       "português",
       "forno",
-      "alto-proteíno",
       "meal-prep",
       "sem-glúten",
       "magro"
@@ -899,7 +890,6 @@
       "vegan",
       "vegetariano",
       "sem-glúten",
-      "alto-proteíno",
       "legumes",
       "rápido",
       "meal-prep",
@@ -1050,7 +1040,6 @@
     ],
     "tags": [
       "frango",
-      "alto-proteíno",
       "sem-glúten",
       "meal-prep",
       "indiano",
@@ -1202,7 +1191,6 @@
       "vegan",
       "vegetariano",
       "sem-glúten",
-      "alto-proteíno",
       "legumes",
       "meal-prep",
       "indiano"
@@ -1352,7 +1340,6 @@
     ],
     "tags": [
       "frango",
-      "alto-proteíno",
       "sem-glúten",
       "meal-prep",
       "indiano",
@@ -1504,7 +1491,6 @@
     "tags": [
       "frango",
       "arroz",
-      "alto-proteíno",
       "meal-prep",
       "indiano",
       "uma-panela"
@@ -1670,7 +1656,6 @@
     ],
     "tags": [
       "peixe",
-      "alto-proteíno",
       "meal-prep",
       "tigela",
       "sem-glúten"
@@ -1798,7 +1783,6 @@
       "vegetariano",
       "rápido",
       "uma-frigideira",
-      "alto-proteíno",
       "sem-glúten",
       "meal-prep"
     ],
@@ -1922,7 +1906,6 @@
     ],
     "tags": [
       "frango",
-      "alto-proteíno",
       "meal-prep",
       "rápido",
       "tacos"
@@ -2071,7 +2054,6 @@
     ],
     "tags": [
       "frango",
-      "alto-proteíno",
       "meal-prep",
       "forno",
       "tigela",
@@ -2242,7 +2224,6 @@
       "ovos",
       "massa",
       "asiático",
-      "alto-proteíno",
       "rápido",
       "uma-frigideira"
     ],
@@ -2379,7 +2360,6 @@
       "feijão",
       "arroz",
       "mexicano",
-      "alto-proteíno",
       "meal-prep",
       "uma-frigideira"
     ],
@@ -2528,9 +2508,8 @@
     "tags": [
       "peixe",
       "salmão",
-      "baixo-carboidrato",
+      "baixo-hidratos",
       "sem-glúten",
-      "alto-proteíno",
       "rápido",
       "forno"
     ],
@@ -2651,7 +2630,6 @@
       "arroz",
       "asiático",
       "tailandês",
-      "alto-proteíno",
       "meal-prep",
       "picante"
     ],
@@ -2784,7 +2762,6 @@
     ],
     "tags": [
       "rápido",
-      "alto-proteíno",
       "vegetariano",
       "pequeno-almoço",
       "uma-panela"
@@ -2877,7 +2854,6 @@
     ],
     "tags": [
       "rápido",
-      "alto-proteíno",
       "vegetariano",
       "pequeno-almoço",
       "sem-glúten-opcional",
@@ -2962,9 +2938,7 @@
     ],
     "tags": [
       "rápido",
-      "alto-proteíno",
       "vegetariano",
-      "sem-cozinhado",
       "lanche",
       "pequeno-almoço",
       "meal-prep"
@@ -3032,7 +3006,6 @@
     ],
     "tags": [
       "meal-prep",
-      "alto-proteíno",
       "forno",
       "sem-glúten",
       "frango",
