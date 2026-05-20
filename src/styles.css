@@ -55,8 +55,18 @@ body {
   animation: fade-in 300ms ease both;
 }
 
+@keyframes progress {
+  from { width: 0%; }
+  to   { width: 85%; }
+}
+
+.animate-progress {
+  animation: progress 600ms ease-out forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in {
+  .animate-fade-in,
+  .animate-progress {
     animation: none;
   }
 }
