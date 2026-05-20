@@ -128,3 +128,38 @@ export const clearCustomItems = createServerFn({ method: 'POST' })
     if (error) throw new Error(error.message)
     return { ok: true }
   })
+
+// GET: fetch all category overrides for the current user
+export const fetchCategoryOverrides = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<{ ingredient_name: string; category: string }[]> => {
+    const supabase = makeClient()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('user_category_overrides')
+      .select('ingredient_name, category')
+    if (error) throw new Error(error.message)
+    return (data ?? []) as { ingredient_name: string; category: string }[]
+  })
+
+// POST: upsert a single category override
+export const upsertCategoryOverride = createServerFn({ method: 'POST' })
+  .inputValidator((input: { ingredientName: string; category: string }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: authData } = await supabase.auth.getUser()
+    if (!authData.user) throw new Error('Not authenticated')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any)
+      .from('user_category_overrides')
+      .upsert(
+        {
+          user_id: authData.user.id,
+          ingredient_name: data.ingredientName,
+          category: data.category,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,ingredient_name' },
+      )
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })

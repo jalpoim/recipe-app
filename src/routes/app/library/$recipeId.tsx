@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
+import { useToast } from '../../../components/Toast'
 import {
   addRecipeToPlan,
   removePlanItem,
@@ -124,21 +125,6 @@ function playBeep() {
     osc.stop(ctx.currentTime + 0.6)
     setTimeout(() => ctx.close(), 1000)
   } catch {}
-}
-
-// ---------- Toast ----------
-
-function Toast({ message, visible }: { message: string; visible: boolean }) {
-  return (
-    <div
-      aria-live="polite"
-      className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 bg-[#1A1A1A] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg transition-all duration-300 ${
-        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
-      }`}
-    >
-      {message}
-    </div>
-  )
 }
 
 // ---------- StepTimer ----------
@@ -557,24 +543,14 @@ function RecipeDetailPage() {
   const search = Route.useSearch()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { showToast } = useToast()
   const isFromPlan = search.from === 'plan' && !!search.planItemId
   const [multiplier, setMultiplier] = useState(
     planItem?.portion_multiplier ?? recipe.servings,
   )
-  const [toast, setToast] = useState<string | null>(null)
   const [isCooking, setIsCooking] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const skipFirstSave = useRef(true)
-
-  function showToast(msg: string) {
-    setToast(msg)
-  }
-
-  useEffect(() => {
-    if (!toast) return
-    const t = setTimeout(() => setToast(null), 2200)
-    return () => clearTimeout(t)
-  }, [toast])
 
   // Auto-save portion_multiplier back to the plan item (debounced)
   const saveMultMutation = useMutation({
@@ -611,8 +587,9 @@ function RecipeDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['active-plan'] })
       qc.invalidateQueries({ queryKey: ['plan-items'] })
-      showToast('Adicionado ao plano ✓')
+      showToast('Adicionado ao plano ✓', 'success')
     },
+    onError: () => showToast('Erro ao adicionar ao plano', 'error'),
   })
 
   // Remove from plan
@@ -634,6 +611,7 @@ function RecipeDetailPage() {
       qc.invalidateQueries({ queryKey: ['plan-items'] })
       navigate({ to: '/app/plan' })
     },
+    onError: () => showToast('Erro ao substituir receita', 'error'),
   })
 
   const isReplacing = !!search.replacing
@@ -654,8 +632,6 @@ function RecipeDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-56">
-      <Toast message={toast ?? ''} visible={!!toast} />
-
       <div className="mx-auto w-full max-w-md">
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[#FAFAF8]/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">

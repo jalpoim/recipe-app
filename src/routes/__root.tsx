@@ -1,6 +1,7 @@
 import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
+import { ToastProvider } from '../components/Toast'
 
 import appCss from '../styles.css?url'
 
@@ -10,7 +11,21 @@ export const queryClient = new QueryClient({
   },
 })
 
+function NotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
+      <p className="text-5xl">🥗</p>
+      <h1 className="text-xl font-semibold text-[#1A1A1A]">Página não encontrada</h1>
+      <p className="text-sm text-[#6B7280]">Este endereço não existe.</p>
+      <a href="/app/library" className="mt-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white">
+        Ir para as receitas
+      </a>
+    </div>
+  )
+}
+
 export const Route = createRootRoute({
+  notFoundComponent: NotFound,
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
@@ -32,7 +47,9 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
   component: () => (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
     </QueryClientProvider>
   ),
 })

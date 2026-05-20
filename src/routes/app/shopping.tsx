@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
 import { Check, Plus, X } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ensureActivePlan, fetchPlanItems } from '../../lib/supabase/plan-queries'
 import {
   fetchShoppingChecks,
@@ -9,8 +10,11 @@ import {
   deleteCustomShoppingItem,
   clearNonCustomChecks,
   clearCustomItems,
+  fetchCategoryOverrides,
+  upsertCategoryOverride,
 } from '../../lib/supabase/shopping-queries'
 import type { PlanItemWithRecipe, ShoppingCheckState } from '../../types/db'
+import { useToast } from '../../components/Toast'
 
 function ShoppingSkeleton() {
   return (
@@ -542,6 +546,8 @@ function ShoppingPage() {
   const { plan, items, checks: loaderChecks } = Route.useLoaderData()
   const { view } = Route.useSearch()
   const navigate = useNavigate()
+  const qc = useQueryClient()
+  const { showToast } = useToast()
 
   function setView(v: 'recipe' | 'global') {
     // @ts-ignore -- routeTree.gen.ts is regenerated on pnpm dev; view is valid search param
@@ -558,14 +564,21 @@ function ShoppingPage() {
     () => loaderChecks.filter((c) => c.item_key.startsWith('custom:')),
   )
 
-  // Per-ingredient category overrides (localStorage)
-  const [categoryOverrides, setCategoryOverrides] = useState<Record<string, string>>(() => {
-    if (typeof window === 'undefined') return {}
-    try {
-      return JSON.parse(localStorage.getItem('shopping_cat_overrides') ?? '{}')
-    } catch {
-      return {}
-    }
+  // Per-ingredient category overrides — backed by Supabase
+  const { data: overridesData = [] } = useQuery({
+    queryKey: ['category-overrides'],
+    queryFn: fetchCategoryOverrides,
+  })
+
+  const categoryOverrides: Record<string, string> = Object.fromEntries(
+    overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
+  )
+
+  const overrideMutation = useMutation({
+    mutationFn: (vars: { ingredientName: string; category: string }) =>
+      upsertCategoryOverride({ data: vars }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['category-overrides'] }),
+    onError: () => showToast('Erro ao guardar', 'error'),
   })
 
   const [showAddForm, setShowAddForm] = useState(false)
@@ -579,7 +592,9 @@ function ShoppingPage() {
   function toggleCheck(itemKey: string, label?: string, category?: string) {
     const next = !(checkMap.get(itemKey) ?? false)
     setCheckMap((prev) => new Map(prev).set(itemKey, next))
-    upsertCheck({ data: { planId: plan.id, itemKey, isChecked: next, label, category } })
+    upsertCheck({ data: { planId: plan.id, itemKey, isChecked: next, label, category } }).catch(
+      () => showToast('Erro ao guardar', 'error'),
+    )
   }
 
   function toggleKeys(keys: string[], next: boolean) {
@@ -589,16 +604,14 @@ function ShoppingPage() {
       return m
     })
     for (const k of keys) {
-      upsertCheck({ data: { planId: plan.id, itemKey: k, isChecked: next } })
+      upsertCheck({ data: { planId: plan.id, itemKey: k, isChecked: next } }).catch(
+        () => showToast('Erro ao guardar', 'error'),
+      )
     }
   }
 
   function handleCategoryChange(ingredientName: string, cat: Category) {
-    const next = { ...categoryOverrides, [ingredientName.toLowerCase()]: cat }
-    setCategoryOverrides(next)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('shopping_cat_overrides', JSON.stringify(next))
-    }
+    overrideMutation.mutate({ ingredientName: ingredientName.toLowerCase(), category: cat })
   }
 
   function handleAddCustom(label: string, category: Category) {
@@ -626,13 +639,15 @@ function ShoppingPage() {
         next.set(saved.item_key, false)
         return next
       })
-    })
+    }).catch(() => showToast('Erro ao adicionar item', 'error'))
   }
 
   function handleRemoveCustom(itemKey: string) {
     setCustomItems((prev) => prev.filter((c) => c.item_key !== itemKey))
     setCheckMap((prev) => { const n = new Map(prev); n.delete(itemKey); return n })
-    deleteCustomShoppingItem({ data: { planId: plan.id, itemKey } })
+    deleteCustomShoppingItem({ data: { planId: plan.id, itemKey } }).catch(
+      () => showToast('Erro ao remover item', 'error'),
+    )
   }
 
   function handleClearChecks() {
@@ -641,7 +656,9 @@ function ShoppingPage() {
       if (!k.startsWith('custom:')) next.set(k, false)
     }
     setCheckMap(next)
-    clearNonCustomChecks({ data: plan.id })
+    clearNonCustomChecks({ data: plan.id }).catch(
+      () => showToast('Erro ao limpar marcações', 'error'),
+    )
   }
 
   function handleClearCustomItems() {
@@ -651,7 +668,9 @@ function ShoppingPage() {
       if (k.startsWith('custom:')) next.delete(k)
     }
     setCheckMap(next)
-    clearCustomItems({ data: plan.id })
+    clearCustomItems({ data: plan.id }).catch(
+      () => showToast('Erro ao limpar itens', 'error'),
+    )
   }
 
   const isEmpty = items.length === 0

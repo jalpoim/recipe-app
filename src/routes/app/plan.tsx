@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Clock, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useToast } from '../../components/Toast'
 import {
   ensureActivePlan,
   fetchPlanItems,
@@ -180,6 +181,7 @@ function PlanPage() {
   const { plan: loaderPlan, items: loaderItems } = Route.useLoaderData()
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [confirmClear, setConfirmClear] = useState(false)
 
   const { data: plan } = useQuery({
@@ -210,6 +212,7 @@ function PlanPage() {
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(['plan-items', planId], ctx.prev)
+      showToast('Erro ao remover receita', 'error')
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['plan-items', planId] })
@@ -230,6 +233,7 @@ function PlanPage() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['active-plan'], ctx.prev)
+      showToast('Erro ao actualizar multiplicador', 'error')
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['active-plan'] }),
   })
