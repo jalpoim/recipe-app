@@ -6,8 +6,8 @@ import type { Plan, PlanItem, PlanItemWithRecipe, ActivePlanWithCount } from '..
 
 function makeClient() {
   return createServerClient<Database>(
-    import.meta.env.VITE_SUPABASE_URL as string,
-    import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+    (import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL) as string,
+    (import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY) as string,
     {
       cookies: {
         getAll() {

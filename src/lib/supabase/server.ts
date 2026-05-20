@@ -4,8 +4,8 @@ import { createServerFn } from '@tanstack/react-start'
 import { getCookies, setCookie, setResponseHeader } from '@tanstack/react-start/server'
 
 function createSupabaseServerClient() {
-  const url = import.meta.env.VITE_SUPABASE_URL as string
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+  const url = (import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL) as string
+  const key = (import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY) as string
 
   return createServerClient<Database>(url, key, {
     cookies: {
