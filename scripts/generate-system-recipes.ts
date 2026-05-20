@@ -119,16 +119,21 @@ type Batch = { cuisine: string; count: number; targets: string }
 
 const BATCHES: Batch[] = [
   {
-    cuisine: 'Portuguese',
-    count: 8,
+    cuisine: 'Portuguese (parte 1)',
+    count: 4,
     targets: `
 - Frango assado com batata-doce (chicken + sweet potato, oven-roasted, ~35 min)
 - Bacalhau com grão e espinafres (cod + chickpeas + spinach, stovetop, ~25 min)
+- Peito de frango marinado com arroz de coentros (chicken + coriander rice, ~30 min)
+- Atum com feijão verde e ovo cozido (tuna + green beans + boiled egg, cold bowl, ~15 min)`,
+  },
+  {
+    cuisine: 'Portuguese (parte 2)',
+    count: 4,
+    targets: `
 - Açorda de camarão fit (shrimp bread soup, high protein, ~20 min)
 - Caldo verde com chouriço (kale soup with chorizo, ~30 min)
-- Peito de frango marinado com arroz de coentros (chicken + coriander rice, ~30 min)
 - Ovos mexidos com farinheira e legumes (scrambled eggs with farinheira sausage, ~15 min)
-- Atum com feijão verde e ovo cozido (tuna + green beans + boiled egg, cold bowl, ~15 min)
 - Bifana magra no forno com courgette (lean pork bifana, oven, ~30 min)`,
   },
   {
@@ -142,14 +147,19 @@ const BATCHES: Batch[] = [
 - Arroz de frango biryani simplificado (simplified chicken biryani, ~40 min)`,
   },
   {
-    cuisine: 'International',
-    count: 8,
+    cuisine: 'International (parte 1)',
+    count: 4,
     targets: `
 - Tigela de salmão teriyaki com arroz e brócolo (salmon teriyaki bowl, ~25 min)
 - Shakshuka de tomate e pimento (eggs poached in tomato sauce, ~20 min)
 - Tacos de frango com guacamole simples (chicken tacos, ~25 min)
+- Tigela mediterrânea de frango (Greek-style chicken bowl with tzatziki, ~30 min)`,
+  },
+  {
+    cuisine: 'International (parte 2)',
+    count: 4,
+    targets: `
 - Pad thai de frango com ovos (chicken pad thai, ~25 min)
-- Tigela mediterrânea de frango (Greek-style chicken bowl with tzatziki, ~30 min)
 - Burrito bowl de carne picada (beef burrito bowl with black beans, ~30 min)
 - Salmão com puré de couve-flor e alcaparras (salmon + cauliflower mash, ~25 min)
 - Frango com curry verde tailandês e arroz jasmim (Thai green curry + jasmine rice, ~30 min)`,
@@ -216,9 +226,9 @@ Use the submit_recipes tool with all ${batch.count} recipes.`
   try {
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      max_tokens: 16000,
       tools: [RECIPE_TOOL],
-      tool_choice: { type: 'any' },
+      tool_choice: { type: 'tool', name: 'submit_recipes' },
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userPrompt }],
     })

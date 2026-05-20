@@ -1,0 +1,3150 @@
+[
+  {
+    "name": "Frango Assado com Batata-Doce",
+    "cuisine": "portuguese",
+    "time_min": 35,
+    "servings": 4,
+    "calories": 1668,
+    "protein": 124,
+    "carbs": 116,
+    "fat": 72,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "forno",
+      "meal-prep",
+      "alto-proteíno",
+      "sem-glúten",
+      "frango"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g peito de frango",
+        "quantity": 800,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "600g batata-doce",
+        "quantity": 600,
+        "unit": "g",
+        "name": "batata-doce",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cabeça de alho",
+        "quantity": 1,
+        "unit": "cabeça",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 limão",
+        "quantity": 1,
+        "unit": "unidade",
+        "name": "limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "60ml azeite",
+        "quantity": 60,
+        "unit": "ml",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de paprika fumada",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de orégãos secos",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "orégãos secos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher de chá de pimenta preta",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Pré-aqueça o forno a 200 °C (ventilação). Descasque a batata-doce e corte em cubos de 2 cm. Espalhe num tabuleiro, regue com 30 ml de azeite, tempere com 1/2 colher de chá de sal e 1/2 colher de chá de paprika. Leve ao forno por 15 minutos.",
+      "Enquanto a batata assa, coloque os peitos de frango entre duas folhas de papel vegetal e bata levemente até terem espessura uniforme de ~2 cm.",
+      "Misture numa taça os restantes 30 ml de azeite, o sumo do limão, os 4 dentes de alho esmagados, a restante paprika (1,5 colher de chá), os orégãos, 1/2 colher de chá de sal e a pimenta. Barre esta marinada em toda a superfície do frango.",
+      "Retire o tabuleiro do forno ao fim dos 15 minutos, vire os cubos de batata-doce e coloque os peitos de frango por cima. Reintroduza no forno por mais 18–20 minutos, até o frango atingir 75 °C no centro.",
+      "Retire do forno, tape com papel de alumínio e deixe repousar 5 minutos. Fatie o frango em tiras e sirva com a batata-doce. Para meal-prep, divida por 4 recipientes herméticos."
+    ]
+  },
+  {
+    "name": "Bacalhau com Grão e Espinafres",
+    "cuisine": "portuguese",
+    "time_min": 25,
+    "servings": 4,
+    "calories": 1320,
+    "protein": 116,
+    "carbs": 88,
+    "fat": 48,
+    "proteins": [
+      "cod"
+    ],
+    "tags": [
+      "fogão",
+      "alto-proteíno",
+      "sem-glúten",
+      "peixe",
+      "rápido",
+      "meal-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "700g lombo de bacalhau dessalgado (congelado ou fresco)",
+        "quantity": 700,
+        "unit": "g",
+        "name": "lombo de bacalhau dessalgado",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "480g grão-de-bico cozido (escorrido, 2 latas de 240g)",
+        "quantity": 480,
+        "unit": "g",
+        "name": "grão-de-bico cozido",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g espinafres frescos",
+        "quantity": 200,
+        "unit": "g",
+        "name": "espinafres frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola grande (200g)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho",
+        "quantity": 4,
+        "unit": "dentes",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g tomate pelado em lata",
+        "quantity": 400,
+        "unit": "g",
+        "name": "tomate pelado em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "50ml azeite",
+        "quantity": 50,
+        "unit": "ml",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de colorau doce",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "colorau doce",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher de chá de pimenta preta",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "sal q.b.",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Corte o bacalhau em postas de ~5 cm e reserve. Pique a cebola em meias-luas finas e lamine o alho.",
+      "Aqueça o azeite numa frigideira larga (ou wok) em lume médio-alto. Refogue a cebola durante 4 minutos até ficar translúcida. Adicione o alho e o colorau, mexa durante 1 minuto.",
+      "Junte o tomate pelado partido grosseiramente e 100 ml da água da lata. Deixe ferver e cozinhe 5 minutos em lume médio, pressionando o tomate com a colher.",
+      "Acrescente o grão-de-bico escorrido e as postas de bacalhau. Tape e cozinhe em lume médio durante 8–10 minutos, virando o bacalhau a meio, até lascar facilmente com um garfo.",
+      "Reduza para lume brando e adicione os espinafres frescos. Envolva com uma espátula e cozinhe 2 minutos até murcharem. Rectifique o sal e tempere com pimenta preta. Sirva de imediato ou divida por 4 recipientes para meal-prep."
+    ]
+  },
+  {
+    "name": "Peito de Frango Marinado com Arroz de Coentros",
+    "cuisine": "portuguese",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 1820,
+    "protein": 136,
+    "carbs": 168,
+    "fat": 56,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "fogão",
+      "meal-prep",
+      "alto-proteíno",
+      "frango",
+      "arroz"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g peito de frango",
+        "quantity": 800,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g arroz agulha",
+        "quantity": 300,
+        "unit": "g",
+        "name": "arroz agulha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30g coentros frescos",
+        "quantity": 30,
+        "unit": "g",
+        "name": "coentros frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 limão (sumo + raspa)",
+        "quantity": 1,
+        "unit": "unidade",
+        "name": "limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho",
+        "quantity": 4,
+        "unit": "dentes",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "50ml azeite",
+        "quantity": 50,
+        "unit": "ml",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "600ml caldo de galinha (sem sal adicionado)",
+        "quantity": 600,
+        "unit": "ml",
+        "name": "caldo de galinha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher de chá de pimenta preta",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Prepare a marinada: numa taça misture 30 ml de azeite, sumo e raspa do limão, 3 dentes de alho esmagados, cominhos, paprika, 1/2 colher de chá de sal e pimenta. Mergulhe os peitos de frango e marine pelo menos 10 minutos (ou de véspera no frigorífico).",
+      "Enquanto o frango marina, coloque o caldo de galinha a ferver numa panela. Adicione o arroz, o dente de alho restante inteiro e 1/2 colher de chá de sal. Tape, reduza para lume brando e cozinhe 12 minutos até o caldo ser absorvido.",
+      "Aqueça uma frigideira antiaderente com os restantes 20 ml de azeite em lume alto. Grelhe os peitos de frango 4–5 minutos de cada lado, até apresentarem temperatura interna de 75 °C. Retire para uma tábua.",
+      "Retire o dente de alho inteiro do arroz. Pique grosseiramente os coentros frescos e envolva no arroz fora do lume. Tape e deixe repousar 2 minutos.",
+      "Fatie o frango em tiras diagonais. Divida o arroz de coentros e o frango por 4 recipientes de meal-prep. Junte uma fatia de limão a cada recipiente para frescura."
+    ]
+  },
+  {
+    "name": "Atum com Feijão Verde e Ovo Cozido",
+    "cuisine": "portuguese",
+    "time_min": 15,
+    "servings": 2,
+    "calories": 740,
+    "protein": 66,
+    "carbs": 28,
+    "fat": 38,
+    "proteins": [
+      "tuna",
+      "eggs"
+    ],
+    "tags": [
+      "sem-forno",
+      "rápido",
+      "alto-proteíno",
+      "sem-glúten",
+      "meal-prep",
+      "frio",
+      "peixe"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "320g atum em água (escorrido, 2 latas de 160g)",
+        "quantity": 320,
+        "unit": "g",
+        "name": "atum em água (em lata)",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g feijão verde",
+        "quantity": 300,
+        "unit": "g",
+        "name": "feijão verde",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 ovos grandes",
+        "quantity": 4,
+        "unit": "unidades",
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g tomate cherry",
+        "quantity": 100,
+        "unit": "g",
+        "name": "tomate cherry",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 cebola roxa (60g)",
+        "quantity": 60,
+        "unit": "g",
+        "name": "cebola roxa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30ml azeite",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "15ml vinagre de maçã",
+        "quantity": 15,
+        "unit": "ml",
+        "name": "vinagre de maçã",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de mostarda de Dijon",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "mostarda de Dijon",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher de chá de sal",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 colher de chá de pimenta preta",
+        "quantity": 0.25,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Coloque os ovos numa panela com água fria a cobrir. Leve a ferver em lume alto; assim que ferver, reduza para lume médio e cozinhe exactamente 9 minutos para gema firme. Transfira de imediato para uma taça com água gelada e deixe arrefecer 5 minutos.",
+      "Enquanto os ovos cozem, apare o feijão verde e corte em pedaços de 4 cm. Coza em água a ferver com uma pitada de sal durante 4–5 minutos até ficarem tenros mas crocantes. Escorra e passe por água fria para parar a cozedura.",
+      "Prepare o molho: numa taça pequena misture o azeite, o vinagre de maçã, a mostarda de Dijon, 1/2 colher de chá de sal e a pimenta preta. Bata com um garfo até emulsionar.",
+      "Descasque os ovos e corte ao meio. Fatie a cebola roxa em meias-luas finas; corte os tomates cherry ao meio. Escorra bem o atum.",
+      "Monte as taças: divida o feijão verde entre 2 recipientes, adicione o atum desfiado, os tomates cherry, a cebola roxa e os ovos cozidos. Regue com o molho de mostarda e sirva frio. Conserva-se 2 dias no frigorífico (molho à parte)."
+    ]
+  },
+  {
+    "name": "Açorda de Camarão Fit",
+    "cuisine": "portuguese",
+    "time_min": 20,
+    "servings": 2,
+    "calories": 620,
+    "protein": 58,
+    "carbs": 52,
+    "fat": 18,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "português",
+      "alto-proteíno",
+      "rápido",
+      "peixe",
+      "sopa",
+      "mel-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "400g camarão descascado cru (congelado ou fresco)",
+        "quantity": 400,
+        "unit": "g",
+        "name": "camarão descascado cru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "120g pão alentejano (ou pão de mistura, de véspera)",
+        "quantity": 120,
+        "unit": "g",
+        "name": "pão alentejano",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 ovos grandes",
+        "quantity": 3,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho",
+        "quantity": 4,
+        "unit": "dentes",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "600ml caldo de marisco (ou caldo de legumes)",
+        "quantity": 600,
+        "unit": "ml",
+        "name": "caldo de marisco",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "20g coentros frescos",
+        "quantity": 20,
+        "unit": "g",
+        "name": "coentros frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "25ml azeite extra virgem",
+        "quantity": 25,
+        "unit": "ml",
+        "name": "azeite extra virgem",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de pimentão-doce",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "pimentão-doce",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher chá de pimenta preta moída",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta moída",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Numa frigideira larga ou tacho, aqueça o azeite em lume médio-alto. Adicione os 4 dentes de alho laminados e saltei durante 1 minuto até dourarem ligeiramente.",
+      "Junte os 400g de camarão, tempere com o pimentão-doce e a pimenta preta e cozinhe 2–3 minutos até ficarem rosados. Reserve os camarões.",
+      "No mesmo tacho, adicione os 600ml de caldo quente e deixe levantar fervura. Parta o pão em pedaços grosseiros (±3cm) e adicione ao caldo. Mexa bem e deixe o pão absorver o líquido durante 2 minutos.",
+      "Bata os 3 ovos num copo e verta-os em fio sobre a açorda fora do lume, mexendo constantemente para criar filamentos cremosos. Volte ao lume brando 30 segundos apenas.",
+      "Reincorpore os camarões reservados, adicione os coentros frescos picados grosseiramente e rectifique o sal. Sirva imediatamente ou armazene em caixas herméticas até 3 dias no frigorífico."
+    ]
+  },
+  {
+    "name": "Caldo Verde com Chouriço",
+    "cuisine": "portuguese",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 880,
+    "protein": 44,
+    "carbs": 96,
+    "fat": 32,
+    "proteins": [
+      "pork"
+    ],
+    "tags": [
+      "português",
+      "sopa",
+      "alto-proteíno",
+      "forno",
+      "meal-prep",
+      "sem-glúten"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g batata (variedade Agria ou semelhante), descascada e cortada em cubos",
+        "quantity": 800,
+        "unit": "g",
+        "name": "batata",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g couve-galega (couve para caldo verde) em tiras finas",
+        "quantity": 300,
+        "unit": "g",
+        "name": "couve-galega",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "180g chouriço de carne (meio-gordo), em rodelas finas",
+        "quantity": 180,
+        "unit": "g",
+        "name": "chouriço de carne",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola média (±150g), picada",
+        "quantity": 150,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho",
+        "quantity": 3,
+        "unit": "dentes",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1.2L caldo de galinha (sem sal adicionado)",
+        "quantity": 1200,
+        "unit": "ml",
+        "name": "caldo de galinha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30ml azeite extra virgem",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "azeite extra virgem",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher chá de pimenta preta moída",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta moída",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Num tacho grande, aqueça o azeite em lume médio. Refogue a cebola picada e os 3 dentes de alho esmagados durante 3 minutos até ficarem translúcidos.",
+      "Adicione as rodelas de chouriço e salteie 2 minutos para que largue a gordura e o sabor. Retire metade das rodelas de chouriço e reserve para decorar.",
+      "Junte os cubos de batata e os 1.2L de caldo de galinha. Tempere com 1 colher chá de sal e ½ colher chá de pimenta. Tape e cozinhe em lume médio-alto durante 15 minutos, até a batata estar macia.",
+      "Triture a sopa com varinha mágica diretamente no tacho até obter um creme liso e homogéneo. Se ficar muito espessa, adicione mais 100–150ml de água quente.",
+      "Adicione as tiras de couve-galega ao creme quente, tape o tacho e cozinhe mais 4–5 minutos em lume brando, mantendo a couve verde e ligeiramente crocante.",
+      "Sirva com as rodelas de chouriço reservadas por cima. Divide em 4 caixas e conserva no frigorífico até 4 dias ou congela até 2 meses."
+    ]
+  },
+  {
+    "name": "Ovos Mexidos com Farinheira e Legumes",
+    "cuisine": "portuguese",
+    "time_min": 15,
+    "servings": 2,
+    "calories": 680,
+    "protein": 38,
+    "carbs": 18,
+    "fat": 50,
+    "proteins": [
+      "eggs",
+      "pork"
+    ],
+    "tags": [
+      "português",
+      "rápido",
+      "alto-proteíno",
+      "uma-frigideira",
+      "sem-glúten",
+      "pequeno-almoço",
+      "meal-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "6 ovos grandes",
+        "quantity": 6,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "120g farinheira (sem pele)",
+        "quantity": 120,
+        "unit": "g",
+        "name": "farinheira",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 pimento vermelho médio (±150g), em cubos pequenos",
+        "quantity": 150,
+        "unit": "g",
+        "name": "pimento vermelho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g espinafres frescos baby",
+        "quantity": 100,
+        "unit": "g",
+        "name": "espinafres frescos baby",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola pequena (±100g), em meias luas finas",
+        "quantity": 100,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "10ml azeite extra virgem",
+        "quantity": 10,
+        "unit": "ml",
+        "name": "azeite extra virgem",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher chá de sal",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher chá de pimenta preta moída",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta moída",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de pimentão-doce fumado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "pimentão-doce fumado",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Aqueça o azeite numa frigideira antiaderente grande em lume médio. Adicione a cebola em meias luas e o pimento vermelho em cubos e refogue durante 4–5 minutos até amolecerem.",
+      "Retire a pele da farinheira e desintegre-a com um garfo. Adicione-a à frigideira e mexa durante 2 minutos, deixando que desfaça e distribua uniformemente com os legumes.",
+      "Junte os espinafres frescos e misture 1 minuto até murcharem. Tempere com o pimentão-doce fumado, o sal e a pimenta preta.",
+      "Numa tigela, bata os 6 ovos com um garfo durante 30 segundos. Verta sobre os legumes e a farinheira em lume brando, mexendo suavemente com espátula em movimentos circulares lentos durante 2–3 minutos, retirando do lume quando os ovos estiverem cremosos mas ainda ligeiramente húmidos.",
+      "Sirva imediatamente acompanhado de pão de centeio, ou distribua em 2 caixas herméticas para consumir frio ou reaquecido no micro-ondas a 600W durante 90 segundos."
+    ]
+  },
+  {
+    "name": "Bifana Magra no Forno com Courgette",
+    "cuisine": "portuguese",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 1120,
+    "protein": 128,
+    "carbs": 24,
+    "fat": 52,
+    "proteins": [
+      "pork"
+    ],
+    "tags": [
+      "português",
+      "forno",
+      "alto-proteíno",
+      "meal-prep",
+      "sem-glúten",
+      "magro"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g lombo de porco (bifanas, fatias finas ±1cm)",
+        "quantity": 800,
+        "unit": "g",
+        "name": "lombo de porco (bifanas)",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "500g courgette (2 médias), em meias luas de 1cm",
+        "quantity": 500,
+        "unit": "g",
+        "name": "courgette",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola grande (±200g), em rodelas",
+        "quantity": 200,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho",
+        "quantity": 4,
+        "unit": "dentes",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "80ml vinho branco seco",
+        "quantity": 80,
+        "unit": "ml",
+        "name": "vinho branco seco",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30ml azeite extra virgem",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "azeite extra virgem",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres chá de massa de pimentão",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "massa de pimentão",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de pimentão-doce fumado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "pimentão-doce fumado",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher chá de pimenta preta moída",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta preta moída",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "15g salsa fresca picada",
+        "quantity": 15,
+        "unit": "g",
+        "name": "salsa fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Pré-aqueça o forno a 200°C (ventilação). Numa tigela, misture o azeite, a massa de pimentão, o pimentão-doce fumado, os cominhos, o sal e a pimenta preta. Pique finamente os 4 dentes de alho e incorpore na marinada.",
+      "Adicione as bifanas à marinada e massaje bem com as mãos durante 1 minuto para garantir que toda a superfície fica coberta. Reserve 5 minutos enquanto prepara os legumes.",
+      "Numa assadeira grande (±35×25cm), espalhe as rodelas de cebola e as meias luas de courgette. Regue com o vinho branco e distribua os legumes uniformemente.",
+      "Disponha as bifanas marinadas sobre os legumes numa só camada. Verta qualquer marinada restante por cima.",
+      "Leve ao forno a 200°C durante 18–20 minutos, virando as bifanas a meio da cozedura (ao minuto 10), até estarem douradas e os legumes levemente caramelizados. A temperatura interna da carne deve atingir os 70°C.",
+      "Retire do forno, deixe repousar 3 minutos e polvilhe com a salsa fresca picada. Divida em 4 caixas com os legumes e o molho formado na assadeira. Conserva no frigorífico até 4 dias."
+    ]
+  },
+  {
+    "name": "Dal de Lentilhas Vermelhas com Espinafres",
+    "cuisine": "indian",
+    "time_min": 25,
+    "servings": 4,
+    "calories": 848,
+    "protein": 52,
+    "carbs": 116,
+    "fat": 16,
+    "proteins": [
+      "legumes"
+    ],
+    "tags": [
+      "vegan",
+      "vegetariano",
+      "sem-glúten",
+      "alto-proteíno",
+      "legumes",
+      "rápido",
+      "meal-prep",
+      "indiano"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "300g lentilhas vermelhas",
+        "quantity": 300,
+        "unit": "g",
+        "name": "lentilhas vermelhas",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g espinafres frescos",
+        "quantity": 150,
+        "unit": "g",
+        "name": "espinafres frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola grande (180g)",
+        "quantity": 180,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho (12g)",
+        "quantity": 12,
+        "unit": "g",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "20g gengibre fresco",
+        "quantity": 20,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g tomate pelado em lata",
+        "quantity": 400,
+        "unit": "g",
+        "name": "tomate pelado em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400ml leite de coco light",
+        "quantity": 400,
+        "unit": "ml",
+        "name": "leite de coco light",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de cominhos em pó",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de cúrcuma",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de coentros em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "coentros em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de garam masala",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de pimenta caiena",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "pimenta caiena",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "700ml água",
+        "quantity": 700,
+        "unit": "ml",
+        "name": "água",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Lavar as lentilhas vermelhas em água fria até a água sair limpa. Reservar.",
+      "Numa panela grande, aquecer o azeite em lume médio-alto. Adicionar a cebola picada e refogar durante 5 minutos até dourar. Juntar o alho esmagado e o gengibre ralado e cozinhar mais 1 minuto.",
+      "Adicionar os cominhos, a cúrcuma, os coentros, o garam masala e a pimenta caiena. Mexer durante 30 segundos até as especiarias libertarem aroma.",
+      "Juntar o tomate pelado esmagado com as mãos, as lentilhas escorridas, o leite de coco e os 700ml de água. Temperar com 1 colher de chá de sal. Levar a ferver.",
+      "Reduzir para lume médio e cozinhar sem tampa durante 15 minutos, mexendo de vez em quando, até as lentilhas estarem completamente desfeitas e o dal estiver cremoso.",
+      "Incorporar os espinafres frescos e mexer até murcharem completamente (cerca de 2 minutos). Retificar o sal e servir de imediato ou dividir em 4 marmitas."
+    ]
+  },
+  {
+    "name": "Frango Tikka Masala Fit",
+    "cuisine": "indian",
+    "time_min": 35,
+    "servings": 4,
+    "calories": 1148,
+    "protein": 148,
+    "carbs": 36,
+    "fat": 40,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "alto-proteíno",
+      "sem-glúten",
+      "meal-prep",
+      "indiano",
+      "frigideira"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "900g peito de frango",
+        "quantity": 900,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "250g iogurte grego natural 0%",
+        "quantity": 250,
+        "unit": "g",
+        "name": "iogurte grego natural 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g tomate pelado em lata",
+        "quantity": 400,
+        "unit": "g",
+        "name": "tomate pelado em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola grande (180g)",
+        "quantity": 180,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho (16g)",
+        "quantity": 16,
+        "unit": "g",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "25g gengibre fresco",
+        "quantity": 25,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100ml leite de coco light",
+        "quantity": 100,
+        "unit": "ml",
+        "name": "leite de coco light",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de sopa de extrato de tomate",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "extrato de tomate",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de garam masala",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de paprika fumada",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cúrcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "0.5 colher de chá de pimenta caiena",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta caiena",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cortar o peito de frango em cubos de 3 cm. Numa tigela, misturar 150g de iogurte grego com 1 colher de chá de garam masala, 1 colher de chá de paprika, a cúrcuma e 0,5 colher de chá de sal. Adicionar o frango, envolver bem e marinar 10 minutos.",
+      "Aquecer 1 colher de sopa de azeite numa frigideira antiaderente grande em lume alto. Grelhar os cubos de frango marinados em duas fornadas, 3–4 minutos por lado, até ficarem dourados. Reservar.",
+      "Na mesma frigideira, reduzir para lume médio. Adicionar a restante colher de sopa de azeite, a cebola picada e refogar 5 minutos. Juntar o alho e o gengibre ralados e cozinhar 1 minuto.",
+      "Adicionar o extrato de tomate, 1 colher de chá de garam masala, 1 colher de chá de paprika e a caiena. Mexer 30 segundos. Juntar o tomate pelado esmagado, o leite de coco e 0,5 colher de chá de sal. Cozinhar 8 minutos até o molho engrossar.",
+      "Fora do lume, incorporar os 100g de iogurte restantes no molho, mexendo bem. Voltar a colocar o frango grelhado na frigideira, envolver no molho e aquecer em lume baixo durante 3 minutos. Dividir em 4 marmitas."
+    ]
+  },
+  {
+    "name": "Chana Masala",
+    "cuisine": "indian",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 784,
+    "protein": 36,
+    "carbs": 116,
+    "fat": 16,
+    "proteins": [
+      "legumes"
+    ],
+    "tags": [
+      "vegan",
+      "vegetariano",
+      "sem-glúten",
+      "alto-proteíno",
+      "legumes",
+      "meal-prep",
+      "indiano"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g grão-de-bico cozido em lata (2 latas)",
+        "quantity": 800,
+        "unit": "g",
+        "name": "grão-de-bico cozido em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g tomate pelado em lata",
+        "quantity": 400,
+        "unit": "g",
+        "name": "tomate pelado em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 cebolas médias (300g)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho (16g)",
+        "quantity": 16,
+        "unit": "g",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "25g gengibre fresco",
+        "quantity": 25,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 malagueta verde fresca",
+        "quantity": 1,
+        "unit": null,
+        "name": "malagueta verde fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de garam masala",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de cominhos em pó",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de coentros em pó",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "coentros em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cúrcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de sopa de sumo de limão",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "sumo de limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "200ml água",
+        "quantity": 200,
+        "unit": "ml",
+        "name": "água",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Escorrer e lavar o grão-de-bico das latas. Reservar. Picar as cebolas finamente, ralar o alho e o gengibre, e cortar a malagueta em rodelas finas (retirar as sementes para menos picante).",
+      "Aquecer o azeite em lume médio-alto numa panela larga. Adicionar a cebola e refogar 7 minutos, mexendo frequentemente, até ficar bem dourada e caramelizada.",
+      "Juntar o alho, o gengibre e a malagueta. Cozinhar 1 minuto. Adicionar os cominhos, os coentros, a cúrcuma e a paprika; mexer 30 segundos até perfumar.",
+      "Incorporar o tomate pelado esmagado, os 200ml de água e o sal. Cozinhar em lume médio durante 5 minutos até o molho reduzir ligeiramente.",
+      "Adicionar o grão-de-bico escorrido. Mexer bem, cobrir parcialmente e cozinhar 10 minutos em lume médio-baixo até o molho engrossar e o grão absorver os sabores.",
+      "Retirar do lume, adicionar o garam masala e o sumo de limão. Mexer e retificar o sal. Dividir em 4 marmitas. Guardar no frigorífico até 4 dias."
+    ]
+  },
+  {
+    "name": "Frango Saag",
+    "cuisine": "indian",
+    "time_min": 35,
+    "servings": 4,
+    "calories": 1060,
+    "protein": 140,
+    "carbs": 24,
+    "fat": 40,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "alto-proteíno",
+      "sem-glúten",
+      "meal-prep",
+      "indiano",
+      "espinafres"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "850g peito de frango",
+        "quantity": 850,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g espinafres frescos",
+        "quantity": 400,
+        "unit": "g",
+        "name": "espinafres frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 cebolas médias (300g)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho (16g)",
+        "quantity": 16,
+        "unit": "g",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "25g gengibre fresco",
+        "quantity": 25,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g iogurte grego natural 0%",
+        "quantity": 150,
+        "unit": "g",
+        "name": "iogurte grego natural 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 malagueta verde fresca",
+        "quantity": 1,
+        "unit": null,
+        "name": "malagueta verde fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de garam masala",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de coentros em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "coentros em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cúrcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "0.5 colher de chá de pimenta caiena",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta caiena",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "150ml água",
+        "quantity": 150,
+        "unit": "ml",
+        "name": "água",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cortar o peito de frango em cubos de 3 cm. Temperar com 1 colher de chá de garam masala, a cúrcuma e 0,5 colher de chá de sal. Reservar.",
+      "Branquear os espinafres frescos em água a ferver durante 1 minuto, escorrer, arrefecer em água fria e espremer bem. Triturar com a malagueta e os 150ml de água até obter um puré homogéneo. Reservar.",
+      "Aquecer o azeite numa panela larga em lume médio-alto. Adicionar a cebola picada e refogar 6 minutos até dourar. Juntar o alho esmagado e o gengibre ralado, cozinhar 1 minuto.",
+      "Adicionar os cominhos, os coentros e a restante caiena; mexer 30 segundos. Juntar os cubos de frango e selar em lume alto durante 4 minutos, virando a meio.",
+      "Incorporar o puré de espinafres, mexer bem e cozinhar em lume médio durante 10 minutos com tampa, até o frango estar completamente cozido (temperatura interna ≥ 75°C).",
+      "Retirar do lume. Adicionar o iogurte grego e o restante garam masala, mexendo suavemente. Retificar o sal e dividir em 4 marmitas."
+    ]
+  },
+  {
+    "name": "Arroz de Frango Biryani Simplificado",
+    "cuisine": "indian",
+    "time_min": 40,
+    "servings": 4,
+    "calories": 1668,
+    "protein": 148,
+    "carbs": 196,
+    "fat": 32,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "arroz",
+      "alto-proteíno",
+      "meal-prep",
+      "indiano",
+      "uma-panela"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "700g peito de frango",
+        "quantity": 700,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g arroz basmati",
+        "quantity": 400,
+        "unit": "g",
+        "name": "arroz basmati",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g iogurte grego natural 0%",
+        "quantity": 200,
+        "unit": "g",
+        "name": "iogurte grego natural 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 cebolas grandes (360g)",
+        "quantity": 360,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 dentes de alho (16g)",
+        "quantity": 16,
+        "unit": "g",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30g gengibre fresco",
+        "quantity": 30,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 tomate médio (150g)",
+        "quantity": 150,
+        "unit": "g",
+        "name": "tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "20g coentros frescos",
+        "quantity": 20,
+        "unit": "g",
+        "name": "coentros frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de garam masala",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cúrcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "4 vagens de cardamomo",
+        "quantity": 4,
+        "unit": null,
+        "name": "cardamomo em vagens",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 pau de canela",
+        "quantity": 1,
+        "unit": null,
+        "name": "pau de canela",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1.5 colheres de chá de sal",
+        "quantity": 1.5,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "700ml água quente",
+        "quantity": 700,
+        "unit": "ml",
+        "name": "água",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Lavar o arroz basmati em água fria até a água sair limpa; deixar de molho 10 minutos e escorrer. Cortar o frango em cubos de 3 cm. Marinar o frango com o iogurte, 1 colher de chá de garam masala, a cúrcuma, a paprika e 0,5 colher de chá de sal durante 10 minutos.",
+      "Aquecer o azeite numa panela larga com tampa em lume médio-alto. Adicionar as vagens de cardamomo esmagadas e o pau de canela; fritar 30 segundos. Adicionar a cebola fatiada em meias-luas e refogar 8 minutos até ficar bem dourada.",
+      "Juntar o alho esmagado, o gengibre ralado e o tomate picado. Cozinhar 3 minutos, mexendo, até o tomate desintegrar.",
+      "Adicionar o frango marinado com toda a marinada. Selar em lume alto durante 5 minutos, mexendo de vez em quando, até o frango mudar de cor por fora.",
+      "Adicionar o arroz escorrido sobre o frango. Verter os 700ml de água quente, o restante garam masala, os cominhos e 1 colher de chá de sal. Mexer uma única vez, levar a ferver, depois reduzir para o mínimo e cobrir com tampa.",
+      "Cozinhar em lume mínimo durante 15 minutos sem abrir a tampa. Retirar do lume e deixar repousar com tampa durante 5 minutos. Abrir, soltar o arroz com um garfo, retirar o pau de canela e as vagens, e polvilhar com os coentros picados. Dividir em 4 marmitas."
+    ]
+  },
+  {
+    "name": "Tigela de Salmão Teriyaki com Arroz e Brócolo",
+    "cuisine": "international",
+    "time_min": 25,
+    "servings": 2,
+    "calories": 920,
+    "protein": 72,
+    "carbs": 90,
+    "fat": 26,
+    "proteins": [
+      "salmon"
+    ],
+    "tags": [
+      "peixe",
+      "alto-proteíno",
+      "meal-prep",
+      "tigela",
+      "sem-glúten"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "400g filete de salmão (sem pele)",
+        "quantity": 400,
+        "unit": "g",
+        "name": "filete de salmão",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "160g arroz branco de grão longo (peso seco)",
+        "quantity": 160,
+        "unit": "g",
+        "name": "arroz branco de grão longo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g brócolo (floretes)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "brócolo",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres de sopa de molho de soja",
+        "quantity": 3,
+        "unit": "colher sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de sopa de mel",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de sopa de vinagre de arroz",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "vinagre de arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho picado",
+        "quantity": 1,
+        "unit": "dente",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de gengibre em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de amido de milho (Maizena)",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "amido de milho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de sopa de azeite",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 cebolinhas verdes fatiadas (para servir)",
+        "quantity": 2,
+        "unit": null,
+        "name": "cebolinha verde",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de chá de sementes de sésamo (para servir)",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sementes de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Cozinha o arroz segundo as instruções da embalagem (cerca de 12 min). Reserva tapado para manter o calor.",
+      "Num tacho pequeno, mistura o molho de soja, o mel, o vinagre de arroz, o alho picado, o gengibre e o amido de milho com 2 colheres de sopa de água. Leva ao lume médio durante 2–3 min, mexendo sempre, até engrossar. Reserva.",
+      "Coze o brócolo a vapor ou em água a ferver com sal durante 4 min, até estar tenro mas crocante. Escorre e reserva.",
+      "Corta o salmão em cubos de 3 cm. Aquece o azeite numa frigideira antiaderente em lume médio-alto. Cozinha o salmão 2 min de cada lado até dourar.",
+      "Reduz para lume médio, junta o molho teriyaki à frigideira e envolve delicadamente o salmão durante 1 min para glazear.",
+      "Divide o arroz pelas tigelas, adiciona o brócolo e o salmão teriyaki por cima. Finaliza com a cebolinha fatiada e as sementes de sésamo."
+    ]
+  },
+  {
+    "name": "Shakshuka de Tomate e Pimento",
+    "cuisine": "international",
+    "time_min": 20,
+    "servings": 2,
+    "calories": 530,
+    "protein": 30,
+    "carbs": 30,
+    "fat": 30,
+    "proteins": [
+      "eggs"
+    ],
+    "tags": [
+      "vegetariano",
+      "rápido",
+      "uma-frigideira",
+      "alto-proteíno",
+      "sem-glúten",
+      "meal-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "6 ovos grandes",
+        "quantity": 6,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g tomate pelado em lata",
+        "quantity": 400,
+        "unit": "g",
+        "name": "tomate pelado em lata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 pimento vermelho (≈180g), cortado em tiras finas",
+        "quantity": 180,
+        "unit": "g",
+        "name": "pimento vermelho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola média (≈120g), picada",
+        "quantity": 120,
+        "unit": "g",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho picados",
+        "quantity": 3,
+        "unit": "dente",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher de chá de piri-piri em flocos",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "piri-piri em flocos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher de chá de sal",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "60g queijo feta esfarelado",
+        "quantity": 60,
+        "unit": "g",
+        "name": "queijo feta",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "10g salsa fresca picada",
+        "quantity": 10,
+        "unit": "g",
+        "name": "salsa fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Aquece o azeite numa frigideira larga (com tampa) em lume médio. Junta a cebola e o pimento e refoga durante 5 min, mexendo, até amolecer.",
+      "Adiciona o alho, os cominhos, a paprika fumada, o piri-piri e o sal. Mexe durante 1 min até libertar aroma.",
+      "Junta o tomate pelado e esmaga os tomates com uma colher de pau. Deixa cozinhar em lume médio durante 5 min, mexendo ocasionalmente, até o molho reduzir ligeiramente.",
+      "Com uma colher, abre 6 pequenas cavidades no molho e parte um ovo em cada uma. Tapa a frigideira e cozinha em lume médio-baixo durante 5–6 min, até as claras estarem firmes mas as gemas ainda cremosas.",
+      "Retira do lume. Distribui o queijo feta esfarelado e a salsa fresca por cima e serve imediatamente, direto da frigideira."
+    ]
+  },
+  {
+    "name": "Tacos de Frango com Guacamole Simples",
+    "cuisine": "international",
+    "time_min": 25,
+    "servings": 4,
+    "calories": 1560,
+    "protein": 116,
+    "carbs": 120,
+    "fat": 60,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "alto-proteíno",
+      "meal-prep",
+      "rápido",
+      "tacos"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "700g peito de frango (sem pele e osso)",
+        "quantity": 700,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "8 tortilhas de trigo pequenas (≈20cm)",
+        "quantity": 8,
+        "unit": null,
+        "name": "tortilhas de trigo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 abacates maduros (≈300g polpa)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "abacate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 lima (sumo)",
+        "quantity": 1,
+        "unit": null,
+        "name": "lima",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "½ cebola roxa pequena (≈60g), picada finamente",
+        "quantity": 60,
+        "unit": "g",
+        "name": "cebola roxa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "15g coentros frescos picados",
+        "quantity": 15,
+        "unit": "g",
+        "name": "coentros frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 tomate (≈120g), em cubos pequenos",
+        "quantity": 120,
+        "unit": "g",
+        "name": "tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de alho em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "alho em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher de chá de orégãos secos",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "orégãos secos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "¾ colher de chá de sal",
+        "quantity": 0.75,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "¼ colher de chá de pimenta preta",
+        "quantity": 0.25,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "100g alface iceberg fatiada",
+        "quantity": 100,
+        "unit": "g",
+        "name": "alface iceberg",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Corta o peito de frango em tiras de 1 cm. Numa tigela, mistura o azeite, os cominhos, a paprika, o alho em pó, os orégãos, ½ colher de chá de sal e a pimenta preta. Envolve bem o frango nesta marinada.",
+      "Aquece uma frigideira antiaderente em lume alto. Cozinha o frango em camada única durante 4–5 min, virando a meio, até dourar e atingir os 74 °C no interior. Não enches demasiado a frigideira — cozinha em duas levas se necessário.",
+      "Prepara o guacamole: esmaga a polpa dos abacates num garfo até ficar cremosa. Junta metade da cebola roxa, os coentros, o tomate, o sumo da lima e ¼ de colher de chá de sal. Mistura e prova.",
+      "Aquece as tortilhas numa frigideira seca em lume médio, 30 segundos de cada lado, até ficarem levemente tostadas.",
+      "Monta os tacos: coloca alface fatiada em cada tortilha, depois o frango temperado e uma generosa colher de guacamole. Finaliza com a restante cebola roxa picada e coentros frescos."
+    ]
+  },
+  {
+    "name": "Tigela Mediterrânea de Frango com Tzatziki",
+    "cuisine": "international",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 1740,
+    "protein": 152,
+    "carbs": 112,
+    "fat": 64,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "alto-proteíno",
+      "meal-prep",
+      "forno",
+      "tigela",
+      "mediterrâneo",
+      "sem-glúten"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g peito de frango (sem pele e osso)",
+        "quantity": 800,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "240g arroz basmati (peso seco)",
+        "quantity": 240,
+        "unit": "g",
+        "name": "arroz basmati",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g pepino (≈1 pepino médio)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "pepino",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g iogurte grego natural (0% ou 2% gordura)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "iogurte grego natural",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": "dente",
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "200g tomate-cereja, cortados ao meio",
+        "quantity": 200,
+        "unit": "g",
+        "name": "tomate-cereja",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "80g azeitonas kalamata sem caroço",
+        "quantity": 80,
+        "unit": "g",
+        "name": "azeitonas kalamata",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g queijo feta em cubos",
+        "quantity": 100,
+        "unit": "g",
+        "name": "queijo feta",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres de sopa de azeite",
+        "quantity": 3,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de orégãos secos",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "orégãos secos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de paprika fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprika fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de cominhos em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "½ colher de chá de cúrcuma",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "cúrcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "¼ colher de chá de pimenta preta",
+        "quantity": 0.25,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "15g folhas de hortelã fresca",
+        "quantity": 15,
+        "unit": "g",
+        "name": "hortelã fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 limão (sumo)",
+        "quantity": 1,
+        "unit": null,
+        "name": "limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Pré-aquece o forno a 220 °C (ventilação). Corta o frango em cubos de 3 cm. Mistura numa tigela com 2 colheres de sopa de azeite, os orégãos, a paprika, os cominhos, a cúrcuma, ¾ de colher de chá de sal e a pimenta preta. Espalha numa assadeira sem sobrepor e assa durante 18–20 min, virando a meio, até dourar.",
+      "Enquanto o frango assa, cozinha o arroz basmati: leva a ferver 480 ml de água com ¼ de colher de chá de sal, junta o arroz, tapa e cozinha em lume baixo durante 12 min. Desliga e deixa repousar 5 min tapado.",
+      "Prepara o tzatziki: rala o pepino grosseiramente e espreme-o com as mãos para retirar o excesso de água. Mistura com o iogurte grego, 1 dente de alho picado, o sumo de ½ limão, 1 colher de sopa de azeite e ¼ de colher de chá de sal. Reserva no frio.",
+      "Prepara os acompanhamentos: corta os tomates-cereja ao meio e mistura com o restante alho picado e o sumo do restante limão. Separa as azeitonas e o feta em cubos.",
+      "Monta as tigelas: divide o arroz basmati em 4 tigelas, adiciona os cubos de frango assado, os tomates-cereja, as azeitonas e o feta. Coloca 2–3 colheres de sopa generosas de tzatziki por cima e finaliza com as folhas de hortelã fresca."
+    ]
+  },
+  {
+    "name": "Pad Thai de Frango com Ovos",
+    "cuisine": "international",
+    "time_min": 25,
+    "servings": 3,
+    "calories": 1155,
+    "protein": 87,
+    "carbs": 126,
+    "fat": 31,
+    "proteins": [
+      "chicken",
+      "eggs"
+    ],
+    "tags": [
+      "frango",
+      "ovos",
+      "massa",
+      "asiático",
+      "alto-proteíno",
+      "rápido",
+      "uma-frigideira"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "450g peito de frango (em tiras finas)",
+        "quantity": 450,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g massa de arroz (pad thai)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "massa de arroz pad thai",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 ovos grandes",
+        "quantity": 3,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g rebentos de soja",
+        "quantity": 100,
+        "unit": "g",
+        "name": "rebentos de soja",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres de sopa de molho de peixe",
+        "quantity": 3,
+        "unit": "colher sopa",
+        "name": "molho de peixe",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de molho de soja",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de sopa de sumo de lima",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "sumo de lima",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de sopa de pasta de tamarindo",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "pasta de tamarindo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de sopa de açúcar mascavado",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "açúcar mascavado",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho picados",
+        "quantity": 3,
+        "unit": null,
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "4 cebolinhas verdes em rodelas",
+        "quantity": 4,
+        "unit": null,
+        "name": "cebolinha verde",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "40g amendoins torrados sem sal",
+        "quantity": 40,
+        "unit": "g",
+        "name": "amendoins torrados",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de óleo de girassol",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "óleo de girassol",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Demolha a massa de arroz em água fria durante 20 minutos. Escorre e reserva.",
+      "Mistura o molho de peixe, molho de soja, sumo de lima, pasta de tamarindo e açúcar mascavado numa taça pequena. Reserva.",
+      "Aquece 1 colher de sopa de óleo numa wok a lume alto. Salteia o frango em tiras com o alho picado durante 5–6 minutos até dourar. Retira e reserva.",
+      "Na mesma wok, adiciona a restante colher de óleo, parte a lateral para o lado e mexe os ovos até ficarem quase cozinhados (cerca de 1 minuto). Incorpora com o frango.",
+      "Junta a massa escorrida e verte o molho por cima. Salteia tudo durante 3–4 minutos, mexendo sempre, até a massa absorver o molho.",
+      "Acrescenta os rebentos de soja e a cebolinha verde, salteia 1 minuto final. Serve com amendoins picados por cima."
+    ]
+  },
+  {
+    "name": "Burrito Bowl de Carne Picada com Feijão Preto",
+    "cuisine": "international",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 1840,
+    "protein": 116,
+    "carbs": 188,
+    "fat": 56,
+    "proteins": [
+      "beef",
+      "legumes"
+    ],
+    "tags": [
+      "carne",
+      "feijão",
+      "arroz",
+      "mexicano",
+      "alto-proteíno",
+      "meal-prep",
+      "uma-frigideira"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "600g carne de vaca picada (5% gordura)",
+        "quantity": 600,
+        "unit": "g",
+        "name": "carne de vaca picada",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "240g arroz de grão longo (cru)",
+        "quantity": 240,
+        "unit": "g",
+        "name": "arroz de grão longo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400g feijão preto cozido (lata, escorrido)",
+        "quantity": 400,
+        "unit": "g",
+        "name": "feijão preto cozido",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g milho doce em lata (escorrido)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "milho doce",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 tomates médios em cubos",
+        "quantity": 2,
+        "unit": null,
+        "name": "tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 pimento vermelho em cubos",
+        "quantity": 1,
+        "unit": null,
+        "name": "pimento vermelho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola média picada",
+        "quantity": 1,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho picados",
+        "quantity": 3,
+        "unit": null,
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de cominhos em pó",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "cominhos em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de chá de pimentão fumado",
+        "quantity": 2,
+        "unit": "colher chá",
+        "name": "pimentão fumado",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de oregãos",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "oregãos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de sopa de azeite",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "120g queijo cheddar ralado",
+        "quantity": 120,
+        "unit": "g",
+        "name": "queijo cheddar ralado",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g iogurte grego natural (0% gordura)",
+        "quantity": 150,
+        "unit": "g",
+        "name": "iogurte grego natural",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de chá de sal",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Coze o arroz em 480 ml de água com uma pitada de sal a lume médio-baixo durante 16–18 minutos. Reserva com tampa.",
+      "Aquece o azeite numa frigideira grande a lume médio-alto. Refoga a cebola e o pimento vermelho durante 4 minutos até amolecerem.",
+      "Junta o alho, os cominhos, o pimentão fumado e os oregãos. Mexe 1 minuto até libertar o aroma. Adiciona a carne picada e cozinha 6–7 minutos, desfazendo com uma espátula, até dourar completamente.",
+      "Incorpora o feijão preto, o milho e o tomate em cubos. Reduz para lume médio e cozinha mais 4 minutos. Acerta com 1 colher de chá de sal.",
+      "Distribui o arroz pelos 4 bols, coloca a mistura de carne por cima. Finaliza com queijo cheddar ralado e uma colher de iogurte grego em substituição de natas azedas."
+    ]
+  },
+  {
+    "name": "Salmão com Puré de Couve-Flor e Alcaparras",
+    "cuisine": "international",
+    "time_min": 25,
+    "servings": 2,
+    "calories": 790,
+    "protein": 60,
+    "carbs": 22,
+    "fat": 52,
+    "proteins": [
+      "salmon"
+    ],
+    "tags": [
+      "peixe",
+      "salmão",
+      "baixo-carboidrato",
+      "sem-glúten",
+      "alto-proteíno",
+      "rápido",
+      "forno"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "360g filetes de salmão (2 × 180g, com pele)",
+        "quantity": 360,
+        "unit": "g",
+        "name": "filetes de salmão",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "600g couve-flor (em floretes)",
+        "quantity": 600,
+        "unit": "g",
+        "name": "couve-flor",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30g manteiga",
+        "quantity": 30,
+        "unit": "g",
+        "name": "manteiga",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "80ml leite meio-gordo",
+        "quantity": 80,
+        "unit": "ml",
+        "name": "leite meio-gordo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de alcaparras em salmoura (escorridas)",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "alcaparras",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 limão (raspa e sumo)",
+        "quantity": 1,
+        "unit": null,
+        "name": "limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres de sopa de azeite",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher de chá de sal",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 colher de chá de pimenta preta moída",
+        "quantity": 0.25,
+        "unit": "colher chá",
+        "name": "pimenta preta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "10g salsa fresca picada",
+        "quantity": 10,
+        "unit": "g",
+        "name": "salsa fresca",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Coze os floretes de couve-flor em água a ferver com uma pitada de sal durante 12 minutos até ficarem bem macios. Escorre bem.",
+      "Tritura a couve-flor cozida com a manteiga, o leite e 0,25 colher de chá de sal com uma varinha mágica até obter um puré liso. Reserva quente.",
+      "Seca os filetes de salmão com papel de cozinha. Tempera com 0,25 colher de chá de sal e 0,25 colher de chá de pimenta preta.",
+      "Aquece o azeite numa frigideira antiaderente a lume médio-alto. Coloca o salmão com a pele para baixo e cozinha 4 minutos sem mexer. Vira e cozinha mais 2–3 minutos.",
+      "Retira o salmão. Na mesma frigideira a lume médio, salteia o alho picado 30 segundos, adiciona as alcaparras e o sumo de limão. Mexe 1 minuto.",
+      "Serve o puré de couve-flor na base, coloca o salmão por cima, verte o molho de alcaparras e finaliza com raspa de limão e salsa picada."
+    ]
+  },
+  {
+    "name": "Frango com Curry Verde Tailandês e Arroz Jasmim",
+    "cuisine": "international",
+    "time_min": 30,
+    "servings": 4,
+    "calories": 1760,
+    "protein": 112,
+    "carbs": 168,
+    "fat": 64,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "frango",
+      "curry",
+      "arroz",
+      "asiático",
+      "tailandês",
+      "alto-proteíno",
+      "meal-prep",
+      "picante"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "700g peito de frango em cubos de 3 cm",
+        "quantity": 700,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g arroz jasmim (cru)",
+        "quantity": 300,
+        "unit": "g",
+        "name": "arroz jasmim",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "400ml leite de coco (lata)",
+        "quantity": 400,
+        "unit": "ml",
+        "name": "leite de coco",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "70g pasta de curry verde",
+        "quantity": 70,
+        "unit": "g",
+        "name": "pasta de curry verde",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g ervilhas congeladas",
+        "quantity": 200,
+        "unit": "g",
+        "name": "ervilhas congeladas",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g espinafres baby",
+        "quantity": 150,
+        "unit": "g",
+        "name": "espinafres baby",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebola média picada",
+        "quantity": 1,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho picados",
+        "quantity": 3,
+        "unit": null,
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "20g gengibre fresco ralado",
+        "quantity": 20,
+        "unit": "g",
+        "name": "gengibre fresco",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de molho de peixe",
+        "quantity": 2,
+        "unit": "colher sopa",
+        "name": "molho de peixe",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de sopa de sumo de lima",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "sumo de lima",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher de sopa de óleo de girassol",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "óleo de girassol",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "15g coentros frescos picados",
+        "quantity": 15,
+        "unit": "g",
+        "name": "coentros frescos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Lava o arroz jasmim em água fria até a água sair límpida. Coze com 540 ml de água e uma pitada de sal a lume baixo, tapado, durante 15 minutos. Desliga e deixa repousar 5 minutos com tampa.",
+      "Aquece o óleo de girassol numa wok ou panela larga a lume médio-alto. Refoga a cebola durante 3 minutos. Adiciona o alho e o gengibre e mexe 1 minuto até libertar o aroma.",
+      "Junta a pasta de curry verde e frita 2 minutos, mexendo sempre, até escurecer ligeiramente.",
+      "Adiciona os cubos de frango e salteia 5 minutos até ficarem brancos por fora. Verte o leite de coco e o molho de peixe, reduz para lume médio e cozinha 8 minutos.",
+      "Incorpora as ervilhas congeladas e os espinafres baby. Cozinha mais 3 minutos até as ervilhas estarem tenras e os espinafres murcharem. Finaliza com sumo de lima.",
+      "Serve sobre o arroz jasmim e decora com coentros frescos picados."
+    ]
+  },
+  {
+    "name": "Tigela de Ovos Escalfados com Abacate e Torrada de Centeio",
+    "cuisine": "neutral",
+    "time_min": 15,
+    "servings": 2,
+    "calories": 740,
+    "protein": 34,
+    "carbs": 52,
+    "fat": 42,
+    "proteins": [
+      "eggs"
+    ],
+    "tags": [
+      "rápido",
+      "alto-proteíno",
+      "vegetariano",
+      "pequeno-almoço",
+      "uma-panela"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "4 ovos grandes",
+        "quantity": 4,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 abacate médio (~200g)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "abacate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4 fatias de pão de centeio (~120g)",
+        "quantity": 120,
+        "unit": "g",
+        "name": "pão de centeio",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30ml de vinagre branco",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "vinagre branco",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de sopa de sumo de limão",
+        "quantity": 15,
+        "unit": "ml",
+        "name": "sumo de limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher de chá de flocos de malagueta",
+        "quantity": 2,
+        "unit": "g",
+        "name": "flocos de malagueta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "sal q.b.",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "pimenta preta q.b.",
+        "quantity": null,
+        "unit": null,
+        "name": "pimenta preta",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Encher uma frigideira funda com cerca de 6 cm de água e levar ao lume médio. Quando começar a ferver levemente, adicionar 30 ml de vinagre branco — isto ajuda as claras a coagularem mais rapidamente.",
+      "Partir cada ovo para uma chávena pequena separada. Com uma colher, fazer um redemoinho suave na água e deixar cair cada ovo delicadamente no centro. Escalfar 2 ovos de cada vez durante 3 minutos para a gema mole.",
+      "Enquanto os ovos escalfam, torrar as 4 fatias de pão de centeio numa torradeira ou frigideira sem gordura durante 2–3 minutos de cada lado.",
+      "Cortar o abacate ao meio, retirar o caroço e esmagar a polpa com um garfo numa tigela. Temperar com 15 ml de sumo de limão, uma pitada de sal e pimenta preta moída.",
+      "Barrar generosamente cada fatia de torrada com a pasta de abacate. Retirar os ovos escalfados com uma escumadeira, escorrer bem e pousar 2 ovos por cima de cada dose. Finalizar com os flocos de malagueta e servir de imediato."
+    ]
+  },
+  {
+    "name": "Aveia de Proteína com Banana e Manteiga de Amendoim",
+    "cuisine": "neutral",
+    "time_min": 10,
+    "servings": 2,
+    "calories": 780,
+    "protein": 52,
+    "carbs": 90,
+    "fat": 22,
+    "proteins": [
+      "eggs"
+    ],
+    "tags": [
+      "rápido",
+      "alto-proteíno",
+      "vegetariano",
+      "pequeno-almoço",
+      "sem-glúten-opcional",
+      "meal-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "160g de flocos de aveia finos",
+        "quantity": 160,
+        "unit": "g",
+        "name": "flocos de aveia finos",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "60g de proteína em pó de baunilha (whey ou vegetal)",
+        "quantity": 60,
+        "unit": "g",
+        "name": "proteína em pó sabor baunilha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 bananas médias (~240g)",
+        "quantity": 240,
+        "unit": "g",
+        "name": "banana",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de manteiga de amendoim natural (32g)",
+        "quantity": 32,
+        "unit": "g",
+        "name": "manteiga de amendoim natural",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "500ml de leite meio-gordo",
+        "quantity": 500,
+        "unit": "ml",
+        "name": "leite meio-gordo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher de chá de canela em pó",
+        "quantity": 2,
+        "unit": "g",
+        "name": "canela em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 pitada de sal",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Levar o leite ao lume médio numa panela pequena. Quando estiver quente (sem ferver), adicionar os 160 g de flocos de aveia e uma pitada de sal. Mexer continuamente durante 4–5 minutos até a aveia absorver o leite e atingir uma consistência cremosa.",
+      "Retirar a panela do lume e deixar arrefecer 1 minuto. Adicionar os 60 g de proteína em pó e a canela, mexendo vigorosamente durante 30 segundos até ficar completamente incorporada sem grumos.",
+      "Dividir a aveia por 2 taças. Cortar cada banana em rodelas e distribuir por cima de cada taça.",
+      "Deitar 16 g de manteiga de amendoim em fio sobre cada taça e servir de imediato. Para meal prep, guardar em recipientes herméticos no frigorífico até 3 dias — adicionar a banana e a manteiga de amendoim apenas na hora de comer."
+    ]
+  },
+  {
+    "name": "Iogurte Grego com Granola Crocante e Frutos Vermelhos",
+    "cuisine": "neutral",
+    "time_min": 5,
+    "servings": 2,
+    "calories": 620,
+    "protein": 42,
+    "carbs": 62,
+    "fat": 18,
+    "proteins": [
+      "eggs"
+    ],
+    "tags": [
+      "rápido",
+      "alto-proteíno",
+      "vegetariano",
+      "sem-cozinhado",
+      "lanche",
+      "pequeno-almoço",
+      "meal-prep"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "500g de iogurte grego natural 0% gordura",
+        "quantity": 500,
+        "unit": "g",
+        "name": "iogurte grego natural 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "80g de granola de aveia sem adição de açúcar",
+        "quantity": 80,
+        "unit": "g",
+        "name": "granola de aveia",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g de frutos vermelhos mistos congelados (ou frescos)",
+        "quantity": 150,
+        "unit": "g",
+        "name": "frutos vermelhos mistos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres de sopa de mel (42g)",
+        "quantity": 42,
+        "unit": "g",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "20g de sementes de chia",
+        "quantity": 20,
+        "unit": "g",
+        "name": "sementes de chia",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Se usar frutos vermelhos congelados, colocá-los numa tigela pequena e deixar descongelar 10 minutos à temperatura ambiente, ou aquecer 1 minuto no micro-ondas.",
+      "Dividir os 500 g de iogurte grego igualmente por 2 taças (250 g cada). Regar cada taça com 21 g de mel em fio.",
+      "Polvilhar 40 g de granola sobre cada taça, seguido de 10 g de sementes de chia. Distribuir os frutos vermelhos por cima.",
+      "Servir de imediato para manter a granola crocante. Para meal prep, guardar o iogurte com as sementes de chia e os frutos num recipiente hermético (máx. 2 dias) e adicionar a granola apenas na hora de comer."
+    ]
+  },
+  {
+    "name": "Frango Grelhado com Arroz Integral e Legumes Salteados",
+    "cuisine": "neutral",
+    "time_min": 35,
+    "servings": 4,
+    "calories": 1760,
+    "protein": 148,
+    "carbs": 172,
+    "fat": 40,
+    "proteins": [
+      "chicken"
+    ],
+    "tags": [
+      "meal-prep",
+      "alto-proteíno",
+      "forno",
+      "sem-glúten",
+      "frango",
+      "almoço",
+      "jantar",
+      "uma-frigideira"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "800g de peito de frango (4 unidades ~200g cada)",
+        "quantity": 800,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "300g de arroz integral",
+        "quantity": 300,
+        "unit": "g",
+        "name": "arroz integral",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g de brócolos",
+        "quantity": 200,
+        "unit": "g",
+        "name": "brócolos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "200g de cenoura (2 médias)",
+        "quantity": 200,
+        "unit": "g",
+        "name": "cenoura",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g de pimento vermelho (1 médio)",
+        "quantity": 150,
+        "unit": "g",
+        "name": "pimento vermelho",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho",
+        "quantity": 3,
+        "unit": null,
+        "name": "alho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "30ml de azeite virgem extra",
+        "quantity": 30,
+        "unit": "ml",
+        "name": "azeite virgem extra",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de páprica fumada (3g)",
+        "quantity": 3,
+        "unit": "g",
+        "name": "páprica fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher de chá de orégãos secos (2g)",
+        "quantity": 2,
+        "unit": "g",
+        "name": "orégãos secos",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "sal q.b.",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "pimenta preta q.b.",
+        "quantity": null,
+        "unit": null,
+        "name": "pimenta preta",
+        "category": "Outros",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "700ml de água (para cozer o arroz)",
+        "quantity": 700,
+        "unit": "ml",
+        "name": "água",
+        "category": "Outros",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozer o arroz integral: numa panela, levar 700 ml de água com 1 colher de chá de sal a ferver. Adicionar os 300 g de arroz, baixar para lume mínimo, tapar e cozinhar 25–28 minutos até a água ser absorvida. Reservar.",
+      "Enquanto o arroz coze, secar os peitos de frango com papel de cozinha. Temperar cada um com 3 g de páprica fumada, 2 g de orégãos, sal e pimenta preta. Esfregar bem para cobrir toda a superfície.",
+      "Aquecer uma grelha ou frigideira de fundo grosso em lume alto com 10 ml de azeite. Grelhar os peitos de frango 5–6 minutos de cada lado até a temperatura interna atingir os 75 °C. Deixar repousar 5 minutos antes de fatiar.",
+      "Na mesma frigideira, adicionar os restantes 20 ml de azeite e os 3 dentes de alho picados. Saltear em lume médio-alto 30 segundos. Adicionar a cenoura cortada em meia-lua fina e o pimento em tiras — saltear 4 minutos mexendo frequentemente.",
+      "Juntar os brócolos em floretes pequenos, temperar com uma pitada de sal e saltear mais 3 minutos até os legumes estarem tenros mas ainda crocantes.",
+      "Dividir o arroz, o frango fatiado e os legumes salteados em 4 marmitas iguais. Deixar arrefecer completamente antes de tapar. Conservar no frigorífico até 4 dias ou no congelador até 2 meses."
+    ]
+  }
+]
