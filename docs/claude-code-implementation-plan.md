@@ -800,6 +800,447 @@ When done, give me a checklist of things to test manually on a real mobile devic
 
 ---
 
+## Session 9 — Auth, persistence, and error feedback
+
+**Goal:** Google OAuth, cross-device category override persistence, toast feedback on all mutations, and a 404 page. These are the four gaps identified after Session 8 that block confident daily use.
+
+**Prerequisites:**
+- Google OAuth credentials set up in Google Cloud Console (OAuth 2.0 client ID + secret)
+- Credentials added to Supabase Auth → Providers → Google
+- `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` already set in Vercel
+
+**Prompt:**
+
+```
+Fix the four remaining gaps in the meal prep app before the 4-week test.
+
+## 1. Google OAuth
+
+Add a "Continuar com Google" button to the sign-in page (src/routes/index.tsx), below the magic link form, separated by an "ou" divider.
+
+Button style: white background, border-[#E5E7EB], flex row with a Google SVG icon (inline, standard 4-colour Google G) and the label "Continuar com Google". Full width, same height as the submit button.
+
+Implementation:
+- Call supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/auth/callback` } })
+- The existing /auth/callback route already handles the redirect — no changes needed there.
+- Disable the button while the OAuth redirect is in flight (set a loading flag on click).
+
+## 2. Toast system
+
+Create a lightweight global toast component at src/components/Toast.tsx:
+- Renders a fixed bottom-centre pill (above the bottom nav, so bottom-20 or bottom-24)
+- Accepts a message string and a variant: 'success' | 'error'
+- Success: bg-[#16A34A] text-white. Error: bg-[#DC2626] text-white.
+- Auto-dismisses after 2.5s. Animated: slide up on enter, fade out on exit (Tailwind transition classes, no library).
+- Exposed via a useToast() hook backed by a simple React context (ToastProvider wrapping the app in src/routes/__root.tsx).
+
+Wire toast feedback onto every mutation that currently has no error handling:
+
+In src/routes/app/library/index.tsx:
+- addRecipeToPlan onError → toast error "Erro ao adicionar ao plano"
+- replacePlanItem onError → toast error "Erro ao substituir receita"
+
+In src/routes/app/plan.tsx:
+- removePlanItem onError → toast error "Erro ao remover receita"
+- updatePlanMultiplier onError → toast error "Erro ao actualizar multiplicador"
+
+In src/routes/app/shopping.tsx:
+- upsertCheck onError → toast error "Erro ao guardar"
+- addCustomShoppingItem onError → toast error "Erro ao adicionar item"
+- deleteCustomShoppingItem onError → toast error "Erro ao remover item"
+- clearNonCustomChecks onError → toast error "Erro ao limpar marcações"
+- clearCustomItems onError → toast error "Erro ao limpar itens"
+
+In src/routes/app/library/$recipeId.tsx:
+- The existing showToast("Adicionado ao plano ✓") is fine — wire it to the new global toast system instead of the local one so the component can be simplified.
+
+## 3. Category override persistence (cross-device)
+
+Currently stored in localStorage. Replace with a Supabase-backed table.
+
+### Schema (apply via Supabase SQL editor)
+
+```sql
+create table user_category_overrides (
+  user_id       uuid references auth.users(id) on delete cascade,
+  ingredient_name text not null,
+  category      text not null,
+  updated_at    timestamptz default now(),
+  primary key (user_id, ingredient_name)
+);
+alter table user_category_overrides enable row level security;
+create policy "user_category_overrides_all" on user_category_overrides
+  for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+```
+
+### Server functions (add to src/lib/supabase/shopping-queries.ts)
+
+```ts
+// GET: fetch all overrides for current user
+fetchCategoryOverrides: createServerFn GET → select * from user_category_overrides where user_id = auth.uid()
+// Returns: { ingredient_name: string, category: string }[]
+
+// POST: upsert a single override
+upsertCategoryOverride: createServerFn POST → input { ingredientName: string, category: string }
+→ upsert { user_id: auth.uid(), ingredient_name, category, updated_at: now() } on conflict (user_id, ingredient_name) do update
+```
+
+### Update src/routes/app/shopping.tsx
+
+- Replace the localStorage categoryOverrides state with a TanStack Query query backed by fetchCategoryOverrides.
+- On load, build the categoryOverrides record from the query data: { [row.ingredient_name]: row.category }.
+- When the user confirms a category change, call upsertCategoryOverride and invalidate the query.
+- Remove all localStorage.getItem / localStorage.setItem calls for category overrides.
+
+## 4. 404 page
+
+Add a notFoundComponent to the root route in src/routes/__root.tsx:
+
+```tsx
+function NotFound() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
+      <p className="text-5xl">🥗</p>
+      <h1 className="text-xl font-semibold text-[#1A1A1A]">Página não encontrada</h1>
+      <p className="text-sm text-[#6B7280]">Este endereço não existe.</p>
+      <a href="/app/library" className="mt-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white">
+        Ir para as receitas
+      </a>
+    </div>
+  )
+}
+```
+
+Pass it as `notFoundComponent: NotFound` on the root route options.
+```
+
+**Verify before moving on:**
+- "Continuar com Google" button appears on sign-in page, redirects to Google, lands back at /app
+- Tapping category name in shopping list → picker → change persists on reload on a different device/browser
+- All error toasts appear when mutations fail (test by temporarily disabling network)
+- Navigating to /app/nonexistent shows the 404 page, not a blank screen
+
+---
+
+## Session 10 — Households
+
+**Goal:** Two-person shared household with one shared plan, shared recipe library, invite-by-link flow, and leave/dissolve logic.
+
+**Design decisions (locked):**
+- One shared plan per household — no personal plan while in a household
+- Invite via a single-use shareable link (`/join/[token]`), no expiry, revocable from Settings
+- Hard cap: 2 members max
+- Household name auto-set to "[First] & [First]" from both members' email prefixes
+- New recipes created while in a household default to `visibility = 'household'`
+- On household creation: inviter's existing private recipes migrate to `visibility = 'household'`; inviter's active plan becomes the household plan (`plans.household_id = household.id`)
+- On invite acceptance: invitee's active plan is archived; invitee is added to household and sees the shared plan
+- On leave (< 2 members remain): household plan is archived; both users get a fresh personal plan; all household recipes revert to `visibility = 'private'` on their respective `owner_id`
+- Conflict strategy: last-write-wins (Postgres upserts are atomic enough)
+- UI lives in the existing Settings page as a new "Household" section
+
+**Schema changes (apply via Supabase SQL editor before building UI):**
+
+```sql
+-- Invite tokens
+create table household_invites (
+  id           uuid primary key default gen_random_uuid(),
+  token        uuid unique not null default gen_random_uuid(),
+  household_id uuid references households(id) on delete cascade,
+  created_by   uuid references auth.users(id) on delete cascade,
+  used_at      timestamptz,
+  created_at   timestamptz default now()
+);
+alter table household_invites enable row level security;
+-- Only the creator can read/delete their own invite tokens
+create policy "invites_select" on household_invites for select to authenticated
+  using (created_by = (select auth.uid()));
+create policy "invites_delete" on household_invites for delete to authenticated
+  using (created_by = (select auth.uid()));
+-- Allow anon read for the join page (token lookup before auth)
+create policy "invites_anon_select" on household_invites for select to anon
+  using (used_at is null);
+
+-- Household members policies
+create policy "household_members_select" on household_members for select to authenticated
+  using (user_id = (select auth.uid())
+    or household_id in (
+      select household_id from household_members where user_id = (select auth.uid())
+    ));
+
+-- Households: readable by members
+create policy "households_select" on households for select to authenticated
+  using (id in (
+    select household_id from household_members where user_id = (select auth.uid())
+  ));
+
+-- Drop the v1 deny-all policies on households/household_members before adding the above.
+
+-- Update recipes RLS: household members can see visibility='household' recipes from same household
+drop policy if exists "recipes_select" on recipes;
+create policy "recipes_select" on recipes for select to authenticated
+  using (
+    owner_id = (select auth.uid())
+    or visibility = 'system'
+    or (
+      visibility = 'household'
+      and owner_id in (
+        select hm2.user_id from household_members hm1
+        join household_members hm2 on hm1.household_id = hm2.household_id
+        where hm1.user_id = (select auth.uid())
+      )
+    )
+  );
+
+-- Update plans RLS: household members can read/write the household plan
+drop policy if exists "plans_select" on plans;
+create policy "plans_select" on plans for select to authenticated
+  using (
+    owner_id = (select auth.uid())
+    or household_id in (
+      select household_id from household_members where user_id = (select auth.uid())
+    )
+  );
+drop policy if exists "plans_update" on plans;
+create policy "plans_update" on plans for update to authenticated
+  using (
+    owner_id = (select auth.uid())
+    or household_id in (
+      select household_id from household_members where user_id = (select auth.uid())
+    )
+  )
+  with check (
+    owner_id = (select auth.uid())
+    or household_id in (
+      select household_id from household_members where user_id = (select auth.uid())
+    )
+  );
+
+-- plan_items and shopping_check_state: extend to household plans
+drop policy if exists "plan_items_select" on plan_items;
+create policy "plan_items_select" on plan_items for all to authenticated
+  using (
+    plan_id in (
+      select id from plans where
+        owner_id = (select auth.uid())
+        or household_id in (
+          select household_id from household_members where user_id = (select auth.uid())
+        )
+    )
+  );
+drop policy if exists "shopping_check_state_all" on shopping_check_state;
+create policy "shopping_check_state_all" on shopping_check_state for all to authenticated
+  using (
+    plan_id in (
+      select id from plans where
+        owner_id = (select auth.uid())
+        or household_id in (
+          select household_id from household_members where user_id = (select auth.uid())
+        )
+    )
+  );
+```
+
+**Prompt:**
+
+```
+Implement the household feature for the meal prep app. All design decisions are locked — do not deviate.
+
+## Design summary (locked)
+
+- Two-person household (hard cap: 2 members)
+- One shared plan per household; no personal plan while in a household
+- Invite via single-use shareable link (/join/[token]), no expiry, revocable from Settings
+- Household name auto-set to "[First] & [First]" from both users' email prefixes (everything before @)
+- New recipes created while in household → visibility = 'household'
+- On household creation: inviter's private recipes → visibility = 'household'; inviter's active plan gets household_id set (becomes the shared plan)
+- On invite acceptance: invitee's active plan archived; invitee joins household and sees the shared plan
+- On leave (< 2 members): household plan archived; both get fresh personal plans; household recipes revert to visibility = 'private' on their owner_id
+- Conflict strategy: last-write-wins (Postgres upserts are atomic)
+- UI: Settings page, new "Household" section
+
+The schema changes (household_invites table, updated RLS for recipes/plans/plan_items/shopping_check_state, policies on households/household_members) have already been applied to the database.
+
+## 1. New server functions — src/lib/supabase/household-queries.ts
+
+createServerFn for each of these. Use the authenticated Supabase client (getCookies/setCookie pattern already in plan-queries.ts):
+
+**createHousehold()**
+- POST, no input
+- Creates a households row (name = placeholder, set properly after both users join)
+- Adds current user to household_members (role = 'owner')
+- Migrates current user's private recipes to visibility = 'household': UPDATE recipes SET visibility = 'household' WHERE owner_id = auth.uid() AND visibility = 'private'
+- Sets household_id on the user's current active plan: UPDATE plans SET household_id = new_household_id WHERE owner_id = auth.uid() AND archived_at IS NULL
+- Returns the household row
+
+**generateInviteToken()**
+- POST, no input
+- Inserts into household_invites for the caller's household
+- Returns the token (uuid)
+
+**revokeInviteToken()**
+- POST, input: { token: string }
+- Deletes the household_invites row where created_by = auth.uid()
+
+**fetchInviteInfo(token)**
+- GET, input: { token: string }
+- Runs as anon (no auth required) — used on the /join/[token] page before the user signs in
+- Selects from household_invites (where used_at IS NULL) + joins to households + auth.users to get the inviter's email
+- Returns: { inviterName: string, householdExists: boolean } or null if token invalid/used
+- Note: to query auth.users from a server function you need the service role key — use process.env.SUPABASE_SERVICE_ROLE_KEY for this function only
+
+**acceptInvite(token)**
+- POST, input: { token: string }
+- Validates token exists and used_at IS NULL
+- Validates the household is not already full (count household_members < 2)
+- Archives the current user's active plan (if any): UPDATE plans SET archived_at = now() WHERE owner_id = auth.uid() AND archived_at IS NULL AND household_id IS NULL
+- Adds user to household_members (role = 'member')
+- Marks invite as used: UPDATE household_invites SET used_at = now()
+- Updates household name: "[inviterFirst] & [joinerFirst]" (extract first part of each email before @)
+- Returns the household row
+
+**fetchHouseholdInfo()**
+- GET, no input
+- Returns null if user is not in a household
+- Returns: { household: { id, name }, members: { userId, email, role }[], inviteToken: string | null }
+- inviteToken = the unused invite token for this household created by the current user (if any)
+
+**leaveHousehold()**
+- POST, no input
+- Removes current user from household_members
+- Archives the household plan: UPDATE plans SET archived_at = now() WHERE household_id = household.id AND archived_at IS NULL
+- Creates a fresh personal plan for current user: INSERT INTO plans (owner_id, name) VALUES (auth.uid(), 'Current plan')
+- Reverts this user's household recipes to private: UPDATE recipes SET visibility = 'private' WHERE owner_id = auth.uid() AND visibility = 'household'
+- If the other member still exists in the household: also archive their plan and create a fresh personal plan for them + revert their recipes (requires service role for cross-user writes)
+- Returns { ok: true }
+
+## 2. New route — src/routes/join/$token.tsx
+
+Public route (no auth guard). This page is accessible before sign-in.
+
+Page behavior:
+- In the loader, call fetchInviteInfo(token). If null (invalid/used/not found), show an error state: "Este convite não é válido ou já foi utilizado."
+- If valid, show: "[InviterName] convidou-te para o seu household" + the household name if available, or just "Meal Prep" + "Aceitar convite" CTA button
+- Design matches the rest of the app (bg-[#FAFAF8], green button, max-w-md centered)
+
+On "Aceitar convite":
+- If the user is already authenticated: call acceptInvite(token) directly, then navigate to /app/library
+- If not authenticated: save the token to localStorage under key 'pendingInviteToken', then navigate to / (sign-in page)
+
+## 3. Update src/routes/app.tsx — process pending invite after auth
+
+In the beforeLoad of the /app route (after getAuthUser() confirms auth):
+
+```ts
+// After confirming user is authenticated, check for pending invite
+const pendingToken = typeof localStorage !== 'undefined'
+  ? localStorage.getItem('pendingInviteToken')
+  : null
+if (pendingToken) {
+  localStorage.removeItem('pendingInviteToken')
+  try {
+    await acceptInvite({ data: { token: pendingToken } })
+  } catch {
+    // Silently ignore — invite may be expired or already used
+  }
+}
+```
+
+## 4. Update src/lib/supabase/plan-queries.ts — ensureActivePlan is household-aware
+
+The ensureActivePlan function must return the household plan if the user is in a household:
+
+```ts
+// Check for household membership first
+const { data: membership } = await supabase
+  .from('household_members')
+  .select('household_id')
+  .eq('user_id', user.id)
+  .maybeSingle()
+
+if (membership) {
+  // Return the active household plan
+  const { data: householdPlan } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('household_id', membership.household_id)
+    .is('archived_at', null)
+    .maybeSingle()
+  if (householdPlan) return householdPlan as Plan
+  // If no active household plan exists, create one
+  const { data, error } = await supabase
+    .from('plans')
+    .insert({ owner_id: user.id, household_id: membership.household_id, name: 'Current plan' })
+    .select().single()
+  if (error) throw new Error(error.message)
+  return data as Plan
+}
+// Fall through to personal plan logic (existing code)
+```
+
+Also update addRecipeToPlan to use the same household-aware lookup (same pattern).
+
+## 5. Update src/routes/app/settings.tsx — Household section
+
+Add a "Household" section below the existing Language and Theme sections.
+
+### State: no household
+
+Show:
+- A "Criar household" button (green, full-width rounded-2xl)
+- Below it, small muted text: "Cria um household para partilhar o plano com outra pessoa."
+
+On tap:
+- Call createHousehold()
+- Then call generateInviteToken()
+- Show the invite link in a copyable input: `${window.location.origin}/join/${token}`
+- Add a "Copiar link" button (copies to clipboard via navigator.clipboard.writeText)
+- Add a "Revogar convite" link (calls revokeInviteToken, clears the displayed link)
+
+### State: in household, invite pending (no second member yet)
+
+Show:
+- Household name as a section title
+- "Aguardando membro..." with a muted subtitle
+- The invite link (same copyable input as above)
+- "Revogar convite" link
+
+### State: in household, 2 members
+
+Show:
+- Household name as a section title
+- Both member emails (or name derived from email prefix) listed as small pills or rows
+- A "Sair do household" button (outlined, text-[#DC2626] border-[#DC2626]) with a confirmation dialog: "Ao sair, o plano partilhado será arquivado e ambos voltarão ao plano pessoal."
+
+Use useQuery with fetchHouseholdInfo for the state, invalidate on all mutations.
+
+## 6. Update src/types/db.ts
+
+Add the HouseholdInvite type (Row/Insert/Update). Add household_invites to the Database type. Add a helper type HouseholdMemberWithEmail for use in fetchHouseholdInfo.
+
+## Notes
+
+- Do not add recipe creation UI in this session — recipe visibility defaulting to 'household' will be handled when recipe creation is built.
+- The fetchActivePlanWithCount query used in the bottom nav badge already reads from the plans table via the updated RLS, so the badge will reflect the household plan automatically.
+- Do not implement household name editing — the auto-name is final in v1.
+- fetchInviteInfo must not require auth — it is called from the /join route before the user has signed in. The anon RLS policy on household_invites covers the token lookup. For fetching the inviter's name from auth.users, use the service role key.
+```
+
+**Verify before moving on:**
+- Creating a household from Settings works; invite link is displayed and copyable
+- Opening the invite link in an incognito window shows the invite screen with the inviter's name
+- Signing in via the invite link (new account) lands in /app/library with the shared plan visible
+- Both users see the same plan items and shopping list
+- Adding a recipe on one device appears on the other after refresh
+- Settings shows both member names once the second user has joined
+- "Sair do household" archives the shared plan and both users get a fresh empty personal plan
+- After leaving, the previously shared recipes are private to their original owners
+- Invite token is consumed after use — opening the link again shows "convite inválido"
+- Hard cap: attempting to use a second invite on a full household shows an error
+
+---
+
 ## After v1: the 4-week test
 
 Use the app daily for 4 weeks with your girlfriend. Track:
