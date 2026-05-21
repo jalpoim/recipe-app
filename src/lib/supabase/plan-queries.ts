@@ -24,7 +24,7 @@ function makeClient() {
   )
 }
 
-// GET: active plan with item count (used as TanStack Query queryFn)
+// GET: active plan with item count — household-aware
 export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ActivePlanWithCount | null> => {
     const supabase = makeClient()
@@ -33,7 +33,29 @@ export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handle
     } = await supabase.auth.getUser()
     if (!user) return null
 
-    const { data } = await supabase
+    // Check household first
+    const membershipRaw = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const membership = membershipRaw.data as { household_id: string } | null
+
+    if (membership) {
+      const householdPlanRaw = await supabase
+        .from('plans')
+        .select('*, plan_items(id)')
+        .eq('household_id', membership.household_id)
+        .is('archived_at', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (!householdPlanRaw.data) return null
+      const row = householdPlanRaw.data as unknown as Plan & { plan_items: { id: string }[] }
+      return { ...row, item_count: row.plan_items?.length ?? 0 } as ActivePlanWithCount
+    }
+
+    const personalPlanRaw = await supabase
       .from('plans')
       .select('*, plan_items(id)')
       .eq('owner_id', user.id)
@@ -42,13 +64,13 @@ export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handle
       .limit(1)
       .maybeSingle()
 
-    if (!data) return null
-    const { plan_items, ...plan } = data as typeof data & { plan_items: { id: string }[] }
-    return { ...plan, item_count: plan_items?.length ?? 0 } as ActivePlanWithCount
+    if (!personalPlanRaw.data) return null
+    const row = personalPlanRaw.data as unknown as Plan & { plan_items: { id: string }[] }
+    return { ...row, item_count: row.plan_items?.length ?? 0 } as ActivePlanWithCount
   },
 )
 
-// POST: get or create active plan (used in route loader only)
+// POST: get or create active plan — household-aware
 export const ensureActivePlan = createServerFn({ method: 'POST' }).handler(
   async (): Promise<Plan> => {
     const supabase = makeClient()
@@ -57,16 +79,44 @@ export const ensureActivePlan = createServerFn({ method: 'POST' }).handler(
     } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    const { data: existing } = await supabase
+    // Check for household membership first
+    const membershipRaw = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const membership = membershipRaw.data as { household_id: string } | null
+
+    if (membership) {
+      const householdPlanRaw = await supabase
+        .from('plans')
+        .select('*')
+        .eq('household_id', membership.household_id)
+        .is('archived_at', null)
+        .maybeSingle()
+      if (householdPlanRaw.data) return householdPlanRaw.data as unknown as Plan
+
+      const { data, error } = await supabase
+        .from('plans')
+        .insert({ owner_id: user.id, household_id: membership.household_id, name: 'Current plan' })
+        .select()
+        .single()
+      if (error) throw new Error(error.message)
+      return data as Plan
+    }
+
+    // Personal plan fallback
+    const existingRaw = await supabase
       .from('plans')
       .select('*')
       .eq('owner_id', user.id)
       .is('archived_at', null)
+      .is('household_id', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (existing) return existing as Plan
+    if (existingRaw.data) return existingRaw.data as Plan
 
     const { data, error } = await supabase
       .from('plans')
@@ -102,27 +152,57 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
     } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    // Get or create plan
+    // Get or create plan — household-aware
     let planId: string
-    const { data: existing } = await supabase
-      .from('plans')
-      .select('id')
-      .eq('owner_id', user.id)
-      .is('archived_at', null)
-      .order('created_at', { ascending: false })
-      .limit(1)
+    const membershipRaw2 = await supabase
+      .from('household_members')
+      .select('household_id')
+      .eq('user_id', user.id)
       .maybeSingle()
+    const membership2 = membershipRaw2.data as { household_id: string } | null
 
-    if (existing) {
-      planId = existing.id
-    } else {
-      const { data: newPlan, error } = await supabase
+    if (membership2) {
+      const householdPlanRaw = await supabase
         .from('plans')
-        .insert({ owner_id: user.id, name: 'Current plan', default_multiplier: 1 })
         .select('id')
-        .single()
-      if (error) throw new Error(error.message)
-      planId = newPlan.id
+        .eq('household_id', membership2.household_id)
+        .is('archived_at', null)
+        .maybeSingle()
+      const householdPlan = householdPlanRaw.data as { id: string } | null
+      if (householdPlan) {
+        planId = householdPlan.id
+      } else {
+        const { data: newPlan, error } = await supabase
+          .from('plans')
+          .insert({ owner_id: user.id, household_id: membership2.household_id, name: 'Current plan' })
+          .select('id')
+          .single()
+        if (error) throw new Error(error.message)
+        planId = (newPlan as { id: string }).id
+      }
+    } else {
+      const existingRaw = await supabase
+        .from('plans')
+        .select('id')
+        .eq('owner_id', user.id)
+        .is('archived_at', null)
+        .is('household_id', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      const existing = existingRaw.data as { id: string } | null
+
+      if (existing) {
+        planId = existing.id
+      } else {
+        const { data: newPlan, error } = await supabase
+          .from('plans')
+          .insert({ owner_id: user.id, name: 'Current plan', default_multiplier: 1 })
+          .select('id')
+          .single()
+        if (error) throw new Error(error.message)
+        planId = (newPlan as { id: string }).id
+      }
     }
 
     // Max position

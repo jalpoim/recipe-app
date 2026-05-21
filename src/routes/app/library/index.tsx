@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect } from 'react'
-import { Clock, Search, Settings, X } from 'lucide-react'
+import { Clock, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { fetchLibrary, type RecipeWithIngredients } from '../../../lib/supabase/queries'
@@ -308,7 +308,10 @@ function FilterSheet({
     const timer = setTimeout(() => {
       const el = sectionRefMap[section]?.current
       if (el && scrollRef.current) {
-        scrollRef.current.scrollTo({ top: el.offsetTop - 16, behavior: 'smooth' })
+        const containerTop = scrollRef.current.getBoundingClientRect().top
+        const elTop = el.getBoundingClientRect().top
+        const offset = scrollRef.current.scrollTop + (elTop - containerTop) - 16
+        scrollRef.current.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
       }
     }, 200)
     return () => clearTimeout(timer)
@@ -617,6 +620,13 @@ function LibraryPage() {
       search.ingredients.length,
   )
 
+  const activeFilterCount =
+    search.proteins.length +
+    (search.maxCal !== undefined ? 1 : 0) +
+    (search.maxTime !== undefined ? 1 : 0) +
+    search.tags.length +
+    search.ingredients.length
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4">
@@ -679,6 +689,23 @@ function LibraryPage() {
 
           {/* Category chip row */}
           <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button
+              onClick={() => openSheet('protein')}
+              aria-label="Abrir filtros"
+              className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-medium transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none relative ${
+                activeFilterCount > 0
+                  ? 'border-[#16A34A] text-[#15803d] bg-[#dcfce7]'
+                  : 'border-[#E5E7EB] text-[#6B7280] bg-white'
+              }`}
+            >
+              <SlidersHorizontal size={12} aria-hidden="true" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
             <CategoryChip
               label={proteinLabel}
               active={search.proteins.length > 0}

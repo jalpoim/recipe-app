@@ -87,21 +87,25 @@ function PlanItemCard({
   const fat = Math.round(perServing(item.recipe, 'fat') * scale)
 
   return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 relative">
-      <button
-        onClick={() => onRemove(item.id)}
-        aria-label={`Remover ${item.recipe.name} do plano`}
-        className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-      >
-        <X size={14} aria-hidden="true" />
-      </button>
-
+    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 relative group">
+      {/* Full-card navigation layer */}
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: item.recipe_id }}
         search={{ from: 'plan', planItemId: item.id }}
-        className="block pr-8 group"
+        className="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        aria-label={item.recipe.name}
+      />
+
+      <button
+        onClick={() => onRemove(item.id)}
+        aria-label={`Remover ${item.recipe.name} do plano`}
+        className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
       >
+        <X size={14} aria-hidden="true" />
+      </button>
+
+      <div className="block pr-8">
         <div className="flex items-center gap-1">
           <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#16A34A] transition-colors">
             {item.recipe.name}
@@ -122,9 +126,9 @@ function PlanItemCard({
             </span>
           )}
         </div>
-      </Link>
+      </div>
 
-      <div className="mt-3 flex items-center justify-between">
+      <div className="mt-3 flex items-center justify-between relative z-10">
         <span className="text-[11px] text-[#9CA3AF] font-medium">{t('plan.multiplier')}</span>
         <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
           {([1, 2, 3, 4] as const).map((n) => (

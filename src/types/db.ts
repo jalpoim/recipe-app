@@ -64,6 +64,7 @@ export type Database = {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       recipe_ingredients: {
         Row: {
@@ -99,6 +100,7 @@ export type Database = {
           category?: string | null
           is_pantry?: boolean
         }
+        Relationships: []
       }
       recipe_steps: {
         Row: {
@@ -122,6 +124,7 @@ export type Database = {
           text?: string
           timer_seconds?: number | null
         }
+        Relationships: []
       }
       households: {
         Row: {
@@ -139,6 +142,7 @@ export type Database = {
           name?: string
           created_at?: string
         }
+        Relationships: []
       }
       household_members: {
         Row: {
@@ -159,6 +163,7 @@ export type Database = {
           role?: 'owner' | 'member' | null
           joined_at?: string | null
         }
+        Relationships: []
       }
       plans: {
         Row: {
@@ -188,6 +193,7 @@ export type Database = {
           archived_at?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       plan_items: {
         Row: {
@@ -217,6 +223,7 @@ export type Database = {
           portion_multiplier?: number
           added_at?: string | null
         }
+        Relationships: []
       }
       shopping_check_state: {
         Row: {
@@ -246,6 +253,7 @@ export type Database = {
           category?: string | null
           updated_at?: string | null
         }
+        Relationships: []
       }
       recipe_translations: {
         Row: {
@@ -263,6 +271,7 @@ export type Database = {
           language?: string
           name?: string
         }
+        Relationships: []
       }
       recipe_ingredient_translations: {
         Row: {
@@ -286,6 +295,7 @@ export type Database = {
           unit?: string | null
           raw_text?: string
         }
+        Relationships: []
       }
       recipe_step_translations: {
         Row: {
@@ -303,6 +313,7 @@ export type Database = {
           language?: string
           text?: string
         }
+        Relationships: []
       }
       ingredients: {
         Row: {
@@ -329,6 +340,7 @@ export type Database = {
           owner_id?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       user_ingredient_overrides: {
         Row: {
@@ -346,6 +358,55 @@ export type Database = {
           ingredient_id?: string
           category?: string
         }
+        Relationships: []
+      }
+      household_invites: {
+        Row: {
+          id: string
+          token: string
+          household_id: string | null
+          created_by: string | null
+          used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          token?: string
+          household_id?: string | null
+          created_by?: string | null
+          used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          token?: string
+          household_id?: string | null
+          created_by?: string | null
+          used_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_category_overrides: {
+        Row: {
+          user_id: string
+          ingredient_name: string
+          category: string
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          ingredient_name: string
+          category: string
+          updated_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          ingredient_name?: string
+          category?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: Record<string, never>
@@ -372,8 +433,23 @@ export type RecipeStepTranslation = Database['public']['Tables']['recipe_step_tr
 export type Ingredient = Database['public']['Tables']['ingredients']['Row']
 export type UserIngredientOverride = Database['public']['Tables']['user_ingredient_overrides']['Row']
 
+export type HouseholdInvite = Database['public']['Tables']['household_invites']['Row']
+export type HouseholdInviteInsert = Database['public']['Tables']['household_invites']['Insert']
+
 // Joined types (not in DB schema — built by queries)
 export type PlanItemWithRecipe = PlanItem & {
   recipe: Recipe & { recipe_ingredients: RecipeIngredient[] }
 }
 export type ActivePlanWithCount = Plan & { item_count: number }
+
+export type HouseholdMemberWithEmail = {
+  userId: string
+  email: string
+  role: 'owner' | 'member'
+}
+
+export type HouseholdInfo = {
+  household: { id: string; name: string }
+  members: HouseholdMemberWithEmail[]
+  inviteToken: string | null
+}

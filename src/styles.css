@@ -88,18 +88,35 @@ body {
 [data-theme="dark"] .bg-\[\#F9FAFB\] { background-color: #252523 !important; }
 [data-theme="dark"] .bg-\[\#F3F4F6\] { background-color: #2A2A28 !important; }
 
+/* Hover / active backgrounds — hover:bg-X is a distinct class from bg-X */
+[data-theme="dark"] .hover\:bg-\[\#F9FAFB\]:hover { background-color: #252523 !important; }
+[data-theme="dark"] .hover\:bg-\[\#F3F4F6\]:hover { background-color: #2A2A28 !important; }
+[data-theme="dark"] .hover\:bg-\[\#E5E7EB\]:hover { background-color: #333331 !important; }
+[data-theme="dark"] .hover\:bg-\[\#fee2e2\]:hover { background-color: #450A0A !important; }
+[data-theme="dark"] .hover\:bg-\[\#fecaca\]:hover { background-color: #5C0E0E !important; }
+[data-theme="dark"] .active\:bg-\[\#E5E7EB\]:active { background-color: #333331 !important; }
+
 /* Text — muted stays readable (≥4.5:1 on card bg) */
 [data-theme="dark"] .text-\[\#1A1A1A\] { color: #F5F5F3 !important; }
 [data-theme="dark"] .text-\[\#374151\] { color: #D1D5DB !important; }
 [data-theme="dark"] .text-\[\#6B7280\] { color: #9CA3AF !important; }
 [data-theme="dark"] .text-\[\#9CA3AF\] { color: #71717A !important; }
 
+/* Hover text */
+[data-theme="dark"] .hover\:text-\[\#1A1A1A\]:hover { color: #F5F5F3 !important; }
+[data-theme="dark"] .hover\:text-\[\#6B7280\]:hover { color: #9CA3AF !important; }
+
 /* Borders */
 [data-theme="dark"] .border-\[\#E5E7EB\] { border-color: #2E2E2C !important; }
 [data-theme="dark"] .border-\[\#F0F0EE\] { border-color: #252523 !important; }
 [data-theme="dark"] .border-\[\#F3F4F6\] { border-color: #2A2A28 !important; }
 [data-theme="dark"] .border-\[\#D1D5DB\] { border-color: #3F3F3C !important; }
+[data-theme="dark"] .divide-\[\#F3F4F6\] > * + * { border-color: #2A2A28 !important; }
 [data-theme="dark"] .divide-\[\#F9FAFB\] > * + * { border-color: #252523 !important; }
+
+/* Hover borders */
+[data-theme="dark"] .hover\:border-\[\#fecaca\]:hover { border-color: #7F1D1D !important; }
+[data-theme="dark"] .hover\:border-\[\#D1D5DB\]:hover { border-color: #3F3F3C !important; }
 
 /* Status badge colours — inverted to dark-surface variants */
 [data-theme="dark"] .bg-\[\#dcfce7\] { background-color: #14532D !important; }

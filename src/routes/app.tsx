@@ -4,11 +4,25 @@ import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getAuthUser } from '../lib/supabase/server'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
+import { acceptInvite } from '../lib/supabase/household-queries'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
     const user = await getAuthUser()
     if (!user) throw redirect({ to: '/' })
+
+    // Process pending invite saved before sign-in
+    const pendingToken =
+      typeof localStorage !== 'undefined' ? localStorage.getItem('pendingInviteToken') : null
+    if (pendingToken) {
+      localStorage.removeItem('pendingInviteToken')
+      try {
+        await acceptInvite({ data: pendingToken })
+      } catch {
+        // Silently ignore — invite may be expired or already used
+      }
+    }
+
     return { user }
   },
   component: AppLayout,
