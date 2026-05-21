@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
-import { Check, Plus, X } from 'lucide-react'
+import { Check, Plus, Share2, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount, fetchPlanItems } from '../../lib/supabase/plan-queries'
@@ -341,6 +341,55 @@ function buildGlobalList(
   return ordered
 }
 
+function buildShareText(
+  grouped: Map<string, AggItem[]>,
+  customItems: ShoppingCheckState[],
+): string {
+  const lines: string[] = []
+  for (const [category, aggItems] of grouped) {
+    lines.push(`${category.toUpperCase()}`)
+    for (const agg of aggItems) {
+      const qtyStr = fmtQty(agg.totalQty)
+      const parts = [qtyStr, agg.unit, agg.name].filter(Boolean)
+      lines.push(`• ${parts.join(' ')}`)
+    }
+    lines.push('')
+  }
+  if (customItems.length > 0) {
+    lines.push('EXTRA')
+    for (const c of customItems) lines.push(`• ${c.label ?? c.item_key}`)
+  }
+  return lines.join('\n').trim()
+}
+
+function ShareButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false)
+
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ text })
+        return
+      } catch {
+        // user cancelled or share failed — fall through to clipboard
+      }
+    }
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <button
+      onClick={handleShare}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+    >
+      <Share2 size={13} aria-hidden="true" />
+      {copied ? 'Copiado!' : 'Partilhar'}
+    </button>
+  )
+}
+
 function GlobalView({
   items,
   checkMap,
@@ -362,9 +411,13 @@ function GlobalView({
   const [editingCategory, setEditingCategory] = useState<{ name: string; current: string } | null>(null)
 
   const grouped = buildGlobalList(items, categoryOverrides)
+  const shareText = buildShareText(grouped, customItems)
 
   return (
     <>
+      <div className="flex justify-end mb-3">
+        <ShareButton text={shareText} />
+      </div>
       <div className="space-y-3">
         {[...grouped.entries()].map(([category, aggItems]) => (
           <div key={category} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
