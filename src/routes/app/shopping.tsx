@@ -580,24 +580,11 @@ function ShoppingPage() {
     }
   }, [checksData, planId, initializedForPlan])
 
-  const isLoading =
-    isPlanLoading || (!!planId && (isItemsLoading || isChecksLoading || initializedForPlan !== planId))
-  if (isLoading) return <ShoppingSkeleton />
-
-  function setView(v: 'recipe' | 'global') {
-    // @ts-ignore -- routeTree.gen.ts is regenerated on pnpm dev; view is valid search param
-    void navigate({ search: { view: v }, replace: true })
-  }
-
   // Per-ingredient category overrides — backed by Supabase
   const { data: overridesData = [] } = useQuery({
     queryKey: ['category-overrides'],
     queryFn: fetchCategoryOverrides,
   })
-
-  const categoryOverrides: Record<string, string> = Object.fromEntries(
-    overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
-  )
 
   const overrideMutation = useMutation({
     mutationFn: (vars: { ingredientName: string; category: string }) =>
@@ -609,6 +596,18 @@ function ShoppingPage() {
   const [showAddForm, setShowAddForm] = useState(false)
   const [confirmClearChecks, setConfirmClearChecks] = useState(false)
   const [confirmClearCustom, setConfirmClearCustom] = useState(false)
+
+  const isLoading =
+    isPlanLoading || (!!planId && (isItemsLoading || isChecksLoading || initializedForPlan !== planId))
+
+  function setView(v: 'recipe' | 'global') {
+    // @ts-ignore -- routeTree.gen.ts is regenerated on pnpm dev; view is valid search param
+    void navigate({ search: { view: v }, replace: true })
+  }
+
+  const categoryOverrides: Record<string, string> = Object.fromEntries(
+    overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
+  )
 
   const hasCustomItems = customItems.length > 0
   const checkedCount = [...checkMap.values()].filter(Boolean).length
@@ -696,6 +695,8 @@ function ShoppingPage() {
       () => showToast('Erro ao limpar itens', 'error'),
     )
   }
+
+  if (isLoading) return <ShoppingSkeleton />
 
   const isEmpty = items.length === 0
 

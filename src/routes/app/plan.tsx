@@ -183,8 +183,6 @@ function PlanPage() {
     staleTime: 2 * 60 * 1000,
   })
 
-  if (isPlanLoading || isItemsLoading) return <PlanSkeleton />
-
   // Remove item — optimistic
   const removeMutation = useMutation({
     mutationFn: (id: string) => removePlanItem({ data: id }),
@@ -238,6 +236,8 @@ function PlanPage() {
       setConfirmClear(false)
     },
   })
+
+  if (isPlanLoading || isItemsLoading) return <PlanSkeleton />
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
