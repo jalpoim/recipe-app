@@ -1,12 +1,21 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { Clock, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
-import { useQuery } from '@tanstack/react-query'
-import { fetchLibrary, type RecipeWithIngredients } from '../../../lib/supabase/queries'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import {
+  fetchLibrary,
+  fetchLibraryMeta,
+  type RecipeWithIngredients,
+  type Sort,
+  type LibraryCursor,
+} from '../../../lib/supabase/queries'
 import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
 import type { Recipe } from '../../../types/db'
+
+const PAGE_SIZE = 24
 
 // ---------- hooks ----------
 
@@ -21,7 +30,6 @@ function useDebounce<T>(value: T, delay: number): T {
 
 // ---------- search param schema ----------
 
-type Sort = 'pcal' | 'protein' | 'calories' | 'time'
 type SheetSection = 'protein' | 'time' | 'calories' | 'tags' | 'ingredients'
 
 type LibrarySearch = {
@@ -99,8 +107,6 @@ export const Route = createFileRoute('/app/library/')({
       : 'pcal',
     replacing: typeof search.replacing === 'string' ? search.replacing : undefined,
   }),
-  loader: () => fetchLibrary(),
-  staleTime: 5 * 60 * 1000,
   component: LibraryPage,
 })
 
@@ -126,49 +132,6 @@ function badgeClass(ratio: number) {
 
 function fmt(n: number) {
   return n % 1 === 0 ? n.toFixed(0) : n.toFixed(1)
-}
-
-function applyFilters(
-  recipes: RecipeWithIngredients[],
-  { q, proteins, maxCal, maxTime, tags, ingredients }: LibrarySearch,
-) {
-  return recipes.filter((r) => {
-    if (q && !r.name.toLowerCase().includes(q.toLowerCase())) return false
-    if (proteins.length > 0 && !proteins.some((p) => r.proteins.includes(p))) return false
-    if (maxCal !== undefined && perServing(r, 'calories') > maxCal) return false
-    if (maxTime !== undefined && (r.time_min ?? Infinity) > maxTime) return false
-    if (tags.length > 0 && !tags.every((t) => r.tags.includes(t))) return false
-    if (ingredients.length > 0) {
-      if (
-        !ingredients.every((ing) =>
-          r.recipe_ingredients.some((ri) =>
-            (ri.name ?? ri.raw_text).toLowerCase().includes(ing.toLowerCase()),
-          ),
-        )
-      )
-        return false
-    }
-    return true
-  })
-}
-
-function applySort(recipes: RecipeWithIngredients[], sort: Sort) {
-  return [...recipes].sort((a, b) => {
-    switch (sort) {
-      case 'pcal':
-        return pcalRatio(b) - pcalRatio(a)
-      case 'protein':
-        return perServing(b, 'protein') - perServing(a, 'protein')
-      case 'calories':
-        return perServing(a, 'calories') - perServing(b, 'calories')
-      case 'time':
-        return (a.time_min ?? 999) - (b.time_min ?? 999)
-    }
-  })
-}
-
-function allUnique<T>(arr: T[][]): T[] {
-  return [...new Set(arr.flat())]
 }
 
 // ---------- RecipeCard ----------
@@ -254,7 +217,7 @@ function RecipeCard({
         </div>
       )}
       {cookCount > 0 && (
-        <p className="mt-2 text-[10px] text-[#9CA3AF]">{cookCount}× cooked</p>
+        <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
       )}
     </Link>
   )
@@ -574,11 +537,12 @@ function FilterSheet({
 
 function LibraryPage() {
   const { t } = useTranslation()
-  const recipes = Route.useLoaderData()
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/app/library/' })
+  const queryClient = useQueryClient()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
+  const parentRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<LibrarySearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }) })
@@ -607,39 +571,91 @@ function LibraryPage() {
     if (debouncedQ !== search.q) update({ q: debouncedQ })
   }, [debouncedQ]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Keep local input in sync if URL changes externally (e.g. clear button)
   useEffect(() => {
     setLocalQ(search.q)
   }, [search.q])
 
-  const allProteins = useMemo(
-    () => [...new Set(recipes.flatMap((r) => r.proteins))].sort(),
-    [recipes],
+  // sort is excluded from queryKey — it's applied client-side over fetched pages
+  // so changing sort doesn't re-fetch, it just reorders the loaded data
+  const filterKey = useMemo(
+    () => ({
+      proteins: search.proteins,
+      maxCal: search.maxCal,
+      maxTime: search.maxTime,
+      tags: search.tags,
+      ingredients: search.ingredients,
+      q: search.q,
+    }),
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q],
   )
 
-  const allTags = useMemo(() => {
-    const freq = new Map<string, number>()
-    recipes.forEach((r) => r.tags.forEach((tag) => freq.set(tag, (freq.get(tag) ?? 0) + 1)))
-    return [...freq.entries()]
-      .filter(([, count]) => count >= 3)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([tag]) => tag)
-  }, [recipes])
+  const {
+    data: infiniteData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ['library', filterKey],
+    queryFn: ({ pageParam }) =>
+      fetchLibrary({
+        data: {
+          limit: PAGE_SIZE,
+          cursor: (pageParam as LibraryCursor | null) ?? null,
+          sort: search.sort,
+          proteins: search.proteins,
+          maxCal: search.maxCal,
+          maxTime: search.maxTime,
+          tags: search.tags,
+          ingredients: search.ingredients,
+          q: search.q,
+        },
+      }),
+    initialPageParam: null as LibraryCursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    staleTime: 5 * 60 * 1000,
+  })
 
-  const allIngredientNames = useMemo(
-    () =>
-      allUnique(
-        recipes.map((r) => r.recipe_ingredients.map((ri) => ri.name).filter(Boolean) as string[]),
-      ).sort(),
-    [recipes],
+  // Apply sort client-side over all fetched pages
+  const allRecipes = useMemo(
+    () => infiniteData?.pages.flatMap((p) => p.data) ?? [],
+    [infiniteData],
   )
 
-  const filtered = useMemo(() => applyFilters(recipes, search), [recipes, search])
-  const sorted = useMemo(() => applySort(filtered, search.sort), [filtered, search.sort])
+  const sortedRecipes = useMemo(() => {
+    const copy = [...allRecipes]
+    switch (search.sort) {
+      case 'protein':
+        return copy.sort((a, b) => (b.protein ?? 0) - (a.protein ?? 0))
+      case 'calories':
+        return copy.sort((a, b) => (a.calories ?? 0) - (b.calories ?? 0))
+      case 'time':
+        return copy.sort((a, b) => (a.time_min ?? 999) - (b.time_min ?? 999))
+      case 'pcal':
+      default:
+        return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
+    }
+  }, [allRecipes, search.sort])
 
-  const recipeIds = useMemo(() => recipes.map((r) => r.id), [recipes])
+  // Library meta — proteins, tags, ingredient names from DB
+  const { data: meta } = useQuery({
+    queryKey: ['libraryMeta'],
+    queryFn: fetchLibraryMeta,
+    staleTime: Infinity,
+  })
+
+  // Pre-warm libraryMeta cache (invalidated on household/recipe mutation)
+  useEffect(() => {
+    queryClient.prefetchQuery({ queryKey: ['libraryMeta'], queryFn: fetchLibraryMeta })
+  }, [queryClient])
+
+  // Cook counts for visible recipes
+  const recipeIds = useMemo(() => sortedRecipes.map((r) => r.id), [sortedRecipes])
+  const recipeIdsKey = useMemo(() => recipeIds.join(','), [recipeIds])
   const { data: cookCounts } = useQuery({
-    queryKey: ['cookCounts', recipeIds],
+    queryKey: ['cookCounts', recipeIdsKey],
     queryFn: () => fetchRecipeCookCounts({ data: recipeIds }),
     staleTime: 5 * 60 * 1000,
     enabled: recipeIds.length > 0,
@@ -651,6 +667,29 @@ function LibraryPage() {
     }
     return map
   }, [cookCounts])
+
+  // Virtual list — only render cards in the viewport
+  const virtualCount = hasNextPage ? sortedRecipes.length + 1 : sortedRecipes.length
+  const virtualizer = useVirtualizer({
+    count: virtualCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 160,
+    overscan: 5,
+  })
+
+  // Fetch next page when sentinel item comes into view
+  const fetchNextPageStable = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  useEffect(() => {
+    const items = virtualizer.getVirtualItems()
+    const lastItem = items[items.length - 1]
+    if (!lastItem) return
+    if (lastItem.index >= sortedRecipes.length - 1) {
+      fetchNextPageStable()
+    }
+  }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const proteinLabel = useMemo(() => {
     if (search.proteins.length === 0) return t('filters.protein')
@@ -678,6 +717,8 @@ function LibraryPage() {
     (search.maxTime !== undefined ? 1 : 0) +
     search.tags.length +
     search.ingredients.length
+
+  if (isError) return <LibraryError error={error as Error} />
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -779,7 +820,7 @@ function LibraryPage() {
         {/* Sort + count row */}
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs text-[#9CA3AF]">
-            {t('plan.itemCount', { count: sorted.length })}
+            {isLoading ? '…' : t('plan.itemCount', { count: sortedRecipes.length })}
           </span>
           <select
             value={search.sort}
@@ -794,19 +835,12 @@ function LibraryPage() {
           </select>
         </div>
 
-        {/* Recipe list */}
-        {sorted.length > 0 ? (
+        {/* Recipe list — virtualised */}
+        {isLoading ? (
           <div className="space-y-3">
-            {sorted.map((r) => (
-              <RecipeCard
-                key={r.id}
-                recipe={r}
-                replacing={search.replacing}
-                cookCount={cookCountMap[r.id] ?? 0}
-              />
-            ))}
+            {[0, 1, 2, 3, 4].map((i) => <CardSkeleton key={i} />)}
           </div>
-        ) : (
+        ) : sortedRecipes.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-[#6B7280] text-sm">{t('filters.empty')}</p>
             {hasActiveFilters && (
@@ -814,6 +848,45 @@ function LibraryPage() {
                 {t('filters.clearFilters')}
               </button>
             )}
+          </div>
+        ) : (
+          <div ref={parentRef} className="overflow-auto" style={{ maxHeight: 'calc(100dvh - 260px)' }}>
+            <div
+              style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
+            >
+              {virtualizer.getVirtualItems().map((virtualItem) => {
+                const isSentinel = virtualItem.index >= sortedRecipes.length
+                return (
+                  <div
+                    key={virtualItem.key}
+                    data-index={virtualItem.index}
+                    ref={virtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualItem.start}px)`,
+                      paddingBottom: '12px',
+                    }}
+                  >
+                    {isSentinel ? (
+                      <div className="py-4 flex justify-center">
+                        {isFetchingNextPage && (
+                          <div className="h-5 w-5 rounded-full border-2 border-[#16A34A] border-t-transparent animate-spin" />
+                        )}
+                      </div>
+                    ) : (
+                      <RecipeCard
+                        recipe={sortedRecipes[virtualItem.index]}
+                        replacing={search.replacing}
+                        cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -823,9 +896,9 @@ function LibraryPage() {
         onOpenChange={setSheetOpen}
         section={sheetSection}
         search={search}
-        allProteins={allProteins}
-        allTags={allTags}
-        allIngredientNames={allIngredientNames}
+        allProteins={meta?.proteins ?? []}
+        allTags={meta?.tags ?? []}
+        allIngredientNames={meta?.ingredients ?? []}
         onUpdate={update}
         onClear={clearFilters}
       />

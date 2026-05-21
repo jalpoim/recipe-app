@@ -1,29 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '../../types/db'
 import type { HouseholdInfo } from '../../types/db'
-import { getCookies, setCookie } from '@tanstack/react-start/server'
-
-function makeAuthClient() {
-  return createServerClient<Database>(
-    (import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL) as string,
-    (import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY) as string,
-    {
-      cookies: {
-        getAll() {
-          const cookies = getCookies()
-          return Object.entries(cookies).map(([name, value]) => ({ name, value }))
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            setCookie(name, value, options as Parameters<typeof setCookie>[2])
-          )
-        },
-      },
-    },
-  )
-}
+import { makeClient } from './client-server'
 
 // Untyped service client — bypasses RLS; auth is verified manually via getUser().
 // We intentionally omit the <Database> generic because the legacy tables in db.ts lack
@@ -36,9 +14,16 @@ function makeServiceClient() {
 }
 
 async function getAuthedUser() {
-  const auth = makeAuthClient()
-  const { data: { user } } = await auth.auth.getUser()
+  const { data: { user } } = await makeClient().auth.getUser()
   return user
+}
+
+// Write household_id (or null on leave) to app_metadata so all subsequent
+// requests can read it from the JWT without a DB round-trip.
+async function setHouseholdClaim(db: ReturnType<typeof makeServiceClient>, userId: string, householdId: string | null) {
+  await db.auth.admin.updateUserById(userId, {
+    app_metadata: { household_id: householdId },
+  })
 }
 
 // POST: create a new household for the current user
@@ -70,6 +55,9 @@ export const createHousehold = createServerFn({ method: 'POST' }).handler(async 
     .update({ household_id: household.id })
     .eq('owner_id', user.id)
     .is('archived_at', null)
+
+  // Store household_id in JWT so future requests skip the DB lookup
+  await setHouseholdClaim(db, user.id, household.id)
 
   return household as { id: string; name: string; created_at: string }
 })
@@ -197,6 +185,9 @@ export const acceptInvite = createServerFn({ method: 'POST' })
       .eq('id', invite.household_id)
       .single()
 
+    // Store household_id in JWT for the joining user
+    await setHouseholdClaim(db, user.id, invite.household_id)
+
     return household as { id: string; name: string; created_at: string } | null
   })
 
@@ -312,7 +303,13 @@ export const leaveHousehold = createServerFn({ method: 'POST' }).handler(async (
       .delete()
       .eq('household_id', householdId)
       .eq('user_id', other.user_id)
+
+    // Clear household claim for all remaining members
+    await setHouseholdClaim(db, other.user_id, null)
   }
+
+  // Clear household claim for the leaving user
+  await setHouseholdClaim(db, user.id, null)
 
   return { ok: true }
 })

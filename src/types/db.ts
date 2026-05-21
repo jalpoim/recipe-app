@@ -26,6 +26,7 @@ export type Database = {
           proteins: string[]
           tags: string[]
           user_tags: string[]
+          pcal_ratio: number | null
           created_at: string
           updated_at: string
         }
@@ -488,7 +489,29 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      get_active_plan: {
+        Args: { p_user_id: string; p_household_id?: string | null }
+        Returns: Array<{
+          id: string
+          owner_id: string
+          household_id: string | null
+          name: string
+          default_multiplier: number
+          archived_at: string | null
+          created_at: string
+          item_count: number
+        }>
+      }
+      get_recipe_cook_counts: {
+        Args: { p_user_id: string; p_recipe_ids: string[] }
+        Returns: Array<{ recipe_id: string; count: number }>
+      }
+      get_library_meta: {
+        Args: Record<string, never>
+        Returns: { proteins: string[]; tags: string[]; ingredients: string[] }
+      }
+    }
     Enums: Record<string, never>
   }
 }

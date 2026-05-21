@@ -64,6 +64,7 @@
     "ingredients": "Ingredientes",
     "steps": "Preparação",
     "back": "Voltar",
+    "cookedCount": "{{count}}× cozinhado",
     "addToPlan": "Adicionar ao plano",
     "removeFromPlan": "Remover do plano",
     "replace": "Substituir",

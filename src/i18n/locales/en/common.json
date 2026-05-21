@@ -64,6 +64,7 @@
     "ingredients": "Ingredients",
     "steps": "Preparation",
     "back": "Back",
+    "cookedCount": "{{count}}× cooked",
     "addToPlan": "Add to plan",
     "removeFromPlan": "Remove from plan",
     "replace": "Replace",

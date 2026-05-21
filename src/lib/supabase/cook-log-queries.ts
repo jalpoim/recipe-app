@@ -1,27 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
-import { createServerClient } from '@supabase/ssr'
-import type { Database, CookLog } from '../../types/db'
-import { getCookies, setCookie } from '@tanstack/react-start/server'
-
-function makeClient() {
-  return createServerClient<Database>(
-    (import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL) as string,
-    (import.meta.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY) as string,
-    {
-      cookies: {
-        getAll() {
-          const cookies = getCookies()
-          return Object.entries(cookies).map(([name, value]) => ({ name, value }))
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            setCookie(name, value, options as Parameters<typeof setCookie>[2])
-          )
-        },
-      },
-    },
-  )
-}
+import type { CookLog } from '../../types/db'
+import { makeClient } from './client-server'
 
 // POST: log a recipe as cooked
 export const logRecipeCooked = createServerFn({ method: 'POST' })
@@ -31,10 +10,9 @@ export const logRecipeCooked = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }): Promise<CookLog> => {
     const supabase = makeClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('Not authenticated')
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const user = session.user
 
     const { data: row, error } = await supabase
       .from('cook_log')
@@ -68,10 +46,9 @@ export const rateCookLogEntry = createServerFn({ method: 'POST' })
 export const fetchCookLog = createServerFn({ method: 'GET' }).handler(
   async (): Promise<CookLog[]> => {
     const supabase = makeClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return []
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
+    const user = session.user
 
     const { data, error } = await supabase
       .from('cook_log')
@@ -84,21 +61,22 @@ export const fetchCookLog = createServerFn({ method: 'GET' }).handler(
   },
 )
 
-// GET: fetch cook counts per recipe
+// GET: fetch cook counts per recipe for the current user — DB GROUP BY via RPC
 export const fetchRecipeCookCounts = createServerFn({ method: 'GET' })
   .inputValidator((recipeIds: string[]) => recipeIds)
   .handler(async ({ data: recipeIds }): Promise<{ recipe_id: string; count: number }[]> => {
     if (recipeIds.length === 0) return []
     const supabase = makeClient()
-    const { data, error } = await supabase
-      .from('cook_log')
-      .select('recipe_id')
-      .in('recipe_id', recipeIds)
-    if (error) throw new Error(error.message)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
 
-    const counts: Record<string, number> = {}
-    for (const row of data ?? []) {
-      counts[row.recipe_id] = (counts[row.recipe_id] ?? 0) + 1
-    }
-    return Object.entries(counts).map(([recipe_id, count]) => ({ recipe_id, count }))
+    const { data, error } = await supabase.rpc('get_recipe_cook_counts', {
+      p_user_id: session.user.id,
+      p_recipe_ids: recipeIds,
+    })
+    if (error) throw new Error(error.message)
+    return (data ?? []).map((row: { recipe_id: string; count: number }) => ({
+      recipe_id: row.recipe_id,
+      count: Number(row.count),
+    }))
   })
