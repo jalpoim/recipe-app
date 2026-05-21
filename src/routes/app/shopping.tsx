@@ -104,9 +104,9 @@ function fmtQty(qty: number | null): string {
   return qty.toFixed(1)
 }
 
-function scaleQty(qty: number | null, portionMult: number, defaultMult: number, servings: number): number | null {
+function scaleQty(qty: number | null, portionMult: number, servings: number): number | null {
   if (qty == null) return null
-  return qty * ((portionMult * defaultMult) / (servings || 1))
+  return qty * (portionMult / (servings || 1))
 }
 
 // ---------- sub-components ----------
@@ -229,12 +229,10 @@ function CategoryPicker({
 
 function RecipeView({
   items,
-  defaultMult,
   checkMap,
   onToggle,
 }: {
   items: PlanItemWithRecipe[]
-  defaultMult: number
   checkMap: Map<string, boolean>
   onToggle: (key: string) => void
 }) {
@@ -251,13 +249,13 @@ function RecipeView({
             <div className="px-4 py-3 border-b border-[#F3F4F6]">
               <p className="text-sm font-semibold text-[#1A1A1A]">{item.recipe.name}</p>
               <p className="text-xs text-[#9CA3AF] mt-0.5">
-                {item.portion_multiplier * defaultMult}× porção
+                {item.portion_multiplier}× porção
               </p>
             </div>
             <div className="divide-y divide-[#F9FAFB]">
               {visibleIngs.map((ing) => {
                 const key = `recipe:${item.id}:${ing.id}`
-                const qty = scaleQty(ing.quantity, item.portion_multiplier, defaultMult, item.recipe.servings)
+                const qty = scaleQty(ing.quantity, item.portion_multiplier, item.recipe.servings)
                 return (
                   <CheckRow
                     key={key}
@@ -281,7 +279,7 @@ function RecipeView({
 // ---------- Lista global view ----------
 
 type AggItem = {
-  recipeKeys: string[]
+  recipeKeyQtys: { key: string; qty: number | null }[]
   name: string
   unit: string | null
   category: string
@@ -291,7 +289,6 @@ type AggItem = {
 
 function buildGlobalList(
   items: PlanItemWithRecipe[],
-  defaultMult: number,
   categoryOverrides: Record<string, string>,
 ): Map<string, AggItem[]> {
   const aggMap = new Map<string, AggItem>()
@@ -303,7 +300,7 @@ function buildGlobalList(
       const unit = ing.unit ?? null
       const aggKey = `${name.toLowerCase()}|${unit ?? ''}`
       const recipeKey = `recipe:${item.id}:${ing.id}`
-      const qty = scaleQty(ing.quantity, item.portion_multiplier, defaultMult, item.recipe.servings)
+      const qty = scaleQty(ing.quantity, item.portion_multiplier, item.recipe.servings)
       const category =
         categoryOverrides[name.toLowerCase()] ??
         ing.category ??
@@ -311,7 +308,7 @@ function buildGlobalList(
 
       const existing = aggMap.get(aggKey)
       if (existing) {
-        existing.recipeKeys.push(recipeKey)
+        existing.recipeKeyQtys.push({ key: recipeKey, qty })
         if (qty != null && existing.totalQty != null) {
           existing.totalQty += qty
         } else {
@@ -319,7 +316,7 @@ function buildGlobalList(
         }
       } else {
         aggMap.set(aggKey, {
-          recipeKeys: [recipeKey],
+          recipeKeyQtys: [{ key: recipeKey, qty }],
           name,
           unit,
           category,
@@ -355,7 +352,6 @@ function buildGlobalList(
 
 function GlobalView({
   items,
-  defaultMult,
   checkMap,
   customItems,
   categoryOverrides,
@@ -364,7 +360,6 @@ function GlobalView({
   onCategoryChange,
 }: {
   items: PlanItemWithRecipe[]
-  defaultMult: number
   checkMap: Map<string, boolean>
   customItems: ShoppingCheckState[]
   categoryOverrides: Record<string, string>
@@ -375,7 +370,7 @@ function GlobalView({
   const { t } = useTranslation()
   const [editingCategory, setEditingCategory] = useState<{ name: string; current: string } | null>(null)
 
-  const grouped = buildGlobalList(items, defaultMult, categoryOverrides)
+  const grouped = buildGlobalList(items, categoryOverrides)
 
   return (
     <>
@@ -395,19 +390,24 @@ function GlobalView({
             </button>
             <div className="divide-y divide-[#F9FAFB]">
               {aggItems.map((agg) => {
-                const checkedCount = agg.recipeKeys.filter((k) => checkMap.get(k) ?? false).length
-                const allChecked = checkedCount === agg.recipeKeys.length
+                const checkedCount = agg.recipeKeyQtys.filter((k) => checkMap.get(k.key) ?? false).length
+                const allChecked = checkedCount === agg.recipeKeyQtys.length
                 const someChecked = checkedCount > 0 && !allChecked
+                const unchecked = agg.recipeKeyQtys.filter((k) => !(checkMap.get(k.key) ?? false))
+                const remainingQty = agg.hasUnknownQty
+                  ? null
+                  : unchecked.reduce((s, k) => s + (k.qty ?? 0), 0)
+                const allKeys = agg.recipeKeyQtys.map((k) => k.key)
                 return (
                   <CheckRow
-                    key={agg.recipeKeys[0]}
-                    itemKey={agg.recipeKeys[0]}
+                    key={agg.recipeKeyQtys[0].key}
+                    itemKey={agg.recipeKeyQtys[0].key}
                     label={agg.name}
-                    qty={agg.hasUnknownQty ? null : agg.totalQty}
+                    qty={allChecked ? agg.totalQty : remainingQty}
                     unit={agg.unit}
                     checked={allChecked}
                     partial={someChecked}
-                    onToggle={() => onToggle(agg.recipeKeys, !allChecked)}
+                    onToggle={() => onToggle(allKeys, !allChecked)}
                   />
                 )
               })}
@@ -591,7 +591,6 @@ function ShoppingPage() {
   const [confirmClearChecks, setConfirmClearChecks] = useState(false)
   const [confirmClearCustom, setConfirmClearCustom] = useState(false)
 
-  const defaultMult = plan.default_multiplier
   const hasCustomItems = customItems.length > 0
   const checkedCount = [...checkMap.values()].filter(Boolean).length
 
@@ -711,7 +710,6 @@ function ShoppingPage() {
             <div className={view !== 'recipe' ? 'hidden' : ''}>
               <RecipeView
                 items={items}
-                defaultMult={defaultMult}
                 checkMap={checkMap}
                 onToggle={toggleCheck}
               />
@@ -719,7 +717,6 @@ function ShoppingPage() {
             <div className={view !== 'global' ? 'hidden' : ''}>
               <GlobalView
                 items={items}
-                defaultMult={defaultMult}
                 checkMap={checkMap}
                 customItems={customItems}
                 categoryOverrides={categoryOverrides}

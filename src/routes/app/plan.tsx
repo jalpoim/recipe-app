@@ -9,7 +9,7 @@ import {
   fetchPlanItems,
   fetchActivePlanWithCount,
   removePlanItem,
-  updatePlanMultiplier,
+  updatePlanItemMultiplier,
   archiveAndCreatePlan,
 } from '../../lib/supabase/plan-queries'
 import type { PlanItemWithRecipe, ActivePlanWithCount, Recipe } from '../../types/db'
@@ -72,15 +72,15 @@ function perServing(r: Recipe, field: 'calories' | 'protein' | 'carbs' | 'fat') 
 
 function PlanItemCard({
   item,
-  defaultMult,
   onRemove,
+  onMultiplierChange,
 }: {
   item: PlanItemWithRecipe
-  defaultMult: number
   onRemove: (id: string) => void
+  onMultiplierChange: (id: string, v: number) => void
 }) {
   const { t } = useTranslation()
-  const scale = item.portion_multiplier * defaultMult
+  const scale = item.portion_multiplier
   const cal = Math.round(perServing(item.recipe, 'calories') * scale)
   const pro = Math.round(perServing(item.recipe, 'protein') * scale)
   const carbs = Math.round(perServing(item.recipe, 'carbs') * scale)
@@ -124,7 +124,27 @@ function PlanItemCard({
         </div>
       </Link>
 
-      <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-[11px] text-[#9CA3AF] font-medium">{t('plan.multiplier')}</span>
+        <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
+          {([1, 2, 3, 4] as const).map((n) => (
+            <button
+              key={n}
+              onClick={() => onMultiplierChange(item.id, n)}
+              aria-pressed={item.portion_multiplier === n}
+              className={`w-9 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none focus:z-10 relative ${
+                item.portion_multiplier === n
+                  ? 'bg-[#16A34A] text-white'
+                  : 'bg-white text-[#6B7280] hover:bg-[#F3F4F6]'
+              }`}
+            >
+              {n}×
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
         {(
           [
             { label: 'Cal', value: cal },
@@ -137,39 +157,6 @@ function PlanItemCard({
             <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
             <div className="text-sm font-bold text-[#1A1A1A]">{value}</div>
           </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ---------- MultiplierControl ----------
-
-function MultiplierControl({
-  value,
-  onChange,
-}: {
-  value: number
-  onChange: (v: number) => void
-}) {
-  const { t } = useTranslation()
-  return (
-    <div className="flex items-center justify-between rounded-2xl bg-white border border-[#E5E7EB] shadow-sm px-4 py-3">
-      <span className="text-sm font-medium text-[#1A1A1A]">{t('plan.multiplier')}</span>
-      <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
-        {([1, 2, 3, 4] as const).map((n) => (
-          <button
-            key={n}
-            onClick={() => onChange(n)}
-            aria-pressed={value === n}
-            className={`w-10 py-1.5 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none focus:z-10 relative ${
-              value === n
-                ? 'bg-[#16A34A] text-white'
-                : 'bg-white text-[#6B7280] hover:bg-[#F3F4F6]'
-            }`}
-          >
-            {n}×
-          </button>
         ))}
       </div>
     </div>
@@ -192,7 +179,6 @@ function PlanPage() {
   })
 
   const planId = plan?.id ?? loaderPlan.id
-  const defaultMult = plan?.default_multiplier ?? 1
 
   const { data: items = [] } = useQuery({
     queryKey: ['plan-items', planId],
@@ -221,22 +207,23 @@ function PlanPage() {
     },
   })
 
-  // Update multiplier — optimistic
-  const multiplierMutation = useMutation({
-    mutationFn: (multiplier: number) =>
-      updatePlanMultiplier({ data: { planId, multiplier } }),
-    onMutate: (multiplier) => {
-      const prev = qc.getQueryData<ActivePlanWithCount>(['active-plan'])
-      qc.setQueryData<ActivePlanWithCount>(['active-plan'], (old) =>
-        old ? { ...old, default_multiplier: multiplier } : old!,
+  // Update per-item multiplier — optimistic
+  const itemMultMutation = useMutation({
+    mutationFn: ({ id, mult }: { id: string; mult: number }) =>
+      updatePlanItemMultiplier({ data: { planItemId: id, multiplier: mult } }),
+    onMutate: async ({ id, mult }) => {
+      await qc.cancelQueries({ queryKey: ['plan-items', planId] })
+      const prev = qc.getQueryData<PlanItemWithRecipe[]>(['plan-items', planId])
+      qc.setQueryData<PlanItemWithRecipe[]>(['plan-items', planId], (old) =>
+        old?.map((i) => i.id === id ? { ...i, portion_multiplier: mult } : i) ?? [],
       )
       return { prev }
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(['active-plan'], ctx.prev)
+      if (ctx?.prev) qc.setQueryData(['plan-items', planId], ctx.prev)
       showToast('Erro ao actualizar multiplicador', 'error')
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['active-plan'] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['plan-items', planId] }),
   })
 
   // Archive + create new plan
@@ -266,14 +253,6 @@ function PlanPage() {
           </p>
         </div>
 
-        {/* Multiplier */}
-        <div className="mb-4">
-          <MultiplierControl
-            value={defaultMult}
-            onChange={(v) => multiplierMutation.mutate(v)}
-          />
-        </div>
-
         {/* Empty state */}
         {items.length === 0 ? (
           <div className="py-16 text-center">
@@ -294,8 +273,8 @@ function PlanPage() {
                 <PlanItemCard
                   key={item.id}
                   item={item}
-                  defaultMult={defaultMult}
                   onRemove={(id) => removeMutation.mutate(id)}
+                  onMultiplierChange={(id, v) => itemMultMutation.mutate({ id, mult: v })}
                 />
               ))}
             </div>
