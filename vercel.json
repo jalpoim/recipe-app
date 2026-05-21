@@ -1,9 +1,4 @@
 {
   "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "functions": {
-    "**/*.ts": {
-      "maxDuration": 30
-    }
-  }
+  "installCommand": "pnpm install"
 }
