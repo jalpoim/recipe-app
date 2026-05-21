@@ -4,11 +4,6 @@ import type { Database } from '../../types/db'
 import { getCookies, setCookie } from '@tanstack/react-start/server'
 import type { Recipe, RecipeIngredient, RecipeStep } from '../../types/db'
 
-// Local types for translation query results (tables created by migration 20260520000000)
-type RecipeTrans = { recipe_id: string; name: string }
-type IngTrans = { ingredient_id: string; name: string | null; unit: string | null; raw_text: string }
-type StepTrans = { step_id: string; text: string }
-
 function makeClient() {
   return createServerClient<Database>(
     (import.meta.env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL) as string,
@@ -60,21 +55,23 @@ export const fetchLibrary = createServerFn({ method: 'GET' }).handler(async () =
 
   // Fetch recipe name translations
   const recipeIds = recipes.map((r) => r.id)
-  const { data: recipeTrans } = await supabase
+  const recipeTransResult = await supabase
     .from('recipe_translations')
     .select('recipe_id, name')
     .in('recipe_id', recipeIds)
-    .eq('language', lang) as unknown as { data: RecipeTrans[] | null }
+    .eq('language', lang)
+  const recipeTrans = recipeTransResult.data
 
   const recipeTransMap = new Map(recipeTrans?.map((t) => [t.recipe_id, t.name]) ?? [])
 
   // Fetch ingredient translations
   const ingIds = recipes.flatMap((r) => r.recipe_ingredients.map((i) => i.id))
-  const { data: ingTrans } = await supabase
+  const ingTransResult = await supabase
     .from('recipe_ingredient_translations')
     .select('ingredient_id, name, unit, raw_text')
     .in('ingredient_id', ingIds)
-    .eq('language', lang) as unknown as { data: IngTrans[] | null }
+    .eq('language', lang)
+  const ingTrans = ingTransResult.data
 
   const ingTransMap = new Map(ingTrans?.map((t) => [t.ingredient_id, t]) ?? [])
 
@@ -111,24 +108,28 @@ export const fetchRecipeById = createServerFn({ method: 'GET' })
     const ingIds = recipe.recipe_ingredients.map((i) => i.id)
     const stepIds = recipe.recipe_steps.map((s) => s.id)
 
-    const [{ data: recipeTrans }, { data: ingTrans }, { data: stepTrans }] = await Promise.all([
+    const [recipeTransResult, ingTransResult, stepTransResult] = await Promise.all([
       supabase
         .from('recipe_translations')
         .select('name')
         .eq('recipe_id', id)
         .eq('language', lang)
-        .maybeSingle() as unknown as Promise<{ data: Pick<RecipeTrans, 'name'> | null }>,
+        .maybeSingle(),
       supabase
         .from('recipe_ingredient_translations')
         .select('ingredient_id, name, unit, raw_text')
         .in('ingredient_id', ingIds)
-        .eq('language', lang) as unknown as Promise<{ data: IngTrans[] | null }>,
+        .eq('language', lang),
       supabase
         .from('recipe_step_translations')
         .select('step_id, text')
         .in('step_id', stepIds)
-        .eq('language', lang) as unknown as Promise<{ data: StepTrans[] | null }>,
+        .eq('language', lang),
     ])
+
+    const recipeTrans = recipeTransResult.data
+    const ingTrans = ingTransResult.data
+    const stepTrans = stepTransResult.data
 
     const ingTransMap = new Map(ingTrans?.map((t) => [t.ingredient_id, t]) ?? [])
     const stepTransMap = new Map(stepTrans?.map((t) => [t.step_id, t.text]) ?? [])

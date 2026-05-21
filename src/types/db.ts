@@ -25,6 +25,7 @@ export type Database = {
           macros_source: 'manual' | 'computed' | null
           proteins: string[]
           tags: string[]
+          user_tags: string[]
           created_at: string
           updated_at: string
         }
@@ -43,6 +44,7 @@ export type Database = {
           macros_source?: 'manual' | 'computed' | null
           proteins?: string[]
           tags?: string[]
+          user_tags?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -61,6 +63,7 @@ export type Database = {
           macros_source?: 'manual' | 'computed' | null
           proteins?: string[]
           tags?: string[]
+          user_tags?: string[]
           created_at?: string
           updated_at?: string
         }
@@ -408,6 +411,81 @@ export type Database = {
         }
         Relationships: []
       }
+      cook_log: {
+        Row: {
+          id: string
+          user_id: string
+          recipe_id: string
+          household_id: string | null
+          cooked_at: string
+          source: 'planned' | 'manual'
+          rating: number | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          recipe_id: string
+          household_id?: string | null
+          cooked_at?: string
+          source: 'planned' | 'manual'
+          rating?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          recipe_id?: string
+          household_id?: string | null
+          cooked_at?: string
+          source?: 'planned' | 'manual'
+          rating?: number | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      user_recipe_interactions: {
+        Row: {
+          user_id: string
+          recipe_id: string
+          type: 'like' | 'save' | 'hide'
+          user_tags: string[]
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          recipe_id: string
+          type: 'like' | 'save' | 'hide'
+          user_tags?: string[]
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          recipe_id?: string
+          type?: 'like' | 'save' | 'hide'
+          user_tags?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          user_id: string
+          weekly_email_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          weekly_email_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          weekly_email_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
@@ -453,3 +531,8 @@ export type HouseholdInfo = {
   members: HouseholdMemberWithEmail[]
   inviteToken: string | null
 }
+
+export type CookLog = Database['public']['Tables']['cook_log']['Row']
+export type CookLogInsert = Database['public']['Tables']['cook_log']['Insert']
+export type UserRecipeInteraction = Database['public']['Tables']['user_recipe_interactions']['Row']
+export type NotificationPreferences = Database['public']['Tables']['notification_preferences']['Row']

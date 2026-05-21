@@ -118,6 +118,22 @@
     "recipes_one": "receita",
     "recipes_other": "receitas"
   },
+  "tags": {
+    "air-fryer": "Air Fryer",
+    "forno": "Forno",
+    "micro-ondas": "Micro-ondas",
+    "sem-cozinha": "Sem Cozinha",
+    "uma-frigideira": "Uma Frigideira",
+    "indiano": "Indiano",
+    "português": "Português",
+    "sem-glúten": "Sem Glúten",
+    "vegetariano": "Vegetariano",
+    "pequeno-almoço": "Pequeno-almoço",
+    "meal-prep": "Meal Prep",
+    "leve": "Leve",
+    "rápido": "Rápido",
+    "reconfortante": "Reconfortante"
+  },
   "settings": {
     "title": "Definições",
     "language": "Idioma",

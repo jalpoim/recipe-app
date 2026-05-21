@@ -813,7 +813,16 @@ function RecipeDetailPage() {
                   </button>
                   <Link
                     to="/app/library"
-                    search={{ replacing: search.planItemId }}
+                    search={{
+                      q: '',
+                      proteins: [],
+                      maxCal: undefined,
+                      maxTime: undefined,
+                      tags: [],
+                      ingredients: [],
+                      sort: 'pcal' as const,
+                      replacing: search.planItemId,
+                    }}
                     className="flex-1 rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] text-[#1A1A1A] py-3.5 text-sm font-semibold text-center hover:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
                     {t('recipe.replace')}

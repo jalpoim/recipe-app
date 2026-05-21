@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { createServerClient } from '@supabase/ssr'
 import type { Database } from '../../types/db'
 import { getCookies, setCookie } from '@tanstack/react-start/server'
-import type { Plan, PlanItem, PlanItemWithRecipe, ActivePlanWithCount } from '../../types/db'
+import type { Plan, PlanItem, PlanItemWithRecipe, ActivePlanWithCount, RecipeIngredient } from '../../types/db'
 
 function makeClient() {
   return createServerClient<Database>(
@@ -25,6 +25,14 @@ function makeClient() {
 }
 
 // GET: active plan with item count — household-aware
+async function getPlanItemCount(supabase: ReturnType<typeof makeClient>, planId: string): Promise<number> {
+  const { count } = await supabase
+    .from('plan_items')
+    .select('*', { count: 'exact', head: true })
+    .eq('plan_id', planId)
+  return count ?? 0
+}
+
 export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handler(
   async (): Promise<ActivePlanWithCount | null> => {
     const supabase = makeClient()
@@ -34,39 +42,38 @@ export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handle
     if (!user) return null
 
     // Check household first
-    const membershipRaw = await supabase
+    const { data: membership } = await supabase
       .from('household_members')
       .select('household_id')
       .eq('user_id', user.id)
       .maybeSingle()
-    const membership = membershipRaw.data as { household_id: string } | null
 
     if (membership) {
-      const householdPlanRaw = await supabase
+      const { data: plan } = await supabase
         .from('plans')
-        .select('*, plan_items(id)')
+        .select('*')
         .eq('household_id', membership.household_id)
         .is('archived_at', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      if (!householdPlanRaw.data) return null
-      const row = householdPlanRaw.data as unknown as Plan & { plan_items: { id: string }[] }
-      return { ...row, item_count: row.plan_items?.length ?? 0 } as ActivePlanWithCount
+      if (!plan) return null
+      const item_count = await getPlanItemCount(supabase, plan.id)
+      return { ...plan, item_count }
     }
 
-    const personalPlanRaw = await supabase
+    const { data: plan } = await supabase
       .from('plans')
-      .select('*, plan_items(id)')
+      .select('*')
       .eq('owner_id', user.id)
       .is('archived_at', null)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (!personalPlanRaw.data) return null
-    const row = personalPlanRaw.data as unknown as Plan & { plan_items: { id: string }[] }
-    return { ...row, item_count: row.plan_items?.length ?? 0 } as ActivePlanWithCount
+    if (!plan) return null
+    const item_count = await getPlanItemCount(supabase, plan.id)
+    return { ...plan, item_count }
   },
 )
 
@@ -80,33 +87,32 @@ export const ensureActivePlan = createServerFn({ method: 'POST' }).handler(
     if (!user) throw new Error('Not authenticated')
 
     // Check for household membership first
-    const membershipRaw = await supabase
+    const { data: membership } = await supabase
       .from('household_members')
       .select('household_id')
       .eq('user_id', user.id)
       .maybeSingle()
-    const membership = membershipRaw.data as { household_id: string } | null
 
     if (membership) {
-      const householdPlanRaw = await supabase
+      const { data: householdPlan } = await supabase
         .from('plans')
         .select('*')
         .eq('household_id', membership.household_id)
         .is('archived_at', null)
         .maybeSingle()
-      if (householdPlanRaw.data) return householdPlanRaw.data as unknown as Plan
+      if (householdPlan) return householdPlan
 
-      const { data, error } = await supabase
+      const { data: newPlan, error } = await supabase
         .from('plans')
         .insert({ owner_id: user.id, household_id: membership.household_id, name: 'Current plan' })
         .select()
         .single()
       if (error) throw new Error(error.message)
-      return data as Plan
+      return newPlan
     }
 
     // Personal plan fallback
-    const existingRaw = await supabase
+    const { data: existing } = await supabase
       .from('plans')
       .select('*')
       .eq('owner_id', user.id)
@@ -116,15 +122,15 @@ export const ensureActivePlan = createServerFn({ method: 'POST' }).handler(
       .limit(1)
       .maybeSingle()
 
-    if (existingRaw.data) return existingRaw.data as Plan
+    if (existing) return existing
 
-    const { data, error } = await supabase
+    const { data: newPlan, error } = await supabase
       .from('plans')
       .insert({ owner_id: user.id, name: 'Current plan', default_multiplier: 1 })
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as Plan
+    return newPlan
   },
 )
 
@@ -133,13 +139,44 @@ export const fetchPlanItems = createServerFn({ method: 'GET' })
   .inputValidator((planId: string) => planId)
   .handler(async ({ data: planId }): Promise<PlanItemWithRecipe[]> => {
     const supabase = makeClient()
-    const { data, error } = await supabase
+
+    const { data: items, error } = await supabase
       .from('plan_items')
-      .select('*, recipe:recipes(*, recipe_ingredients(*))')
+      .select('*')
       .eq('plan_id', planId)
       .order('position')
     if (error) throw new Error(error.message)
-    return (data ?? []) as unknown as PlanItemWithRecipe[]
+    if (!items || items.length === 0) return []
+
+    const recipeIds = [...new Set(items.map((i) => i.recipe_id))]
+
+    const [{ data: recipes, error: recipeErr }, { data: ingredients, error: ingErr }] =
+      await Promise.all([
+        supabase.from('recipes').select('*').in('id', recipeIds),
+        supabase.from('recipe_ingredients').select('*').in('recipe_id', recipeIds),
+      ])
+    if (recipeErr) throw new Error(recipeErr.message)
+    if (ingErr) throw new Error(ingErr.message)
+
+    const ingByRecipe = new Map<string, RecipeIngredient[]>()
+    for (const ing of ingredients ?? []) {
+      const list = ingByRecipe.get(ing.recipe_id) ?? []
+      list.push(ing)
+      ingByRecipe.set(ing.recipe_id, list)
+    }
+
+    const recipeMap = new Map(
+      (recipes ?? []).map((r) => [
+        r.id,
+        { ...r, recipe_ingredients: ingByRecipe.get(r.id) ?? [] },
+      ]),
+    )
+
+    return items.map((item) => {
+      const recipe = recipeMap.get(item.recipe_id)
+      if (!recipe) throw new Error(`Recipe ${item.recipe_id} not found`)
+      return { ...item, recipe }
+    })
   })
 
 // POST: add recipe to the current user's active plan
@@ -154,34 +191,32 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
 
     // Get or create plan — household-aware
     let planId: string
-    const membershipRaw2 = await supabase
+    const { data: membership } = await supabase
       .from('household_members')
       .select('household_id')
       .eq('user_id', user.id)
       .maybeSingle()
-    const membership2 = membershipRaw2.data as { household_id: string } | null
 
-    if (membership2) {
-      const householdPlanRaw = await supabase
+    if (membership) {
+      const { data: householdPlan } = await supabase
         .from('plans')
         .select('id')
-        .eq('household_id', membership2.household_id)
+        .eq('household_id', membership.household_id)
         .is('archived_at', null)
         .maybeSingle()
-      const householdPlan = householdPlanRaw.data as { id: string } | null
       if (householdPlan) {
         planId = householdPlan.id
       } else {
         const { data: newPlan, error } = await supabase
           .from('plans')
-          .insert({ owner_id: user.id, household_id: membership2.household_id, name: 'Current plan' })
+          .insert({ owner_id: user.id, household_id: membership.household_id, name: 'Current plan' })
           .select('id')
           .single()
         if (error) throw new Error(error.message)
-        planId = (newPlan as { id: string }).id
+        planId = newPlan.id
       }
     } else {
-      const existingRaw = await supabase
+      const { data: existing } = await supabase
         .from('plans')
         .select('id')
         .eq('owner_id', user.id)
@@ -190,7 +225,6 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
-      const existing = existingRaw.data as { id: string } | null
 
       if (existing) {
         planId = existing.id
@@ -201,7 +235,7 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
           .select('id')
           .single()
         if (error) throw new Error(error.message)
-        planId = (newPlan as { id: string }).id
+        planId = newPlan.id
       }
     }
 
@@ -222,7 +256,7 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return item as PlanItem
+    return item
   })
 
 // GET: single plan item
@@ -236,7 +270,7 @@ export const fetchPlanItem = createServerFn({ method: 'GET' })
       .eq('id', id)
       .maybeSingle()
     if (error) throw new Error(error.message)
-    return (data ?? null) as PlanItem | null
+    return data
   })
 
 // POST: update a plan item's portion multiplier
@@ -288,7 +322,7 @@ export const replacePlanItem = createServerFn({ method: 'POST' })
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return item as PlanItem
+    return item
   })
 
 // POST: update default multiplier
@@ -314,10 +348,36 @@ export const archiveAndCreatePlan = createServerFn({ method: 'POST' })
     } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
+    // Fetch the plan to get household_id before archiving
+    const { data: plan } = await supabase
+      .from('plans')
+      .select('household_id')
+      .eq('id', planId)
+      .maybeSingle()
+
+    // Fetch all plan items before archiving so we can log them
+    const { data: items } = await supabase
+      .from('plan_items')
+      .select('recipe_id')
+      .eq('plan_id', planId)
+
     await supabase
       .from('plans')
       .update({ archived_at: new Date().toISOString() })
       .eq('id', planId)
+
+    // Auto-log all plan items as cooked (source = 'planned')
+    if (items && items.length > 0) {
+      await supabase.from('cook_log').insert(
+        items.map((item) => ({
+          user_id: user.id,
+          recipe_id: item.recipe_id,
+          household_id: plan?.household_id ?? null,
+          source: 'planned' as const,
+          cooked_at: new Date().toISOString(),
+        })),
+      )
+    }
 
     const { data, error } = await supabase
       .from('plans')
@@ -325,5 +385,5 @@ export const archiveAndCreatePlan = createServerFn({ method: 'POST' })
       .select()
       .single()
     if (error) throw new Error(error.message)
-    return data as Plan
+    return data
   })

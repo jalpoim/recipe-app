@@ -24,16 +24,18 @@ if (process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 
-const url = process.env.VITE_SUPABASE_URL
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const userId = process.env.SEED_USER_ID
-
-if (!url || !serviceKey || !userId) {
-  console.error(
-    'Missing required env vars: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SEED_USER_ID',
-  )
-  process.exit(1)
+function requireEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    console.error(`Missing required env var: ${name}`)
+    process.exit(1)
+  }
+  return value
 }
+
+const url = requireEnv('VITE_SUPABASE_URL')
+const serviceKey = requireEnv('SUPABASE_SERVICE_ROLE_KEY')
+const userId = requireEnv('SEED_USER_ID')
 
 const supabase = createClient<Database>(url, serviceKey, {
   auth: { persistSession: false },

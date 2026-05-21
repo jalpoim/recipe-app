@@ -1265,3 +1265,266 @@ Some things will break. When they do:
 3. **Commit after every working session.** Use git tags or branches per session. If session 6 wrecks session 5, you can `git reset --hard` to the last known good state without losing earlier work.
 
 4. **Keep a session log.** A simple `notes.md` where you write what each session did, what didn't work, and what you changed manually. After 8 sessions, your future self will thank you.
+
+---
+
+## Session 11 — Behavioural foundations: cook log, interactions, user tags, system tag i18n
+
+**Goal:** Lay the data foundations that every future feature — recommendations, rotation intelligence, social proof, the Sunday email — depends on. No visible UI changes except system tags now displaying translated labels. This session is entirely schema, data, and infrastructure.
+
+**Why now:** The cook log is the single most important table not yet in the schema. Every week a plan is archived without it is a signal permanently lost. User interactions (likes, saves, hides) need to exist before you have enough users to make recommendations meaningful — you want historical data from day one. These tables are cheap to add now and expensive to retrofit later.
+
+---
+
+## 1. Schema changes (apply via Supabase MCP execute_sql)
+
+### cook_log
+
+```sql
+create table cook_log (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  recipe_id    uuid not null references recipes(id) on delete cascade,
+  household_id uuid references households(id) on delete set null,
+  cooked_at    timestamptz not null default now(),
+  source       text not null check (source in ('planned', 'manual')),
+  rating       smallint check (rating between 1 and 5),
+  created_at   timestamptz not null default now()
+);
+
+alter table cook_log enable row level security;
+
+create policy "cook_log_select" on cook_log for select to authenticated
+  using (user_id = (select auth.uid())
+    or household_id in (
+      select household_id from household_members where user_id = (select auth.uid())
+    ));
+
+create policy "cook_log_insert" on cook_log for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+create policy "cook_log_update" on cook_log for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+create policy "cook_log_delete" on cook_log for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+create index on cook_log(user_id);
+create index on cook_log(recipe_id);
+create index on cook_log(household_id) where household_id is not null;
+create index on cook_log(cooked_at desc);
+```
+
+### user_recipe_interactions
+
+```sql
+create table user_recipe_interactions (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  recipe_id  uuid not null references recipes(id) on delete cascade,
+  type       text not null check (type in ('like', 'save', 'hide')),
+  user_tags  text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  primary key (user_id, recipe_id, type)
+);
+
+alter table user_recipe_interactions enable row level security;
+
+create policy "interactions_select" on user_recipe_interactions for select to authenticated
+  using (user_id = (select auth.uid()));
+
+create policy "interactions_insert" on user_recipe_interactions for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+create policy "interactions_update" on user_recipe_interactions for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+create policy "interactions_delete" on user_recipe_interactions for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+create index on user_recipe_interactions(user_id);
+create index on user_recipe_interactions(recipe_id);
+```
+
+### user_tags on recipes (for user-created recipes only)
+
+```sql
+alter table recipes add column if not exists user_tags text[] not null default '{}';
+```
+
+`user_tags` is freeform, household-scoped, and never translated. Only meaningful on recipes where `owner_id` is not null. System recipes (`owner_id = null`) always have `user_tags = '{}'`.
+
+### notification_preferences
+
+```sql
+create table notification_preferences (
+  user_id              uuid primary key references auth.users(id) on delete cascade,
+  weekly_email_enabled boolean not null default true,
+  updated_at           timestamptz not null default now()
+);
+
+alter table notification_preferences enable row level security;
+
+create policy "notif_prefs_all" on notification_preferences for all to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+```
+
+---
+
+## 2. Add types to src/types/db.ts
+
+Add full Row/Insert/Update + `Relationships: []` entries for:
+- `cook_log`
+- `user_recipe_interactions`
+- `notification_preferences`
+
+Add `user_tags: string[]` to the `recipes` Row, Insert, and Update types.
+
+Export convenience types:
+```typescript
+export type CookLog = Database['public']['Tables']['cook_log']['Row']
+export type CookLogInsert = Database['public']['Tables']['cook_log']['Insert']
+export type UserRecipeInteraction = Database['public']['Tables']['user_recipe_interactions']['Row']
+export type NotificationPreferences = Database['public']['Tables']['notification_preferences']['Row']
+```
+
+---
+
+## 3. Cook log server functions (src/lib/supabase/cook-log-queries.ts)
+
+```typescript
+// POST: log a recipe as cooked
+logRecipeCooked({ recipeId, source, householdId? })
+  // inserts into cook_log with cooked_at = now()
+
+// POST: rate a cook log entry
+rateCookLogEntry({ cookLogId, rating })
+  // updates cook_log.rating
+
+// GET: fetch cook log for current user (most recent first, limit 50)
+fetchCookLog(): Promise<CookLog[]>
+
+// GET: fetch cook counts per recipe (for social proof display)
+// Returns { recipeId: string, count: number }[]
+fetchRecipeCookCounts(recipeIds: string[]): Promise<{ recipe_id: string; count: number }[]>
+```
+
+---
+
+## 4. User recipe interactions server functions (src/lib/supabase/interaction-queries.ts)
+
+```typescript
+// POST: upsert an interaction (like, save, or hide)
+upsertInteraction({ recipeId, type })
+
+// POST: remove an interaction
+removeInteraction({ recipeId, type })
+
+// GET: fetch all interactions for current user
+fetchInteractions(): Promise<UserRecipeInteraction[]>
+```
+
+---
+
+## 5. Trigger: auto-log cooked recipes from archived plans
+
+When `archiveAndCreatePlan` is called (the user starts a new week), silently insert `cook_log` rows for all plan items in the plan being archived, with `source = 'planned'`. This bootstraps cook history automatically from existing behaviour with no user action required.
+
+Update `archiveAndCreatePlan` in `src/lib/supabase/plan-queries.ts`:
+
+```typescript
+// Before archiving, fetch all plan items
+const { data: items } = await supabase
+  .from('plan_items')
+  .select('recipe_id')
+  .eq('plan_id', planId)
+
+// Insert cook_log rows for each
+if (items && items.length > 0) {
+  await supabase.from('cook_log').insert(
+    items.map((item) => ({
+      user_id: user.id,
+      recipe_id: item.recipe_id,
+      household_id: plan.household_id ?? null,
+      source: 'planned',
+      cooked_at: new Date().toISOString(),
+    }))
+  )
+}
+```
+
+---
+
+## 6. System tag i18n keys
+
+Add a `tags` block to both `src/i18n/locales/pt/common.json` and `src/i18n/locales/en/common.json`:
+
+**pt:**
+```json
+"tags": {
+  "air-fryer": "Air Fryer",
+  "forno": "Forno",
+  "micro-ondas": "Micro-ondas",
+  "sem-cozinha": "Sem Cozinha",
+  "uma-frigideira": "Uma Frigideira",
+  "indiano": "Indiano",
+  "português": "Português",
+  "sem-glúten": "Sem Glúten",
+  "vegetariano": "Vegetariano",
+  "pequeno-almoço": "Pequeno-almoço",
+  "meal-prep": "Meal Prep",
+  "leve": "Leve",
+  "rápido": "Rápido",
+  "reconfortante": "Reconfortante"
+}
+```
+
+**en:**
+```json
+"tags": {
+  "air-fryer": "Air Fryer",
+  "forno": "Oven",
+  "micro-ondas": "Microwave",
+  "sem-cozinha": "No-Cook",
+  "uma-frigideira": "One-Pan",
+  "indiano": "Indian",
+  "português": "Portuguese",
+  "sem-glúten": "Gluten-Free",
+  "vegetariano": "Vegetarian",
+  "pequeno-almoço": "Breakfast",
+  "meal-prep": "Meal Prep",
+  "leve": "Light",
+  "rápido": "Quick",
+  "reconfortante": "Comfort Food"
+}
+```
+
+Then update every place that renders a system tag verbatim — `RecipeCard` in `library/index.tsx` and the Tags section in `FilterSheet` — to use `t(`tags.${tag}`)` instead of `{tag}`.
+
+---
+
+## 7. Surface cook counts on recipe cards (optional, do last)
+
+In `fetchLibrary`, add an aggregate subquery or a separate `fetchRecipeCookCounts` call to get total cook counts per recipe. Add a small muted count to `RecipeCard`:
+
+```tsx
+{cookCount > 0 && (
+  <span className="text-[10px] text-[#9CA3AF]">{cookCount}× cooked</span>
+)}
+```
+
+Only show when `cookCount > 0`. This is the first surface of social proof and requires no user interaction — it populates automatically from the auto-log in step 5.
+
+---
+
+## Verify before moving on
+
+- `cook_log` table exists; archiving a plan inserts rows automatically
+- `user_recipe_interactions` table exists; like/save/hide server functions work
+- `notification_preferences` table exists
+- `user_tags` column exists on `recipes`
+- System tags display translated labels in both PT and EN (check by switching language in Settings)
+- Cook counts appear on recipe cards after archiving at least one plan
+- No regressions: plan page, shopping list, household flows all work as before

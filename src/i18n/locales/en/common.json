@@ -118,6 +118,22 @@
     "recipes_one": "recipe",
     "recipes_other": "recipes"
   },
+  "tags": {
+    "air-fryer": "Air Fryer",
+    "forno": "Oven",
+    "micro-ondas": "Microwave",
+    "sem-cozinha": "No-Cook",
+    "uma-frigideira": "One-Pan",
+    "indiano": "Indian",
+    "português": "Portuguese",
+    "sem-glúten": "Gluten-Free",
+    "vegetariano": "Vegetarian",
+    "pequeno-almoço": "Breakfast",
+    "meal-prep": "Meal Prep",
+    "leve": "Light",
+    "rápido": "Quick",
+    "reconfortante": "Comfort Food"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",

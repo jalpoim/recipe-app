@@ -3,8 +3,21 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import { Clock, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { fetchLibrary, type RecipeWithIngredients } from '../../../lib/supabase/queries'
+import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
 import type { Recipe } from '../../../types/db'
+
+// ---------- hooks ----------
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
 
 // ---------- search param schema ----------
 
@@ -160,7 +173,15 @@ function allUnique<T>(arr: T[][]): T[] {
 
 // ---------- RecipeCard ----------
 
-function RecipeCard({ recipe, replacing }: { recipe: RecipeWithIngredients; replacing?: string }) {
+function RecipeCard({
+  recipe,
+  replacing,
+  cookCount = 0,
+}: {
+  recipe: RecipeWithIngredients
+  replacing?: string
+  cookCount?: number
+}) {
   const { t } = useTranslation()
   const cal = perServing(recipe, 'calories')
   const pro = perServing(recipe, 'protein')
@@ -172,7 +193,7 @@ function RecipeCard({ recipe, replacing }: { recipe: RecipeWithIngredients; repl
     <Link
       to="/app/library/$recipeId"
       params={{ recipeId: recipe.id }}
-      search={replacing ? { replacing } : {}}
+      search={{ from: undefined, planItemId: undefined, replacing: replacing ?? undefined }}
       className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
     >
       <div className="flex items-start justify-between gap-2">
@@ -222,7 +243,7 @@ function RecipeCard({ recipe, replacing }: { recipe: RecipeWithIngredients; repl
               key={tag}
               className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium"
             >
-              {tag}
+              {t(`tags.${tag}`, { defaultValue: tag })}
             </span>
           ))}
           {recipe.tags.length > 4 && (
@@ -231,6 +252,9 @@ function RecipeCard({ recipe, replacing }: { recipe: RecipeWithIngredients; repl
             </span>
           )}
         </div>
+      )}
+      {cookCount > 0 && (
+        <p className="mt-2 text-[10px] text-[#9CA3AF]">{cookCount}× cooked</p>
       )}
     </Link>
   )
@@ -288,6 +312,7 @@ function FilterSheet({
 }: FilterSheetProps) {
   const { t } = useTranslation()
   const [ingSearch, setIngSearch] = useState('')
+  const debouncedIngSearch = useDebounce(ingSearch, 150)
   const scrollRef = useRef<HTMLDivElement>(null)
   const proteinRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
@@ -319,14 +344,14 @@ function FilterSheet({
 
   const filteredIngs = useMemo(
     () =>
-      ingSearch.length > 0
+      debouncedIngSearch.length > 0
         ? allIngredientNames.filter(
             (n) =>
-              n.toLowerCase().includes(ingSearch.toLowerCase()) &&
+              n.toLowerCase().includes(debouncedIngSearch.toLowerCase()) &&
               !search.ingredients.includes(n),
           )
         : [],
-    [allIngredientNames, ingSearch, search.ingredients],
+    [allIngredientNames, debouncedIngSearch, search.ingredients],
   )
 
   function toggleProtein(slug: string) {
@@ -465,7 +490,7 @@ function FilterSheet({
                       aria-pressed={search.tags.includes(tag)}
                       className={chipCls(search.tags.includes(tag))}
                     >
-                      {tag}
+                      {t(`tags.${tag}`, { defaultValue: tag })}
                     </button>
                   ))}
                 </div>
@@ -512,7 +537,7 @@ function FilterSheet({
                 </div>
               )}
 
-              {ingSearch.length > 0 && filteredIngs.length === 0 && (
+              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
                 <p className="mt-2 text-xs text-[#9CA3AF] px-1">{t('filters.noResults')}</p>
               )}
             </div>
@@ -575,6 +600,18 @@ function LibraryPage() {
     })
   }
 
+  const [localQ, setLocalQ] = useState(search.q)
+  const debouncedQ = useDebounce(localQ, 300)
+
+  useEffect(() => {
+    if (debouncedQ !== search.q) update({ q: debouncedQ })
+  }, [debouncedQ]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Keep local input in sync if URL changes externally (e.g. clear button)
+  useEffect(() => {
+    setLocalQ(search.q)
+  }, [search.q])
+
   const allProteins = useMemo(
     () => [...new Set(recipes.flatMap((r) => r.proteins))].sort(),
     [recipes],
@@ -599,6 +636,21 @@ function LibraryPage() {
 
   const filtered = useMemo(() => applyFilters(recipes, search), [recipes, search])
   const sorted = useMemo(() => applySort(filtered, search.sort), [filtered, search.sort])
+
+  const recipeIds = useMemo(() => recipes.map((r) => r.id), [recipes])
+  const { data: cookCounts } = useQuery({
+    queryKey: ['cookCounts', recipeIds],
+    queryFn: () => fetchRecipeCookCounts({ data: recipeIds }),
+    staleTime: 5 * 60 * 1000,
+    enabled: recipeIds.length > 0,
+  })
+  const cookCountMap = useMemo(() => {
+    const map: Record<string, number> = {}
+    for (const { recipe_id, count } of cookCounts ?? []) {
+      map[recipe_id] = count
+    }
+    return map
+  }, [cookCounts])
 
   const proteinLabel = useMemo(() => {
     if (search.proteins.length === 0) return t('filters.protein')
@@ -670,15 +722,15 @@ function LibraryPage() {
             />
             <input
               type="text"
-              value={search.q}
-              onChange={(e) => update({ q: e.target.value })}
+              value={localQ}
+              onChange={(e) => setLocalQ(e.target.value)}
               placeholder={t('filters.searchRecipe')}
               aria-label={t('filters.searchRecipe')}
               className="w-full rounded-xl border border-[#E5E7EB] bg-white pl-9 pr-9 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] shadow-sm transition-colors"
             />
-            {search.q && (
+            {localQ && (
               <button
-                onClick={() => update({ q: '' })}
+                onClick={() => { setLocalQ(''); update({ q: '' }) }}
                 aria-label="Limpar pesquisa"
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
               >
@@ -746,7 +798,12 @@ function LibraryPage() {
         {sorted.length > 0 ? (
           <div className="space-y-3">
             {sorted.map((r) => (
-              <RecipeCard key={r.id} recipe={r} replacing={search.replacing} />
+              <RecipeCard
+                key={r.id}
+                recipe={r}
+                replacing={search.replacing}
+                cookCount={cookCountMap[r.id] ?? 0}
+              />
             ))}
           </div>
         ) : (
