@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, Plus, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ensureActivePlan, fetchPlanItems } from '../../lib/supabase/plan-queries'
+import { fetchActivePlanWithCount, fetchPlanItems } from '../../lib/supabase/plan-queries'
 import {
   fetchShoppingChecks,
   upsertCheck,
@@ -59,19 +59,10 @@ function ShoppingError({ error }: { error: Error }) {
 }
 
 export const Route = createFileRoute('/app/shopping')({
-  pendingComponent: ShoppingSkeleton,
   errorComponent: ({ error }) => <ShoppingError error={error as Error} />,
   validateSearch: (search) => ({
     view: search.view === 'global' ? ('global' as const) : ('recipe' as const),
   }),
-  loader: async () => {
-    const plan = await ensureActivePlan()
-    const [items, checks] = await Promise.all([
-      fetchPlanItems({ data: plan.id }),
-      fetchShoppingChecks({ data: plan.id }),
-    ])
-    return { plan, items, checks }
-  },
   component: ShoppingPage,
 })
 
@@ -549,26 +540,54 @@ function AddCustomItemForm({
 
 function ShoppingPage() {
   const { t } = useTranslation()
-  const { plan, items, checks: loaderChecks } = Route.useLoaderData()
   const { view } = Route.useSearch()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { showToast } = useToast()
 
+  const { data: plan, isLoading: isPlanLoading } = useQuery({
+    queryKey: ['active-plan'],
+    queryFn: fetchActivePlanWithCount,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const planId = plan?.id
+
+  const { data: items = [], isLoading: isItemsLoading } = useQuery({
+    queryKey: ['plan-items', planId],
+    queryFn: () => fetchPlanItems({ data: planId! }),
+    enabled: !!planId,
+    staleTime: 2 * 60 * 1000,
+  })
+
+  const { data: checksData, isLoading: isChecksLoading } = useQuery({
+    queryKey: ['shopping-checks', planId],
+    queryFn: () => fetchShoppingChecks({ data: planId! }),
+    enabled: !!planId,
+    staleTime: 0,
+  })
+
+  // Local check state — initialized from server once per plan, then mutated optimistically
+  const [checkMap, setCheckMap] = useState<Map<string, boolean>>(new Map())
+  const [customItems, setCustomItems] = useState<ShoppingCheckState[]>([])
+  const [initializedForPlan, setInitializedForPlan] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (checksData && planId && planId !== initializedForPlan) {
+      setCheckMap(new Map(checksData.map((c) => [c.item_key, c.is_checked])))
+      setCustomItems(checksData.filter((c) => c.item_key.startsWith('custom:')))
+      setInitializedForPlan(planId)
+    }
+  }, [checksData, planId, initializedForPlan])
+
+  const isLoading =
+    isPlanLoading || (!!planId && (isItemsLoading || isChecksLoading || initializedForPlan !== planId))
+  if (isLoading) return <ShoppingSkeleton />
+
   function setView(v: 'recipe' | 'global') {
     // @ts-ignore -- routeTree.gen.ts is regenerated on pnpm dev; view is valid search param
     void navigate({ search: { view: v }, replace: true })
   }
-
-  // Checkbox state — local, fire-and-forget to server
-  const [checkMap, setCheckMap] = useState<Map<string, boolean>>(
-    () => new Map(loaderChecks.map((c) => [c.item_key, c.is_checked])),
-  )
-
-  // Custom items state
-  const [customItems, setCustomItems] = useState<ShoppingCheckState[]>(
-    () => loaderChecks.filter((c) => c.item_key.startsWith('custom:')),
-  )
 
   // Per-ingredient category overrides — backed by Supabase
   const { data: overridesData = [] } = useQuery({
@@ -597,7 +616,7 @@ function ShoppingPage() {
   function toggleCheck(itemKey: string, label?: string, category?: string) {
     const next = !(checkMap.get(itemKey) ?? false)
     setCheckMap((prev) => new Map(prev).set(itemKey, next))
-    upsertCheck({ data: { planId: plan.id, itemKey, isChecked: next, label, category } }).catch(
+    upsertCheck({ data: { planId: planId!, itemKey, isChecked: next, label, category } }).catch(
       () => showToast('Erro ao guardar', 'error'),
     )
   }
@@ -609,7 +628,7 @@ function ShoppingPage() {
       return m
     })
     for (const k of keys) {
-      upsertCheck({ data: { planId: plan.id, itemKey: k, isChecked: next } }).catch(
+      upsertCheck({ data: { planId: planId!, itemKey: k, isChecked: next } }).catch(
         () => showToast('Erro ao guardar', 'error'),
       )
     }
@@ -623,7 +642,7 @@ function ShoppingPage() {
     const tempKey = `custom:${Date.now()}`
     const tempItem: ShoppingCheckState = {
       id: tempKey,
-      plan_id: plan.id,
+      plan_id: planId!,
       item_key: tempKey,
       is_checked: false,
       label,
@@ -634,7 +653,7 @@ function ShoppingPage() {
     setCheckMap((prev) => new Map(prev).set(tempKey, false))
     setShowAddForm(false)
 
-    addCustomShoppingItem({ data: { planId: plan.id, label, category } }).then((saved) => {
+    addCustomShoppingItem({ data: { planId: planId!, label, category } }).then((saved) => {
       setCustomItems((prev) =>
         prev.map((c) => (c.item_key === tempKey ? saved : c)),
       )
@@ -650,7 +669,7 @@ function ShoppingPage() {
   function handleRemoveCustom(itemKey: string) {
     setCustomItems((prev) => prev.filter((c) => c.item_key !== itemKey))
     setCheckMap((prev) => { const n = new Map(prev); n.delete(itemKey); return n })
-    deleteCustomShoppingItem({ data: { planId: plan.id, itemKey } }).catch(
+    deleteCustomShoppingItem({ data: { planId: planId!, itemKey } }).catch(
       () => showToast('Erro ao remover item', 'error'),
     )
   }
@@ -661,7 +680,7 @@ function ShoppingPage() {
       if (!k.startsWith('custom:')) next.set(k, false)
     }
     setCheckMap(next)
-    clearNonCustomChecks({ data: plan.id }).catch(
+    clearNonCustomChecks({ data: planId! }).catch(
       () => showToast('Erro ao limpar marcações', 'error'),
     )
   }
@@ -673,7 +692,7 @@ function ShoppingPage() {
       if (k.startsWith('custom:')) next.delete(k)
     }
     setCheckMap(next)
-    clearCustomItems({ data: plan.id }).catch(
+    clearCustomItems({ data: planId! }).catch(
       () => showToast('Erro ao limpar itens', 'error'),
     )
   }

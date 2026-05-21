@@ -35,6 +35,7 @@ function BottomNav() {
   const { data: plan } = useQuery({
     queryKey: ['active-plan'],
     queryFn: fetchActivePlanWithCount,
+    staleTime: 5 * 60 * 1000,
   })
 
   const itemCount = plan?.item_count ?? 0

@@ -5,7 +5,6 @@ import { X, Clock, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/Toast'
 import {
-  ensureActivePlan,
   fetchPlanItems,
   fetchActivePlanWithCount,
   removePlanItem,
@@ -51,13 +50,7 @@ function PlanError({ error }: { error: Error }) {
 }
 
 export const Route = createFileRoute('/app/plan')({
-  pendingComponent: PlanSkeleton,
   errorComponent: ({ error }) => <PlanError error={error as Error} />,
-  loader: async () => {
-    const plan = await ensureActivePlan()
-    const items = await fetchPlanItems({ data: plan.id })
-    return { plan, items }
-  },
   component: PlanPage,
 })
 
@@ -171,24 +164,26 @@ function PlanItemCard({
 
 function PlanPage() {
   const { t } = useTranslation()
-  const { plan: loaderPlan, items: loaderItems } = Route.useLoaderData()
   const qc = useQueryClient()
   const { showToast } = useToast()
   const [confirmClear, setConfirmClear] = useState(false)
 
-  const { data: plan } = useQuery({
+  const { data: plan, isLoading: isPlanLoading } = useQuery({
     queryKey: ['active-plan'],
     queryFn: fetchActivePlanWithCount,
-    initialData: { ...loaderPlan, item_count: loaderItems.length } as ActivePlanWithCount,
+    staleTime: 5 * 60 * 1000,
   })
 
-  const planId = plan?.id ?? loaderPlan.id
+  const planId = plan?.id
 
-  const { data: items = [] } = useQuery({
+  const { data: items = [], isLoading: isItemsLoading } = useQuery({
     queryKey: ['plan-items', planId],
-    queryFn: () => fetchPlanItems({ data: planId }),
-    initialData: planId === loaderPlan.id ? loaderItems : undefined,
+    queryFn: () => fetchPlanItems({ data: planId! }),
+    enabled: !!planId,
+    staleTime: 2 * 60 * 1000,
   })
+
+  if (isPlanLoading || isItemsLoading) return <PlanSkeleton />
 
   // Remove item — optimistic
   const removeMutation = useMutation({
@@ -232,7 +227,7 @@ function PlanPage() {
 
   // Archive + create new plan
   const clearMutation = useMutation({
-    mutationFn: () => archiveAndCreatePlan({ data: planId }),
+    mutationFn: () => archiveAndCreatePlan({ data: planId! }),
     onSuccess: (newPlan) => {
       qc.setQueryData<ActivePlanWithCount>(['active-plan'], {
         ...newPlan,
