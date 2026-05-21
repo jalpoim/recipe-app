@@ -97,7 +97,7 @@ export const fetchPlanItems = createServerFn({ method: 'GET' })
           .in('id', recipeIds),
         supabase
           .from('recipe_ingredients')
-          .select('id, recipe_id, name, raw_text, unit, position, is_pantry')
+          .select('id, recipe_id, name, raw_text, unit, quantity, position, is_pantry')
           .in('recipe_id', recipeIds),
       ])
     if (recipeErr) throw new Error(recipeErr.message)
