@@ -520,7 +520,7 @@ function FilterSheet({
                 value={ingSearch}
                 onChange={(e) => setIngSearch(e.target.value)}
                 placeholder={t('filters.searchIngredient')}
-                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
               />
 
               {filteredIngs.length > 0 && (
@@ -726,7 +726,7 @@ function LibraryPage() {
               onChange={(e) => setLocalQ(e.target.value)}
               placeholder={t('filters.searchRecipe')}
               aria-label={t('filters.searchRecipe')}
-              className="w-full rounded-xl border border-[#E5E7EB] bg-white pl-9 pr-9 py-2.5 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] shadow-sm transition-colors"
+              className="w-full rounded-xl border border-[#E5E7EB] bg-white pl-9 pr-9 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] shadow-sm transition-colors"
             />
             {localQ && (
               <button
