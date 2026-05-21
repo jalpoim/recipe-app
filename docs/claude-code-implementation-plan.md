@@ -1527,4 +1527,63 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 - `user_tags` column exists on `recipes`
 - System tags display translated labels in both PT and EN (check by switching language in Settings)
 - Cook counts appear on recipe cards after archiving at least one plan
+
+---
+
+## Current state (as of May 2026) — read this before starting any new session
+
+### What is fully built and deployed
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Auth (magic link + Google OAuth) | ✅ Done | |
+| Recipe library — browse, filter, search, sort | ✅ Done | Cursor-based pagination, 24/page, virtual list |
+| Library filters — Vaul bottom sheet | ✅ Done | Protein chips, time/cal caps, tags, ingredients |
+| Recipe detail — portion scaling, cooking companion | ✅ Done | Timer is global across steps (not per-step) |
+| Meal prep plan — add/replace/remove/clear | ✅ Done | |
+| Shopping list — per-recipe + global, checkboxes, pantry | ✅ Done | |
+| Households — shared plan + shopping, JWT-backed | ✅ Done | JWT refresh on invite accept fixed May 2026 |
+| Performance — JWT session, getSession(), household from app_metadata | ✅ Done | get_active_plan, get_recipe_cook_counts RPCs |
+| i18n — PT + EN, recipe/ingredient/step translations | ✅ Done | |
+| PWA manifest + icons | ✅ Done | |
+| Settings — profile, sign out, household management | ✅ Done | |
+| cook_log table + server functions | ✅ Schema+fns done | **No UI yet — nothing calls logRecipeCooked** |
+| user_recipe_interactions table + server functions | ✅ Schema+fns done | **No UI yet** |
+| System tag translations (i18n keys) | ❌ Not done | Tags display raw PT strings in filter sheet for EN users |
+| Recipe creation UI | ❌ Not done | Explicitly deferred from v1 |
+
+### Recipe library — what's in the DB
+
+- **95 system recipes** (visibility='system', owner_id=null):
+  - 50 Joe x Fitness (Korean/Asian, from cookbook — `scripts/joe-x-fitness-recipes.json`)
+  - 45 AI-generated (`scripts/ai-generated-recipes.json`) — 20 were deleted after quality check (ERROR-level macro issues)
+- **116 Cooking Abs cookbook recipes** (visibility='system', owner_id=null, seeded from `scripts/cookbook-recipes.json`) — Portuguese fitness cooking
+- Total: **211 system recipes**
+
+Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, `air-fryer`, `micro-ondas`, `sem-cozinha`, `uma-frigideira`, `leve`, `reconfortante`, `acompanhamento`, `sopa`, `vegetariano`.
+
+### Key architectural decisions already locked in
+
+- **Cursor pagination** — composite `(sort_field, id)` cursor, 24 per page
+- **Sort** — server-side for pagination, client-side reorder for instant UX (sort excluded from queryKey)
+- **Auth** — `getSession()` everywhere except security-sensitive mutations (those use `getUser()`)
+- **household_id** — stored in `app_metadata` JWT claims; refreshed explicitly after join/leave
+- **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
+- **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
+
+### What to do next (Session 11)
+
+Session 11 is the next planned session. The **schema and server functions are already done** — skip steps 1–4 of the session 11 plan above. Only these parts remain:
+
+1. **Cook log UI** — Add a "Cozinhei isto" (I cooked this) button at the end of the cooking companion flow. On tap: call `logRecipeCooked({ recipeId, source: 'manual', householdId })`, invalidate cook counts query, show a brief toast.
+2. **Auto-log on plan archive** — In `archiveAndCreatePlan` (`plan-queries.ts`), insert cook_log rows for all plan items before archiving (source: 'planned').
+3. **System tag i18n** — Add `tags.*` keys to both locale files, update `RecipeCard` and `FilterSheet` to use `t('tags.${tag}', tag)` (fallback to raw tag so unknown tags still render).
+4. **Cook counts in library** — Already wired via `fetchRecipeCookCounts` RPC and shown on cards; will auto-populate once cook_log has data.
+
+### Supabase project
+
+- Project ID: `kgvycfrvxzkfhvuazzle`
+- Region: eu-west-1
+- Users: joao.chaves.g@hotmail.com (main), jchavesalp@gmail.com (test account), mariaa.ramalho97@gmail.com (girlfriend)
+- Household: `6cf657e3-823c-4a9a-bf27-b2cd3b857641` (owner: jchavesalp, member: mariaa)
 - No regressions: plan page, shopping list, household flows all work as before
