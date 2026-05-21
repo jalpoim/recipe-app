@@ -2,14 +2,15 @@ import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tansta
 import { useQuery } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { getAuthUser } from '../lib/supabase/server'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
+import { supabase } from '../lib/supabase/browser'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
-    const user = await getAuthUser()
-    if (!user) throw redirect({ to: '/' })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw redirect({ to: '/' })
+    const user = session.user
 
     // Process pending invite saved before sign-in
     const pendingToken =

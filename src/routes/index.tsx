@@ -1,7 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { supabase, isPlaceholderConfig } from '../lib/supabase/browser'
-import { getAuthUser } from '../lib/supabase/server'
 
 function GoogleIcon() {
   return (
@@ -16,8 +15,8 @@ function GoogleIcon() {
 
 export const Route = createFileRoute('/')({
   beforeLoad: async () => {
-    const user = await getAuthUser()
-    if (user) throw redirect({ to: '/app' })
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) throw redirect({ to: '/app' })
   },
   component: SignInPage,
 })

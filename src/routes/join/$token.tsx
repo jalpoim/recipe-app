@@ -1,14 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { fetchInviteInfo, acceptInvite } from '../../lib/supabase/household-queries'
-import { getAuthUser } from '../../lib/supabase/server'
+import { supabase } from '../../lib/supabase/browser'
 
 export const Route = createFileRoute('/join/$token')({
   loader: async ({ params }) => {
-    const [info, user] = await Promise.all([
+    const [info, sessionResult] = await Promise.all([
       fetchInviteInfo({ data: params.token }),
-      getAuthUser().catch(() => null),
+      supabase.auth.getSession().catch(() => ({ data: { session: null } })),
     ])
+    const user = sessionResult.data.session?.user ?? null
     return { info, user, token: params.token }
   },
   component: JoinPage,

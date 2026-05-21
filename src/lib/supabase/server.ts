@@ -40,8 +40,8 @@ export const getAuthUser = createServerFn({ method: 'GET' }).handler(
   async () => {
     const supabase = createSupabaseServerClient()
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    return user
+      data: { session },
+    } = await supabase.auth.getSession()
+    return session?.user ?? null
   },
 )
