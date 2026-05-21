@@ -1,9 +1,10 @@
-import { createFileRoute, Link, useRouteContext } from '@tanstack/react-router'
-import { ArrowLeft, Check, Copy, Loader2 } from 'lucide-react'
+import { createFileRoute, Link, useNavigate, useRouteContext } from '@tanstack/react-router'
+import { ArrowLeft, Check, Copy, Loader2, LogOut } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import i18n from '../../i18n'
+import { signOut } from '../../lib/supabase/server'
 import {
   fetchHouseholdInfo,
   createHousehold,
@@ -227,6 +228,14 @@ function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const currentLang = i18nInst.language.startsWith('en') ? 'en' : 'pt'
   const { user } = useRouteContext({ from: '/app' })
+  const navigate = useNavigate()
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    await signOut()
+    navigate({ to: '/' })
+  }
 
   const displayName: string =
     (user?.user_metadata?.full_name as string | undefined) ||
@@ -321,6 +330,18 @@ function SettingsPage() {
               {t('settings.household')}
             </p>
             <HouseholdSection />
+          </section>
+
+          {/* Sign out */}
+          <section className="pb-2">
+            <button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl border border-[#E5E7EB] bg-white py-3.5 text-sm font-medium text-[#DC2626] hover:bg-[#fee2e2] hover:border-[#fecaca] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none shadow-sm"
+            >
+              <LogOut size={16} aria-hidden="true" />
+              {signingOut ? '…' : t('settings.signOut')}
+            </button>
           </section>
         </div>
       </div>

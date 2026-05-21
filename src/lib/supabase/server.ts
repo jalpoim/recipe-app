@@ -30,6 +30,12 @@ function createSupabaseServerClient() {
   })
 }
 
+export const signOut = createServerFn({ method: 'POST' }).handler(async () => {
+  const supabase = createSupabaseServerClient()
+  await supabase.auth.signOut()
+  return { ok: true }
+})
+
 export const getAuthUser = createServerFn({ method: 'GET' }).handler(
   async () => {
     const supabase = createSupabaseServerClient()

@@ -123,6 +123,20 @@
     "language": "Idioma",
     "theme": "Aparência",
     "light": "Claro",
-    "dark": "Escuro"
+    "dark": "Escuro",
+    "household": "Household",
+    "householdCreate": "Criar household",
+    "householdCreateHint": "Cria um household para partilhar o plano com outra pessoa.",
+    "householdWaiting": "A aguardar membro...",
+    "householdWaitingHint": "Partilha o link abaixo com a outra pessoa.",
+    "householdInviteLink": "Link de convite",
+    "householdCopyLink": "Copiar link",
+    "householdLinkCopied": "Link copiado!",
+    "householdRevokeInvite": "Revogar convite",
+    "householdLeave": "Sair do household",
+    "householdLeaveConfirm": "Ao sair, o plano partilhado será arquivado e ambos voltarão ao plano pessoal.",
+    "householdCreating": "A criar…",
+    "householdLeaving": "A sair…",
+    "signOut": "Terminar sessão"
   }
 }

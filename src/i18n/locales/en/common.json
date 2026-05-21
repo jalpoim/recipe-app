@@ -123,6 +123,20 @@
     "language": "Language",
     "theme": "Appearance",
     "light": "Light",
-    "dark": "Dark"
+    "dark": "Dark",
+    "household": "Household",
+    "householdCreate": "Create household",
+    "householdCreateHint": "Create a household to share your plan with another person.",
+    "householdWaiting": "Waiting for member...",
+    "householdWaitingHint": "Share the link below with the other person.",
+    "householdInviteLink": "Invite link",
+    "householdCopyLink": "Copy link",
+    "householdLinkCopied": "Link copied!",
+    "householdRevokeInvite": "Revoke invite",
+    "householdLeave": "Leave household",
+    "householdLeaveConfirm": "On leaving, the shared plan will be archived and both users will return to a personal plan.",
+    "householdCreating": "Creating…",
+    "householdLeaving": "Leaving…",
+    "signOut": "Sign out"
   }
 }
