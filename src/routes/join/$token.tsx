@@ -42,7 +42,8 @@ function JoinPage() {
     try {
       if (user) {
         await acceptInvite({ data: token })
-        window.location.href = '/app/library'
+        await supabase.auth.refreshSession()
+        window.location.href = '/app/plan'
       } else {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem('pendingInviteToken', token)

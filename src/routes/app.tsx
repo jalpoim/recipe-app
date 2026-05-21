@@ -19,6 +19,7 @@ export const Route = createFileRoute('/app')({
       localStorage.removeItem('pendingInviteToken')
       try {
         await acceptInvite({ data: pendingToken })
+        await supabase.auth.refreshSession()
       } catch {
         // Silently ignore — invite may be expired or already used
       }
