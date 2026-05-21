@@ -17,7 +17,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/types/db'
-import recipes from './recipes.json'
+import recipes from './joe-x-fitness-recipes.json'
 
 if (process.env.NODE_ENV === 'production') {
   console.error('Refusing to run seed script in production.')

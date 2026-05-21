@@ -1,0 +1,864 @@
+[
+  {
+    "id": "399187d3-06b0-4d21-88cf-9cdb41735b12",
+    "name": "Beef & Broccoli Stir-Fry",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "2d7fc9bb-5dcf-4f23-8027-e474ca665bd9",
+    "name": "Chicken Teriyaki Bowl",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Fat seems low: 170g chicken thighs (~15-17g fat) plus honey/sesame would put fat closer to 16-18g, not 10g. Calories calc (40*4+50*4+10*9 = 450) is close to 480, acceptable."
+      }
+    ],
+    "summary": "Fat content appears underestimated for 170g chicken thighs."
+  },
+  {
+    "id": "9fc6fe72-07ba-44ca-8696-37ef06c6f045",
+    "name": "Tuna Gochujang Sandwich",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 32*4 + 22*4 + 12*9 = 324 kcal, vs stated 340 — within tolerance. However, 32g protein is high: a can of tuna (~25g protein drained) + light cheese slice (~5g) is plausible, borderline ok."
+      }
+    ],
+    "summary": "Protein is on the high end but plausible; minor concern only."
+  },
+  {
+    "id": "a3e5d8a0-6972-4283-a3c8-406580dfbfd8",
+    "name": "Egg White French Toast",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Macros do not add up to a real dish: 1 slice whole wheat bread (~70 kcal, 3-4g protein, 12g carbs) + 1/2 cup egg whites (~63 kcal, 13g protein) + berries (~30 kcal, 7g carbs) ≈ 165 kcal, ~17g protein, ~20g carbs, ~1g fat. Stated 280 kcal / 22g protein / 32g carbs / 6g fat is significantly overestimated across all macros."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Quantity for 'Frutos vermelhos' (berries) is missing."
+      }
+    ],
+    "summary": "Macros are substantially overestimated relative to the listed ingredients."
+  },
+  {
+    "id": "bd529652-1dcc-4d9b-aee3-0bc11382d019",
+    "name": "Protein Omelette",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "b2b536b1-8d29-4715-9cd8-a7a295a265b1",
+    "name": "Greek Yogurt Bowl",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Protein looks high: 200g of 0% Greek yogurt yields ~20g protein, plus ~1-2g from granola = ~22g, not 30g. Calories (250) also slightly exceed 4P+4C+9F = 4*30+4*30+9*3 = 267, which is close but the protein figure itself is implausible for the ingredients listed."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "'1 mão-cheia' (handful) of berries and 'spray de óleo'-style vague portions are fine, but the 30g carbs figure assumes ~2 tbsp granola (~12g carbs) + berries (~10g) + 1 tsp honey (~6g) ≈ 28g, which is plausible. Only protein is off."
+      }
+    ],
+    "summary": "Protein value (30g) is overstated for 200g 0% Greek yogurt + granola + berries + honey; realistic value is ~20-22g."
+  },
+  {
+    "id": "37a87fd4-3b7e-4041-9ceb-5b74d262b320",
+    "name": "Shakshuka-Style Eggs",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros (4*18+4*15+9*14 = 258 vs stated 280) are within reasonable rounding, ingredients are complete with quantities, and steps are coherent."
+  },
+  {
+    "id": "13e8ffd3-6a06-4a68-a9d5-abc56dc620ff",
+    "name": "Chicken Cauli-Rice Bowl",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "Spinach is listed as an ingredient and appears in the final assembly but is never cooked or wilted in any step — it's added raw at the end, which is unusual for a hot bowl. Minor clarity issue."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math checks out (4*40+4*35+9*12 = 408 vs stated 450, close enough with rounding). Protein from 150-170g ground chicken (~30-34g) + small contributions = ~32-36g; 40g is slightly high but within range if upper bound (170g) is used."
+      }
+    ],
+    "summary": "Mostly fine, but spinach handling in steps is ambiguous and protein figure is at the upper edge of plausibility."
+  },
+  {
+    "id": "dac74c4d-914b-43dc-b3b0-9cd41cd256d6",
+    "name": "Chicken Burritos (Low-Carb Wrap)",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 4*38+4*24+9*14 = 374 vs stated 420 — a ~45 kcal gap, slightly larger than typical rounding but still within acceptable tolerance given variability in low-carb tortillas and light cheese."
+      }
+    ],
+    "summary": "Recipe is coherent and realistic; only a minor calorie/macro discrepancy worth noting."
+  },
+  {
+    "id": "89f5bdc8-1a4a-4e29-9c71-33be73bffb26",
+    "name": "Breaded Turkey Steaks + Sweet Potato",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "'Feijão verde ao vapor' (steamed green beans) has no quantity specified — should indicate a portion (e.g. 100g or 1 chávena)."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 4*42+4*40+9*14 = 454 vs stated 520 — a ~65 kcal gap, somewhat large. Protein 42g is plausible for 150g turkey (~33g) + 1 egg (~6g) + panko (~1g) ≈ 40g, acceptable."
+      }
+    ],
+    "summary": "Reasonable recipe, but green beans lack a quantity and calorie total is ~65 kcal higher than the macro breakdown supports."
+  },
+  {
+    "id": "e81e8ffd-3bdf-44dc-9ad7-7bca55ec3cc6",
+    "name": "Thai Basil Chicken Stir-Fry",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Cauliflower rice / mixed rice listed without a quantity, which makes the carb/calorie count ambiguous between the two options."
+      }
+    ],
+    "summary": "Macros plausible (35*4+20*4+10*9=310, close to stated 350 accounting for sauces and oil spray); recipe is coherent."
+  },
+  {
+    "id": "0a2a6834-b0d1-43a2-b9bb-da63523c0b2e",
+    "name": "Sheet Pan Lemon Herb Salmon",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros check out (38*4+12*4+18*9=362 ≈ 400), 170g salmon realistically yields ~38g protein and ~18g fat, steps are clear."
+  },
+  {
+    "id": "8bb6541e-a467-497b-88b2-8b3e6e467ffe",
+    "name": "Turkey Meatballs in Marinara",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "No binder (egg or breadcrumbs) listed; lean ground turkey meatballs typically need one to hold shape, though it's possible to omit."
+      }
+    ],
+    "summary": "Macros are plausible (32*4+12*4+12*9=284 ≈ 320) and 150g lean turkey ≈ 32g protein is realistic; minor concern about missing binder."
+  },
+  {
+    "id": "144f7d5c-f1fe-46ec-b132-972119966f35",
+    "name": "Garlic Shrimp & Courgette Noodles",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Fat (16g) and calories (380) are inconsistent with the ingredients. 150g shrimp ≈ 1.5g fat and 1 tsp olive oil ≈ 4.5g fat, so total fat should be ~6g, not 16g. Calories should be closer to 230-260, not 380."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Protein of 38g is slightly high for 150g shrimp (which yields ~28-30g protein)."
+      }
+    ],
+    "summary": "Recipe itself is sensible but stated fat and calories are roughly double what the ingredients would actually provide."
+  },
+  {
+    "id": "250e0e0e-1b8e-4752-a6e9-c5f64284f536",
+    "name": "Tuna Poke Bowl",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros are consistent (35*4+45*4+10*9=410 ≈ 420) and align well with 140g tuna, 1/2 cup rice, edamame, and avocado; steps are clear."
+  },
+  {
+    "id": "429af152-a9fe-4803-aa29-4df6e47a1c38",
+    "name": "Grilled Chicken Greek Salad",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "98aa878d-6ca6-4dc8-a6bb-816d3d794bc4",
+    "name": "Shrimp Pad Thai (light)",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 30*4 + 55*4 + 12*9 = 448 kcal, matches stated 450 kcal closely. Protein from 115g shrimp (~22g) + 1 egg (~6g) ≈ 28g, plausible vs 30g claimed."
+      }
+    ],
+    "summary": "Looks good"
+  },
+  {
+    "id": "45e1a543-86fa-4130-9e7c-642aa152a177",
+    "name": "Cod à Brás (light)",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Carbs likely underestimated: 100g batata palha (commercial fried shoestring potatoes) typically provides ~50-55g carbs alone, plus residual from other items, so 30g carbs/serving seems low even if air-fried."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calories likely underestimated: 100g batata palha alone is ~500 kcal in commercial form; even homemade air-fryer matchstick potatoes from 100g raw potato + cod (~110 kcal) + 1 egg + 2 whites + 1 tsp olive oil would exceed 420 kcal if 'batata palha' refers to the fried product. Clarify whether this is raw potato cut julienne and air-fried, or pre-fried batata palha."
+      }
+    ],
+    "summary": "Macros are plausible only if 'batata palha' means raw potato julienne air-fried; if it refers to commercial fried shoestring potatoes, calories and carbs are significantly understated."
+  },
+  {
+    "id": "f379415b-34a4-4891-bf4a-3470491bd40b",
+    "name": "Turkey Chili",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 35*4 + 30*4 + 8*9 = 332 kcal vs stated 350 kcal — within rounding tolerance. Protein from 150g lean ground turkey (~32g) + 1/2 cup black beans (~7g) ≈ 39g, consistent with claimed 35g."
+      }
+    ],
+    "summary": "Looks good"
+  },
+  {
+    "id": "a0c46e1b-810c-45bb-8317-e4ceee9ad542",
+    "name": "Chicken Tikka Masala (light)",
+    "verdict": "ok",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro math: 38*4 + 35*4 + 14*9 = 418 kcal vs stated 450 kcal — small discrepancy (~30 kcal) within acceptable rounding/ingredient variance. Protein from 170g chicken breast (~38g) matches claim."
+      }
+    ],
+    "summary": "Looks good"
+  },
+  {
+    "id": "a0ae847b-c36b-48e0-b55b-82c6a5b224d6",
+    "name": "Grilled Squid w/ Grelos",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Protein appears overstated: 250g raw squid yields ~40g protein, plus ~2g from grelos, totalling ~42g (close to 45g claimed but high end). Calories check: 45*4 + 15*4 + 16*9 = 384 kcal vs 400 stated — within tolerance."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Carbs of 15g seem high for 200g cooked grelos (leafy greens, ~3-5g carbs) with no other carb source; likely overstated."
+      }
+    ],
+    "summary": "Recipe is coherent but carb count is implausibly high for squid + leafy greens only."
+  },
+  {
+    "id": "47671a0c-577e-40cc-a9fc-c2bd2242a4d9",
+    "name": "Atlantic Fish Curry",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein of 45g is implausible: 200g raw white fish ≈ 36-40g protein, with negligible protein elsewhere. Macro sum: 45*4 + 35*4 + 18*9 = 482 kcal, roughly matches 490 stated, but protein value is too high for the ingredients listed."
+      }
+    ],
+    "summary": "Macros approximately self-consistent but protein is overstated relative to 200g white fish."
+  },
+  {
+    "id": "8acbb91d-88f4-4468-ae1c-48240b86715a",
+    "name": "Stuffed Peppers (Beef)",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Per-serving protein of 45g (servings=2, total 90g) is implausible: 250g lean ground beef ≈ 50g protein + 30g light cheese ≈ 8g + small amounts from rice ≈ 2g = ~60g total, or ~30g per serving, not 45g."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Recipe uses 4 large peppers but serves only 2, meaning 2 peppers per serving — unusually large portion; not an error but worth noting."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calorie check: 45*4 + 35*4 + 18*9 = 482 kcal vs 500 stated — acceptable, but the underlying protein figure is inflated."
+      }
+    ],
+    "summary": "Protein per serving is roughly 1.5x what the ingredients can provide."
+  },
+  {
+    "id": "01e5e1b0-d6ed-4c65-9e50-2993bcf2b9f1",
+    "name": "Grilled Dourada (Sea Bream)",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Ingredients list both '150g batata cozida cortada em rodelas' and a step to 'Cozer batata em água com sal' — minor inconsistency: potato is listed as already cooked but step says to cook it."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Azeite is listed twice (1 colher sopa + 1 colher chá) but steps only reference azeite once (in the molho verde); the second quantity is not clearly used."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Protein of 45g is high: ~200g cleaned sea bream ≈ 40g protein, plus negligible from potato/parsley. Calorie sum 45*4+30*4+18*9=462 vs 500 stated — ~8% off but acceptable."
+      }
+    ],
+    "summary": "Minor inconsistencies in potato prep and duplicated olive oil; protein slightly overstated."
+  },
+  {
+    "id": "a235c1b9-3c54-4db8-82da-8cfeda65ea1b",
+    "name": "Frango com Curry Verde Tailandês e Arroz Jasmim",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros are self-consistent (112*4+168*4+64*9=1696 vs 1760, ~4% off) and realistic for the ingredient quantities across 4 servings; steps are clear and complete."
+  },
+  {
+    "id": "7ed8a7ae-a8f5-4939-b87c-079d0f08b2a3",
+    "name": "Tigela de Ovos Escalfados com Abacate e Torrada de Centeio",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "0732b50f-f433-48a7-a4d6-e88826ac3a9f",
+    "name": "Aveia de Proteína com Banana e Manteiga de Amendoim",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calorie cross-check: 52g protein*4 + 90g carbs*4 + 22g fat*9 = 766 kcal vs stated 780 kcal — within tolerance, but per-serving carbs (90g) seem slightly high; ingredient totals (~80g oats + ~30g banana carbs + ~25g milk lactose + ~6g PB)/2 ≈ ~75-80g per serving, so carbs may be slightly overestimated."
+      }
+    ],
+    "summary": "Macros mostly plausible; carbs per serving look a touch high but within reasonable margin."
+  },
+  {
+    "id": "51db346d-7c8e-47cd-9ccf-cc65c68a15f4",
+    "name": "Bacalhau com Grão e Espinafres",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories don't match macros: 116*4 + 88*4 + 48*9 = 1248 kcal, but stated 1320 — small discrepancy is OK, however protein of 116g/serving (464g total) is unrealistic: 700g cod (~120g protein total) + 480g chickpeas (~40g) ≈ 160g protein total, or ~40g per serving, not 116g."
+      },
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories per serving (1320) and fat (48g) are far too high for the ingredients listed; total recipe fat is mainly 50ml olive oil (~45g) plus ~10g from chickpeas — ~55g fat total, ~14g per serving, not 48g."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Step 3 uses '100 ml da água da lata' (canning liquid) but the ingredient list only specifies '400g tomate pelado em lata' without mentioning reserving the liquid — minor but worth noting."
+      }
+    ],
+    "summary": "Macros are wildly inflated — protein and calories per serving roughly 3× what the ingredients can provide."
+  },
+  {
+    "id": "103f4d9a-d242-4521-87d1-4f136f35f4ad",
+    "name": "Frango Assado com Batata-Doce",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Macros inflated: 800g chicken breast yields ~248g protein total (~62g/serving), not 124g/serving (496g total). Calories per serving (1668) also implausibly high for 200g chicken + 150g sweet potato + 15ml oil per portion (~550-600 kcal expected)."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Stated fat 72g/serving (288g total) cannot come from 60ml olive oil (~55g fat) + chicken breast (~10g) — actual ~16g fat per serving."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Step 3 references '4 dentes de alho esmagados' but ingredient list says '1 cabeça de alho' (a whole head) without specifying cloves — slight inconsistency."
+      },
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "Paprika math is off: step 1 uses 1/2 tsp, step 3 references 'restante paprika (1,5 colher de chá)', but total is 2 tsp, so remaining should be 1.5 tsp — actually this checks out. Disregard."
+      }
+    ],
+    "summary": "Macros per serving are roughly double what the ingredients support; calories and protein are unrealistic."
+  },
+  {
+    "id": "04e2b8f4-5df2-4b28-892c-a010cc055cc7",
+    "name": "Peito de Frango Marinado com Arroz de Coentros",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein overstated: 800g chicken breast (~248g protein) + 300g raw rice (~21g) ≈ 270g total, or ~67g/serving, not 136g/serving (544g total — more than the entire weight of chicken)."
+      },
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories implausible: 1820 kcal/serving × 4 = 7280 kcal total, but ingredients sum to ~3200-3400 kcal (800g chicken ~1100, 300g rice ~1080, 50ml oil ~440, rest negligible). Per serving should be ~800-850 kcal."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Carbs 168g/serving (672g total) far exceed what 300g raw rice (~225g carbs) can provide."
+      },
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "Step 3 says 'restantes 20 ml de azeite' but marinade used 30 ml of 50 ml total, leaving 20 ml — consistent; however the marinade oil largely stays on the chicken, so this is fine."
+      }
+    ],
+    "summary": "All macro values (calories, protein, carbs) are roughly 2× higher than the ingredients can plausibly yield."
+  },
+  {
+    "id": "af37a17c-217f-437f-af34-fc3d57cf9c0e",
+    "name": "Cottage Cheese + Everything Seasoning",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "b434085b-cf9b-4141-9e1f-bda65c8054ff",
+    "name": "Turkey & Cheese Roll-Ups",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "01dd6b07-778d-46d4-871c-7490eb87b269",
+    "name": "Edamame com Sal",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Fat seems high: 1 cup shelled edamame is ~8g fat which matches, but if in pods (typical serving) it would be closer to 4g. Calories from macros = 17*4 + 14*4 + 8*9 = 196 kcal, listed 190 — acceptable."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Ambiguous whether edamame is in pods or shelled, which significantly changes the effective serving."
+      }
+    ],
+    "summary": "Macros are roughly internally consistent but the edamame form (pods vs. shelled) is ambiguous."
+  },
+  {
+    "id": "f4d83027-c8ba-4635-baea-c86f8a90a69c",
+    "name": "Protein Shake (whey + água)",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "c58bd96e-c778-4227-94aa-f2424cc81af6",
+    "name": "Chicken & Chouriço Skewers",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein of 60g is implausible: 200g raw chicken breast ≈ 46g protein, plus 40g turkey chouriço ≈ 6-8g protein, totaling ~52-54g, not 60g. Also carbs of 30g are too high — peppers and seasonings contribute ~8-10g carbs at most; there is no significant carb source in the ingredient list."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calorie check: 60*4 + 30*4 + 22*9 = 558 kcal vs listed 580 — close, but the underlying protein/carb values themselves are off."
+      },
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "15 minutes at 200°C in an air fryer for chicken cubes wrapped with chouriço may overcook the chicken; typical is 10-12 min. Minor concern."
+      }
+    ],
+    "summary": "Protein and carb values don't match the listed ingredients (chicken+turkey chouriço can't reach 60g protein or 30g carbs)."
+  },
+  {
+    "id": "5da73494-ae26-4eaf-9b88-4d44f1cbb817",
+    "name": "Roasted Lombinho w/ Mustard",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros check out (55*4+35*4+16*9 = 504 kcal, ~520 stated) and ingredients/steps align well."
+  },
+  {
+    "id": "c671080b-d6bf-436a-a4c7-2f5ced70ea73",
+    "name": "Chef's Piri-Piri Chicken",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Step 3 instructs to cook the grelos for 5 minutes, but the ingredient list specifies them as already cooked ('grelos cozidos 200g'). Contradiction between ingredient state and instruction."
+      },
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "Azeite (olive oil) is used in step 3 to dress the grelos but is not listed in ingredients."
+      }
+    ],
+    "summary": "Macros are plausible but there is a contradiction about whether grelos are pre-cooked, and olive oil used in steps is missing from the ingredient list."
+  },
+  {
+    "id": "535eaa99-0b2e-4831-b9a3-5fa0d583f95f",
+    "name": "Chicken Satay w/ Peanut Sauce",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros sum (48*4+22*4+22*9 = 478 kcal vs 490 stated) and ingredients/steps are coherent."
+  },
+  {
+    "id": "039321e6-2afb-4707-bd14-6690bae45123",
+    "name": "Couve Galega Chicken Sauté",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calorie total is overstated: 45*4 + 18*4 + 14*9 = 378 kcal, but recipe lists 420 kcal (~11% discrepancy). Also 18g carbs seems high for 200g couve galega + aromatics (expected ~8-10g)."
+      }
+    ],
+    "summary": "Recipe is sensible but stated calories don't match the macro breakdown and carbs look slightly inflated."
+  },
+  {
+    "id": "16d36482-b2c9-4926-9975-88ad20773767",
+    "name": "Black Bean & Turkey Chili (PT)",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Protein is overstated: 170g lean ground turkey (~35g protein) + 1/2 cup black beans (~7g) ≈ 42g, close to the stated 45g but on the high end; more importantly calorie math: 45*4+35*4+10*9 = 410 kcal vs 450 stated (~10% off)."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "No quantity given for fresh coentros (cilantro) — minor, as it's a garnish."
+      }
+    ],
+    "summary": "Plausible dish but stated calories don't match the macro breakdown and cilantro lacks a quantity."
+  },
+  {
+    "id": "c71505e9-53e8-40a6-9b55-8559a6524a4b",
+    "name": "Piri-Piri Shrimp Stir-fry",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "46e5065e-c27e-4533-9c45-6fe218d74961",
+    "name": "Turkey Taco Sweet Potato",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macros math: 42*4 + 40*4 + 14*9 = 454 kcal vs stated 480 (within ~6%, acceptable but on high side). Protein of 42g is plausible only if 150g lean turkey yields ~32g + small contributions from beans/yogurt (~6-8g) = ~38-40g; 42g is slightly optimistic but acceptable."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "'Salsa (molho mexicano)' is listed but the word 'salsa' in Portuguese also means 'parsley', which could be confusing; quantity (2 colheres sopa) is fine. Minor clarity issue only."
+      }
+    ],
+    "summary": "Minor macro mismatch (~26 kcal) and a Portuguese/Spanish 'salsa' wording ambiguity, but recipe is coherent and cookable."
+  },
+  {
+    "id": "96d78c44-b9a3-403b-8c46-bd4227a3204c",
+    "name": "Turkey Meatballs in Passata",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macros math: 40*4 + 20*4 + 18*9 = 402 kcal vs stated 460 (~58 kcal / 14% gap). Also 18g fat is high for 180g lean turkey (~3-4g fat) + 1 tsp olive oil (~4.5g) ≈ 8-10g fat total; stated 18g looks overstated unless turkey isn't very lean."
+      }
+    ],
+    "summary": "Calorie total and fat content don't align well with the lean ingredients listed; otherwise steps and ingredients are coherent."
+  },
+  {
+    "id": "f5f0d05d-091d-4f39-b033-ab2664627564",
+    "name": "Bibimbap (light)",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good"
+  },
+  {
+    "id": "e0644e14-2473-4768-b1e1-201f479ff9b1",
+    "name": "Carne de Porco Alentejana Fit",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein of 55g is implausible: 150g lean pork loin ≈ 33g protein + 150g clams (with shells, yielding maybe 40-50g meat) ≈ 10-12g protein = ~43-45g total, not 55g. Calorie math 55*4 + 28*4 + 18*9 = 494 kcal matches 500, but protein figure is inflated by ~10g."
+      }
+    ],
+    "summary": "Protein value (55g) is overestimated relative to 150g pork loin + 150g clams in shell; otherwise ingredients and steps are sound."
+  },
+  {
+    "id": "f32156c4-6aa4-4117-93d3-88336d99f692",
+    "name": "Iogurte Grego com Granola Crocante e Frutos Vermelhos",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories per serving (620) and protein (42g) are overstated. Per serving: 250g Greek yogurt 0% (~25g protein, ~100 kcal) + 40g granola (~180 kcal, ~5g protein) + 75g berries (~40 kcal) + 21g honey (~64 kcal) + 10g chia (~50 kcal, ~1.7g protein) ≈ 430–450 kcal and ~32g protein, not 620 kcal / 42g protein. Macro arithmetic check: 42*4+62*4+18*9 = 578 kcal, also inconsistent with stated 620 kcal."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Carbs (62g/serving) look slightly high given 40g granola + 21g honey (~15g sugar) + 75g berries (~6g) + 10g chia (~4g net) ≈ 50–55g per serving."
+      }
+    ],
+    "summary": "Macros (calories and protein especially) are overstated versus the ingredient list."
+  },
+  {
+    "id": "eaf0f150-bc10-41f2-85bb-a06a274c7aed",
+    "name": "Frango Grelhado com Arroz Integral e Legumes Salteados",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good."
+  },
+  {
+    "id": "f801cbf0-c26b-44df-b74b-affbaa35940f",
+    "name": "Bifana Magra no Forno com Courgette",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Fat content (52g/serving = 208g total) is implausible. 800g lean pork loin (~5g fat/100g = ~40g) + 30ml olive oil (~27g) ≈ 67g total fat, or ~17g per serving — not 52g. Stated calories (1120/serving = 4480 total) are also far too high; realistic total is ~1900–2100 kcal (~475–525/serving)."
+      },
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein 128g/serving = 512g total is impossible from 800g pork loin (max ~170g protein total, ~42g/serving)."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro arithmetic: 128*4+24*4+52*9 = 1076 kcal, doesn't match stated 1120."
+      }
+    ],
+    "summary": "Per-serving macros appear to be totals or are wildly overstated; protein and fat are not achievable from the listed ingredients."
+  },
+  {
+    "id": "bfb52fe0-52d4-49d1-a8a3-42916aadfd00",
+    "name": "Dal de Lentilhas Vermelhas com Espinafres",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories and carbs are roughly double reality. 300g dry red lentils ≈ 1050 kcal, 72g protein, 180g carbs total; plus coconut milk light (~140 kcal), oil (~240 kcal), tomato/onion (~100 kcal) ≈ 1530 kcal total / ~380 kcal per serving — not 848. Protein per serving should be ~20–22g, not 52g. Carbs per serving ~50g, not 116g."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Step 1 says to rinse and reserve lentils but step 4 calls them 'lentilhas escorridas' — minor wording inconsistency (rinsed, not drained from soaking)."
+      }
+    ],
+    "summary": "Macros are approximately 2× too high; lentil quantity cannot produce 52g protein or 116g carbs per serving."
+  },
+  {
+    "id": "322acdc8-9fd3-43bc-ae5e-13cdf1cd9710",
+    "name": "Frango Tikka Masala Fit",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calories overstated. 900g chicken breast (~1000 kcal, ~200g protein), 250g Greek yogurt 0% (~150 kcal), 400g tomato (~80 kcal), 100ml light coconut milk (~70 kcal), 30ml olive oil (~270 kcal), aromatics (~60 kcal) ≈ 1630 kcal total / ~410 kcal per serving — not 1148/serving (~4590 total)."
+      },
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein 148g/serving = 592g total is impossible from 900g chicken breast (max ~200g protein) + 250g yogurt (~25g) ≈ 225g total, or ~56g/serving."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Macro arithmetic check: 148*4+36*4+40*9 = 1096 kcal, doesn't match stated 1148."
+      }
+    ],
+    "summary": "Per-serving calories and protein are far above what the ingredients can provide."
+  },
+  {
+    "id": "4c48f5a0-00f6-4f5e-8296-f9bdc7354d82",
+    "name": "Chana Masala",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Calorie count appears inflated. Per serving: protein 36g×4 + carbs 116g×4 + fat 16g×9 = 144 + 464 + 144 = 752 kcal, vs stated 784 kcal — within ~5%, acceptable. However, carbs of 116g/serving (≈464g total for 4) seems high: 800g cooked chickpeas (~27g carbs/100g) provides ~216g carbs total, plus tomato/onion ~40g; total ≈260g carbs → ~65g/serving, not 116g. Carbs and calories likely overestimated by roughly 1.5–2×."
+      }
+    ],
+    "summary": "Macro values (especially carbs and calories) appear significantly overestimated relative to the ingredient list."
+  },
+  {
+    "id": "10f29281-7e60-4b65-9ba3-11323378f2c6",
+    "name": "Frango Saag",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein is implausibly high. 850g raw chicken breast ≈ 23g protein/100g → ~195g protein total, or ~49g/serving — not 140g/serving (=560g total, would require ~2.4kg chicken). Calories also inconsistent: 140×4 + 24×4 + 40×9 = 560 + 96 + 360 = 1016 kcal vs stated 1060 (close internally), but the absolute protein figure is wrong by roughly 3×."
+      },
+      {
+        "field": "steps",
+        "severity": "warning",
+        "message": "Step 4 references 'a restante caiena' (remaining cayenne), but step 1 only uses garam masala, turmeric and salt to season the chicken — no cayenne was previously added, so 'remaining' is misleading (should just be 'the cayenne')."
+      }
+    ],
+    "summary": "Protein per serving (140g) is roughly 3× what 850g of chicken can supply; minor wording inconsistency about cayenne."
+  },
+  {
+    "id": "6a47fa4f-f89b-41f9-88f6-8ae70b642600",
+    "name": "Arroz de Frango Biryani Simplificado",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein is implausible: 700g raw chicken breast ≈ 160g protein total → ~40g/serving, not 148g/serving (=592g total, would need ~2.5kg chicken). Calories per serving (1668) also extremely high for a 4-serving meal and inconsistent: 148×4 + 196×4 + 32×9 = 592 + 784 + 288 = 1664 kcal (internally coherent), but the absolute values are far off the ingredients."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Carbs of 196g/serving (784g total) also exceed what 400g dry basmati (~310g carbs) plus tomato/onion (~30g) can provide (~85g/serving)."
+      }
+    ],
+    "summary": "Per-serving protein and carbs are roughly 3–4× and 2× higher than the ingredients can support."
+  },
+  {
+    "id": "9bf57f08-1b39-4ee2-932f-f40a84b3f18c",
+    "name": "Tigela de Salmão Teriyaki com Arroz e Brócolo",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Protein per serving is too high. 400g salmon (~20g protein/100g) → ~80g total, or 40g/serving — not 72g/serving (=144g total, would need ~720g salmon). Also macro arithmetic check: 72×4 + 90×4 + 26×9 = 288 + 360 + 234 = 882 kcal vs stated 920 (≈4% off, acceptable), but absolute protein is ~1.8× too high."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Fat is on the low side: 400g salmon alone supplies ~52g fat (~26g/serving) plus 1 tbsp olive oil — closer to 30g/serving than 26g, minor."
+      }
+    ],
+    "summary": "Protein per serving is roughly 1.8× what 400g of salmon can supply."
+  },
+  {
+    "id": "51a38be4-1bc2-4cf4-9d76-03479745774c",
+    "name": "Shakshuka de Tomate e Pimento",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros are internally and ingredient-consistent (30×4 + 30×4 + 30×9 = 510 kcal ≈ 530 stated; 6 eggs + feta + oil match the protein/fat profile), ingredients are complete with quantities, and steps are clear and coherent."
+  },
+  {
+    "id": "6cd2e343-aae3-4c2f-a79a-3d7d7964353b",
+    "name": "Tacos de Frango com Guacamole Simples",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Calorie total is implausible. Per serving listed as 1560 kcal, but protein 116g × 4 + carbs 120g × 4 + fat 60g × 9 = 1484 kcal (close-ish). However, the per-serving macros themselves are unrealistic: 175g raw chicken breast per serving yields ~38g protein, plus ~2 tortillas (~6g) and guacamole (~2g) = ~46g protein, not 116g. Likely the macros are for the entire recipe (4 servings), not per serving. Calories per serving should be ~390 kcal."
+      },
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Carbs of 120g/serving is also implausible — 2 small wheat tortillas + guacamole ≈ 30–35g carbs/serving, not 120g."
+      }
+    ],
+    "summary": "Macros appear to be totals for the whole recipe mislabeled as per-serving; values are ~4× too high for the ingredients listed."
+  },
+  {
+    "id": "cec412f0-f722-4cd3-b292-14060a6e2b0f",
+    "name": "Tigela Mediterrânea de Frango com Tzatziki",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Macros likely reflect the whole recipe, not per serving. 200g raw chicken/serving ≈ 46g protein; with feta, yogurt, olives ≈ 60–65g protein/serving, not 152g. Calories per serving should be ~600–700 kcal, not 1740."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Even as totals, 152g × 4 = 608g protein for 800g chicken + 300g yogurt + 100g feta is high; expected ~250–280g total protein."
+      }
+    ],
+    "summary": "Per-serving macros are unrealistically high — appear to be whole-recipe totals or otherwise inflated."
+  },
+  {
+    "id": "d17610cf-38f8-42a2-afdf-652cf9189565",
+    "name": "Pad Thai de Frango com Ovos",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Macros appear to be totals, not per serving. 150g raw chicken/serving ≈ 35g protein + 1 egg (6g) + peanuts (3g) ≈ 45g/serving, not 87g. Calories per serving should be ~500–550 kcal, not 1155."
+      },
+      {
+        "field": "ingredients",
+        "severity": "warning",
+        "message": "Rice noodles are typically soaked in warm/hot water, not cold, for 20 min — cold soak may leave them too firm. Minor technique concern."
+      }
+    ],
+    "summary": "Per-serving macros are roughly 2–2.5× too high; likely whole-recipe totals mislabeled."
+  },
+  {
+    "id": "f76155cd-eaeb-4113-b77b-4130404ecd78",
+    "name": "Burrito Bowl de Carne Picada com Feijão Preto",
+    "verdict": "flagged",
+    "flags": [
+      {
+        "field": "macros",
+        "severity": "error",
+        "message": "Per-serving macros are inflated. 150g lean beef ≈ 32g protein, + ~15g from cheese/yogurt/beans = ~55g/serving, not 116g. Carbs of 188g/serving is implausible — 60g raw rice ≈ 47g carbs, plus beans/corn ≈ 75–85g total, not 188g."
+      },
+      {
+        "field": "macros",
+        "severity": "warning",
+        "message": "Sum check: 116×4 + 188×4 + 56×9 = 1720 kcal vs stated 1840 — internal consistency is off by ~120 kcal."
+      }
+    ],
+    "summary": "Per-serving macros appear to be whole-recipe totals; numbers are roughly 2× too high for ingredients listed."
+  },
+  {
+    "id": "561adb3c-02db-4ad0-932e-1b5dc2f2b55b",
+    "name": "Salmão com Puré de Couve-Flor e Alcaparras",
+    "verdict": "ok",
+    "flags": [],
+    "summary": "Looks good — macros (790 kcal, 60P/22C/52F) match ingredients per serving and sum to ~796 kcal; steps are clear and coherent."
+  }
+]

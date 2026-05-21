@@ -1,0 +1,3645 @@
+[
+  {
+    "name": "Tuna Gochujang Sandwich",
+    "calories": 340,
+    "protein": 32,
+    "carbs": 22,
+    "fat": 12,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "atum"
+    ],
+    "tags": [
+      "leve",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 lata atum ao natural",
+        "quantity": 1,
+        "unit": null,
+        "name": "atum",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá gochujang",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gochujang",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá óleo de sésamo",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "óleo de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 fatia queijo light",
+        "quantity": 1,
+        "unit": null,
+        "name": "queijo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 fatia pão integral",
+        "quantity": 1,
+        "unit": null,
+        "name": "pão",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Escorrer atum e misturar com gochujang, óleo de sésamo, sal e pimenta.",
+      "Tostar pão. Montar open-faced: pão + mistura de atum + queijo."
+    ]
+  },
+  {
+    "name": "Egg White French Toast",
+    "calories": 280,
+    "protein": 22,
+    "carbs": 32,
+    "fat": 6,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "ovos"
+    ],
+    "tags": [
+      "leve",
+      "fit",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 fatia pão integral",
+        "quantity": 1,
+        "unit": null,
+        "name": "pão",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena claras de ovo",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "claras de ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá canela",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "canela",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 colher chá extrato de baunilha",
+        "quantity": 0.25,
+        "unit": "colher chá",
+        "name": "extrato de baunilha",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Frutos vermelhos",
+        "quantity": null,
+        "unit": null,
+        "name": "frutos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Misturar claras de ovo, canela e baunilha.",
+      "Mergulhar pão na mistura.",
+      "Cozinhar em frigideira com spray de óleo até dourar dos dois lados.",
+      "Servir com frutos vermelhos por cima."
+    ]
+  },
+  {
+    "name": "Protein Omelette",
+    "calories": 220,
+    "protein": 28,
+    "carbs": 4,
+    "fat": 9,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "ovos"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "leve",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "3 claras de ovo",
+        "quantity": 3,
+        "unit": null,
+        "name": "claras de ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 ovo inteiro",
+        "quantity": 1,
+        "unit": null,
+        "name": "ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 mão-cheia espinafres",
+        "quantity": 1,
+        "unit": "mão-cheia",
+        "name": "espinafres",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "4-5 cogumelos fatiados",
+        "quantity": 4,
+        "unit": null,
+        "name": "cogumelos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "20g queijo feta light",
+        "quantity": 20,
+        "unit": "g",
+        "name": "queijo feta",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Bater claras e ovo com sal e pimenta.",
+      "Em frigideira com spray de óleo em lume médio, saltear espinafres e cogumelos.",
+      "Verter ovos sobre os vegetais. Cozinhar até firmar.",
+      "Adicionar feta, dobrar e servir."
+    ]
+  },
+  {
+    "name": "Greek Yogurt Bowl",
+    "calories": 250,
+    "protein": 30,
+    "carbs": 30,
+    "fat": 3,
+    "time_min": 5,
+    "servings": 1,
+    "proteins": [],
+    "tags": [
+      "sem-cozinha",
+      "leve",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g iogurte grego 0%",
+        "quantity": 200,
+        "unit": "g",
+        "name": "iogurte grego 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 mão-cheia frutos vermelhos variados",
+        "quantity": 1,
+        "unit": "mão-cheia",
+        "name": "frutos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá mel",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres sopa granola",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "granola",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Colocar iogurte numa tigela.",
+      "Adicionar frutos vermelhos, mel e granola por cima."
+    ]
+  },
+  {
+    "name": "Shakshuka-Style Eggs",
+    "calories": 280,
+    "protein": 18,
+    "carbs": 15,
+    "fat": 14,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "ovos"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "2 ovos",
+        "quantity": 2,
+        "unit": null,
+        "name": "ovos",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena molho de tomate",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "molho de tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 pimento vermelho picado",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "pimento",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá cominho",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá paprica",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 fatia fina pão massa mãe",
+        "quantity": 1,
+        "unit": null,
+        "name": "pão massa mãe",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Saltear cebola e pimento em frigideira com spray de óleo.",
+      "Juntar molho de tomate, cominho, paprica, sal e pimenta. Deixar ferver.",
+      "Fazer 2 buracos e partir os ovos para dentro. Tapar e cozinhar até ovos ficarem como preferires.",
+      "Servir com fatia fina de pão."
+    ]
+  },
+  {
+    "name": "Chicken Cauli-Rice Bowl",
+    "calories": 450,
+    "protein": 40,
+    "carbs": 35,
+    "fat": 12,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150-170g frango picado cru",
+        "quantity": 150,
+        "unit": "g",
+        "name": "frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz de couve-flor",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz de couve-flor",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa gochujang",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "gochujang",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de soja",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá óleo de sésamo",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "óleo de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 mão-cheia espinafres",
+        "quantity": 1,
+        "unit": "mão-cheia",
+        "name": "espinafres",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozinhar frango picado em frigideira com spray de óleo. Temperar com soja.",
+      "Juntar gochujang e óleo de sésamo, misturar.",
+      "Misturar arroz e arroz de couve-flor. Aquecer.",
+      "Montar: base de arroz misto + frango + espinafres."
+    ]
+  },
+  {
+    "name": "Chicken Burritos (Low-Carb Wrap)",
+    "calories": 420,
+    "protein": 38,
+    "carbs": 24,
+    "fat": 14,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g peito de frango grelhado",
+        "quantity": 150,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 tortilla low-carb",
+        "quantity": 1,
+        "unit": null,
+        "name": "tortilla low-carb",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 pimento fatiado",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "pimento",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola fatiada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa salsa",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "salsa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "30g queijo light ralado",
+        "quantity": 30,
+        "unit": "g",
+        "name": "queijo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Grelhar frango e cortar em tiras.",
+      "Saltear pimento e cebola em frigideira com spray de óleo.",
+      "Montar tortilla: frango + vegetais + queijo + salsa.",
+      "Enrolar como burrito. Opcional: selar na frigideira para crocância."
+    ]
+  },
+  {
+    "name": "Breaded Turkey Steaks + Sweet Potato",
+    "calories": 520,
+    "protein": 42,
+    "carbs": 40,
+    "fat": 14,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "air-fryer",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g bife de peru",
+        "quantity": 150,
+        "unit": "g",
+        "name": "bife de peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres sopa panko",
+        "quantity": 3,
+        "unit": "colheres sopa",
+        "name": "panko",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 ovo batido",
+        "quantity": 1,
+        "unit": null,
+        "name": "ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "alho em pó",
+        "quantity": null,
+        "unit": null,
+        "name": "alho em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "120g batata-doce cortada em palitos",
+        "quantity": 120,
+        "unit": "g",
+        "name": "batata-doce",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Feijão verde ao vapor",
+        "quantity": null,
+        "unit": null,
+        "name": "feijão",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Temperar bifes de peru com sal, pimenta e alho em pó.",
+      "Passar pelo ovo batido e depois pelo panko.",
+      "Air fryer: peru 180°C ~15min, virar a meio. Batata-doce 200°C ~20min.",
+      "Servir com feijão verde ao vapor."
+    ]
+  },
+  {
+    "name": "Thai Basil Chicken Stir-Fry",
+    "calories": 350,
+    "protein": 35,
+    "carbs": 20,
+    "fat": 10,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g frango picado cru",
+        "quantity": 150,
+        "unit": "g",
+        "name": "frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 mão-cheia manjericão Thai (ou normal)",
+        "quantity": 1,
+        "unit": "mão-cheia",
+        "name": "manjericão thai",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 malagueta vermelha",
+        "quantity": 1,
+        "unit": null,
+        "name": "malagueta",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de peixe",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de peixe",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher sopa molho de ostra",
+        "quantity": 0.5,
+        "unit": "colher sopa",
+        "name": "molho de ostra",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá açúcar",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "açúcar",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Arroz de couve-flor ou arroz misto",
+        "quantity": null,
+        "unit": null,
+        "name": "arroz de couve-flor ou arroz misto",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Cozinhar frango picado em frigideira com spray de óleo e alho.",
+      "Juntar malagueta, molho de peixe, molho de ostra e açúcar.",
+      "Quando frango estiver cozido, juntar manjericão e mexer 30 segundos.",
+      "Servir sobre arroz de couve-flor ou arroz misto."
+    ]
+  },
+  {
+    "name": "Sheet Pan Lemon Herb Salmon",
+    "calories": 400,
+    "protein": 38,
+    "carbs": 12,
+    "fat": 18,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "salmão"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g salmão",
+        "quantity": 170,
+        "unit": "g",
+        "name": "salmão",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 chávena brócolos",
+        "quantity": 1,
+        "unit": "chávena",
+        "name": "brócolos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "6-8 espargos",
+        "quantity": 6,
+        "unit": null,
+        "name": "espargos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sumo de 1/2 limão",
+        "quantity": null,
+        "unit": null,
+        "name": "sumo de 1/2 limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá alho em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "alho em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá ervas secas (tomilho, orégãos)",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "ervas",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Colocar salmão, brócolos e espargos num tabuleiro com papel vegetal.",
+      "Temperar tudo com sumo de limão, alho em pó, ervas, sal, pimenta e spray de óleo.",
+      "Forno 200°C por 15-18min até salmão cozinhar e vegetais ficarem tenros."
+    ]
+  },
+  {
+    "name": "Turkey Meatballs in Marinara",
+    "calories": 320,
+    "protein": 32,
+    "carbs": 12,
+    "fat": 12,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "meal-prep",
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g peru picado magro",
+        "quantity": 150,
+        "unit": "g",
+        "name": "peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá tempero italiano",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "tempero italiano",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 cebola picada fina",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena molho de tomate marinara",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "molho de tomate marinara",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar peru picado, tempero italiano, cebola, sal e pimenta.",
+      "Formar bolas e colocar num tabuleiro com spray de óleo.",
+      "Forno 200°C por 15min até dourar.",
+      "Aquecer marinara e servir por cima das almôndegas."
+    ]
+  },
+  {
+    "name": "Garlic Shrimp & Courgette Noodles",
+    "calories": 380,
+    "protein": 38,
+    "carbs": 12,
+    "fat": 16,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "camarão"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g gambas/camarão",
+        "quantity": 150,
+        "unit": "g",
+        "name": "gambas/camarão",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho fatiados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 malagueta vermelha",
+        "quantity": 1,
+        "unit": null,
+        "name": "malagueta",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 curgete grande espiralizada",
+        "quantity": 1,
+        "unit": null,
+        "name": "curgete",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "6-8 tomates cherry",
+        "quantity": 6,
+        "unit": null,
+        "name": "tomates cherry",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Espiralar curgete em noodles.",
+      "Saltear alho e malagueta em frigideira com azeite.",
+      "Juntar gambas e cozinhar até ficarem rosa.",
+      "Juntar noodles de curgete e tomates cherry. Saltear 2min. Temperar e servir."
+    ]
+  },
+  {
+    "name": "Chicken Teriyaki Bowl",
+    "calories": 480,
+    "protein": 40,
+    "carbs": 50,
+    "fat": 10,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g coxas de frango desossadas",
+        "quantity": 170,
+        "unit": "g",
+        "name": "coxas de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa molho de soja",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa mel",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá gengibre ralado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá alho picado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá amido de milho",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "amido de milho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá água",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "água",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "3/4 chávena arroz cozido",
+        "quantity": 0.75,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 chávena brócolos ao vapor",
+        "quantity": 1,
+        "unit": "chávena",
+        "name": "brócolos ao vapor",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá sementes de sésamo",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sementes de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar soja, mel, gengibre e alho para o molho teriyaki.",
+      "Cozinhar frango em frigideira com spray de óleo até dourar.",
+      "Verter molho, juntar amido diluído e deixar engrossar.",
+      "Servir sobre arroz com brócolos e sementes de sésamo."
+    ]
+  },
+  {
+    "name": "Tuna Poke Bowl",
+    "calories": 420,
+    "protein": 35,
+    "carbs": 45,
+    "fat": 10,
+    "time_min": 10,
+    "servings": 1,
+    "proteins": [
+      "atum"
+    ],
+    "tags": [
+      "sem-cozinha",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "140g atum fresco (sashimi grade) em cubos",
+        "quantity": 140,
+        "unit": "g",
+        "name": "atum",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de soja",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá óleo de sésamo",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "óleo de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 abacate fatiado",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "abacate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "50g edamame",
+        "quantity": 50,
+        "unit": "g",
+        "name": "edamame",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Pepino mini fatiado",
+        "quantity": null,
+        "unit": null,
+        "name": "pepino",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá sementes de sésamo",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sementes de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá furikake",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "furikake",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Marinar atum com soja e óleo de sésamo.",
+      "Montar tigela: arroz + atum + abacate + edamame + pepino.",
+      "Polvilhar com sementes de sésamo e furikake."
+    ]
+  },
+  {
+    "name": "Grilled Chicken Greek Salad",
+    "calories": 380,
+    "protein": 40,
+    "carbs": 15,
+    "fat": 18,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "leve",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g peito de frango grelhado",
+        "quantity": 170,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 chávenas alface romana",
+        "quantity": 2,
+        "unit": "chávenas",
+        "name": "alface romana",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "6 tomates cherry",
+        "quantity": 6,
+        "unit": null,
+        "name": "tomates cherry",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 pepino em cubos",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "pepino",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa cebola roxa",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "20g queijo feta",
+        "quantity": 20,
+        "unit": "g",
+        "name": "queijo feta",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "5 azeitonas",
+        "quantity": 5,
+        "unit": null,
+        "name": "azeitonas",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa azeite",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sumo de 1/2 limão",
+        "quantity": null,
+        "unit": null,
+        "name": "sumo de 1/2 limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Orégãos",
+        "quantity": null,
+        "unit": null,
+        "name": "orégãos",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "sal",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Grelhar frango temperado com sal, pimenta e orégãos. Cortar em fatias.",
+      "Montar salada: alface + tomate + pepino + cebola + azeitonas.",
+      "Colocar frango por cima, desfarear feta.",
+      "Regar com azeite e sumo de limão."
+    ]
+  },
+  {
+    "name": "Shrimp Pad Thai (light)",
+    "calories": 450,
+    "protein": 30,
+    "carbs": 55,
+    "fat": 12,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "camarão"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "85g noodles de arroz secos",
+        "quantity": 85,
+        "unit": "g",
+        "name": "noodles de arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "115g camarão/gambas crus",
+        "quantity": 115,
+        "unit": "g",
+        "name": "camarão/gambas crus",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 ovo",
+        "quantity": 1,
+        "unit": null,
+        "name": "ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 chávena rebentos de soja",
+        "quantity": 0.25,
+        "unit": "chávena",
+        "name": "rebentos de soja",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 cebolinha",
+        "quantity": 1,
+        "unit": null,
+        "name": "cebolinha",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de peixe",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de peixe",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa açúcar mascavado",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "açúcar",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher sopa sumo de lima",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "sumo de lima",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá sriracha",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sriracha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa amendoins triturados",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "amendoins triturados",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozer noodles de arroz conforme embalagem. Escorrer.",
+      "Misturar molho de peixe, açúcar, sumo de lima e sriracha para o molho.",
+      "Saltear camarão em frigideira com spray de óleo. Reservar.",
+      "Na mesma frigideira, mexer ovo. Juntar noodles, molho, camarão e rebentos de soja. Saltear.",
+      "Servir com cebolinha e amendoins por cima."
+    ]
+  },
+  {
+    "name": "Beef & Broccoli Stir-Fry",
+    "calories": 400,
+    "protein": 35,
+    "carbs": 25,
+    "fat": 16,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "vaca"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g alcatra fatiada fina",
+        "quantity": 150,
+        "unit": "g",
+        "name": "alcatra",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 chávenas brócolos",
+        "quantity": 2,
+        "unit": "chávenas",
+        "name": "brócolos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa molho de soja",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de ostra",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de ostra",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá açúcar mascavado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "açúcar",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá amido de milho",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "amido de milho",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá água",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "água",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá alho picado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá gengibre ralado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozer brócolos ao vapor 2-3min. Reservar.",
+      "Misturar soja, molho de ostra, açúcar e amido diluído para o molho.",
+      "Saltear carne com alho e gengibre em frigideira com spray de óleo.",
+      "Quando carne cozinhar, juntar brócolos e molho. Mexer até engrossar. Servir com arroz (opcional)."
+    ]
+  },
+  {
+    "name": "Cod à Brás (light)",
+    "calories": 420,
+    "protein": 38,
+    "carbs": 30,
+    "fat": 14,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "bacalhau",
+      "ovos"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "140g bacalhau desfiado dessalgado",
+        "quantity": 140,
+        "unit": "g",
+        "name": "bacalhau",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 ovo",
+        "quantity": 1,
+        "unit": null,
+        "name": "ovo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 claras",
+        "quantity": 2,
+        "unit": null,
+        "name": "claras",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g batata palha (air fryer)",
+        "quantity": 100,
+        "unit": "g",
+        "name": "batata palha",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola fatiada fina",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Salsa picada",
+        "quantity": null,
+        "unit": null,
+        "name": "salsa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Azeitonas pretas",
+        "quantity": null,
+        "unit": null,
+        "name": "azeitonas",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Saltear cebola e alho no azeite até ficarem translúcidos.",
+      "Juntar bacalhau desfiado e saltear 2-3min.",
+      "Juntar batata palha (feita na air fryer para menos gordura).",
+      "Bater ovo e claras, verter por cima e mexer em lume baixo até cozer sem secar.",
+      "Polvilhar com salsa e servir com azeitonas."
+    ]
+  },
+  {
+    "name": "Turkey Chili",
+    "calories": 350,
+    "protein": 35,
+    "carbs": 30,
+    "fat": 8,
+    "time_min": 30,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "meal-prep",
+      "reconfortante",
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g peru picado magro",
+        "quantity": 150,
+        "unit": "g",
+        "name": "peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena feijão preto (lata, escorrido)",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "feijão preto",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena tomate pelado triturado",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "tomate pelado triturado",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá cominho",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá chili em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "chili em pó",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá paprica fumada",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "paprica fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Saltear cebola e alho em panela com spray de óleo.",
+      "Juntar peru picado e cozinhar até dourar.",
+      "Adicionar tomate, feijão preto, cominho, chili em pó, paprica, sal e pimenta.",
+      "Deixar ferver 15-20min em lume baixo. Servir."
+    ]
+  },
+  {
+    "name": "Chicken Tikka Masala (light)",
+    "calories": 450,
+    "protein": 38,
+    "carbs": 35,
+    "fat": 14,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "reconfortante",
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g peito de frango em cubos",
+        "quantity": 170,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres sopa iogurte grego 0%",
+        "quantity": 3,
+        "unit": "colheres sopa",
+        "name": "iogurte grego 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá garam masala",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "garam masala",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá curcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "curcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá cominho",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena tomate triturado",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "tomate triturado",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá gengibre",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 colheres sopa leite de coco light",
+        "quantity": 3,
+        "unit": "colheres sopa",
+        "name": "leite de coco",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Coentros frescos",
+        "quantity": null,
+        "unit": null,
+        "name": "coentros",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3/4 chávena arroz cozido",
+        "quantity": 0.75,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Marinar frango com iogurte, garam masala, curcuma e cominho por 15min+.",
+      "Cozinhar frango em frigideira com spray de óleo até dourar.",
+      "Na mesma frigideira, saltear cebola, alho e gengibre. Juntar tomate e cozinhar 5min.",
+      "Adicionar leite de coco e frango. Cozinhar 5min em lume baixo.",
+      "Servir sobre arroz, polvilhar com coentros."
+    ]
+  },
+  {
+    "name": "Salmon Teriyaki & Edamame",
+    "calories": 480,
+    "protein": 42,
+    "carbs": 30,
+    "fat": 18,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "salmão"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g salmão",
+        "quantity": 170,
+        "unit": "g",
+        "name": "salmão",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa molho de soja",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa mel",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá gengibre ralado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá alho picado",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena edamame",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "edamame",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá sementes de sésamo",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sementes de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar soja, mel, gengibre e alho para o glaze.",
+      "Cozinhar salmão em frigideira com spray de óleo, 3-4min cada lado.",
+      "Regar com o glaze nos últimos 2min.",
+      "Servir com arroz, edamame e sementes de sésamo."
+    ]
+  },
+  {
+    "name": "Bibimbap (light)",
+    "calories": 500,
+    "protein": 35,
+    "carbs": 55,
+    "fat": 14,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "vaca",
+      "ovos"
+    ],
+    "tags": [
+      "uma-frigideira",
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "115g carne picada magra (vaca ou frango)",
+        "quantity": 115,
+        "unit": "g",
+        "name": "carne",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena espinafres temperados (sigeumchi-namul)",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "espinafres",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 cenoura em julienne salteada",
+        "quantity": 0.5,
+        "unit": null,
+        "name": "cenoura",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 curgete em meias-luas salteada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "curgete",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 ovo estrelado",
+        "quantity": 1,
+        "unit": null,
+        "name": "ovo estrelado",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa gochujang",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "gochujang",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá óleo de sésamo",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "óleo de sésamo",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá soja",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozinhar carne temperada com soja em frigideira com spray de óleo.",
+      "Saltear cenoura e curgete separadamente com spray de óleo.",
+      "Preparar espinafres como sigeumchi-namul (ou usar já preparados).",
+      "Fritar ovo estrelado.",
+      "Montar tigela: arroz no fundo + vegetais e carne organizados por cima + ovo. Regar com gochujang e óleo de sésamo. Misturar antes de comer."
+    ]
+  },
+  {
+    "name": "Cottage Cheese + Everything Seasoning",
+    "calories": 150,
+    "protein": 20,
+    "carbs": 6,
+    "fat": 3,
+    "time_min": 2,
+    "servings": 1,
+    "proteins": [],
+    "tags": [
+      "sem-cozinha",
+      "leve",
+      "fit",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g queijo cottage magro",
+        "quantity": 150,
+        "unit": "g",
+        "name": "queijo cottage",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Pepino mini fatiado",
+        "quantity": null,
+        "unit": null,
+        "name": "pepino",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Everything bagel seasoning (ou sésamo + alho em pó + cebola em pó + sal)",
+        "quantity": null,
+        "unit": null,
+        "name": "everything bagel seasoning",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Colocar queijo cottage numa tigela.",
+      "Polvilhar com tempero e servir com pepino fatiado."
+    ]
+  },
+  {
+    "name": "Turkey & Cheese Roll-Ups",
+    "calories": 120,
+    "protein": 18,
+    "carbs": 2,
+    "fat": 4,
+    "time_min": 2,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "sem-cozinha",
+      "leve",
+      "fit",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "3-4 fatias peru de charcutaria magro",
+        "quantity": 3,
+        "unit": null,
+        "name": "peru de charcutaria",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 queijo light em barra/stick",
+        "quantity": 1,
+        "unit": null,
+        "name": "queijo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Envolver cada fatia de peru à volta do queijo.",
+      "Comer como snack frio."
+    ]
+  },
+  {
+    "name": "Edamame com Sal",
+    "calories": 190,
+    "protein": 17,
+    "carbs": 14,
+    "fat": 8,
+    "time_min": 3,
+    "servings": 1,
+    "proteins": [],
+    "tags": [
+      "micro-ondas",
+      "leve",
+      "fit",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 chávena edamame congelado",
+        "quantity": 1,
+        "unit": "chávena",
+        "name": "edamame",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal marinho",
+        "quantity": null,
+        "unit": null,
+        "name": "sal marinho",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Micro-ondas 2-3min ou cozer 5min.",
+      "Temperar com sal e comer."
+    ]
+  },
+  {
+    "name": "Protein Shake (whey + água)",
+    "calories": 120,
+    "protein": 25,
+    "carbs": 3,
+    "fat": 1,
+    "time_min": 2,
+    "servings": 1,
+    "proteins": [
+      "whey"
+    ],
+    "tags": [
+      "sem-cozinha",
+      "leve",
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 scoop whey protein",
+        "quantity": 1,
+        "unit": null,
+        "name": "whey protein",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "250ml água",
+        "quantity": 250,
+        "unit": "ml",
+        "name": "água",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar whey com água num shaker. Agitar e beber."
+    ]
+  },
+  {
+    "name": "Chicken & Chouriço Skewers",
+    "calories": 580,
+    "protein": 60,
+    "carbs": 30,
+    "fat": 22,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g peito de frango cortado em cubos",
+        "quantity": 200,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "40g chouriço de peru fatiado fino",
+        "quantity": 40,
+        "unit": "g",
+        "name": "chouriço de peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 pimento vermelho cortado em pedaços",
+        "quantity": 1,
+        "unit": null,
+        "name": "pimento",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 pimento verde cortado em pedaços",
+        "quantity": 1,
+        "unit": null,
+        "name": "pimento",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá paprica",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá alho em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "alho em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Paus de espetada",
+        "quantity": null,
+        "unit": null,
+        "name": "espetada",
+        "category": "Mercearia",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Temperar cubos de frango com paprica, alho em pó, sal e pimenta.",
+      "Enfiar nos paus alternando frango, fatias de chouriço de peru e pimentos.",
+      "Air fryer a 200°C por 15 minutos, virando a meio.",
+      "Servir com salada ou arroz (não incluído nos macros)."
+    ]
+  },
+  {
+    "name": "Roasted Lombinho w/ Mustard",
+    "calories": 520,
+    "protein": 55,
+    "carbs": 35,
+    "fat": 16,
+    "time_min": 30,
+    "servings": 1,
+    "proteins": [
+      "porco"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g lombinho de porco",
+        "quantity": 200,
+        "unit": "g",
+        "name": "lombinho de porco",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa mostarda Dijon",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "mostarda dijon",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá mel",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "mel",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "120g batata-doce cortada em cubos",
+        "quantity": 120,
+        "unit": "g",
+        "name": "batata-doce",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "6-8 espargos",
+        "quantity": 6,
+        "unit": null,
+        "name": "espargos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar mostarda e mel. Barrar sobre o lombinho.",
+      "Temperar batata-doce e espargos com sal, pimenta e spray de óleo.",
+      "Colocar tudo num tabuleiro com papel vegetal.",
+      "Forno 190°C por 25 minutos até lombinho atingir 65°C interno.",
+      "Deixar repousar 5min antes de fatiar. Servir com vegetais."
+    ]
+  },
+  {
+    "name": "Carne de Porco Alentejana Fit",
+    "calories": 500,
+    "protein": 55,
+    "carbs": 28,
+    "fat": 18,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "porco",
+      "amêijoas"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "150g lombo de porco cortado em cubos",
+        "quantity": 150,
+        "unit": "g",
+        "name": "lombo de porco",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g amêijoas frescas (bem lavadas)",
+        "quantity": 150,
+        "unit": "g",
+        "name": "amêijoas",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g batata cortada em cubos pequenos",
+        "quantity": 100,
+        "unit": "g",
+        "name": "batata",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá massa de pimentão",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "massa de pimentão",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá paprica",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 folha de louro",
+        "quantity": 1,
+        "unit": null,
+        "name": "louro",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Coentros frescos",
+        "quantity": null,
+        "unit": null,
+        "name": "coentros",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Air fryer: batata em cubos a 200°C por 15min até dourar.",
+      "Temperar porco com massa de pimentão, paprica, sal e pimenta.",
+      "Saltear porco em frigideira com azeite e alho até dourar.",
+      "Juntar amêijoas e louro, tapar e cozinhar 3-4min até abrirem. Descartar as que não abrirem.",
+      "Juntar batata e misturar. Polvilhar com coentros frescos."
+    ]
+  },
+  {
+    "name": "Chef's Piri-Piri Chicken",
+    "calories": 500,
+    "protein": 50,
+    "carbs": 40,
+    "fat": 14,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g coxas de frango desossadas sem pele",
+        "quantity": 200,
+        "unit": "g",
+        "name": "coxas de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa molho piri-piri",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "molho piri-piri",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sumo de 1/2 limão",
+        "quantity": null,
+        "unit": null,
+        "name": "sumo de 1/2 limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho picado",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 molho de grelos cozidos (200g)",
+        "quantity": 1,
+        "unit": null,
+        "name": "grelos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3/4 chávena arroz cozido",
+        "quantity": 0.75,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Marinar frango com piri-piri, sumo de limão, alho, sal e pimenta por 15min+.",
+      "Grelhar em frigideira com spray de óleo em lume médio-alto, 5-6min cada lado.",
+      "Cozer grelos em água com sal por 5min. Escorrer e temperar com um fio de azeite.",
+      "Servir frango fatiado com arroz e grelos."
+    ]
+  },
+  {
+    "name": "Chicken Satay w/ Peanut Sauce",
+    "calories": 490,
+    "protein": 48,
+    "carbs": 22,
+    "fat": 22,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g peito de frango cortado em tiras",
+        "quantity": 200,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá curcuma",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "curcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá cominho",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres sopa manteiga de amendoim 100%",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "manteiga de amendoim 100%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho de soja",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho de soja",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "sumo de 1/2 lima",
+        "quantity": null,
+        "unit": null,
+        "name": "sumo de 1/2 lima",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá sriracha",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "sriracha",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1-2 colheres sopa água quente",
+        "quantity": 1,
+        "unit": "colheres sopa",
+        "name": "água quente",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 pepino mini fatiado",
+        "quantity": 0.5,
+        "unit": null,
+        "name": "pepino",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Temperar tiras de frango com curcuma, cominho, sal e pimenta.",
+      "Grelhar em frigideira com spray de óleo até dourar, ~4min cada lado.",
+      "Misturar manteiga de amendoim, soja, sumo de lima, sriracha e água quente até ficar cremoso.",
+      "Servir frango com molho de amendoim e pepino fatiado ao lado."
+    ]
+  },
+  {
+    "name": "Couve Galega Chicken Sauté",
+    "calories": 420,
+    "protein": 45,
+    "carbs": 18,
+    "fat": 14,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "frango"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "180g peito de frango cortado em tiras",
+        "quantity": 180,
+        "unit": "g",
+        "name": "peito de frango",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3-4 folhas grandes de couve galega (200g)",
+        "quantity": 3,
+        "unit": null,
+        "name": "couve galega",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "3 dentes de alho fatiados",
+        "quantity": 3,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá flocos de malagueta",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "flocos de malagueta",
+        "category": "Frutas/Legumes",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Retirar o talo da couve galega e cortar em tiras finas.",
+      "Temperar frango com sal e pimenta. Saltear em frigideira com spray de óleo até dourar.",
+      "Retirar frango. Na mesma frigideira, juntar azeite, alho e flocos de malagueta.",
+      "Juntar couve galega e saltear até murchar mas manter cor, ~3-4min.",
+      "Voltar a juntar o frango, misturar e servir."
+    ]
+  },
+  {
+    "name": "Black Bean & Turkey Chili (PT)",
+    "calories": 450,
+    "protein": 45,
+    "carbs": 35,
+    "fat": 10,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "170g peru picado magro",
+        "quantity": 170,
+        "unit": "g",
+        "name": "peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena feijão preto (lata, escorrido)",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "feijão preto",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena polpa de tomate (passata)",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "polpa de tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá cominho",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá paprica fumada",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprica fumada",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá pimenta caiena (opcional)",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "pimenta caiena",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Coentros frescos",
+        "quantity": null,
+        "unit": null,
+        "name": "coentros",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      }
+    ],
+    "steps": [
+      "Saltear cebola e alho em panela com spray de óleo.",
+      "Juntar peru picado e cozinhar até dourar, desfazendo com colher.",
+      "Adicionar passata, feijão preto, cominho, paprica, caiena, sal e pimenta.",
+      "Deixar ferver em lume baixo por 15-20min até engrossar.",
+      "Servir com coentros frescos por cima."
+    ]
+  },
+  {
+    "name": "Grilled Squid w/ Grelos",
+    "calories": 400,
+    "protein": 45,
+    "carbs": 15,
+    "fat": 16,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "lulas"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "250g lulas limpas inteiras",
+        "quantity": 250,
+        "unit": "g",
+        "name": "lulas",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 molho de grelos cozidos (200g)",
+        "quantity": 1,
+        "unit": null,
+        "name": "grelos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho fatiados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher sopa azeite",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sumo de 1/2 limão",
+        "quantity": null,
+        "unit": null,
+        "name": "sumo de 1/2 limão",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá paprica",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Temperar lulas com metade do azeite, paprica, sal e pimenta.",
+      "Grelhar em frigideira bem quente ou grelhador, 2-3min cada lado. Não cozinhar demais ou ficam borrachudas.",
+      "Cozer grelos em água com sal por 5min. Escorrer bem.",
+      "Temperar grelos com resto do azeite e alho fatiado.",
+      "Servir lulas com grelos ao lado e sumo de limão por cima."
+    ]
+  },
+  {
+    "name": "Atlantic Fish Curry",
+    "calories": 490,
+    "protein": 45,
+    "carbs": 35,
+    "fat": 18,
+    "time_min": 20,
+    "servings": 1,
+    "proteins": [
+      "peixe"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g peixe branco (pescada ou corvina) em cubos",
+        "quantity": 200,
+        "unit": "g",
+        "name": "peixe",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "80ml leite de coco light",
+        "quantity": 80,
+        "unit": "ml",
+        "name": "leite de coco",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho picado",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá gengibre ralado",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "gengibre",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá caril em pó",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "caril em pó",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 colher chá curcuma",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "curcuma",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Coentros frescos",
+        "quantity": null,
+        "unit": null,
+        "name": "coentros",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Saltear cebola, alho e gengibre em panela com spray de óleo.",
+      "Adicionar caril e curcuma, mexer 30 segundos.",
+      "Verter leite de coco e deixar ferver.",
+      "Juntar cubos de peixe, temperar com sal e pimenta. Cozinhar 8-10min em lume baixo até peixe estar cozido.",
+      "Servir sobre arroz com coentros frescos."
+    ]
+  },
+  {
+    "name": "Stuffed Peppers (Beef)",
+    "calories": 500,
+    "protein": 45,
+    "carbs": 35,
+    "fat": 18,
+    "time_min": 35,
+    "servings": 2,
+    "proteins": [
+      "vaca"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "4 pimentos grandes (vermelho ou amarelo)",
+        "quantity": 4,
+        "unit": null,
+        "name": "pimentos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "250g carne picada magra de vaca",
+        "quantity": 250,
+        "unit": "g",
+        "name": "carne",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena arroz cozido",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "arroz",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 cebola picada",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho picado",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena polpa de tomate",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "polpa de tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá orégãos",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "orégãos",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá paprica",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "30g queijo light ralado",
+        "quantity": 30,
+        "unit": "g",
+        "name": "queijo",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cortar topo dos pimentos e retirar sementes.",
+      "Saltear cebola e alho com spray de óleo. Juntar carne picada até dourar.",
+      "Adicionar polpa de tomate, arroz, orégãos, paprica, sal e pimenta. Misturar.",
+      "Rechear os pimentos com a mistura. Colocar num tabuleiro.",
+      "Polvilhar com queijo ralado. Forno 200°C por 25-30min até pimentos ficarem tenros."
+    ]
+  },
+  {
+    "name": "Grilled Dourada (Sea Bream)",
+    "calories": 500,
+    "protein": 45,
+    "carbs": 30,
+    "fat": 18,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "dourada"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 dourada média (300g inteira, ~200g limpa)",
+        "quantity": 1,
+        "unit": null,
+        "name": "dourada",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g batata cozida cortada em rodelas",
+        "quantity": 150,
+        "unit": "g",
+        "name": "batata",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa azeite",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 cebola picada fina",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 colheres sopa salsa picada",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "salsa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa vinagre de vinho",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "vinagre de vinho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal grosso e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Temperar dourada com sal grosso e pimenta por dentro e por fora.",
+      "Grelhar em grelhador ou frigideira quente, 5-6min cada lado.",
+      "Cozer batata em água com sal. Cortar em rodelas.",
+      "Misturar cebola picada, salsa, vinagre, azeite, sal e pimenta para o molho verde.",
+      "Servir dourada com batata cozida e molho verde por cima."
+    ]
+  },
+  {
+    "name": "Piri-Piri Shrimp Stir-fry",
+    "calories": 430,
+    "protein": 42,
+    "carbs": 32,
+    "fat": 14,
+    "time_min": 15,
+    "servings": 1,
+    "proteins": [
+      "camarão"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína",
+      "rápido"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "200g gambas descascadas cruas",
+        "quantity": 200,
+        "unit": "g",
+        "name": "gambas",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa molho piri-piri",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "molho piri-piri",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 chávena brócolos em floretes",
+        "quantity": 1,
+        "unit": "chávena",
+        "name": "brócolos",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/2 chávena ervilhas-tortas (snap peas)",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "ervilhas-tortas",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "100g batata-doce cozida em cubos",
+        "quantity": 100,
+        "unit": "g",
+        "name": "batata-doce",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "2 dentes de alho picados",
+        "quantity": 2,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Cozer batata-doce em água ou micro-ondas até ficar tenra. Cortar em cubos.",
+      "Saltear gambas com alho e piri-piri em frigideira com spray de óleo até ficarem rosa. Reservar.",
+      "Na mesma frigideira, saltear brócolos e ervilhas-tortas por 3-4min.",
+      "Voltar a juntar gambas e batata-doce. Misturar, temperar com sal e pimenta e servir."
+    ]
+  },
+  {
+    "name": "Turkey Taco Sweet Potato",
+    "calories": 480,
+    "protein": 42,
+    "carbs": 40,
+    "fat": 14,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "1 batata-doce média (~200g)",
+        "quantity": 1,
+        "unit": null,
+        "name": "batata-doce",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "150g peru picado magro",
+        "quantity": 150,
+        "unit": "g",
+        "name": "peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1/4 chávena feijão preto (lata, escorrido)",
+        "quantity": 0.25,
+        "unit": "chávena",
+        "name": "feijão preto",
+        "category": "Mercearia",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá cominho",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "cominho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1 colher chá paprica",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "paprica",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 colher chá alho em pó",
+        "quantity": 0.5,
+        "unit": "colher chá",
+        "name": "alho em pó",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "2 colheres sopa salsa (molho mexicano)",
+        "quantity": 2,
+        "unit": "colheres sopa",
+        "name": "salsa",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher sopa iogurte grego 0%",
+        "quantity": 1,
+        "unit": "colher sopa",
+        "name": "iogurte grego 0%",
+        "category": "Lacticínios",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Lavar batata-doce, picar com garfo. Micro-ondas 6-8min até ficar mole (ou forno 200°C 40min).",
+      "Saltear peru picado com cominho, paprica, alho em pó, sal e pimenta em frigideira com spray de óleo.",
+      "Juntar feijão preto e aquecer 1-2min.",
+      "Abrir batata-doce ao meio, rechear com a mistura de peru.",
+      "Servir com salsa e iogurte grego por cima."
+    ]
+  },
+  {
+    "name": "Turkey Meatballs in Passata",
+    "calories": 460,
+    "protein": 40,
+    "carbs": 20,
+    "fat": 18,
+    "time_min": 25,
+    "servings": 1,
+    "proteins": [
+      "peru"
+    ],
+    "tags": [
+      "fit",
+      "alto proteína"
+    ],
+    "ingredients": [
+      {
+        "raw_text": "180g peru picado magro",
+        "quantity": 180,
+        "unit": "g",
+        "name": "peru",
+        "category": "Talho/Peixaria",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá tempero italiano (orégãos, manjericão)",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "tempero italiano",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/4 cebola picada fina",
+        "quantity": 0.25,
+        "unit": null,
+        "name": "cebola",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 dente de alho picado",
+        "quantity": 1,
+        "unit": null,
+        "name": "alho",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Sal e pimenta",
+        "quantity": null,
+        "unit": null,
+        "name": "sal e pimenta",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "1/2 chávena passata de tomate",
+        "quantity": 0.5,
+        "unit": "chávena",
+        "name": "passata de tomate",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 curgete grande espiralizada",
+        "quantity": 1,
+        "unit": null,
+        "name": "curgete",
+        "category": "Frutas/Legumes",
+        "is_pantry": false
+      },
+      {
+        "raw_text": "1 colher chá azeite",
+        "quantity": 1,
+        "unit": "colher chá",
+        "name": "azeite",
+        "category": "Mercearia",
+        "is_pantry": true
+      },
+      {
+        "raw_text": "Spray de óleo",
+        "quantity": null,
+        "unit": null,
+        "name": "spray de óleo",
+        "category": "Mercearia",
+        "is_pantry": true
+      }
+    ],
+    "steps": [
+      "Misturar peru picado, tempero italiano, cebola, alho, sal e pimenta.",
+      "Formar bolas (~6-8). Colocar num tabuleiro com spray de óleo.",
+      "Forno 200°C por 15min até dourar.",
+      "Aquecer passata numa panela. Juntar almôndegas e cozinhar 5min.",
+      "Saltear noodles de curgete em frigideira com azeite por 2min. Servir com almôndegas e molho."
+    ]
+  }
+]

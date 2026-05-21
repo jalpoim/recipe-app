@@ -337,7 +337,7 @@ function CookingMode({
 }) {
   const [stepIndex, setStepIndex] = useState(0)
   const [showIngredients, setShowIngredients] = useState(false)
-  const [showTimerFor, setShowTimerFor] = useState<number | null>(null)
+  const [timerOpen, setTimerOpen] = useState(false)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
 
   useEffect(() => {
@@ -356,15 +356,11 @@ function CookingMode({
   function goNext() {
     if (isLast) { onExit(); return }
     setStepIndex((i) => i + 1)
-    setShowTimerFor(null)
   }
 
   function goPrev() {
-    if (!isFirst) { setStepIndex((i) => i - 1); setShowTimerFor(null) }
+    if (!isFirst) setStepIndex((i) => i - 1)
   }
-
-  const hasPresetTimer = (currStep.timer_seconds ?? 0) > 0
-  const timerOpen = showTimerFor === stepIndex || hasPresetTimer
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Modo cozinha" className="fixed inset-0 z-50 bg-[#FAFAF8] flex flex-col select-none">
@@ -437,7 +433,6 @@ function CookingMode({
       {timerOpen && (
         <div className="shrink-0 border-t border-[#F0F0EE] bg-white px-4 py-2">
           <StepTimer
-            key={stepIndex}
             initialSeconds={currStep.timer_seconds ?? 0}
             stepLabel={`Passo ${stepIndex + 1} de ${steps.length}`}
             recipeName={recipeName}
@@ -451,7 +446,7 @@ function CookingMode({
           {steps.map((_, i) => (
             <button
               key={i}
-              onClick={() => { setStepIndex(i); setShowTimerFor(null) }}
+              onClick={() => setStepIndex(i)}
               aria-label={`Ir para passo ${i + 1}`}
               className={`rounded-full transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 i === stepIndex
@@ -466,7 +461,7 @@ function CookingMode({
 
         {/* Timer toggle button */}
         <button
-          onClick={() => setShowTimerFor(timerOpen ? null : stepIndex)}
+          onClick={() => setTimerOpen((o) => !o)}
           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl border text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
             timerOpen
               ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
