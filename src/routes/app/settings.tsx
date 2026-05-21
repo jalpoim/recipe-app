@@ -85,13 +85,19 @@ function HouseholdSection() {
     queryFn: () => fetchHouseholdInfo(),
   })
 
+  const [mutationError, setMutationError] = useState<string | null>(null)
+
   const createMutation = useMutation({
     mutationFn: async () => {
       await createHousehold()
       const token = await generateInviteToken()
       return token
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['household-info'] }),
+    onSuccess: () => {
+      setMutationError(null)
+      queryClient.invalidateQueries({ queryKey: ['household-info'] })
+    },
+    onError: (err) => setMutationError(err instanceof Error ? err.message : 'Erro ao criar household'),
   })
 
   const generateTokenMutation = useMutation({
@@ -133,8 +139,8 @@ function HouseholdSection() {
           {createMutation.isPending ? t('settings.householdCreating') : t('settings.householdCreate')}
         </button>
         <p className="text-xs text-[#6B7280] text-center">{t('settings.householdCreateHint')}</p>
-        {createMutation.isSuccess && info === null && (
-          <p className="text-xs text-[#6B7280] text-center">A carregar convite…</p>
+        {mutationError && (
+          <p className="text-xs text-[#DC2626] text-center">{mutationError}</p>
         )}
       </div>
     )
