@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed } from 'lucide-react'
+import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
@@ -898,6 +898,27 @@ function RecipeDetailPage() {
               </ol>
             </div>
           )}
+
+          {/* I Cooked This — end of recipe, after steps */}
+          <div className="pt-2 pb-2">
+            <button
+              onClick={() => logCookMutation.mutate()}
+              disabled={logCookMutation.isPending || cookDebounced}
+              className="w-full rounded-2xl bg-[#f0fdf4] border border-[#bbf7d0] py-4 flex items-center justify-center gap-2 text-[#15803d] text-sm font-semibold disabled:opacity-50 hover:bg-[#dcfce7] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <CheckCircle2 size={17} aria-hidden="true" />
+              {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
+            </button>
+            {lastCookLogId && (
+              <button
+                onClick={() => undoCookMutation.mutate()}
+                disabled={undoCookMutation.isPending}
+                className="w-full text-center text-xs text-[#9CA3AF] hover:text-[#6B7280] py-2 disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+              >
+                {t('recipe.undoCook')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -980,27 +1001,6 @@ function RecipeDetailPage() {
             </button>
           )}
 
-          <div className="flex items-center justify-center gap-3 pt-0.5 pb-0.5">
-            <button
-              onClick={() => logCookMutation.mutate()}
-              disabled={logCookMutation.isPending || cookDebounced}
-              className="text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
-            >
-              {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
-            </button>
-            {lastCookLogId && (
-              <>
-                <span className="text-[#E5E7EB] text-xs">·</span>
-                <button
-                  onClick={() => undoCookMutation.mutate()}
-                  disabled={undoCookMutation.isPending}
-                  className="text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
-                >
-                  {t('recipe.undoCook')}
-                </button>
-              </>
-            )}
-          </div>
         </div>
       </div>
     </div>
