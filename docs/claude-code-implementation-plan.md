@@ -1555,6 +1555,8 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | PostHog analytics | ✅ Done | All events wired: recipe_viewed, filter_applied, search_performed, tab_switched, plan_archived, shopping_view_toggled, recipe_added_to_plan |
 | Cook counts on library cards | ✅ Done | fetchRecipeCookCounts RPC wired to RecipeCard |
 | Language switch cache fix | ✅ Done | lang added to filterKey so switching language triggers refetch (May 2026) |
+| Web interface guideline fixes | ✅ Done | motion-reduce on skeletons, aria-hidden+Escape on CookingMode sheet backdrop, overscroll-contain, variable shadow fix on tags.map, dark mode on sticky bottom bar (May 2026) |
+| CookingMode + StepTimer i18n | ✅ Done | cooking namespace added to both locales; all hardcoded PT strings replaced with t() calls (May 2026) |
 | Recipe creation UI | ❌ Not done | Deferred — see locked decisions below |
 
 ### Recipe library — what's in the DB
