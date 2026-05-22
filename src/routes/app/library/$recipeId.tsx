@@ -722,7 +722,7 @@ function RecipeDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8]" style={{ paddingBottom: 'calc(10rem + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-screen bg-[#FAFAF8]" style={{ paddingBottom: 'calc(12rem + env(safe-area-inset-bottom))' }}>
       <div className="mx-auto w-full max-w-md">
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[#FAFAF8] px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
@@ -904,7 +904,7 @@ function RecipeDetailPage() {
             <button
               onClick={() => logCookMutation.mutate()}
               disabled={logCookMutation.isPending || cookDebounced}
-              className="w-full rounded-2xl bg-[#f0fdf4] border border-[#bbf7d0] py-4 flex items-center justify-center gap-2 text-[#15803d] text-sm font-semibold disabled:opacity-50 hover:bg-[#dcfce7] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-full rounded-2xl bg-[#f0fdf4] dark:bg-[#16a34a]/10 border border-[#bbf7d0] dark:border-[#16a34a]/25 py-4 flex items-center justify-center gap-2 text-[#15803d] dark:text-[#4ade80] text-sm font-semibold disabled:opacity-50 hover:bg-[#dcfce7] dark:hover:bg-[#16a34a]/20 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
               <CheckCircle2 size={17} aria-hidden="true" />
               {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
@@ -922,10 +922,10 @@ function RecipeDetailPage() {
         </div>
       </div>
 
-      {/* Sticky bottom bar */}
+      {/* Sticky bottom bar — sits above the nav bar */}
       <div
-        className="fixed left-0 right-0 px-4 pt-3 bg-[#FAFAF8] border-t border-[#F0F0EE]"
-        style={{ bottom: 0, paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+        className="fixed left-0 right-0 px-4 py-3 bg-[#FAFAF8] border-t border-[#F0F0EE]"
+        style={{ bottom: 'calc(3.25rem + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto max-w-md space-y-2">
           {isReplacing ? (
