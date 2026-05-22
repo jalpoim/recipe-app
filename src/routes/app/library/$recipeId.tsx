@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
+import { capture } from '../../../lib/analytics'
 import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -516,14 +517,42 @@ function CookingMode({
                 <X size={18} aria-hidden="true" />
               </button>
             </div>
-            <div className="overflow-y-auto divide-y divide-[#F9FAFB] pb-6">
-              {ingredients.map((ing) => (
-                <div key={ing.id} className="px-4 py-3">
-                  <span className="text-sm text-[#1A1A1A]">
-                    {scaleIngredient(ing, multiplier, baseServings)}
-                  </span>
-                </div>
-              ))}
+            <div className="overflow-y-auto pb-6">
+              {(() => {
+                const sections: { label: string | null; items: RecipeIngredient[] }[] = []
+                const sectionMap = new Map<string, typeof sections[0]>()
+                for (const ing of ingredients) {
+                  const key = ing.section_label ?? '__main__'
+                  if (!sectionMap.has(key)) {
+                    const s = { label: ing.section_label, items: [] as RecipeIngredient[] }
+                    sectionMap.set(key, s)
+                    sections.push(s)
+                  }
+                  sectionMap.get(key)!.items.push(ing)
+                }
+                return sections.map(({ label, items }) => (
+                  <div key={label ?? '__main__'}>
+                    {label && (
+                      <div className="px-4 py-2 border-b border-[#F3F4F6] flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{label}</span>
+                        <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">opcional</span>
+                      </div>
+                    )}
+                    <div className="divide-y divide-[#F3F4F6]">
+                      {items.map((ing) => (
+                        <div key={ing.id} className={`px-4 py-3 flex items-baseline justify-between gap-2 ${ing.is_optional && !label ? 'opacity-60' : ''}`}>
+                          <span className={`text-sm ${ing.is_optional && !label ? 'text-[#6B7280]' : 'text-[#1A1A1A]'}`}>
+                            {scaleIngredient(ing, multiplier, baseServings)}
+                          </span>
+                          {ing.is_optional && !label && (
+                            <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">opcional</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              })()}
             </div>
           </div>
         </div>
@@ -585,6 +614,7 @@ function RecipeDetailPage() {
       qc.invalidateQueries({ queryKey: ['active-plan'] })
       qc.invalidateQueries({ queryKey: ['plan-items'] })
       showToast('Adicionado ao plano ✓', 'success')
+      capture('recipe_added_to_plan', { recipeId: recipe.id })
     },
     onError: () => showToast('Erro ao adicionar ao plano', 'error'),
   })
@@ -735,20 +765,51 @@ function RecipeDetailPage() {
           </div>
 
           {/* Ingredients */}
-          {recipe.recipe_ingredients.length > 0 && (
-            <div>
-              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.ingredients')}</h2>
-              <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm divide-y divide-[#F3F4F6]">
-                {recipe.recipe_ingredients.map((ing) => (
-                  <div key={ing.id} className="px-4 py-3">
-                    <span className="text-sm text-[#1A1A1A]">
-                      {scaleIngredient(ing, multiplier, recipe.servings)}
-                    </span>
-                  </div>
-                ))}
+          {recipe.recipe_ingredients.length > 0 && (() => {
+            // Group by section_label, preserving order of first appearance
+            const sections: { label: string | null; items: typeof recipe.recipe_ingredients }[] = []
+            const sectionMap = new Map<string, typeof sections[0]>()
+            for (const ing of recipe.recipe_ingredients) {
+              const key = ing.section_label ?? '__main__'
+              if (!sectionMap.has(key)) {
+                const s = { label: ing.section_label, items: [] as typeof recipe.recipe_ingredients }
+                sectionMap.set(key, s)
+                sections.push(s)
+              }
+              sectionMap.get(key)!.items.push(ing)
+            }
+            return (
+              <div>
+                <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.ingredients')}</h2>
+                <div className="space-y-3">
+                  {sections.map(({ label, items }) => (
+                    <div key={label ?? '__main__'} className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
+                      {label && (
+                        <div className="px-4 py-2 border-b border-[#F3F4F6] flex items-center gap-2">
+                          <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{label}</span>
+                          <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">{t('recipe.optional')}</span>
+                        </div>
+                      )}
+                      <div className="divide-y divide-[#F3F4F6]">
+                        {items.map((ing) => (
+                          <div key={ing.id} className={`px-4 py-3 flex items-baseline justify-between gap-2 ${ing.is_optional && !label ? 'opacity-60' : ''}`}>
+                            <span className={`text-sm ${ing.is_optional && !label ? 'text-[#6B7280]' : 'text-[#1A1A1A]'}`}>
+                              {scaleIngredient(ing, multiplier, recipe.servings)}
+                            </span>
+                            {ing.is_optional && !label && (
+                              <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                                {t('recipe.optional')}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Steps */}
           {recipe.recipe_steps.length > 0 && (

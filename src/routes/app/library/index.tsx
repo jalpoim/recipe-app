@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { capture } from '../../../lib/analytics'
 import { Clock, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
@@ -31,6 +32,15 @@ function useDebounce<T>(value: T, delay: number): T {
 // ---------- search param schema ----------
 
 type SheetSection = 'protein' | 'time' | 'calories' | 'tags' | 'ingredients'
+
+const TAG_SECTIONS: { key: string; tags: string[] }[] = [
+  { key: 'method',  tags: ['air-fryer', 'forno', 'fogão', 'micro-ondas', 'sem-cozinha', 'uma-frigideira', 'bimby', 'grelhador'] },
+  { key: 'cuisine', tags: ['português', 'mediterrâneo', 'italiano', 'francês', 'europeu', 'americano', 'mexicano', 'indiano', 'asiático', 'japonês', 'coreano', 'árabe', 'africano', 'latino-americano'] },
+  { key: 'diet',    tags: ['sem-glúten', 'vegetariano', 'vegano', 'sem-lactose', 'alto-proteína', 'low-carb', 'fit'] },
+  { key: 'type',    tags: ['pequeno-almoço', 'almoço', 'jantar', 'snack', 'sobremesa', 'sopa', 'pós-treino', 'batido'] },
+  { key: 'context', tags: ['meal-prep', 'rápido', 'reconfortante', 'leve', 'económico', 'família', 'festivo', '5-ingredientes', 'semana', 'verão'] },
+]
+const TAG_SECTION_LIMIT = 6
 
 type LibrarySearch = {
   q: string
@@ -157,6 +167,7 @@ function RecipeCard({
       to="/app/library/$recipeId"
       params={{ recipeId: recipe.id }}
       search={{ from: undefined, planItemId: undefined, replacing: replacing ?? undefined }}
+      onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: replacing ? 'replacing' : 'library' })}
       className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
     >
       <div className="flex items-start justify-between gap-2">
@@ -276,6 +287,7 @@ function FilterSheet({
   const { t } = useTranslation()
   const [ingSearch, setIngSearch] = useState('')
   const debouncedIngSearch = useDebounce(ingSearch, 150)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const proteinRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
@@ -321,6 +333,7 @@ function FilterSheet({
     const next = search.proteins.includes(slug)
       ? search.proteins.filter((p) => p !== slug)
       : [...search.proteins, slug]
+    capture('filter_applied', { filterType: 'protein', value: slug, active: !search.proteins.includes(slug) })
     onUpdate({ proteins: next })
   }
 
@@ -328,6 +341,7 @@ function FilterSheet({
     const next = search.tags.includes(tag)
       ? search.tags.filter((t) => t !== tag)
       : [...search.tags, tag]
+    capture('filter_applied', { filterType: 'tag', value: tag, active: !search.tags.includes(tag) })
     onUpdate({ tags: next })
   }
 
@@ -410,9 +424,11 @@ function FilterSheet({
                 {([15, 30, 60] as const).map((mins) => (
                   <button
                     key={mins}
-                    onClick={() =>
-                      onUpdate({ maxTime: search.maxTime === mins ? undefined : mins })
-                    }
+                    onClick={() => {
+                      const next = search.maxTime === mins ? undefined : mins
+                      capture('filter_applied', { filterType: 'maxTime', value: next ?? null })
+                      onUpdate({ maxTime: next })
+                    }}
                     aria-pressed={search.maxTime === mins}
                     className={chipCls(search.maxTime === mins)}
                   >
@@ -429,9 +445,11 @@ function FilterSheet({
                 {([300, 500, 700] as const).map((cal) => (
                   <button
                     key={cal}
-                    onClick={() =>
-                      onUpdate({ maxCal: search.maxCal === cal ? undefined : cal })
-                    }
+                    onClick={() => {
+                      const next = search.maxCal === cal ? undefined : cal
+                      capture('filter_applied', { filterType: 'maxCal', value: next ?? null })
+                      onUpdate({ maxCal: next })
+                    }}
                     aria-pressed={search.maxCal === cal}
                     className={chipCls(search.maxCal === cal)}
                   >
@@ -441,24 +459,50 @@ function FilterSheet({
               </div>
             </div>
 
-            {/* Tags */}
-            {allTags.length > 0 && (
-              <div ref={tagsRef}>
-                <p className={sectionHeader}>{t('filters.tags')}</p>
-                <div className="flex flex-wrap gap-2">
-                  {allTags.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      aria-pressed={search.tags.includes(tag)}
-                      className={chipCls(search.tags.includes(tag))}
-                    >
-                      {t(`tags.${tag}`, { defaultValue: tag })}
-                    </button>
-                  ))}
-                </div>
+            {/* Tags — sectioned */}
+            <div ref={tagsRef}>
+              <p className={sectionHeader}>{t('filters.tags')}</p>
+              <div className="space-y-4">
+                {TAG_SECTIONS.map(({ key, tags: sectionTags }) => {
+                  const available = sectionTags.filter((tag) => allTags.includes(tag))
+                  if (available.length === 0) return null
+                  const expanded = expandedSections.has(key)
+                  const visible = expanded ? available : available.slice(0, TAG_SECTION_LIMIT)
+                  const hasMore = available.length > TAG_SECTION_LIMIT
+                  return (
+                    <div key={key}>
+                      <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                        {t(`tagSections.${key}`)}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {visible.map((tag) => (
+                          <button
+                            key={tag}
+                            onClick={() => toggleTag(tag)}
+                            aria-pressed={search.tags.includes(tag)}
+                            className={chipCls(search.tags.includes(tag))}
+                          >
+                            {t(`tags.${tag}`, { defaultValue: tag })}
+                          </button>
+                        ))}
+                        {hasMore && (
+                          <button
+                            onClick={() => setExpandedSections((prev) => {
+                              const next = new Set(prev)
+                              expanded ? next.delete(key) : next.add(key)
+                              return next
+                            })}
+                            className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                          >
+                            {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            )}
+            </div>
 
             {/* Ingredientes */}
             <div ref={ingredientsRef}>
@@ -568,7 +612,10 @@ function LibraryPage() {
   const debouncedQ = useDebounce(localQ, 300)
 
   useEffect(() => {
-    if (debouncedQ !== search.q) update({ q: debouncedQ })
+    if (debouncedQ !== search.q) {
+      update({ q: debouncedQ })
+      if (debouncedQ) capture('search_performed', { query: debouncedQ })
+    }
   }, [debouncedQ]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {

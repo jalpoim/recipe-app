@@ -81,6 +81,8 @@ export type Database = {
           name: string | null
           category: string | null
           is_pantry: boolean
+          is_optional: boolean
+          section_label: string | null
         }
         Insert: {
           id?: string
@@ -92,6 +94,8 @@ export type Database = {
           name?: string | null
           category?: string | null
           is_pantry?: boolean
+          is_optional?: boolean
+          section_label?: string | null
         }
         Update: {
           id?: string
@@ -103,6 +107,8 @@ export type Database = {
           name?: string | null
           category?: string | null
           is_pantry?: boolean
+          is_optional?: boolean
+          section_label?: string | null
         }
         Relationships: []
       }
@@ -284,6 +290,7 @@ export type Database = {
           name: string | null
           unit: string | null
           raw_text: string
+          section_label: string | null
         }
         Insert: {
           ingredient_id: string
@@ -291,6 +298,7 @@ export type Database = {
           name?: string | null
           unit?: string | null
           raw_text: string
+          section_label?: string | null
         }
         Update: {
           ingredient_id?: string
@@ -298,6 +306,7 @@ export type Database = {
           name?: string | null
           unit?: string | null
           raw_text?: string
+          section_label?: string | null
         }
         Relationships: []
       }

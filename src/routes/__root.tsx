@@ -2,6 +2,9 @@ import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-r
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../i18n'
 import { ToastProvider } from '../components/Toast'
+import { initAnalytics } from '../lib/analytics'
+
+if (typeof window !== 'undefined') initAnalytics()
 
 import appCss from '../styles.css?url'
 

@@ -42,7 +42,7 @@ export type FetchLibraryResult = {
 const RECIPE_FIELDS =
   'id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility'
 
-const INGREDIENT_FIELDS = 'id, recipe_id, name, raw_text, unit, position, is_pantry'
+const INGREDIENT_FIELDS = 'id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label'
 
 const SORT_COL: Record<Sort, string> = {
   pcal: 'pcal_ratio',
@@ -208,7 +208,7 @@ export const fetchRecipeById = createServerFn({ method: 'GET' })
         .maybeSingle(),
       supabase
         .from('recipe_ingredient_translations')
-        .select('ingredient_id, name, unit, raw_text')
+        .select('ingredient_id, name, unit, raw_text, section_label')
         .in('ingredient_id', ingIds)
         .eq('language', lang),
       supabase
@@ -230,7 +230,7 @@ export const fetchRecipeById = createServerFn({ method: 'GET' })
       name: recipeTrans?.name ?? recipe.name,
       recipe_ingredients: recipe.recipe_ingredients.map((ing) => {
         const t = ingTransMap.get(ing.id)
-        return t ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text } : ing
+        return t ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text, section_label: t.section_label ?? ing.section_label } : ing
       }),
       recipe_steps: recipe.recipe_steps.map((step) => ({
         ...step,

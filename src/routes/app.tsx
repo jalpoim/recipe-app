@@ -1,10 +1,12 @@
 import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useRef } from 'react'
 import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
 import { supabase } from '../lib/supabase/browser'
+import { capture, identifyUser } from '../lib/analytics'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
@@ -33,6 +35,7 @@ export const Route = createFileRoute('/app')({
 function BottomNav() {
   const { t } = useTranslation()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const prevTabRef = useRef(pathname)
 
   const { data: plan } = useQuery({
     queryKey: ['active-plan'],
@@ -43,10 +46,16 @@ function BottomNav() {
   const itemCount = plan?.item_count ?? 0
 
   const tabs = [
-    { label: t('nav.recipes'), icon: BookOpen, to: '/app/library' as const, disabled: false },
-    { label: t('nav.plan'), icon: CalendarDays, to: '/app/plan' as const, badge: itemCount, disabled: false },
-    { label: t('nav.list'), icon: ShoppingCart, to: '/app/shopping' as const, disabled: false },
+    { label: t('nav.recipes'), icon: BookOpen, to: '/app/library' as const, key: 'library', disabled: false },
+    { label: t('nav.plan'), icon: CalendarDays, to: '/app/plan' as const, key: 'plan', badge: itemCount, disabled: false },
+    { label: t('nav.list'), icon: ShoppingCart, to: '/app/shopping' as const, key: 'shopping', disabled: false },
   ]
+
+  function handleTabPress(to: string, key: string) {
+    const from = tabs.find((tab) => pathname.startsWith(tab.to))?.key ?? 'unknown'
+    if (from !== key) capture('tab_switched', { from, to: key })
+    prevTabRef.current = to
+  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] pb-safe">
@@ -72,6 +81,7 @@ function BottomNav() {
             <Link
               key={tab.to}
               to={tab.to}
+              onClick={() => handleTabPress(tab.to, tab.key)}
               className={`relative flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 isActive ? 'text-[#16A34A]' : 'text-[#9CA3AF] hover:text-[#6B7280]'
               }`}
@@ -108,6 +118,10 @@ function TopProgressBar() {
 }
 
 function AppLayout() {
+  const { user } = Route.useRouteContext()
+  useEffect(() => {
+    if (user) identifyUser(user.id, user.email)
+  }, [user.id])
   return (
     <>
       <TopProgressBar />

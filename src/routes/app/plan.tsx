@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
+import { capture } from '../../lib/analytics'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { X, Clock, ChevronRight } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -227,6 +228,7 @@ function PlanPage() {
   const clearMutation = useMutation({
     mutationFn: () => archiveAndCreatePlan({ data: planId! }),
     onSuccess: (newPlan) => {
+      capture('plan_archived', { itemCount: items.length })
       qc.setQueryData<ActivePlanWithCount>(['active-plan'], {
         ...newPlan,
         item_count: 0,

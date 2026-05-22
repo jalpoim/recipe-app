@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
+import { capture } from '../../lib/analytics'
 import { Check, Plus, Share2, X } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -243,15 +244,16 @@ function RecipeView({
                 {item.portion_multiplier}× porção
               </p>
             </div>
-            <div className="divide-y divide-[#F9FAFB]">
+            <div className="divide-y divide-[#F3F4F6]">
               {visibleIngs.map((ing) => {
                 const key = `recipe:${item.id}:${ing.id}`
                 const qty = scaleQty(ing.quantity, item.portion_multiplier, item.recipe.servings)
+                const label = [ing.name ?? ing.raw_text, ing.is_optional ? '(opcional)' : null].filter(Boolean).join(' ')
                 return (
                   <CheckRow
                     key={key}
                     itemKey={key}
-                    label={ing.name ?? ing.raw_text}
+                    label={label}
                     qty={qty}
                     unit={ing.unit}
                     checked={checkMap.get(key) ?? false}
@@ -276,11 +278,16 @@ type AggItem = {
   category: string
   totalQty: number | null
   hasUnknownQty: boolean
+  allOptional: boolean
+  isCustom?: boolean
+  onRemove?: () => void
 }
 
 function buildGlobalList(
   items: PlanItemWithRecipe[],
   categoryOverrides: Record<string, string>,
+  customItems: ShoppingCheckState[],
+  onRemoveCustom: (key: string) => void,
 ): Map<string, AggItem[]> {
   const aggMap = new Map<string, AggItem>()
 
@@ -305,6 +312,7 @@ function buildGlobalList(
         } else {
           existing.hasUnknownQty = true
         }
+        if (!ing.is_optional) existing.allOptional = false
       } else {
         aggMap.set(aggKey, {
           recipeKeyQtys: [{ key: recipeKey, qty }],
@@ -313,9 +321,27 @@ function buildGlobalList(
           category,
           totalQty: qty,
           hasUnknownQty: qty == null,
+          allOptional: ing.is_optional ?? false,
         })
       }
     }
+  }
+
+  // Inject custom items into the same aggregation map
+  for (const c of customItems) {
+    const name = (c.label ?? c.item_key).trim()
+    const category = c.category ?? 'Outros'
+    aggMap.set(c.item_key, {
+      recipeKeyQtys: [{ key: c.item_key, qty: null }],
+      name,
+      unit: null,
+      category,
+      totalQty: null,
+      hasUnknownQty: true,
+      allOptional: false,
+      isCustom: true,
+      onRemove: () => onRemoveCustom(c.item_key),
+    })
   }
 
   // Group by category
@@ -341,23 +367,17 @@ function buildGlobalList(
   return ordered
 }
 
-function buildShareText(
-  grouped: Map<string, AggItem[]>,
-  customItems: ShoppingCheckState[],
-): string {
+function buildShareText(grouped: Map<string, AggItem[]>): string {
   const lines: string[] = []
   for (const [category, aggItems] of grouped) {
     lines.push(`${category.toUpperCase()}`)
     for (const agg of aggItems) {
       const qtyStr = fmtQty(agg.totalQty)
-      const parts = [qtyStr, agg.unit, agg.name].filter(Boolean)
+      const name = agg.allOptional ? `${agg.name} (opcional)` : agg.name
+      const parts = [qtyStr, agg.unit, name].filter(Boolean)
       lines.push(`• ${parts.join(' ')}`)
     }
     lines.push('')
-  }
-  if (customItems.length > 0) {
-    lines.push('EXTRA')
-    for (const c of customItems) lines.push(`• ${c.label ?? c.item_key}`)
   }
   return lines.join('\n').trim()
 }
@@ -407,11 +427,10 @@ function GlobalView({
   onRemoveCustom: (key: string) => void
   onCategoryChange: (ingredientName: string, cat: Category) => void
 }) {
-  const { t } = useTranslation()
   const [editingCategory, setEditingCategory] = useState<{ name: string; current: string } | null>(null)
 
-  const grouped = buildGlobalList(items, categoryOverrides)
-  const shareText = buildShareText(grouped, customItems)
+  const grouped = buildGlobalList(items, categoryOverrides, customItems, onRemoveCustom)
+  const shareText = buildShareText(grouped)
 
   return (
     <>
@@ -432,7 +451,7 @@ function GlobalView({
                 alterar
               </span>
             </button>
-            <div className="divide-y divide-[#F9FAFB]">
+            <div className="divide-y divide-[#F3F4F6]">
               {aggItems.map((agg) => {
                 const checkedCount = agg.recipeKeyQtys.filter((k) => checkMap.get(k.key) ?? false).length
                 const allChecked = checkedCount === agg.recipeKeyQtys.length
@@ -442,47 +461,24 @@ function GlobalView({
                   ? null
                   : unchecked.reduce((s, k) => s + (k.qty ?? 0), 0)
                 const allKeys = agg.recipeKeyQtys.map((k) => k.key)
+                const displayName = agg.allOptional ? `${agg.name} (opcional)` : agg.name
                 return (
                   <CheckRow
                     key={agg.recipeKeyQtys[0].key}
                     itemKey={agg.recipeKeyQtys[0].key}
-                    label={agg.name}
+                    label={displayName}
                     qty={allChecked ? agg.totalQty : remainingQty}
                     unit={agg.unit}
                     checked={allChecked}
                     partial={someChecked}
                     onToggle={() => onToggle(allKeys, !allChecked)}
+                    onRemove={agg.isCustom ? agg.onRemove : undefined}
                   />
                 )
               })}
             </div>
           </div>
         ))}
-
-        {/* Custom items */}
-        {customItems.length > 0 && (
-          <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-[#F3F4F6]">
-              <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
-                {t('shopping.extraItems')}
-              </span>
-            </div>
-            <div className="divide-y divide-[#F9FAFB]">
-              {customItems.map((c) => (
-                <CheckRow
-                  key={c.item_key}
-                  itemKey={c.item_key}
-                  label={c.label ?? c.item_key}
-                  qty={null}
-                  unit={null}
-                  checked={checkMap.get(c.item_key) ?? false}
-                  onToggle={() => onToggle([c.item_key], !(checkMap.get(c.item_key) ?? false))}
-                  onRemove={() => onRemoveCustom(c.item_key)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Category picker overlay */}
@@ -654,6 +650,7 @@ function ShoppingPage() {
     isPlanLoading || (!!planId && (isItemsLoading || isChecksLoading || initializedForPlan !== planId))
 
   function setView(v: 'recipe' | 'global') {
+    capture('shopping_view_toggled', { view: v })
     // @ts-ignore -- routeTree.gen.ts is regenerated on pnpm dev; view is valid search param
     void navigate({ search: { view: v }, replace: true })
   }

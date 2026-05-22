@@ -1550,7 +1550,7 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | cook_log table + server functions | ✅ Schema+fns done | **No UI yet — nothing calls logRecipeCooked** |
 | user_recipe_interactions table + server functions | ✅ Schema+fns done | **No UI yet** |
 | System tag translations (i18n keys) | ❌ Not done | Tags display raw PT strings in filter sheet for EN users |
-| Recipe creation UI | ❌ Not done | Explicitly deferred from v1 |
+| Recipe creation UI | ❌ Not done | Deferred — see locked decisions below |
 
 ### Recipe library — what's in the DB
 
@@ -1562,6 +1562,19 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 
 Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, `air-fryer`, `micro-ondas`, `sem-cozinha`, `uma-frigideira`, `leve`, `reconfortante`, `acompanhamento`, `sopa`, `vegetariano`.
 
+### Recipe creation UI — locked decisions (for when this is built)
+
+- **Tag input**: show canonical system tags as pre-built chips organised by section. Text input autocompletes against system tags first, then user's previously used custom tags. Free text allowed for new custom tags.
+- **Hard cap**: 6 system tags per recipe. 7th chip disabled until one is removed.
+- **Cuisine tags**: max 1 per recipe (enforced by UI — selecting a new cuisine deselects the previous).
+- **Cooking method tags**: max 1 per recipe in most cases.
+- **`alto-proteína`**: auto-applied when `pcal_ratio ≥ 0.7`. Not user-selectable.
+- **`fit` tag**: shown as a toggle ("Esta receita é uma versão fit de um prato clássico?"). Default off. User opts in explicitly.
+- **`vegan` implies `vegetariano`**: selecting vegan auto-applies vegetarian and disables it as a separate option.
+- **Custom tags**: stored in `recipes.tags[]` like system tags. A tag is "custom" if its slug is not in the locale files. Custom tags appear in a "Os meus tags" section in the filter sheet, visible only to that user.
+- **Tag promotion**: periodically query `SELECT unnest(tags), count(*) FROM recipes WHERE owner_id IS NOT NULL GROUP BY 1 ORDER BY 2 DESC`. Run Claude against top candidates. Human reviews and approves. Promoted tags added to locale files — instantly become system tags everywhere.
+- **AI tag suggestion**: after ingredients/steps/macros are filled in, auto-suggest tags using Claude. User accepts, rejects, or modifies before saving.
+
 ### Key architectural decisions already locked in
 
 - **Cursor pagination** — composite `(sort_field, id)` cursor, 24 per page
@@ -1571,14 +1584,44 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
-### What to do next (Session 11)
+### What to do next (Session 10.5 — do this before Session 11)
 
-Session 11 is the next planned session. The **schema and server functions are already done** — skip steps 1–4 of the session 11 plan above. Only these parts remain:
+Small focused session: tag taxonomy cleanup + filter UX polish. No schema changes.
 
-1. **Cook log UI** — Add a "Cozinhei isto" (I cooked this) button at the end of the cooking companion flow. On tap: call `logRecipeCooked({ recipeId, source: 'manual', householdId })`, invalidate cook counts query, show a brief toast.
-2. **Auto-log on plan archive** — In `archiveAndCreatePlan` (`plan-queries.ts`), insert cook_log rows for all plan items before archiving (source: 'planned').
-3. **System tag i18n** — Add `tags.*` keys to both locale files, update `RecipeCard` and `FilterSheet` to use `t('tags.${tag}', tag)` (fallback to raw tag so unknown tags still render).
-4. **Cook counts in library** — Already wired via `fetchRecipeCookCounts` RPC and shown on cards; will auto-populate once cook_log has data.
+1. **Tag taxonomy cleanup (AI-assisted)** — Query all distinct tags currently in the DB. Use Claude to propose a canonical tag list: cooking method (air-fryer, forno, micro-ondas, uma-frigideira, sem-cozinha), cuisine (coreano, português, indiano, tailandês, mediterrânico), dietary (vegetariano, sem-glúten), meal type (pequeno-almoço, acompanhamento, sopa), vibe (meal-prep, rápido, leve, reconfortante, alto-proteína). Remove any tags that are proteins/ingredients (e.g. "fish", "frango") — those belong in the protein filter. Standardise capitalisation to lowercase slugs. Run a migration to remap all recipe tags to the canonical set. Update both locale files with the full `tags.*` block.
+
+2. **Tags section collapse** — In `FilterSheet`, show the 6 most-used tags by default. Add a "Ver mais" / "Ver menos" toggle to expand/collapse the rest. Frequency comes from the existing `fetchLibraryMeta` response.
+
+3. **Filter chip visual feedback** — When opening the bottom sheet via a category chip (Proteína · Tempo · Calorias), briefly highlight the target section header so the user knows where they landed.
+
+4. **PostHog analytics** — Install `posthog-js`, initialise in the app entry point. Capture these events at each touchpoint:
+   - `recipe_viewed` { recipeId, source: 'library'|'plan'|'search' }
+   - `recipe_added_to_plan` { recipeId }
+   - `recipe_cooked` { recipeId, source: 'companion'|'detail' }
+   - `filter_applied` { filterType, value, resultCount }
+   - `search_performed` { query, resultCount }
+   - `tab_switched` { from, to }
+   - `plan_archived` { itemCount }
+   - `shopping_view_toggled` { view: 'por-receita'|'global' }
+   - `cook_log_created` { recipeId }
+
+**Verify before moving on:**
+- All recipe tags are lowercase slugs with no ingredient-style values
+- Tags translate correctly in EN and PT
+- Filter sheet tags section collapses/expands cleanly
+- No regressions in filter logic
+
+---
+
+### What to do in Session 11 (after 10.5)
+
+The **schema and server functions are already done** — skip steps 1–4 of the session 11 plan above. Only these parts remain:
+
+1. **Cook log UI** — "Cozinhei isto" button on the recipe detail page (accessible from both library and plan) and at the end of the cooking companion flow. On tap: call `logRecipeCooked({ recipeId, source: 'manual', householdId })`, invalidate cook counts, show toast. Button label updates to "Cozinhei isto outra vez" after first tap with a debounce of 3s to prevent accidental double-logs. Undo available immediately after each tap.
+2. **"Cozinhaste isto X vezes"** — Show personal cook count on the recipe detail page (not the card) using `fetchRecipeCookCounts`. Only show when count > 0.
+3. **Cook counts on library cards** — Global cook count shown as muted text on recipe cards. Already wired via `fetchRecipeCookCounts` RPC; auto-populates once cook_log has data.
+4. **System tag i18n** — Handled in Session 10.5. Verify it's done before starting this step.
+5. **No auto-log on plan archive** — Planning ≠ cooking. Removed from scope. Do not insert cook_log rows on archive.
 
 ### Supabase project
 
