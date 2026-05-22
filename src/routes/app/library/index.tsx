@@ -580,7 +580,8 @@ function FilterSheet({
 // ---------- LibraryPage ----------
 
 function LibraryPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language.startsWith('en') ? 'en' : 'pt'
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/app/library/' })
   const queryClient = useQueryClient()
@@ -632,8 +633,9 @@ function LibraryPage() {
       tags: search.tags,
       ingredients: search.ingredients,
       q: search.q,
+      lang,
     }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q],
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q, lang],
   )
 
   const {
