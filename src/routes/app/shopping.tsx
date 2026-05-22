@@ -25,9 +25,9 @@ function ShoppingSkeleton() {
         <div className="h-6 w-40 bg-[#F3F4F6] rounded-full mb-4" />
         <div className="h-10 bg-[#F3F4F6] rounded-xl" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#F3F4F6]">
-              <div className="h-3.5 w-1/2 bg-[#F3F4F6] rounded-full" />
+          <div key={i} className="rounded-2xl bg-white dark:bg-[#1C1C1E] border border-[#F0F0EE] dark:border-white/10 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#F3F4F6] dark:border-white/10">
+              <div className="h-3.5 w-1/2 bg-[#F3F4F6] dark:bg-white/10 rounded-full" />
             </div>
             {[0, 1, 2].map((j) => (
               <div key={j} className="flex items-center gap-3 px-4 py-2.5">
@@ -144,39 +144,43 @@ function CheckRow({
   const display = [qtyStr, unit, label].filter(Boolean).join(' ')
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
-      <button
-        onClick={onToggle}
-        aria-pressed={checked}
-        aria-label={`${checked ? 'Desmarcar' : 'Marcar'} ${label}`}
-        className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+    <button
+      onClick={onToggle}
+      aria-pressed={checked}
+      aria-label={`${checked ? 'Desmarcar' : 'Marcar'} ${label}`}
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/40 focus:outline-none active:bg-black/5 dark:active:bg-white/5 transition-colors"
+    >
+      <span
+        aria-hidden="true"
+        className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
           checked
             ? 'bg-[#16A34A] border-[#16A34A]'
             : partial
             ? 'bg-[#dcfce7] border-[#16A34A]'
-            : 'border-[#D1D5DB] hover:border-[#16A34A]'
+            : 'border-[#D1D5DB]'
         }`}
       >
         {checked && <Check size={11} className="text-white" strokeWidth={3} aria-hidden="true" />}
         {partial && !checked && <div className="w-2 h-0.5 bg-[#16A34A] rounded-full" />}
-      </button>
+      </span>
       <span
         className={`flex-1 text-sm transition-colors ${
-          checked ? 'line-through text-[#9CA3AF]' : partial ? 'text-[#6B7280]' : 'text-[#1A1A1A]'
+          checked ? 'line-through text-[#9CA3AF]' : partial ? 'text-[#6B7280]' : 'text-[#1A1A1A] dark:text-[#F5F5F5]'
         }`}
       >
         {display}
       </span>
       {onRemove && (
-        <button
-          onClick={onRemove}
+        <span
+          role="button"
+          onClick={(e) => { e.stopPropagation(); onRemove() }}
           aria-label={`Remover ${label}`}
-          className="shrink-0 text-[#9CA3AF] hover:text-[#DC2626] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none rounded"
+          className="shrink-0 text-[#9CA3AF] hover:text-[#DC2626] transition-colors"
         >
           <X size={14} aria-hidden="true" />
-        </button>
+        </span>
       )}
-    </div>
+    </button>
   )
 }
 
@@ -237,14 +241,14 @@ function RecipeView({
         if (visibleIngs.length === 0) return null
 
         return (
-          <div key={item.id} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-[#F3F4F6]">
-              <p className="text-sm font-semibold text-[#1A1A1A]">{item.recipe.name}</p>
+          <div key={item.id} className="rounded-2xl bg-white dark:bg-[#1C1C1E] border border-[#F0F0EE] dark:border-white/10 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#F3F4F6] dark:border-white/10">
+              <p className="text-sm font-semibold text-[#1A1A1A] dark:text-[#F5F5F5]">{item.recipe.name}</p>
               <p className="text-xs text-[#9CA3AF] mt-0.5">
                 {item.portion_multiplier}× porção
               </p>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-[#F3F4F6] dark:divide-white/10">
               {visibleIngs.map((ing) => {
                 const key = `recipe:${item.id}:${ing.id}`
                 const qty = scaleQty(ing.quantity, item.portion_multiplier, item.recipe.servings)
@@ -439,19 +443,19 @@ function GlobalView({
       </div>
       <div className="space-y-3">
         {[...grouped.entries()].map(([category, aggItems]) => (
-          <div key={category} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
+          <div key={category} className="rounded-2xl bg-white dark:bg-[#1C1C1E] border border-[#F0F0EE] dark:border-white/10 shadow-sm overflow-hidden">
             <button
               onClick={() => setEditingCategory({ name: category, current: category })}
-              className="w-full text-left px-4 py-2.5 border-b border-[#F3F4F6] flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-full text-left px-4 py-2.5 border-b border-[#F3F4F6] dark:border-white/10 flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
-              <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
+              <span className="text-xs font-semibold text-[#6B7280] dark:text-[#9CA3AF] uppercase tracking-wide">
                 {category}
               </span>
               <span className="text-[10px] text-[#9CA3AF] opacity-0 group-hover:opacity-100 transition-opacity">
                 alterar
               </span>
             </button>
-            <div className="divide-y divide-[#F3F4F6]">
+            <div className="divide-y divide-[#F3F4F6] dark:divide-white/10">
               {aggItems.map((agg) => {
                 const checkedCount = agg.recipeKeyQtys.filter((k) => checkMap.get(k.key) ?? false).length
                 const allChecked = checkedCount === agg.recipeKeyQtys.length

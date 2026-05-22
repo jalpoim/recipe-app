@@ -1549,7 +1549,12 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | Settings — profile, sign out, household management | ✅ Done | |
 | cook_log table + server functions | ✅ Schema+fns done | **No UI yet — nothing calls logRecipeCooked** |
 | user_recipe_interactions table + server functions | ✅ Schema+fns done | **No UI yet** |
-| System tag translations (i18n keys) | ❌ Not done | Tags display raw PT strings in filter sheet for EN users |
+| System tag translations (i18n keys) | ✅ Done | tags.* block in both locale files; FilterSheet + RecipeCard use t('tags.*') |
+| Tags section collapse in FilterSheet | ✅ Done | 6 tags shown by default, Ver mais/Ver menos toggle |
+| Filter chip visual feedback | ✅ Done | Section highlight on sheet open via sheetSection state |
+| PostHog analytics | ✅ Done | All events wired: recipe_viewed, filter_applied, search_performed, tab_switched, plan_archived, shopping_view_toggled, recipe_added_to_plan |
+| Cook counts on library cards | ✅ Done | fetchRecipeCookCounts RPC wired to RecipeCard |
+| Language switch cache fix | ✅ Done | lang added to filterKey so switching language triggers refetch (May 2026) |
 | Recipe creation UI | ❌ Not done | Deferred — see locked decisions below |
 
 ### Recipe library — what's in the DB
@@ -1584,44 +1589,13 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
-### What to do next (Session 10.5 — do this before Session 11)
+### What to do next — Session 11 (cook log UI)
 
-Small focused session: tag taxonomy cleanup + filter UX polish. No schema changes.
-
-1. **Tag taxonomy cleanup (AI-assisted)** — Query all distinct tags currently in the DB. Use Claude to propose a canonical tag list: cooking method (air-fryer, forno, micro-ondas, uma-frigideira, sem-cozinha), cuisine (coreano, português, indiano, tailandês, mediterrânico), dietary (vegetariano, sem-glúten), meal type (pequeno-almoço, acompanhamento, sopa), vibe (meal-prep, rápido, leve, reconfortante, alto-proteína). Remove any tags that are proteins/ingredients (e.g. "fish", "frango") — those belong in the protein filter. Standardise capitalisation to lowercase slugs. Run a migration to remap all recipe tags to the canonical set. Update both locale files with the full `tags.*` block.
-
-2. **Tags section collapse** — In `FilterSheet`, show the 6 most-used tags by default. Add a "Ver mais" / "Ver menos" toggle to expand/collapse the rest. Frequency comes from the existing `fetchLibraryMeta` response.
-
-3. **Filter chip visual feedback** — When opening the bottom sheet via a category chip (Proteína · Tempo · Calorias), briefly highlight the target section header so the user knows where they landed.
-
-4. **PostHog analytics** — Install `posthog-js`, initialise in the app entry point. Capture these events at each touchpoint:
-   - `recipe_viewed` { recipeId, source: 'library'|'plan'|'search' }
-   - `recipe_added_to_plan` { recipeId }
-   - `recipe_cooked` { recipeId, source: 'companion'|'detail' }
-   - `filter_applied` { filterType, value, resultCount }
-   - `search_performed` { query, resultCount }
-   - `tab_switched` { from, to }
-   - `plan_archived` { itemCount }
-   - `shopping_view_toggled` { view: 'por-receita'|'global' }
-   - `cook_log_created` { recipeId }
-
-**Verify before moving on:**
-- All recipe tags are lowercase slugs with no ingredient-style values
-- Tags translate correctly in EN and PT
-- Filter sheet tags section collapses/expands cleanly
-- No regressions in filter logic
-
----
-
-### What to do in Session 11 (after 10.5)
-
-The **schema and server functions are already done** — skip steps 1–4 of the session 11 plan above. Only these parts remain:
+Sessions 10.5 is fully done. Schema and server functions for Session 11 are also done. Only the UI remains:
 
 1. **Cook log UI** — "Cozinhei isto" button on the recipe detail page (accessible from both library and plan) and at the end of the cooking companion flow. On tap: call `logRecipeCooked({ recipeId, source: 'manual', householdId })`, invalidate cook counts, show toast. Button label updates to "Cozinhei isto outra vez" after first tap with a debounce of 3s to prevent accidental double-logs. Undo available immediately after each tap.
 2. **"Cozinhaste isto X vezes"** — Show personal cook count on the recipe detail page (not the card) using `fetchRecipeCookCounts`. Only show when count > 0.
-3. **Cook counts on library cards** — Global cook count shown as muted text on recipe cards. Already wired via `fetchRecipeCookCounts` RPC; auto-populates once cook_log has data.
-4. **System tag i18n** — Handled in Session 10.5. Verify it's done before starting this step.
-5. **No auto-log on plan archive** — Planning ≠ cooking. Removed from scope. Do not insert cook_log rows on archive.
+3. **No auto-log on plan archive** — Planning ≠ cooking. Removed from scope.
 
 ### Supabase project
 
