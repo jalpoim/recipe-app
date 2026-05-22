@@ -65,7 +65,7 @@
     "ingredients": "Ingredients",
     "steps": "Preparation",
     "back": "Back",
-    "cookedCount": "{{count}}× cooked",
+    "cookedCount": "You cooked this {{count}} times",
     "logCooked": "I Cooked This",
     "logCookedAgain": "I Cooked This Again",
     "logCookedSuccess": "Cooking logged ✓",

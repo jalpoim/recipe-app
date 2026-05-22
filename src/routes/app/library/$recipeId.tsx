@@ -722,7 +722,7 @@ function RecipeDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-56">
+    <div className="min-h-screen bg-[#FAFAF8]" style={{ paddingBottom: 'calc(10rem + env(safe-area-inset-bottom))' }}>
       <div className="mx-auto w-full max-w-md">
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-[#FAFAF8] px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
@@ -902,7 +902,10 @@ function RecipeDetailPage() {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-14 left-0 right-0 px-4 pb-safe pt-3 bg-[#FAFAF8] dark:bg-[#0A0A0A] border-t border-[#F0F0EE] dark:border-white/10">
+      <div
+        className="fixed left-0 right-0 px-4 pt-3 bg-[#FAFAF8] border-t border-[#F0F0EE]"
+        style={{ bottom: 0, paddingBottom: 'calc(3.5rem + env(safe-area-inset-bottom))' }}
+      >
         <div className="mx-auto max-w-md space-y-2">
           {isReplacing ? (
             <button
@@ -977,22 +980,25 @@ function RecipeDetailPage() {
             </button>
           )}
 
-          <div className="space-y-1.5">
+          <div className="flex items-center justify-center gap-3 pt-0.5 pb-0.5">
             <button
               onClick={() => logCookMutation.mutate()}
               disabled={logCookMutation.isPending || cookDebounced}
-              className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
             >
               {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
             </button>
             {lastCookLogId && (
-              <button
-                onClick={() => undoCookMutation.mutate()}
-                disabled={undoCookMutation.isPending}
-                className="w-full text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors py-1 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
-              >
-                {t('recipe.undoCook')}
-              </button>
+              <>
+                <span className="text-[#E5E7EB] text-xs">·</span>
+                <button
+                  onClick={() => undoCookMutation.mutate()}
+                  disabled={undoCookMutation.isPending}
+                  className="text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+                >
+                  {t('recipe.undoCook')}
+                </button>
+              </>
             )}
           </div>
         </div>

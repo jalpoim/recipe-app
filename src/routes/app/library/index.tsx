@@ -784,8 +784,8 @@ function LibraryPage() {
   if (isError) return <LibraryError error={error as Error} />
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
-      <div className="mx-auto w-full max-w-md px-4">
+    <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
+      <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Replace mode banner */}
         {search.replacing && (
           <div className="pt-4 pb-0">
@@ -900,11 +900,11 @@ function LibraryPage() {
 
         {/* Recipe list — virtualised */}
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3">
             {[0, 1, 2, 3, 4].map((i) => <CardSkeleton key={i} />)}
           </div>
         ) : sortedRecipes.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="flex-1 flex flex-col items-center justify-center pb-20">
             <p className="text-[#6B7280] text-sm">{t('filters.empty')}</p>
             {hasActiveFilters && (
               <button onClick={clearFilters} className="mt-2 text-xs text-[#16A34A] underline">
@@ -913,7 +913,7 @@ function LibraryPage() {
             )}
           </div>
         ) : (
-          <div ref={parentRef} className="overflow-auto" style={{ maxHeight: 'calc(100dvh - 260px)' }}>
+          <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
             <div
               style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
             >
