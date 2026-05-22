@@ -172,7 +172,7 @@ export const fetchLibraryMeta = createServerFn({ method: 'GET' })
   .handler(async ({ data: input }): Promise<{ proteins: string[]; tags: string[]; ingredients: string[] }> => {
     const supabase = makeClient()
     const lang = input?.lang ?? getLang()
-    const { data, error } = await supabase.rpc('get_library_meta', { lang })
+    const { data, error } = await supabase.rpc('get_library_meta', { lang } as never)
     if (error) throw new Error(error.message)
     return data as { proteins: string[]; tags: string[]; ingredients: string[] }
   })

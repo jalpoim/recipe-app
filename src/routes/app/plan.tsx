@@ -18,10 +18,10 @@ function PlanSkeleton() {
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4 py-5 space-y-3">
-        <div className="h-6 w-28 bg-[#F3F4F6] rounded-full animate-pulse mb-4" />
-        <div className="h-14 bg-[#F3F4F6] rounded-2xl animate-pulse" />
+        <div className="h-6 w-28 bg-[#F3F4F6] rounded-full animate-pulse motion-reduce:animate-none mb-4" />
+        <div className="h-14 bg-[#F3F4F6] rounded-2xl animate-pulse motion-reduce:animate-none" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 animate-pulse">
+          <div key={i} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 animate-pulse motion-reduce:animate-none">
             <div className="h-4 w-2/3 bg-[#F3F4F6] rounded-full mb-3" />
             <div className="grid grid-cols-4 gap-1.5">
               {[0, 1, 2, 3].map((j) => <div key={j} className="h-12 bg-[#F3F4F6] rounded-xl" />)}
@@ -68,10 +68,12 @@ function PlanItemCard({
   item,
   onRemove,
   onMultiplierChange,
+  isUpdating,
 }: {
   item: PlanItemWithRecipe
   onRemove: (id: string) => void
   onMultiplierChange: (id: string, v: number) => void
+  isUpdating?: boolean
 }) {
   const { t } = useTranslation()
   const scale = item.portion_multiplier
@@ -101,7 +103,7 @@ function PlanItemCard({
 
       <div className="block pr-8">
         <div className="flex items-center gap-1">
-          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#16A34A] transition-colors">
+          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#16A34A] transition-colors truncate">
             {item.recipe.name}
           </h3>
           <ChevronRight size={12} className="text-[#9CA3AF] flex-shrink-0" aria-hidden="true" />
@@ -116,7 +118,7 @@ function PlanItemCard({
           {item.recipe.time_min != null && (
             <span className="flex items-center gap-0.5">
               <Clock size={10} aria-hidden="true" />
-              {item.recipe.time_min} min
+              {item.recipe.time_min} {t('common.min')}
             </span>
           )}
         </div>
@@ -130,7 +132,8 @@ function PlanItemCard({
               key={n}
               onClick={() => onMultiplierChange(item.id, n)}
               aria-pressed={item.portion_multiplier === n}
-              className={`w-9 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none focus:z-10 relative ${
+              disabled={isUpdating}
+              className={`w-9 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none focus:z-10 relative disabled:opacity-50 ${
                 item.portion_multiplier === n
                   ? 'bg-[#16A34A] text-white'
                   : 'bg-white text-[#6B7280] hover:bg-[#F3F4F6]'
@@ -276,6 +279,7 @@ function PlanPage() {
                   item={item}
                   onRemove={(id) => removeMutation.mutate(id)}
                   onMultiplierChange={(id, v) => itemMultMutation.mutate({ id, mult: v })}
+                  isUpdating={itemMultMutation.isPending}
                 />
               ))}
             </div>

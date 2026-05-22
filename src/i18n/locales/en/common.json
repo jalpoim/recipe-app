@@ -119,7 +119,30 @@
     "error": "Something went wrong",
     "retry": "Try again",
     "recipes_one": "recipe",
-    "recipes_other": "recipes"
+    "recipes_other": "recipes",
+    "min": "min"
+  },
+  "cooking": {
+    "mode": "Cooking mode",
+    "exit": "Exit",
+    "exitLabel": "Exit cooking mode",
+    "stepOf": "Step {{current}} of {{total}}",
+    "prev": "Previous",
+    "next": "Next",
+    "done": "Done",
+    "timer": "Timer",
+    "setTimer": "Set timer",
+    "reset": "Reset",
+    "resetLabel": "Reset timer",
+    "pause": "Pause",
+    "start": "Start",
+    "decreaseMinutes": "Decrease minutes",
+    "increaseMinutes": "Increase minutes",
+    "minutes": "{{count}} min",
+    "timerDone": "Timer done — {{recipe}}",
+    "prevStepLabel": "Go to previous step",
+    "nextStepLabel": "Go to next step",
+    "stepDotLabel": "Go to step {{n}}"
   },
   "tagSections": {
     "method": "Method",

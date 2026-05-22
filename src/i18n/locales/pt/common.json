@@ -119,7 +119,30 @@
     "error": "Algo correu mal",
     "retry": "Tentar novamente",
     "recipes_one": "receita",
-    "recipes_other": "receitas"
+    "recipes_other": "receitas",
+    "min": "min"
+  },
+  "cooking": {
+    "mode": "Modo cozinha",
+    "exit": "Sair",
+    "exitLabel": "Sair do modo cozinha",
+    "stepOf": "Passo {{current}} de {{total}}",
+    "prev": "Anterior",
+    "next": "Próximo",
+    "done": "Concluído",
+    "timer": "Temporizador",
+    "setTimer": "Definir temporizador",
+    "reset": "Reiniciar",
+    "resetLabel": "Reiniciar temporizador",
+    "pause": "Pausar",
+    "start": "Iniciar",
+    "decreaseMinutes": "Diminuir minutos",
+    "increaseMinutes": "Aumentar minutos",
+    "minutes": "{{count}} min",
+    "timerDone": "Temporizador concluído — {{recipe}}",
+    "prevStepLabel": "Ir para passo anterior",
+    "nextStepLabel": "Ir para próximo passo",
+    "stepDotLabel": "Ir para passo {{n}}"
   },
   "tagSections": {
     "method": "Método",

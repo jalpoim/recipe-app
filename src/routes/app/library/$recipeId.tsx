@@ -18,7 +18,7 @@ import type { RecipeIngredient, RecipeStep } from '../../../types/db'
 function RecipeDetailSkeleton() {
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-56">
-      <div className="mx-auto w-full max-w-md px-4 py-5 space-y-4 animate-pulse">
+      <div className="mx-auto w-full max-w-md px-4 py-5 space-y-4 animate-pulse motion-reduce:animate-none">
         <div className="h-4 w-16 bg-[#F3F4F6] rounded-full" />
         <div className="h-7 w-3/4 bg-[#F3F4F6] rounded-full" />
         <div className="h-4 w-1/3 bg-[#F3F4F6] rounded-full" />
@@ -143,6 +143,7 @@ function StepTimer({
   stepLabel: string
   recipeName: string
 }) {
+  const { t } = useTranslation()
   const [seconds, setSeconds] = useState(initialSeconds)
   const [timeLeft, setTimeLeft] = useState(initialSeconds)
   const [isRunning, setIsRunning] = useState(false)
@@ -188,7 +189,7 @@ function StepTimer({
         clearTimeout(notifTimeoutRef.current!)
         notifTimeoutRef.current = setTimeout(() => {
           new Notification(`⏱ ${stepLabel}`, {
-            body: `Temporizador concluído — ${recipeName}`,
+            body: t('cooking.timerDone', { recipe: recipeName }),
             silent: false,
           })
         }, secs * 1000)
@@ -234,21 +235,21 @@ function StepTimer({
   if (isConfiguring) {
     return (
       <div className="flex flex-col items-center gap-3 py-3">
-        <p className="text-xs text-[#9CA3AF]">Definir temporizador</p>
+        <p className="text-xs text-[#9CA3AF]">{t('cooking.setTimer')}</p>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setInputMinutes((m) => Math.max(1, m - 1))}
-            aria-label="Diminuir minutos"
+            aria-label={t('cooking.decreaseMinutes')}
             className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
           >
             <Minus size={14} aria-hidden="true" />
           </button>
           <span className="text-2xl font-bold text-[#1A1A1A] w-16 text-center tabular-nums">
-            {inputMinutes} min
+            {t('cooking.minutes', { count: inputMinutes })}
           </span>
           <button
             onClick={() => setInputMinutes((m) => Math.min(99, m + 1))}
-            aria-label="Aumentar minutos"
+            aria-label={t('cooking.increaseMinutes')}
             className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
           >
             <Plus size={14} aria-hidden="true" />
@@ -258,7 +259,7 @@ function StepTimer({
           onClick={handleSetTimer}
           className="px-6 py-2 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
-          Confirmar
+          {t('common.confirm')}
         </button>
       </div>
     )
@@ -293,7 +294,7 @@ function StepTimer({
             onClick={handleReset}
             className="px-4 py-1.5 rounded-xl bg-[#F3F4F6] text-sm font-medium text-[#6B7280] hover:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
           >
-            Reiniciar
+            {t('cooking.reset')}
           </button>
         ) : (
           <>
@@ -303,11 +304,11 @@ function StepTimer({
                 isRunning ? 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]' : 'bg-[#16A34A] text-white hover:bg-[#15803d]'
               }`}
             >
-              {isRunning ? 'Pausar' : 'Iniciar'}
+              {isRunning ? t('cooking.pause') : t('cooking.start')}
             </button>
             <button
               onClick={handleReset}
-              aria-label="Reiniciar temporizador"
+              aria-label={t('cooking.resetLabel')}
               className="w-8 h-8 rounded-xl bg-[#F3F4F6] text-[#9CA3AF] hover:bg-[#E5E7EB] flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
               <X size={13} aria-hidden="true" />
@@ -336,6 +337,7 @@ function CookingMode({
   baseServings: number
   onExit: () => void
 }) {
+  const { t } = useTranslation()
   const [stepIndex, setStepIndex] = useState(0)
   const [showIngredients, setShowIngredients] = useState(false)
   const [timerOpen, setTimerOpen] = useState(false)
@@ -347,6 +349,17 @@ function CookingMode({
     }).catch(() => {})
     return () => { wakeLockRef.current?.release().catch(() => {}) }
   }, [])
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        if (showIngredients) setShowIngredients(false)
+        else onExit()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [showIngredients, onExit])
 
   const prevStep = stepIndex > 0 ? steps[stepIndex - 1] : null
   const currStep = steps[stepIndex]
@@ -364,16 +377,16 @@ function CookingMode({
   }
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Modo cozinha" className="fixed inset-0 z-50 bg-[#FAFAF8] flex flex-col select-none">
+    <div role="dialog" aria-modal="true" aria-label={t('cooking.mode')} className="fixed inset-0 z-50 bg-[#FAFAF8] flex flex-col select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#F0F0EE] shrink-0">
         <button
           onClick={onExit}
-          aria-label="Sair do modo cozinha"
+          aria-label={t('cooking.exitLabel')}
           className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
         >
           <X size={16} aria-hidden="true" />
-          Sair
+          {t('cooking.exit')}
         </button>
         <p className="text-sm font-medium text-[#6B7280] truncate max-w-[55%] text-center">
           {recipeName}
@@ -382,7 +395,7 @@ function CookingMode({
           onClick={() => setShowIngredients(true)}
           className="text-sm text-[#16A34A] font-medium hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
         >
-          Ingredientes
+          {t('recipe.ingredients')}
         </button>
       </div>
 
@@ -394,7 +407,7 @@ function CookingMode({
           {prevStep ? (
             <button
               onClick={goPrev}
-              aria-label="Ir para passo anterior"
+              aria-label={t('cooking.prevStepLabel')}
               className="w-full text-sm text-[#C4C9D4] leading-relaxed text-center line-clamp-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
             >
               {prevStep.text}
@@ -407,7 +420,7 @@ function CookingMode({
         {/* Current step */}
         <div className="flex flex-col items-center gap-3 shrink-0">
           <p className="text-xs font-semibold text-[#9CA3AF] tracking-widest uppercase">
-            Passo {stepIndex + 1} de {steps.length}
+            {t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
           </p>
           <p className="text-xl font-medium text-[#1A1A1A] leading-relaxed text-center">
             {currStep.text}
@@ -421,7 +434,7 @@ function CookingMode({
           {nextStep ? (
             <button
               onClick={goNext}
-              aria-label="Ir para próximo passo"
+              aria-label={t('cooking.nextStepLabel')}
               className="w-full text-sm text-[#C4C9D4] leading-relaxed text-center line-clamp-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
             >
               {nextStep.text}
@@ -435,7 +448,7 @@ function CookingMode({
         <div className="shrink-0 border-t border-[#F0F0EE] bg-white px-4 py-2">
           <StepTimer
             initialSeconds={currStep.timer_seconds ?? 0}
-            stepLabel={`Passo ${stepIndex + 1} de ${steps.length}`}
+            stepLabel={t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
             recipeName={recipeName}
           />
         </div>
@@ -448,7 +461,7 @@ function CookingMode({
             <button
               key={i}
               onClick={() => setStepIndex(i)}
-              aria-label={`Ir para passo ${i + 1}`}
+              aria-label={t('cooking.stepDotLabel', { n: i + 1 })}
               className={`rounded-full transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 i === stepIndex
                   ? 'w-4 h-2 bg-[#16A34A]'
@@ -470,7 +483,7 @@ function CookingMode({
           }`}
         >
           <Clock size={14} aria-hidden="true" />
-          Temporizador
+          {t('cooking.timer')}
         </button>
       </div>
 
@@ -479,28 +492,29 @@ function CookingMode({
         <button
           onClick={goPrev}
           disabled={isFirst}
-          aria-label="Passo anterior"
+          aria-label={t('cooking.prevStepLabel')}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border border-[#E5E7EB] bg-white text-sm font-semibold text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
           <ChevronLeft size={18} aria-hidden="true" />
-          Anterior
+          {t('cooking.prev')}
         </button>
         <button
           onClick={goNext}
           className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
-          {isLast ? 'Concluído' : 'Próximo'}
+          {isLast ? t('cooking.done') : t('cooking.next')}
           {!isLast && <ChevronRight size={18} aria-hidden="true" />}
         </button>
       </div>
 
       {/* Ingredients sheet */}
       {showIngredients && (
-        <div className="fixed inset-0 z-[60] flex items-end" onClick={() => setShowIngredients(false)}>
+        <div className="fixed inset-0 z-[60] flex items-end" aria-hidden="true" onClick={() => setShowIngredients(false)}>
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Ingredientes"
+            aria-label={t('recipe.ingredients')}
+            aria-hidden="false"
             className="w-full max-w-md mx-auto bg-white rounded-t-2xl border-t border-[#E5E7EB] max-h-[70vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
@@ -508,16 +522,16 @@ function CookingMode({
               <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
             </div>
             <div className="flex items-center justify-between px-4 py-2 border-b border-[#F3F4F6] shrink-0">
-              <p className="text-sm font-semibold text-[#1A1A1A]">Ingredientes</p>
+              <p className="text-sm font-semibold text-[#1A1A1A]">{t('recipe.ingredients')}</p>
               <button
                 onClick={() => setShowIngredients(false)}
-                aria-label="Fechar ingredientes"
+                aria-label={t('common.close')}
                 className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
               >
                 <X size={18} aria-hidden="true" />
               </button>
             </div>
-            <div className="overflow-y-auto pb-6">
+            <div className="overflow-y-auto overscroll-contain pb-6">
               {(() => {
                 const sections: { label: string | null; items: RecipeIngredient[] }[] = []
                 const sectionMap = new Map<string, typeof sections[0]>()
@@ -535,7 +549,7 @@ function CookingMode({
                     {label && (
                       <div className="px-4 py-2 border-b border-[#F3F4F6] flex items-center gap-2">
                         <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{label}</span>
-                        <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">opcional</span>
+                        <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">{t('recipe.optional')}</span>
                       </div>
                     )}
                     <div className="divide-y divide-[#F3F4F6]">
@@ -545,7 +559,7 @@ function CookingMode({
                             {scaleIngredient(ing, multiplier, baseServings)}
                           </span>
                           {ing.is_optional && !label && (
-                            <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">opcional</span>
+                            <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">{t('recipe.optional')}</span>
                           )}
                         </div>
                       ))}
@@ -688,23 +702,23 @@ function RecipeDetailPage() {
             {recipe.time_min != null && (
               <span className="flex items-center gap-1.5">
                 <Clock size={14} aria-hidden="true" />
-                {recipe.time_min} min
+                {recipe.time_min} {t('common.min')}
               </span>
             )}
             <span>
-              {recipe.servings} dose{recipe.servings !== 1 ? 's' : ''} base
+              {recipe.servings} {recipe.servings !== 1 ? t('recipe.bases') : t('recipe.base')}
             </span>
           </div>
 
           {/* Tags */}
           {recipe.tags.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {recipe.tags.map((t) => (
+              {recipe.tags.map((tag) => (
                 <span
-                  key={t}
+                  key={tag}
                   className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium"
                 >
-                  {t}
+                  {t(`tags.${tag}`, tag)}
                 </span>
               ))}
             </div>
@@ -831,7 +845,7 @@ function RecipeDetailPage() {
       </div>
 
       {/* Sticky bottom bar */}
-      <div className="fixed bottom-14 left-0 right-0 px-4 pb-safe pt-3 bg-[#FAFAF8] border-t border-[#F0F0EE]">
+      <div className="fixed bottom-14 left-0 right-0 px-4 pb-safe pt-3 bg-[#FAFAF8] dark:bg-[#0A0A0A] border-t border-[#F0F0EE] dark:border-white/10">
         <div className="mx-auto max-w-md space-y-2">
           {isReplacing ? (
             <button
