@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { capture } from '../../../lib/analytics'
 import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
 import { useToast } from '../../../components/Toast'
@@ -13,6 +13,11 @@ import {
   fetchPlanItem,
   updatePlanItemMultiplier,
 } from '../../../lib/supabase/plan-queries'
+import {
+  logRecipeCooked,
+  fetchRecipeCookCounts,
+  deleteCookLogEntry,
+} from '../../../lib/supabase/cook-log-queries'
 import type { RecipeIngredient, RecipeStep } from '../../../types/db'
 
 function RecipeDetailSkeleton() {
@@ -329,6 +334,7 @@ function CookingMode({
   multiplier,
   baseServings,
   onExit,
+  onFinished,
 }: {
   recipeName: string
   steps: RecipeStep[]
@@ -336,6 +342,7 @@ function CookingMode({
   multiplier: number
   baseServings: number
   onExit: () => void
+  onFinished?: () => void
 }) {
   const { t } = useTranslation()
   const [stepIndex, setStepIndex] = useState(0)
@@ -368,7 +375,7 @@ function CookingMode({
   const isLast = stepIndex === steps.length - 1
 
   function goNext() {
-    if (isLast) { onExit(); return }
+    if (isLast) { onFinished ? onFinished() : onExit(); return }
     setStepIndex((i) => i + 1)
   }
 
@@ -590,7 +597,49 @@ function RecipeDetailPage() {
   )
   const [isCooking, setIsCooking] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const [lastCookLogId, setLastCookLogId] = useState<string | null>(null)
+  const [cookDebounced, setCookDebounced] = useState(false)
   const skipFirstSave = useRef(true)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
+
+  // Personal cook count for this recipe
+  const { data: cookCounts } = useQuery({
+    queryKey: ['cook-counts', recipe.id],
+    queryFn: () => fetchRecipeCookCounts({ data: [recipe.id] }),
+    staleTime: 0,
+  })
+  const myCookCount = cookCounts?.find((c) => c.recipe_id === recipe.id)?.count ?? 0
+
+  // Log cooked mutation
+  const logCookMutation = useMutation({
+    mutationFn: () => logRecipeCooked({ data: { recipeId: recipe.id, source: 'manual' } }),
+    onSuccess: (row) => {
+      setLastCookLogId(row.id)
+      qc.invalidateQueries({ queryKey: ['cook-counts', recipe.id] })
+      showToast(t('recipe.logCookedSuccess'), 'success')
+      setCookDebounced(true)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      debounceRef.current = setTimeout(() => setCookDebounced(false), 3000)
+    },
+    onError: () => showToast(t('common.error'), 'error'),
+  })
+
+  // Undo last cook log entry
+  const undoCookMutation = useMutation({
+    mutationFn: () => deleteCookLogEntry({ data: { cookLogId: lastCookLogId! } }),
+    onSuccess: () => {
+      setLastCookLogId(null)
+      qc.invalidateQueries({ queryKey: ['cook-counts', recipe.id] })
+    },
+    onError: () => showToast(t('common.error'), 'error'),
+  })
+
+  function handleCookingDone() {
+    setIsCooking(false)
+    logCookMutation.mutate()
+  }
 
   // Auto-save portion_multiplier back to the plan item (debounced)
   const saveMultMutation = useMutation({
@@ -667,6 +716,7 @@ function RecipeDetailPage() {
         multiplier={multiplier}
         baseServings={recipe.servings}
         onExit={() => setIsCooking(false)}
+        onFinished={handleCookingDone}
       />
     )
   }
@@ -722,6 +772,13 @@ function RecipeDetailPage() {
                 </span>
               ))}
             </div>
+          )}
+
+          {/* Personal cook count */}
+          {myCookCount > 0 && (
+            <p className="text-sm text-[#9CA3AF]">
+              {t('recipe.cookedCount', { count: myCookCount })}
+            </p>
           )}
 
           {/* Portion stepper */}
@@ -919,6 +976,25 @@ function RecipeDetailPage() {
               {t('recipe.cook')}
             </button>
           )}
+
+          <div className="space-y-1.5">
+            <button
+              onClick={() => logCookMutation.mutate()}
+              disabled={logCookMutation.isPending || cookDebounced}
+              className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-medium text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
+            </button>
+            {lastCookLogId && (
+              <button
+                onClick={() => undoCookMutation.mutate()}
+                disabled={undoCookMutation.isPending}
+                className="w-full text-xs text-[#9CA3AF] hover:text-[#6B7280] disabled:opacity-50 transition-colors py-1 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+              >
+                {t('recipe.undoCook')}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -5,21 +5,21 @@ import { makeClient } from './client-server'
 // POST: log a recipe as cooked
 export const logRecipeCooked = createServerFn({ method: 'POST' })
   .inputValidator(
-    (input: { recipeId: string; source: 'planned' | 'manual'; householdId?: string | null }) =>
-      input,
+    (input: { recipeId: string; source: 'planned' | 'manual' }) => input,
   )
   .handler(async ({ data }): Promise<CookLog> => {
     const supabase = makeClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('Not authenticated')
     const user = session.user
+    const householdId = (user.app_metadata?.household_id as string | undefined) ?? null
 
     const { data: row, error } = await supabase
       .from('cook_log')
       .insert({
         user_id: user.id,
         recipe_id: data.recipeId,
-        household_id: data.householdId ?? null,
+        household_id: householdId,
         source: data.source,
         cooked_at: new Date().toISOString(),
       })
@@ -38,6 +38,22 @@ export const rateCookLogEntry = createServerFn({ method: 'POST' })
       .from('cook_log')
       .update({ rating: data.rating })
       .eq('id', data.cookLogId)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+// POST: delete a cook log entry (undo)
+export const deleteCookLogEntry = createServerFn({ method: 'POST' })
+  .inputValidator((input: { cookLogId: string }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('cook_log')
+      .delete()
+      .eq('id', data.cookLogId)
+      .eq('user_id', session.user.id)
     if (error) throw new Error(error.message)
     return { ok: true }
   })
