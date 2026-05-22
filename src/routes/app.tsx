@@ -5,16 +5,20 @@ import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
+import { getAuthUser } from '../lib/supabase/server'
 import { supabase } from '../lib/supabase/browser'
 import { capture, identifyUser } from '../lib/analytics'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw redirect({ to: '/' })
-    const user = session.user
+    // getAuthUser() uses the server client (reads cookies from the request),
+    // so it works correctly during SSR — unlike the browser client which has
+    // no cookie access on the server and always returns null.
+    const user = await getAuthUser()
+    if (!user) throw redirect({ to: '/' })
 
-    // Process pending invite saved before sign-in
+    // Process pending invite saved before sign-in (client-only — localStorage
+    // is undefined on the server so this block is safely skipped during SSR)
     const pendingToken =
       typeof localStorage !== 'undefined' ? localStorage.getItem('pendingInviteToken') : null
     if (pendingToken) {
