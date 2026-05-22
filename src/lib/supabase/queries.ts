@@ -166,15 +166,16 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     return { data: recipes, nextCursor }
   })
 
-// GET: distinct proteins, tags, ingredient names — always from DB, never hardcoded
-export const fetchLibraryMeta = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<{ proteins: string[]; tags: string[]; ingredients: string[] }> => {
+// GET: distinct proteins, tags, ingredient names — language-aware
+export const fetchLibraryMeta = createServerFn({ method: 'GET' })
+  .inputValidator((input: { lang?: string }) => input)
+  .handler(async ({ data: input }): Promise<{ proteins: string[]; tags: string[]; ingredients: string[] }> => {
     const supabase = makeClient()
-    const { data, error } = await supabase.rpc('get_library_meta')
+    const lang = input?.lang ?? getLang()
+    const { data, error } = await supabase.rpc('get_library_meta', { lang })
     if (error) throw new Error(error.message)
     return data as { proteins: string[]; tags: string[]; ingredients: string[] }
-  },
-)
+  })
 
 export const fetchRecipeById = createServerFn({ method: 'GET' })
   .inputValidator((id: string) => id)

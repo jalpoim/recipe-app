@@ -45,6 +45,7 @@
     "searchRecipe": "Recipe name…",
     "searchIngredient": "Search ingredient…",
     "noResults": "No results",
+    "searchFreeText": "Search for \"{{term}}\"",
     "empty": "No recipes with these filters",
     "sheetTitle": "Filters",
     "choosingReplacement": "Choosing replacement — tap a recipe",

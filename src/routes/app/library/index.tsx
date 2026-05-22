@@ -526,6 +526,12 @@ function FilterSheet({
                 type="text"
                 value={ingSearch}
                 onChange={(e) => setIngSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && ingSearch.trim()) {
+                    addIngredient(ingSearch.trim())
+                    setIngSearch('')
+                  }
+                }}
                 placeholder={t('filters.searchIngredient')}
                 className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
               />
@@ -545,7 +551,12 @@ function FilterSheet({
               )}
 
               {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
-                <p className="mt-2 text-xs text-[#9CA3AF] px-1">{t('filters.noResults')}</p>
+                <button
+                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
+                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                >
+                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
+                </button>
               )}
             </div>
           </div>
@@ -688,17 +699,20 @@ function LibraryPage() {
     }
   }, [allRecipes, search.sort])
 
-  // Library meta — proteins, tags, ingredient names from DB
+  // Library meta — proteins, tags, ingredient names — language-aware
   const { data: meta } = useQuery({
-    queryKey: ['libraryMeta'],
-    queryFn: fetchLibraryMeta,
+    queryKey: ['libraryMeta', lang],
+    queryFn: () => fetchLibraryMeta({ data: { lang } }),
     staleTime: Infinity,
   })
 
-  // Pre-warm libraryMeta cache (invalidated on household/recipe mutation)
+  // Pre-warm libraryMeta cache for current language
   useEffect(() => {
-    queryClient.prefetchQuery({ queryKey: ['libraryMeta'], queryFn: fetchLibraryMeta })
-  }, [queryClient])
+    queryClient.prefetchQuery({
+      queryKey: ['libraryMeta', lang],
+      queryFn: () => fetchLibraryMeta({ data: { lang } }),
+    })
+  }, [queryClient, lang])
 
   // Cook counts for visible recipes
   const recipeIds = useMemo(() => sortedRecipes.map((r) => r.id), [sortedRecipes])

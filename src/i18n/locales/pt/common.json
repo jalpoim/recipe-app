@@ -45,6 +45,7 @@
     "searchRecipe": "Nome da receita…",
     "searchIngredient": "Pesquisar ingrediente…",
     "noResults": "Sem resultados",
+    "searchFreeText": "Pesquisar por \"{{term}}\"",
     "empty": "Sem receitas com estes filtros",
     "sheetTitle": "Filtros",
     "choosingReplacement": "A escolher substituto — toca numa receita",
