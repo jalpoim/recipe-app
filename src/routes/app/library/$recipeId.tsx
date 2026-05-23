@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowLeft, Clock, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
@@ -18,6 +18,11 @@ import {
   fetchRecipeCookCounts,
   deleteCookLogEntry,
 } from '../../../lib/supabase/cook-log-queries'
+import {
+  upsertInteraction,
+  removeInteraction,
+  fetchInteractions,
+} from '../../../lib/supabase/interaction-queries'
 import type { RecipeIngredient, RecipeStep } from '../../../types/db'
 
 function RecipeDetailSkeleton() {
@@ -600,11 +605,14 @@ function CookingMode({
 function RecipeDetailPage() {
   const { t } = useTranslation()
   const { recipe, planItem } = Route.useLoaderData()
+  const routeCtx = Route.useRouteContext() as { user?: { id: string } }
+  const user = routeCtx?.user ?? null
   const search = Route.useSearch()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { showToast } = useToast()
   const isFromPlan = search.from === 'plan' && !!search.planItemId
+  const isOwner = !!user && recipe.owner_id === user.id
   const [multiplier, setMultiplier] = useState(
     planItem?.portion_multiplier ?? recipe.servings,
   )
@@ -617,6 +625,41 @@ function RecipeDetailPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
+
+  // Interactions (like/save)
+  const { data: interactions = [] } = useQuery({
+    queryKey: ['interactions'],
+    queryFn: fetchInteractions,
+    staleTime: 5 * 60 * 1000,
+  })
+  const isLiked = interactions.some((i) => i.recipe_id === recipe.id && i.type === 'like')
+  const isSaved = interactions.some((i) => i.recipe_id === recipe.id && i.type === 'save')
+
+  const [likeCount, setLikeCount] = useState(recipe.like_count ?? 0)
+
+  const likeMutation = useMutation({
+    mutationFn: () =>
+      isLiked
+        ? removeInteraction({ data: { recipeId: recipe.id, type: 'like' } })
+        : upsertInteraction({ data: { recipeId: recipe.id, type: 'like' } }),
+    onMutate: () => {
+      setLikeCount((c) => (isLiked ? c - 1 : c + 1))
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['interactions'] }),
+    onError: () => {
+      setLikeCount((c) => (isLiked ? c + 1 : c - 1))
+      showToast(t('common.error'), 'error')
+    },
+  })
+
+  const saveMutation = useMutation({
+    mutationFn: () =>
+      isSaved
+        ? removeInteraction({ data: { recipeId: recipe.id, type: 'save' } })
+        : upsertInteraction({ data: { recipeId: recipe.id, type: 'save' } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['interactions'] }),
+    onError: () => showToast(t('common.error'), 'error'),
+  })
 
   // Personal cook count for this recipe
   const { data: cookCounts } = useQuery({
@@ -749,6 +792,39 @@ function RecipeDetailPage() {
             <ArrowLeft size={16} aria-hidden="true" />
             {t('recipe.back')}
           </button>
+          <div className="flex-1" />
+          {/* Like button */}
+          <button
+            onClick={() => likeMutation.mutate()}
+            disabled={likeMutation.isPending}
+            aria-label={isLiked ? t('recipe.unlike') : t('recipe.like')}
+            aria-pressed={isLiked}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60 ${isLiked ? 'bg-[#fee2e2] border-[#fecaca] text-[#DC2626]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#fecaca] hover:text-[#DC2626]'}`}
+          >
+            <Heart size={13} className={isLiked ? 'fill-current' : ''} aria-hidden="true" />
+            {likeCount > 0 ? likeCount : t('recipe.like')}
+          </button>
+          {/* Save button */}
+          <button
+            onClick={() => saveMutation.mutate()}
+            disabled={saveMutation.isPending}
+            aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
+            aria-pressed={isSaved}
+            className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60 ${isSaved ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]' : 'bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#16A34A]'}`}
+          >
+            {isSaved ? <BookmarkCheck size={14} aria-hidden="true" /> : <Bookmark size={14} aria-hidden="true" />}
+          </button>
+          {/* Edit button — owner only */}
+          {isOwner && (
+            <Link
+              to="/app/library/$recipeId/edit"
+              params={{ recipeId: recipe.id }}
+              aria-label={t('recipe.edit')}
+              className="w-8 h-8 rounded-full border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <Edit size={14} aria-hidden="true" />
+            </Link>
+          )}
         </div>
 
         <div className="px-4 pt-5 space-y-5">
@@ -786,6 +862,20 @@ function RecipeDetailPage() {
                   {t(`tags.${tag}`, tag)}
                 </span>
               ))}
+            </div>
+          )}
+
+          {/* Moderation badge — owner only */}
+          {isOwner && recipe.moderation_status === 'pending_review' && (
+            <div className="rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2">
+              <p className="text-xs font-semibold text-[#B45309]">{t('moderation.pending')}</p>
+              <p className="text-xs text-[#B45309]/80 mt-0.5">{t('moderation.pendingHint')}</p>
+            </div>
+          )}
+          {isOwner && recipe.moderation_status === 'rejected' && (
+            <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2">
+              <p className="text-xs font-semibold text-[#DC2626]">{t('moderation.rejected')}</p>
+              <p className="text-xs text-[#DC2626]/80 mt-0.5">{t('moderation.rejectedHint')}</p>
             </div>
           )}
 
@@ -993,6 +1083,7 @@ function RecipeDetailPage() {
                       tags: [],
                       ingredients: [],
                       sort: 'pcal' as const,
+                      mode: 'all' as const,
                       replacing: search.planItemId,
                     }}
                     className="flex-1 rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] text-[#1A1A1A] py-3.5 text-sm font-semibold text-center hover:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"

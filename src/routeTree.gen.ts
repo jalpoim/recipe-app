@@ -18,7 +18,10 @@ import { Route as AppShoppingRouteImport } from './routes/app/shopping'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppPlanRouteImport } from './routes/app/plan'
 import { Route as AppLibraryIndexRouteImport } from './routes/app/library/index'
+import { Route as AppProfileUsernameRouteImport } from './routes/app/profile/$username'
+import { Route as AppLibraryCreateRouteImport } from './routes/app/library/create'
 import { Route as AppLibraryRecipeIdRouteImport } from './routes/app/library/$recipeId'
+import { Route as AppLibraryRecipeIdEditRouteImport } from './routes/app/library/$recipeId_.edit'
 
 const AppRoute = AppRouteImport.update({
   id: '/app',
@@ -65,9 +68,24 @@ const AppLibraryIndexRoute = AppLibraryIndexRouteImport.update({
   path: '/library/',
   getParentRoute: () => AppRoute,
 } as any)
+const AppProfileUsernameRoute = AppProfileUsernameRouteImport.update({
+  id: '/profile/$username',
+  path: '/profile/$username',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryCreateRoute = AppLibraryCreateRouteImport.update({
+  id: '/library/create',
+  path: '/library/create',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLibraryRecipeIdRoute = AppLibraryRecipeIdRouteImport.update({
   id: '/library/$recipeId',
   path: '/library/$recipeId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppLibraryRecipeIdEditRoute = AppLibraryRecipeIdEditRouteImport.update({
+  id: '/library/$recipeId_/edit',
+  path: '/library/$recipeId/edit',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -81,7 +99,10 @@ export interface FileRoutesByFullPath {
   '/join/$token': typeof JoinTokenRoute
   '/app/': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
+  '/app/library/create': typeof AppLibraryCreateRoute
+  '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library/': typeof AppLibraryIndexRoute
+  '/app/library/$recipeId/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -92,7 +113,10 @@ export interface FileRoutesByTo {
   '/join/$token': typeof JoinTokenRoute
   '/app': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
+  '/app/library/create': typeof AppLibraryCreateRoute
+  '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library': typeof AppLibraryIndexRoute
+  '/app/library/$recipeId/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -105,7 +129,10 @@ export interface FileRoutesById {
   '/join/$token': typeof JoinTokenRoute
   '/app/': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
+  '/app/library/create': typeof AppLibraryCreateRoute
+  '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library/': typeof AppLibraryIndexRoute
+  '/app/library/$recipeId_/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -119,7 +146,10 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/app/'
     | '/app/library/$recipeId'
+    | '/app/library/create'
+    | '/app/profile/$username'
     | '/app/library/'
+    | '/app/library/$recipeId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,7 +160,10 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/app'
     | '/app/library/$recipeId'
+    | '/app/library/create'
+    | '/app/profile/$username'
     | '/app/library'
+    | '/app/library/$recipeId/edit'
   id:
     | '__root__'
     | '/'
@@ -142,7 +175,10 @@ export interface FileRouteTypes {
     | '/join/$token'
     | '/app/'
     | '/app/library/$recipeId'
+    | '/app/library/create'
+    | '/app/profile/$username'
     | '/app/library/'
+    | '/app/library/$recipeId_/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -217,11 +253,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppLibraryIndexRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/profile/$username': {
+      id: '/app/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/app/profile/$username'
+      preLoaderRoute: typeof AppProfileUsernameRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/library/create': {
+      id: '/app/library/create'
+      path: '/library/create'
+      fullPath: '/app/library/create'
+      preLoaderRoute: typeof AppLibraryCreateRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/library/$recipeId': {
       id: '/app/library/$recipeId'
       path: '/library/$recipeId'
       fullPath: '/app/library/$recipeId'
       preLoaderRoute: typeof AppLibraryRecipeIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/library/$recipeId_/edit': {
+      id: '/app/library/$recipeId_/edit'
+      path: '/library/$recipeId/edit'
+      fullPath: '/app/library/$recipeId/edit'
+      preLoaderRoute: typeof AppLibraryRecipeIdEditRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -233,7 +290,10 @@ interface AppRouteChildren {
   AppShoppingRoute: typeof AppShoppingRoute
   AppIndexRoute: typeof AppIndexRoute
   AppLibraryRecipeIdRoute: typeof AppLibraryRecipeIdRoute
+  AppLibraryCreateRoute: typeof AppLibraryCreateRoute
+  AppProfileUsernameRoute: typeof AppProfileUsernameRoute
   AppLibraryIndexRoute: typeof AppLibraryIndexRoute
+  AppLibraryRecipeIdEditRoute: typeof AppLibraryRecipeIdEditRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -242,7 +302,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppShoppingRoute: AppShoppingRoute,
   AppIndexRoute: AppIndexRoute,
   AppLibraryRecipeIdRoute: AppLibraryRecipeIdRoute,
+  AppLibraryCreateRoute: AppLibraryCreateRoute,
+  AppProfileUsernameRoute: AppProfileUsernameRoute,
   AppLibraryIndexRoute: AppLibraryIndexRoute,
+  AppLibraryRecipeIdEditRoute: AppLibraryRecipeIdEditRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

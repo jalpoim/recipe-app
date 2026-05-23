@@ -56,7 +56,58 @@
     "pcal": "P/Cal ↓",
     "protein": "Proteína ↓",
     "calories": "Calorias ↑",
-    "time": "Tempo ↑"
+    "time": "Tempo ↑",
+    "popular": "Popular ↓"
+  },
+  "library": {
+    "all": "Todas",
+    "mine": "Minhas",
+    "saved": "Guardadas",
+    "newRecipe": "Nova receita"
+  },
+  "moderation": {
+    "pending": "Em revisão",
+    "rejected": "Rejeitada",
+    "pendingHint": "A receita está em revisão e não aparece para outros.",
+    "rejectedHint": "A receita não passou na moderação."
+  },
+  "create": {
+    "title": "Nova receita",
+    "editTitle": "Editar receita",
+    "namePlaceholder": "Nome da receita",
+    "servingsLabel": "Porções",
+    "timeLabel": "Tempo (min)",
+    "proteinsLabel": "Proteínas (mín. 1)",
+    "ingredientsLabel": "Ingredientes",
+    "stepsLabel": "Preparação",
+    "tagsLabel": "Tags",
+    "macrosLabel": "Macros (opcional)",
+    "imageLabel": "Imagem",
+    "publishLabel": "Partilhar com a comunidade",
+    "publishHint": "A receita ficará visível para outros utilizadores após revisão.",
+    "addIngredient": "Adicionar ingrediente",
+    "addStep": "Adicionar passo",
+    "ingredientPlaceholder": "Ingrediente (ex: 200g frango)",
+    "stepPlaceholder": "Descreve o passo…",
+    "save": "Guardar",
+    "saving": "A guardar…",
+    "caloriesLabel": "Calorias",
+    "proteinLabel": "Proteína (g)",
+    "carbsLabel": "Hidratos (g)",
+    "fatLabel": "Gordura (g)",
+    "validationName": "O nome é obrigatório",
+    "validationProteins": "Seleciona pelo menos uma proteína",
+    "validationIngredients": "Adiciona pelo menos um ingrediente",
+    "validationSteps": "Adiciona pelo menos um passo"
+  },
+  "profile": {
+    "recipes": "Receitas",
+    "noRecipes": "Ainda sem receitas publicadas",
+    "edit": "Editar perfil",
+    "displayNameLabel": "Nome",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Conta um pouco sobre ti…",
+    "saving": "A guardar…"
   },
   "recipe": {
     "servings": "Porções",
@@ -81,7 +132,19 @@
     "protein": "Proteína",
     "carbs": "Hidratos",
     "fat": "Gordura",
-    "optional": "opcional"
+    "optional": "opcional",
+    "like": "Gosto",
+    "unlike": "Remover gosto",
+    "save": "Guardar",
+    "unsave": "Remover",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirm": "Tens a certeza? A receita será eliminada.",
+    "likeCount_one": "{{count}} gosto",
+    "likeCount_other": "{{count}} gostos",
+    "by": "por",
+    "makePublic": "Tornar pública",
+    "makePrivate": "Tornar privada"
   },
   "plan": {
     "title": "Meu plano",

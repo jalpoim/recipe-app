@@ -56,7 +56,58 @@
     "pcal": "P/Cal ↓",
     "protein": "Protein ↓",
     "calories": "Calories ↑",
-    "time": "Time ↑"
+    "time": "Time ↑",
+    "popular": "Popular ↓"
+  },
+  "library": {
+    "all": "All",
+    "mine": "Mine",
+    "saved": "Saved",
+    "newRecipe": "New recipe"
+  },
+  "moderation": {
+    "pending": "In review",
+    "rejected": "Rejected",
+    "pendingHint": "Your recipe is under review and not visible to others.",
+    "rejectedHint": "Your recipe did not pass moderation."
+  },
+  "create": {
+    "title": "New recipe",
+    "editTitle": "Edit recipe",
+    "namePlaceholder": "Recipe name",
+    "servingsLabel": "Servings",
+    "timeLabel": "Time (min)",
+    "proteinsLabel": "Proteins (min. 1)",
+    "ingredientsLabel": "Ingredients",
+    "stepsLabel": "Steps",
+    "tagsLabel": "Tags",
+    "macrosLabel": "Macros (optional)",
+    "imageLabel": "Image",
+    "publishLabel": "Share with community",
+    "publishHint": "Your recipe will be visible to others after review.",
+    "addIngredient": "Add ingredient",
+    "addStep": "Add step",
+    "ingredientPlaceholder": "Ingredient (e.g. 200g chicken)",
+    "stepPlaceholder": "Describe the step…",
+    "save": "Save",
+    "saving": "Saving…",
+    "caloriesLabel": "Calories",
+    "proteinLabel": "Protein (g)",
+    "carbsLabel": "Carbs (g)",
+    "fatLabel": "Fat (g)",
+    "validationName": "Name is required",
+    "validationProteins": "Select at least one protein",
+    "validationIngredients": "Add at least one ingredient",
+    "validationSteps": "Add at least one step"
+  },
+  "profile": {
+    "recipes": "Recipes",
+    "noRecipes": "No recipes published yet",
+    "edit": "Edit profile",
+    "displayNameLabel": "Name",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Tell us a bit about yourself…",
+    "saving": "Saving…"
   },
   "recipe": {
     "servings": "Servings",
@@ -81,7 +132,19 @@
     "protein": "Protein",
     "carbs": "Carbs",
     "fat": "Fat",
-    "optional": "optional"
+    "optional": "optional",
+    "like": "Like",
+    "unlike": "Unlike",
+    "save": "Save",
+    "unsave": "Unsave",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Are you sure? The recipe will be deleted.",
+    "likeCount_one": "{{count}} like",
+    "likeCount_other": "{{count}} likes",
+    "by": "by",
+    "makePublic": "Make public",
+    "makePrivate": "Make private"
   },
   "plan": {
     "title": "My plan",

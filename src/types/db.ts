@@ -13,7 +13,7 @@ export type Database = {
         Row: {
           id: string
           owner_id: string | null
-          visibility: 'private' | 'household' | 'system'
+          visibility: 'private' | 'household' | 'system' | 'public'
           name: string
           time_min: number | null
           servings: number
@@ -27,13 +27,18 @@ export type Database = {
           tags: string[]
           user_tags: string[]
           pcal_ratio: number | null
+          image_url: string | null
+          image_thumb_url: string | null
+          moderation_status: 'approved' | 'pending_review' | 'rejected'
+          deleted_at: string | null
+          like_count: number
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           owner_id?: string | null
-          visibility?: 'private' | 'household' | 'system'
+          visibility?: 'private' | 'household' | 'system' | 'public'
           name: string
           time_min?: number | null
           servings?: number
@@ -46,13 +51,18 @@ export type Database = {
           proteins?: string[]
           tags?: string[]
           user_tags?: string[]
+          image_url?: string | null
+          image_thumb_url?: string | null
+          moderation_status?: 'approved' | 'pending_review' | 'rejected'
+          deleted_at?: string | null
+          like_count?: number
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           owner_id?: string | null
-          visibility?: 'private' | 'household' | 'system'
+          visibility?: 'private' | 'household' | 'system' | 'public'
           name?: string
           time_min?: number | null
           servings?: number
@@ -65,6 +75,11 @@ export type Database = {
           proteins?: string[]
           tags?: string[]
           user_tags?: string[]
+          image_url?: string | null
+          image_thumb_url?: string | null
+          moderation_status?: 'approved' | 'pending_review' | 'rejected'
+          deleted_at?: string | null
+          like_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -336,6 +351,10 @@ export type Database = {
           default_unit: string | null
           owner_id: string | null
           created_at: string
+          calories_per_100g: number | null
+          protein_per_100g: number | null
+          carbs_per_100g: number | null
+          fat_per_100g: number | null
         }
         Insert: {
           id?: string
@@ -344,6 +363,10 @@ export type Database = {
           default_unit?: string | null
           owner_id?: string | null
           created_at?: string
+          calories_per_100g?: number | null
+          protein_per_100g?: number | null
+          carbs_per_100g?: number | null
+          fat_per_100g?: number | null
         }
         Update: {
           id?: string
@@ -352,6 +375,10 @@ export type Database = {
           default_unit?: string | null
           owner_id?: string | null
           created_at?: string
+          calories_per_100g?: number | null
+          protein_per_100g?: number | null
+          carbs_per_100g?: number | null
+          fat_per_100g?: number | null
         }
         Relationships: []
       }
@@ -456,24 +483,72 @@ export type Database = {
       }
       user_recipe_interactions: {
         Row: {
+          id: string
           user_id: string
           recipe_id: string
           type: 'like' | 'save' | 'hide'
-          user_tags: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          recipe_id: string
+          type: 'like' | 'save' | 'hide'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          recipe_id?: string
+          type?: 'like' | 'save' | 'hide'
+          created_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          user_id: string
+          username: string
+          display_name: string
+          avatar_url: string | null
+          bio: string | null
           created_at: string
         }
         Insert: {
           user_id: string
-          recipe_id: string
-          type: 'like' | 'save' | 'hide'
-          user_tags?: string[]
+          username: string
+          display_name: string
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
         }
         Update: {
           user_id?: string
+          username?: string
+          display_name?: string
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      recipe_reports: {
+        Row: {
+          id: string
+          recipe_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          recipe_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
           recipe_id?: string
-          type?: 'like' | 'save' | 'hide'
-          user_tags?: string[]
+          user_id?: string
           created_at?: string
         }
         Relationships: []
@@ -568,3 +643,6 @@ export type CookLog = Database['public']['Tables']['cook_log']['Row']
 export type CookLogInsert = Database['public']['Tables']['cook_log']['Insert']
 export type UserRecipeInteraction = Database['public']['Tables']['user_recipe_interactions']['Row']
 export type NotificationPreferences = Database['public']['Tables']['notification_preferences']['Row']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type RecipeReport = Database['public']['Tables']['recipe_reports']['Row']

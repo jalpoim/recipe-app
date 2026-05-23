@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { capture } from '../../../lib/analytics'
-import { Clock, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
+import { Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,6 +11,7 @@ import {
   fetchLibraryMeta,
   type RecipeWithIngredients,
   type Sort,
+  type LibraryMode,
   type LibraryCursor,
 } from '../../../lib/supabase/queries'
 import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
@@ -50,6 +51,7 @@ type LibrarySearch = {
   tags: string[]
   ingredients: string[]
   sort: Sort
+  mode: LibraryMode
   replacing: string | undefined
 }
 
@@ -112,9 +114,12 @@ export const Route = createFileRoute('/app/library/')({
     maxTime: typeof search.maxTime === 'number' ? search.maxTime : undefined,
     tags: Array.isArray(search.tags) ? (search.tags as string[]) : [],
     ingredients: Array.isArray(search.ingredients) ? (search.ingredients as string[]) : [],
-    sort: (['pcal', 'protein', 'calories', 'time'] as Sort[]).includes(search.sort as Sort)
+    sort: (['pcal', 'protein', 'calories', 'time', 'popular'] as Sort[]).includes(search.sort as Sort)
       ? (search.sort as Sort)
       : 'pcal',
+    mode: (['all', 'mine', 'saved'] as LibraryMode[]).includes(search.mode as LibraryMode)
+      ? (search.mode as LibraryMode)
+      : 'all',
     replacing: typeof search.replacing === 'string' ? search.replacing : undefined,
   }),
   component: LibraryPage,
@@ -161,6 +166,9 @@ function RecipeCard({
   const carb = perServing(recipe, 'carbs')
   const fat = perServing(recipe, 'fat')
   const ratio = pcalRatio(recipe)
+  const hasMacros = recipe.calories != null
+  const isPublicUser = recipe.visibility === 'public' && recipe.owner_id != null
+  const showLikes = isPublicUser && (recipe.like_count ?? 0) > 0
 
   return (
     <Link
@@ -170,47 +178,77 @@ function RecipeCard({
       onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: replacing ? 'replacing' : 'library' })}
       className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
     >
-      <div className="flex items-start justify-between gap-2">
-        <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1">{recipe.name}</h2>
-        <span
-          className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
-          title="Rácio proteína/calorias (×10). Verde ≥ 1.0 · Amarelo ≥ 0.7 · Vermelho < 0.7"
-        >
-          P/Cal {fmt(ratio)}
-        </span>
-      </div>
-
-      <div className="mt-1.5 flex items-center gap-2 text-xs text-[#6B7280]">
-        {recipe.proteins.length > 0 && (
-          <span className="font-medium text-[#1A1A1A]">
-            {t(`proteins.${recipe.proteins[0]}`)}
-          </span>
+      <div className="flex items-start gap-3">
+        {/* Thumbnail */}
+        {recipe.image_thumb_url ? (
+          <img
+            src={recipe.image_thumb_url}
+            alt=""
+            className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
+            loading="lazy"
+          />
+        ) : (
+          <div
+            className="w-[72px] h-[72px] rounded-xl shrink-0 flex items-center justify-center text-2xl"
+            style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
+            aria-hidden="true"
+          />
         )}
-        {recipe.time_min != null && (
-          <span className="flex items-center gap-1">
-            <Clock size={11} aria-hidden="true" />
-            {recipe.time_min} min
-          </span>
-        )}
-      </div>
 
-      <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
-        {(
-          [
-            { label: 'Cal', value: cal },
-            { label: 'P', value: pro },
-            { label: 'C', value: carb },
-            { label: 'G', value: fat },
-          ] as const
-        ).map(({ label, value }) => (
-          <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
-            <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
-            <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(value)}</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2">{recipe.name}</h2>
+            {hasMacros && (
+              <span
+                className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
+                title="Rácio proteína/calorias (×10). Verde ≥ 1.0 · Amarelo ≥ 0.7 · Vermelho < 0.7"
+              >
+                P/Cal {fmt(ratio)}
+              </span>
+            )}
           </div>
-        ))}
+
+          <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280] flex-wrap">
+            {recipe.proteins.length > 0 && (
+              <span className="font-medium text-[#1A1A1A]">
+                {t(`proteins.${recipe.proteins[0]}`)}
+              </span>
+            )}
+            {recipe.time_min != null && (
+              <span className="flex items-center gap-1">
+                <Clock size={11} aria-hidden="true" />
+                {recipe.time_min} min
+              </span>
+            )}
+            {showLikes && (
+              <span className="flex items-center gap-1 text-[#9CA3AF]">
+                <Heart size={10} aria-hidden="true" />
+                {recipe.like_count}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
-      {recipe.tags.length > 0 && (
+      {hasMacros && (
+        <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+          {(
+            [
+              { label: 'Cal', value: cal },
+              { label: 'P', value: pro },
+              { label: 'C', value: carb },
+              { label: 'G', value: fat },
+            ] as const
+          ).map(({ label, value }) => (
+            <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
+              <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
+              <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(value)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!hasMacros && recipe.tags.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
           {recipe.tags.slice(0, 4).map((tag) => (
             <span
@@ -220,13 +258,9 @@ function RecipeCard({
               {t(`tags.${tag}`, { defaultValue: tag })}
             </span>
           ))}
-          {recipe.tags.length > 4 && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
-              +{recipe.tags.length - 4}
-            </span>
-          )}
         </div>
       )}
+
       {cookCount > 0 && (
         <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
       )}
@@ -617,6 +651,7 @@ function LibraryPage() {
       maxTime: undefined,
       tags: [],
       ingredients: [],
+      // mode intentionally not cleared — mode is a dataset switch, not a filter
     })
   }
 
@@ -634,8 +669,9 @@ function LibraryPage() {
     setLocalQ(search.q)
   }, [search.q])
 
-  // sort is excluded from queryKey — it's applied client-side over fetched pages
-  // so changing sort doesn't re-fetch, it just reorders the loaded data
+  // mode is in filterKey — changes trigger a full re-fetch
+  // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
+  // popular sort is also handled client-side over the loaded pages
   const filterKey = useMemo(
     () => ({
       proteins: search.proteins,
@@ -644,9 +680,10 @@ function LibraryPage() {
       tags: search.tags,
       ingredients: search.ingredients,
       q: search.q,
+      mode: search.mode,
       lang,
     }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q, lang],
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q, search.mode, lang],
   )
 
   const {
@@ -665,6 +702,7 @@ function LibraryPage() {
           limit: PAGE_SIZE,
           cursor: (pageParam as LibraryCursor | null) ?? null,
           sort: search.sort,
+          mode: search.mode,
           proteins: search.proteins,
           maxCal: search.maxCal,
           maxTime: search.maxTime,
@@ -693,6 +731,8 @@ function LibraryPage() {
         return copy.sort((a, b) => (a.calories ?? 0) - (b.calories ?? 0))
       case 'time':
         return copy.sort((a, b) => (a.time_min ?? 999) - (b.time_min ?? 999))
+      case 'popular':
+        return copy.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))
       case 'pcal':
       default:
         return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
@@ -843,8 +883,22 @@ function LibraryPage() {
             )}
           </div>
 
+          {/* Mode chips */}
+          {!search.replacing && (
+            <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {(['all', 'mine', 'saved'] as LibraryMode[]).map((m) => (
+                <CategoryChip
+                  key={m}
+                  label={t(`library.${m}`)}
+                  active={search.mode === m}
+                  onClick={() => update({ mode: m })}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Category chip row */}
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-2 mt-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <button
               onClick={() => openSheet('protein')}
               aria-label="Abrir filtros"
@@ -892,6 +946,7 @@ function LibraryPage() {
             className="text-xs bg-white border border-[#E5E7EB] text-[#1A1A1A] rounded-xl px-2 py-1.5 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
           >
             <option value="pcal">{t('sort.pcal')}</option>
+            <option value="popular">{t('sort.popular')}</option>
             <option value="protein">{t('sort.protein')}</option>
             <option value="calories">{t('sort.calories')}</option>
             <option value="time">{t('sort.time')}</option>
@@ -965,6 +1020,17 @@ function LibraryPage() {
         onUpdate={update}
         onClear={clearFilters}
       />
+
+      {/* FAB — hidden when replacing */}
+      {!search.replacing && (
+        <Link
+          to="/app/library/create"
+          aria-label={t('library.newRecipe')}
+          className="fixed z-20 right-4 bottom-20 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        >
+          <Plus size={24} aria-hidden="true" />
+        </Link>
+      )}
     </div>
   )
 }
