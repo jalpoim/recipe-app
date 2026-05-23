@@ -498,6 +498,62 @@ function FilterSheet({
               </button>
             </div>
 
+            {/* Ingredientes */}
+            <div ref={ingredientsRef}>
+              <p className={sectionHeader}>{t('filters.ingredients')}</p>
+
+              {search.ingredients.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {search.ingredients.map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => removeIngredient(ing)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
+                    >
+                      {ing} <X size={10} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <input
+                type="text"
+                value={ingSearch}
+                onChange={(e) => setIngSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && ingSearch.trim()) {
+                    addIngredient(ingSearch.trim())
+                    setIngSearch('')
+                  }
+                }}
+                placeholder={t('filters.searchIngredient')}
+                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+              />
+
+              {filteredIngs.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
+                  {filteredIngs.slice(0, 40).map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => addIngredient(ing)}
+                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    >
+                      {ing}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
+                <button
+                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
+                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                >
+                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
+                </button>
+              )}
+            </div>
+
             {/* Tempo */}
             <div ref={timeRef}>
               <p className={sectionHeader}>{t('filters.time')}</p>
@@ -584,62 +640,6 @@ function FilterSheet({
                 })}
               </div>
             </div>
-
-            {/* Ingredientes */}
-            <div ref={ingredientsRef}>
-              <p className={sectionHeader}>{t('filters.ingredients')}</p>
-
-              {search.ingredients.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {search.ingredients.map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => removeIngredient(ing)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
-                    >
-                      {ing} <X size={10} aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <input
-                type="text"
-                value={ingSearch}
-                onChange={(e) => setIngSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && ingSearch.trim()) {
-                    addIngredient(ingSearch.trim())
-                    setIngSearch('')
-                  }
-                }}
-                placeholder={t('filters.searchIngredient')}
-                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-              />
-
-              {filteredIngs.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
-                  {filteredIngs.slice(0, 40).map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => addIngredient(ing)}
-                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                    >
-                      {ing}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
-                <button
-                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
-                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
-                >
-                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
-                </button>
-              )}
-            </div>
           </div>
 
           {/* bottom action */}
@@ -680,8 +680,6 @@ function LibraryPage() {
   const { showToast } = useToast()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
-  const [modeDropdownOpen, setModeDropdownOpen] = useState(false)
-  const modeDropdownRef = useRef<HTMLDivElement>(null)
   const parentRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<LibrarySearch>) {
@@ -719,17 +717,6 @@ function LibraryPage() {
   useEffect(() => {
     setLocalQ(search.q)
   }, [search.q])
-
-  useEffect(() => {
-    if (!modeDropdownOpen) return
-    function handleOutside(e: MouseEvent) {
-      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
-        setModeDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
-  }, [modeDropdownOpen])
 
   // mode is in filterKey — changes trigger a full re-fetch
   // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
@@ -919,23 +906,12 @@ function LibraryPage() {
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Header */}
-        <div className="py-5">
-          <div className="flex items-center justify-between mb-3">
-            <h1 className="text-xl font-bold text-[#1A1A1A]">{t('nav.recipes')}</h1>
-            <Link
-              to="/app/settings"
-              aria-label={t('settings.title')}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-            >
-              <Settings size={18} aria-hidden="true" />
-            </Link>
-          </div>
-
-          {/* Persistent search bar */}
-          <div className="relative">
+        <div className="pt-4 pb-3">
+          {/* Row 1: Search bar with embedded sort + filter */}
+          <div className="flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
             <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] pointer-events-none"
+              size={15}
+              className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none"
               aria-hidden="true"
             />
             <input
@@ -944,98 +920,89 @@ function LibraryPage() {
               onChange={(e) => setLocalQ(e.target.value)}
               placeholder={t('filters.searchRecipe')}
               aria-label={t('filters.searchRecipe')}
-              className="w-full rounded-xl border border-[#E5E7EB] bg-white pl-9 pr-9 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] shadow-sm transition-colors"
+              className="flex-1 py-2.5 px-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none bg-transparent min-w-0"
             />
             {localQ && (
               <button
                 onClick={() => { setLocalQ(''); update({ q: '' }) }}
                 aria-label="Limpar pesquisa"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+                className="shrink-0 mr-1 p-1 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none rounded"
               >
-                <X size={14} aria-hidden="true" />
+                <X size={13} aria-hidden="true" />
               </button>
             )}
-          </div>
 
-          {/* Mode dropdown + Filtros icon */}
-          <div className="flex items-center gap-2 mt-3">
-            {/* Mode selector */}
-            <div ref={modeDropdownRef} className="relative">
-              <button
-                onClick={() => setModeDropdownOpen((o) => !o)}
-                aria-haspopup="listbox"
-                aria-expanded={modeDropdownOpen}
-                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#1A1A1A] font-medium transition-colors hover:border-[#D1D5DB] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            {/* Divider */}
+            <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
+
+            {/* Sort select */}
+            <div className="relative shrink-0 flex items-center">
+              <select
+                value={search.sort}
+                onChange={(e) => update({ sort: e.target.value as Sort })}
+                aria-label={t('sort.label')}
+                className="appearance-none bg-transparent pl-2.5 pr-6 py-2.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
               >
-                {t(`library.${search.mode}`)}
-                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="text-[#9CA3AF]">
-                  <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                </svg>
-              </button>
-              {modeDropdownOpen && (
-                <div
-                  role="listbox"
-                  className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-[#E5E7EB] bg-white shadow-md z-20 py-1 overflow-hidden"
-                >
-                  {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
-                    <button
-                      key={m}
-                      role="option"
-                      aria-selected={search.mode === m}
-                      onClick={() => { update({ mode: m }); setModeDropdownOpen(false) }}
-                      className={`w-full text-left px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                        search.mode === m
-                          ? 'text-[#15803d] font-semibold bg-[#f0fdf4]'
-                          : 'text-[#1A1A1A] hover:bg-[#F9FAFB]'
-                      }`}
-                    >
-                      {t(`library.${m}`)}
-                    </button>
-                  ))}
-                </div>
-              )}
+                <option value="pcal">P/Cal</option>
+                <option value="popular">{t('sort.popular')}</option>
+                <option value="protein">{t('sort.protein')}</option>
+                <option value="calories">{t('sort.calories')}</option>
+                <option value="time">{t('sort.time')}</option>
+              </select>
+              <svg
+                width="10" height="10" viewBox="0 0 10 10"
+                aria-hidden="true"
+                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              >
+                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
             </div>
 
-            <div className="flex-1" />
+            {/* Divider */}
+            <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
 
-            {/* Filtros icon-only button */}
+            {/* Filter icon */}
             <button
               onClick={() => openSheet('protein')}
               aria-label={t('filters.sheetTitle')}
-              className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                activeFilterCount > 0
-                  ? 'border-[#16A34A] text-[#15803d] bg-[#dcfce7]'
-                  : 'border-[#E5E7EB] text-[#6B7280] bg-white hover:border-[#D1D5DB]'
+              className={`relative shrink-0 flex items-center justify-center w-10 h-10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                activeFilterCount > 0 ? 'text-[#15803d]' : 'text-[#6B7280] hover:text-[#1A1A1A]'
               }`}
             >
-              <SlidersHorizontal size={14} aria-hidden="true" />
+              <SlidersHorizontal size={15} aria-hidden="true" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute top-1.5 right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
                   {activeFilterCount}
                 </span>
               )}
             </button>
           </div>
-        </div>
 
-        {/* Sort + count row */}
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-xs text-[#9CA3AF]">
-            {isLoading ? '…' : t('plan.itemCount', { count: sortedRecipes.length })}
-          </span>
-          <select
-            value={search.sort}
-            onChange={(e) => update({ sort: e.target.value as Sort })}
-            aria-label={t('sort.label')}
-            className="text-xs bg-white border border-[#E5E7EB] text-[#1A1A1A] rounded-xl px-2 py-1.5 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-          >
-            <option value="pcal">{t('sort.pcal')}</option>
-            <option value="popular">{t('sort.popular')}</option>
-            <option value="protein">{t('sort.protein')}</option>
-            <option value="calories">{t('sort.calories')}</option>
-            <option value="time">{t('sort.time')}</option>
-            {/* Hidden until enough cook_log data to make it meaningful */}
-          </select>
+          {/* Row 2: Mode chips + Settings */}
+          <div className="flex items-center gap-1.5 mt-2.5">
+            {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => update({ mode: m })}
+                aria-pressed={search.mode === m}
+                className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  search.mode === m
+                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                {t(`library.${m}`)}
+              </button>
+            ))}
+            <div className="flex-1" />
+            <Link
+              to="/app/settings"
+              aria-label={t('settings.title')}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <Settings size={15} aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
         {/* Recipe list — virtualised */}

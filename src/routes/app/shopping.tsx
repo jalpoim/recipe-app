@@ -757,17 +757,7 @@ function ShoppingPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4">
-        {/* Header */}
-        <div className="py-5">
-          <h1 className="text-xl font-bold text-[#1A1A1A]">{t('shopping.title')}</h1>
-          {!isEmpty && (
-            <p className="text-xs text-[#9CA3AF] mt-0.5">
-              {checkedCount > 0
-                ? t('plan.itemCount', { count: checkedCount })
-                : t('shopping.tapToMark')}
-            </p>
-          )}
-        </div>
+        {/* no header row — bottom nav provides tab context */}
 
         {isEmpty ? (
           <div className="py-16 text-center">

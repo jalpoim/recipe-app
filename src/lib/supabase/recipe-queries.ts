@@ -187,23 +187,49 @@ export const searchIngredients = createServerFn({ method: 'GET' })
   .inputValidator((q: string) => q)
   .handler(async ({ data: q }) => {
     const supabase = makeClient()
-    // Search by name first, then fall back to aliases
-    const { data: byName } = await supabase
-      .from('ingredients')
-      .select('id, name, default_unit, category')
-      .ilike('name', `%${q}%`)
-      .limit(8)
-    if ((byName ?? []).length >= 4) return byName ?? []
+    const lower = q.toLowerCase()
 
-    const nameIds = (byName ?? []).map((r) => r.id)
-    let aliasQuery = supabase
-      .from('ingredients')
-      .select('id, name, default_unit, category')
-      .contains('aliases', [q.toLowerCase()])
-    if (nameIds.length > 0) aliasQuery = aliasQuery.not('id', 'in', `(${nameIds.join(',')})`)
-    const { data: byAlias } = await aliasQuery.limit(8 - (byName ?? []).length)
+    // Search catalog by name, then aliases, then recipe_ingredients.name for broader coverage
+    const [byNameResult, byAliasResult, byRecipeIngResult] = await Promise.all([
+      supabase
+        .from('ingredients')
+        .select('id, name, default_unit, category')
+        .ilike('name', `%${q}%`)
+        .limit(8),
+      supabase
+        .from('ingredients')
+        .select('id, name, default_unit, category')
+        .filter('aliases', 'cs', `{${lower}}`)
+        .limit(8),
+      supabase
+        .from('recipe_ingredients')
+        .select('name')
+        .ilike('name', `%${q}%`)
+        .not('name', 'is', null)
+        .limit(12),
+    ])
 
-    return [...(byName ?? []), ...(byAlias ?? [])]
+    const catalogById = new Map<string, { id: string; name: string; default_unit: string | null; category: string | null }>()
+    for (const row of [...(byNameResult.data ?? []), ...(byAliasResult.data ?? [])]) {
+      catalogById.set(row.id, row)
+    }
+    const catalogResults = Array.from(catalogById.values()).slice(0, 8)
+
+    // Supplement with recipe ingredient names not already covered by catalog
+    const catalogNames = new Set(catalogResults.map((r) => r.name.toLowerCase()))
+    const extraNames: string[] = []
+    for (const row of byRecipeIngResult.data ?? []) {
+      const n = row.name!
+      if (!catalogNames.has(n.toLowerCase()) && !extraNames.includes(n)) {
+        extraNames.push(n)
+        if (catalogResults.length + extraNames.length >= 10) break
+      }
+    }
+
+    return [
+      ...catalogResults,
+      ...extraNames.map((name) => ({ id: null, name, default_unit: null, category: null })),
+    ]
   })
 
 export type EstimateMacrosInput = {
@@ -302,4 +328,19 @@ export const createUserProtein = createServerFn({ method: 'POST' })
       .single()
     if (error) throw new Error(error.message)
     return row as UserProtein
+  })
+
+export const deleteUserProtein = createServerFn({ method: 'POST' })
+  .inputValidator((id: string) => id)
+  .handler(async ({ data: id }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('user_proteins')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
   })

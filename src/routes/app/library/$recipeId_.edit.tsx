@@ -1,22 +1,18 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, X } from 'lucide-react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
-import { updateRecipe, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
+import { updateRecipe, fetchUserProteins, createUserProtein, deleteUserProtein, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
 import { useToast } from '../../../components/Toast'
+import { ProteinPicker } from '../../../components/ProteinPicker'
 import type { RecipeIngredient, RecipeStep } from '../../../types/db'
 
 export const Route = createFileRoute('/app/library/$recipeId_/edit')({
   loader: async ({ params }) => fetchRecipeById({ data: params.recipeId }),
   component: EditRecipePage,
 })
-
-const PROTEIN_SLUGS = [
-  'chicken', 'salmon', 'tuna', 'turkey', 'cod', 'eggs', 'beef',
-  'pork', 'whey', 'tofu', 'shrimp', 'clams', 'sea-bream', 'squid', 'fish', 'legumes',
-]
 
 const TAG_SECTIONS_EDIT: { key: string; tags: string[] }[] = [
   { key: 'method',  tags: ['air-fryer', 'forno', 'fogão', 'micro-ondas', 'sem-cozinha', 'uma-frigideira', 'bimby', 'grelhador'] },
@@ -25,6 +21,8 @@ const TAG_SECTIONS_EDIT: { key: string; tags: string[] }[] = [
   { key: 'type',    tags: ['pequeno-almoço', 'almoço', 'jantar', 'snack', 'sobremesa', 'sopa', 'pós-treino', 'batido'] },
   { key: 'context', tags: ['meal-prep', 'rápido', 'reconfortante', 'leve', 'económico', 'família', 'festivo', '5-ingredientes', 'semana', 'verão'] },
 ]
+
+const SYSTEM_TAG_SLUGS = TAG_SECTIONS_EDIT.flatMap((s) => s.tags)
 
 function ingToRow(ing: RecipeIngredient): IngredientRow {
   return {
@@ -38,11 +36,7 @@ function ingToRow(ing: RecipeIngredient): IngredientRow {
 }
 
 function stepToRow(step: RecipeStep): StepRow {
-  return {
-    position: step.position,
-    text: step.text,
-    timerSeconds: step.timer_seconds,
-  }
+  return { position: step.position, text: step.text, timerSeconds: step.timer_seconds }
 }
 
 function CollapsibleSection({
@@ -81,19 +75,32 @@ function EditRecipePage() {
   const [servings, setServings] = useState(recipe.servings)
   const [timeMin, setTimeMin] = useState(recipe.time_min?.toString() ?? '')
   const [selectedProteins, setSelectedProteins] = useState<string[]>(recipe.proteins)
-  const [ingredients, setIngredients] = useState<IngredientRow[]>(
-    recipe.recipe_ingredients.map(ingToRow)
-  )
-  const [steps, setSteps] = useState<StepRow[]>(
-    recipe.recipe_steps.map(stepToRow)
-  )
+  const [ingredients, setIngredients] = useState<IngredientRow[]>(recipe.recipe_ingredients.map(ingToRow))
+  const [steps, setSteps] = useState<StepRow[]>(recipe.recipe_steps.map(stepToRow))
   const [selectedTags, setSelectedTags] = useState<string[]>(recipe.tags)
+  const [customTagInput, setCustomTagInput] = useState('')
   const [calories, setCalories] = useState(recipe.calories?.toString() ?? '')
   const [protein, setProtein] = useState(recipe.protein?.toString() ?? '')
   const [carbs, setCarbs] = useState(recipe.carbs?.toString() ?? '')
   const [fat, setFat] = useState(recipe.fat?.toString() ?? '')
   const [publish, setPublish] = useState(recipe.visibility === 'public')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const { data: userProteins = [], refetch: refetchUserProteins } = useQuery({
+    queryKey: ['user-proteins'],
+    queryFn: () => fetchUserProteins(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const addCustomProteinMutation = useMutation({
+    mutationFn: (displayName: string) => createUserProtein({ data: { displayName, language: lang } }),
+    onSuccess: (p) => { refetchUserProteins(); setSelectedProteins((prev) => [...prev, p.slug]) },
+  })
+
+  const deleteCustomProteinMutation = useMutation({
+    mutationFn: (id: string) => deleteUserProtein({ data: id }),
+    onSuccess: () => refetchUserProteins(),
+  })
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -124,16 +131,10 @@ function EditRecipePage() {
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = t('create.validationName')
-    if (selectedProteins.length === 0) errs.proteins = t('create.validationProteins')
     if (!ingredients.some((i) => i.rawText.trim())) errs.ingredients = t('create.validationIngredients')
     if (!steps.some((s) => s.text.trim())) errs.steps = t('create.validationSteps')
     setErrors(errs)
     return Object.keys(errs).length === 0
-  }
-
-  function handleSave() {
-    if (!validate()) return
-    saveMutation.mutate()
   }
 
   function addIngredient() {
@@ -154,11 +155,14 @@ function EditRecipePage() {
   function removeStep(index: number) {
     setSteps((prev) => prev.filter((_, i) => i !== index))
   }
-  function toggleProtein(slug: string) {
-    setSelectedProteins((prev) => prev.includes(slug) ? prev.filter((p) => p !== slug) : [...prev, slug])
-  }
   function toggleTag(tag: string) {
     setSelectedTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag])
+  }
+  function addCustomTag() {
+    const slug = customTagInput.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!slug || selectedTags.includes(slug)) return
+    setSelectedTags((prev) => [...prev, slug])
+    setCustomTagInput('')
   }
 
   const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
@@ -181,7 +185,7 @@ function EditRecipePage() {
           <h1 className="text-base font-semibold text-[#1A1A1A]">{t('create.editTitle')}</h1>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => { if (validate()) saveMutation.mutate() }}
             disabled={saveMutation.isPending}
             className="text-sm font-semibold text-[#16A34A] disabled:opacity-50 hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
           >
@@ -191,6 +195,7 @@ function EditRecipePage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-4">
+        {/* Name */}
         <div>
           <input
             type="text"
@@ -202,6 +207,7 @@ function EditRecipePage() {
           {errors.name && <p className="mt-1 text-xs text-[#DC2626]">{errors.name}</p>}
         </div>
 
+        {/* Servings */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-[#1A1A1A]">{t('create.servingsLabel')}</span>
@@ -219,19 +225,19 @@ function EditRecipePage() {
           </div>
         </div>
 
-        <div className={`rounded-2xl bg-white border shadow-sm p-4 ${errors.proteins ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
+        {/* Proteins */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <p className="text-sm font-semibold text-[#1A1A1A] mb-3">{t('create.proteinsLabel')}</p>
-          <div className="flex flex-wrap gap-2">
-            {PROTEIN_SLUGS.map((slug) => (
-              <button key={slug} type="button" onClick={() => toggleProtein(slug)} aria-pressed={selectedProteins.includes(slug)}
-                className={`${chipBase} ${selectedProteins.includes(slug) ? chipActive : chipInactive}`}>
-                {t(`proteins.${slug}`)}
-              </button>
-            ))}
-          </div>
-          {errors.proteins && <p className="mt-2 text-xs text-[#DC2626]">{errors.proteins}</p>}
+          <ProteinPicker
+            selected={selectedProteins}
+            onToggle={(slug) => setSelectedProteins((prev) => prev.includes(slug) ? prev.filter((p) => p !== slug) : [...prev, slug])}
+            userProteins={userProteins}
+            onAddCustom={(displayName) => addCustomProteinMutation.mutate(displayName)}
+            onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
+          />
         </div>
 
+        {/* Ingredients */}
         <div className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.ingredients ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
           <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.ingredientsLabel')}</p>
           {ingredients.map((ing, idx) => (
@@ -257,6 +263,7 @@ function EditRecipePage() {
           {errors.ingredients && <p className="text-xs text-[#DC2626]">{errors.ingredients}</p>}
         </div>
 
+        {/* Steps */}
         <div className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.steps ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
           <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.stepsLabel')}</p>
           {steps.map((step, idx) => (
@@ -284,6 +291,7 @@ function EditRecipePage() {
           {errors.steps && <p className="text-xs text-[#DC2626]">{errors.steps}</p>}
         </div>
 
+        {/* Time */}
         <CollapsibleSection title={t('create.timeLabel')} defaultOpen={!!recipe.time_min}>
           <input
             type="number" min={1} value={timeMin} onChange={(e) => setTimeMin(e.target.value)} placeholder="30"
@@ -291,6 +299,7 @@ function EditRecipePage() {
           />
         </CollapsibleSection>
 
+        {/* Tags */}
         <CollapsibleSection title={t('create.tagsLabel')} defaultOpen={recipe.tags.length > 0}>
           <div className="space-y-4">
             {TAG_SECTIONS_EDIT.map(({ key, tags: sectionTags }) => (
@@ -306,9 +315,51 @@ function EditRecipePage() {
                 </div>
               </div>
             ))}
+            {/* Custom tags */}
+            {selectedTags.filter((tag) => !SYSTEM_TAG_SLUGS.includes(tag)).length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                  {t('create.customTagsSection', 'Os meus tags')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTags.filter((tag) => !SYSTEM_TAG_SLUGS.includes(tag)).map((tag) => (
+                    <span key={tag} className={`${chipBase} ${chipActive} flex items-center gap-1`}>
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}
+                        aria-label={`Remover tag ${tag}`}
+                        className="focus:outline-none"
+                      >
+                        <X size={10} aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customTagInput}
+                onChange={(e) => setCustomTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
+                placeholder={t('create.addCustomTag', 'Adicionar tag…')}
+                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+              />
+              <button
+                type="button"
+                onClick={addCustomTag}
+                disabled={!customTagInput.trim()}
+                className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#16A34A] hover:bg-[#f0fdf4] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shrink-0"
+              >
+                <Plus size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </CollapsibleSection>
 
+        {/* Macros */}
         <CollapsibleSection title={t('create.macrosLabel')} defaultOpen={recipe.calories != null}>
           <div className="grid grid-cols-2 gap-3">
             {([
@@ -326,6 +377,7 @@ function EditRecipePage() {
           </div>
         </CollapsibleSection>
 
+        {/* Publish */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 mr-4">
@@ -342,7 +394,9 @@ function EditRecipePage() {
         </div>
 
         <button
-          type="button" onClick={handleSave} disabled={saveMutation.isPending}
+          type="button"
+          onClick={() => { if (validate()) saveMutation.mutate() }}
+          disabled={saveMutation.isPending}
           className="w-full rounded-2xl bg-[#16A34A] text-white py-4 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         >
           {saveMutation.isPending ? t('create.saving') : t('create.save')}

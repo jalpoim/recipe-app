@@ -3,16 +3,13 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { createRecipe, searchIngredients, estimateMacros, fetchUserProteins, createUserProtein, type IngredientRow, type StepRow, type UserProtein } from '../../../lib/supabase/recipe-queries'
+import { createRecipe, searchIngredients, estimateMacros, fetchUserProteins, createUserProtein, deleteUserProtein, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
 import { useToast } from '../../../components/Toast'
+import { ProteinPicker } from '../../../components/ProteinPicker'
 
 export const Route = createFileRoute('/app/library/create')({
   component: CreateRecipePage,
 })
-
-const PROTEIN_TIER1 = ['chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'eggs', 'shrimp']
-const PROTEIN_TIER2 = ['turkey', 'lamb', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'tofu', 'legumes', 'whey']
-const ALL_PROTEIN_SLUGS = [...PROTEIN_TIER1, ...PROTEIN_TIER2]
 
 const TAG_SECTIONS_CREATE: { key: string; tags: string[] }[] = [
   { key: 'method',  tags: ['air-fryer', 'forno', 'fogão', 'micro-ondas', 'sem-cozinha', 'uma-frigideira', 'bimby', 'grelhador'] },
@@ -171,102 +168,7 @@ function CollapsibleSection({
   )
 }
 
-function ProteinPicker({
-  selected,
-  onToggle,
-  userProteins,
-  onAddCustom,
-}: {
-  selected: string[]
-  onToggle: (slug: string) => void
-  userProteins: UserProtein[]
-  onAddCustom: (displayName: string) => void
-}) {
-  const { t, i18n } = useTranslation()
-  const lang = i18n.language.startsWith('en') ? 'en' : 'pt'
-  const [expanded, setExpanded] = useState(false)
-  const [customInput, setCustomInput] = useState('')
-  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
-  const chipActive = 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A]'
-  const visible = expanded ? ALL_PROTEIN_SLUGS : PROTEIN_TIER1
 
-  const normalizedInput = customInput.trim().toLowerCase().replace(/\s+/g, '-')
-  const isInSystem = ALL_PROTEIN_SLUGS.includes(normalizedInput)
-  const isInUser = userProteins.some((p) => p.slug === normalizedInput)
-  const showAddRow = customInput.trim().length > 0 && !isInSystem && !isInUser
-
-  function handleAddCustom() {
-    if (!customInput.trim()) return
-    onAddCustom(customInput.trim())
-    setCustomInput('')
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {visible.map((slug) => (
-          <button
-            key={slug}
-            type="button"
-            onClick={() => onToggle(slug)}
-            aria-pressed={selected.includes(slug)}
-            className={`${chipBase} ${selected.includes(slug) ? chipActive : chipInactive}`}
-          >
-            {t(`proteins.${slug}`, slug)}
-          </button>
-        ))}
-      </div>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        onClick={() => setExpanded((e) => !e)}
-        className="text-xs text-[#16A34A] font-medium focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-      >
-        {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
-      </button>
-      {userProteins.length > 0 && (
-        <div>
-          <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-            {t('create.myProteins', 'Os meus')}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {userProteins.map((p) => (
-              <button
-                key={p.slug}
-                type="button"
-                onClick={() => onToggle(p.slug)}
-                aria-pressed={selected.includes(p.slug)}
-                className={`${chipBase} ${selected.includes(p.slug) ? chipActive : chipInactive}`}
-              >
-                {p.language === lang ? p.display_name : p.display_name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={customInput}
-          onChange={(e) => setCustomInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
-          placeholder={t('create.addProteinPlaceholder', 'Adicionar proteína…')}
-          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-        />
-        {showAddRow && (
-          <button
-            type="button"
-            onClick={handleAddCustom}
-            className="shrink-0 text-xs px-3 py-2 rounded-xl border border-[#16A34A] bg-[#f0fdf4] text-[#15803d] font-medium transition-colors hover:bg-[#dcfce7] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none whitespace-nowrap"
-          >
-            + {customInput.trim()}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
 
 function CreateRecipePage() {
   const { t, i18n } = useTranslation()
@@ -307,6 +209,11 @@ function CreateRecipePage() {
       refetchUserProteins()
       setSelectedProteins((prev) => [...prev, protein.slug])
     },
+  })
+
+  const deleteCustomProteinMutation = useMutation({
+    mutationFn: (id: string) => deleteUserProtein({ data: id }),
+    onSuccess: () => refetchUserProteins(),
   })
 
   const estimateMutation = useMutation({
@@ -490,6 +397,7 @@ function CreateRecipePage() {
             onToggle={toggleProtein}
             userProteins={userProteins}
             onAddCustom={(displayName) => addCustomProteinMutation.mutate(displayName)}
+            onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
           />
         </div>
 

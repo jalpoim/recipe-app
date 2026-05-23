@@ -221,21 +221,28 @@ export const fetchRecipeById = createServerFn({ method: 'GET' })
 
     const { data, error } = await supabase
       .from('recipes')
-      .select('*, recipe_ingredients(*), recipe_steps(*), profiles!owner_id(display_name, username)')
+      .select('*, recipe_ingredients(*), recipe_steps(*)')
       .eq('id', id)
       .single()
     if (error) throw new Error(error.message)
 
-    const raw = data as unknown as Record<string, unknown>
-    const profileData = raw.profiles as { display_name: string | null; username: string | null } | null
-    const recipe = {
-      ...raw,
-      profiles: undefined,
-      author_display_name: profileData?.display_name ?? null,
-      author_username: profileData?.username ?? null,
-    } as unknown as RecipeDetail
+    const recipe = data as unknown as RecipeDetail
     recipe.recipe_ingredients.sort((a, b) => a.position - b.position)
     recipe.recipe_steps.sort((a, b) => a.position - b.position)
+
+    // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id)
+    if (recipe.owner_id) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, username')
+        .eq('user_id', recipe.owner_id)
+        .maybeSingle()
+      recipe.author_display_name = profile?.display_name ?? null
+      recipe.author_username = profile?.username ?? null
+    } else {
+      recipe.author_display_name = null
+      recipe.author_username = null
+    }
 
     if (lang === 'pt') return recipe
 

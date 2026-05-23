@@ -423,21 +423,18 @@ function PlanPage() {
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
-        <div className="py-5 flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#1A1A1A]">{t('plan.title')}</h1>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">
-              {items.length === 0
-                ? t('plan.noItems')
-                : t('plan.itemCount', { count: items.length })}
-            </p>
-          </div>
+        <div className="pt-4 pb-3 flex items-center justify-between">
+          <span className="text-xs text-[#9CA3AF]">
+            {items.length === 0
+              ? t('plan.noItems')
+              : t('plan.itemCount', { count: items.length })}
+          </span>
           <button
             onClick={() => setHistoryOpen(true)}
             aria-label={t('cookHistory.title')}
-            className="mt-1 p-2 rounded-xl text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+            className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
           >
-            <CalendarDays size={20} aria-hidden="true" />
+            <CalendarDays size={17} aria-hidden="true" />
           </button>
         </div>
 
