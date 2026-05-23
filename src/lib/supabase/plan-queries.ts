@@ -178,20 +178,19 @@ export const addRecipeToPlan = createServerFn({ method: 'POST' })
       }
     }
 
-    // Max position
-    const { data: maxRow } = await supabase
-      .from('plan_items')
-      .select('position')
-      .eq('plan_id', planId)
-      .order('position', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    // Look up user preference + recipe default in parallel
+    const [{ data: maxRow }, { data: pref }, { data: recipeRow }] = await Promise.all([
+      supabase.from('plan_items').select('position').eq('plan_id', planId).order('position', { ascending: false }).limit(1).maybeSingle(),
+      supabase.from('user_recipe_preferences').select('preferred_servings').eq('user_id', session.user.id).eq('recipe_id', recipeId).maybeSingle(),
+      supabase.from('recipes').select('servings').eq('id', recipeId).maybeSingle(),
+    ])
 
     const position = maxRow ? maxRow.position + 1 : 0
+    const servings = pref?.preferred_servings ?? recipeRow?.servings ?? 1
 
     const { data: item, error } = await supabase
       .from('plan_items')
-      .insert({ plan_id: planId, recipe_id: recipeId, position, portion_multiplier: 1 })
+      .insert({ plan_id: planId, recipe_id: recipeId, position, portion_multiplier: servings })
       .select()
       .single()
     if (error) throw new Error(error.message)
@@ -231,6 +230,39 @@ export const removePlanItem = createServerFn({ method: 'POST' })
   .handler(async ({ data: id }) => {
     const supabase = makeClient()
     const { error } = await supabase.from('plan_items').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+// GET: preferred serving count for a recipe (null = never set)
+export const fetchUserRecipePreference = createServerFn({ method: 'GET' })
+  .inputValidator((recipeId: string) => recipeId)
+  .handler(async ({ data: recipeId }): Promise<number | null> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return null
+    const { data } = await supabase
+      .from('user_recipe_preferences')
+      .select('preferred_servings')
+      .eq('user_id', session.user.id)
+      .eq('recipe_id', recipeId)
+      .maybeSingle()
+    return data?.preferred_servings ?? null
+  })
+
+// POST: save preferred serving count for a recipe
+export const upsertUserRecipePreference = createServerFn({ method: 'POST' })
+  .inputValidator((input: { recipeId: string; servings: number }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('user_recipe_preferences')
+      .upsert(
+        { user_id: session.user.id, recipe_id: data.recipeId, preferred_servings: data.servings, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,recipe_id' },
+      )
     if (error) throw new Error(error.message)
     return { ok: true }
   })

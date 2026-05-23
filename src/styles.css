@@ -97,57 +97,6 @@ body {
   .cooking-drawer-enter { animation: cooking-drawer-enter 350ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 }
 
-/* Timer badge slide-in from right */
-@keyframes badge-slide-in {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .badge-enter { animation: badge-slide-in 200ms ease both; }
-}
-
-/* Timer complete — concentric ring pulse from badge */
-@keyframes timer-ring-pulse {
-  0%   { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(2.5); opacity: 0; }
-}
-.timer-ring-pulse {
-  position: relative;
-  overflow: visible;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .timer-ring-pulse::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 9999px;
-    border: 2px solid #DC2626;
-    pointer-events: none;
-    animation: timer-ring-pulse 600ms ease-out 1 forwards;
-  }
-}
-
-/* Tappable time reference in step text */
-.time-ref-tap {
-  color: #16A34A;
-  text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 2px;
-  font-weight: 500;
-  cursor: pointer;
-  border-radius: 2px;
-}
-.time-ref-tap:focus-visible {
-  outline: 2px solid #16A34A;
-  outline-offset: 2px;
-}
-@keyframes time-ref-flash {
-  0%, 100% { background: transparent; }
-  30%       { background: #dcfce7; }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .time-ref-tap.time-ref-tapped { animation: time-ref-flash 300ms ease both; }
-}
 
 /* View Transitions: recipe title shared element */
 .recipe-title-vt { view-transition-name: recipe-title; }

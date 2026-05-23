@@ -487,6 +487,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_recipe_preferences: {
+        Row: {
+          user_id: string
+          recipe_id: string
+          preferred_servings: number
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          recipe_id: string
+          preferred_servings: number
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          recipe_id?: string
+          preferred_servings?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_recipe_interactions: {
         Row: {
           id: string

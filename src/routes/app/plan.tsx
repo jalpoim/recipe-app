@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
 import { capture } from '../../lib/analytics'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Clock, ChevronRight, CalendarDays, ChevronLeft } from 'lucide-react'
+import { X, Clock, ChevronRight, CalendarDays, ChevronLeft, Minus, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/Toast'
 import { Drawer } from 'vaul'
@@ -11,6 +11,7 @@ import {
   fetchActivePlanWithCount,
   removePlanItem,
   updatePlanItemMultiplier,
+  upsertUserRecipePreference,
   archiveAndCreatePlan,
 } from '../../lib/supabase/plan-queries'
 import { fetchCookLog, deleteCookLogEntry } from '../../lib/supabase/cook-log-queries'
@@ -70,13 +71,11 @@ function perServing(r: Recipe, field: 'calories' | 'protein' | 'carbs' | 'fat') 
 function PlanItemCard({
   item,
   onRemove,
-  onMultiplierChange,
-  isUpdating,
+  onServingsChange,
 }: {
   item: PlanItemWithRecipe
   onRemove: (id: string) => void
-  onMultiplierChange: (id: string, v: number) => void
-  isUpdating?: boolean
+  onServingsChange: (id: string, recipeId: string, v: number) => void
 }) {
   const { t } = useTranslation()
   const scale = item.portion_multiplier
@@ -129,22 +128,25 @@ function PlanItemCard({
 
       <div className="mt-3 flex items-center justify-between relative z-10">
         <span className="text-[11px] text-[#9CA3AF] font-medium">{t('plan.multiplier')}</span>
-        <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
-          {([1, 2, 3, 4] as const).map((n) => (
-            <button
-              key={n}
-              onClick={() => onMultiplierChange(item.id, n)}
-              aria-pressed={item.portion_multiplier === n}
-              disabled={isUpdating}
-              className={`w-9 py-1 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none focus:z-10 relative disabled:opacity-50 ${
-                item.portion_multiplier === n
-                  ? 'bg-[#16A34A] text-white'
-                  : 'bg-white text-[#6B7280] hover:bg-[#F3F4F6]'
-              }`}
-            >
-              {n}×
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onServingsChange(item.id, item.recipe_id, Math.max(1, item.portion_multiplier - 1))}
+            disabled={item.portion_multiplier <= 1}
+            aria-label="Diminuir doses"
+            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          >
+            <Minus size={12} aria-hidden="true" />
+          </button>
+          <span className="w-5 text-center text-sm font-bold text-[#1A1A1A]" aria-live="polite">
+            {item.portion_multiplier}
+          </span>
+          <button
+            onClick={() => onServingsChange(item.id, item.recipe_id, item.portion_multiplier + 1)}
+            aria-label="Aumentar doses"
+            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          >
+            <Plus size={12} aria-hidden="true" />
+          </button>
         </div>
       </div>
 
@@ -412,10 +414,13 @@ function PlanPage() {
     },
   })
 
-  // Update per-item multiplier — optimistic
+  // Update per-item servings — optimistic update + save preference
   const itemMultMutation = useMutation({
-    mutationFn: ({ id, mult }: { id: string; mult: number }) =>
-      updatePlanItemMultiplier({ data: { planItemId: id, multiplier: mult } }),
+    mutationFn: ({ id, recipeId, mult }: { id: string; recipeId: string; mult: number }) =>
+      Promise.all([
+        updatePlanItemMultiplier({ data: { planItemId: id, multiplier: mult } }),
+        upsertUserRecipePreference({ data: { recipeId, servings: mult } }),
+      ]),
     onMutate: async ({ id, mult }) => {
       await qc.cancelQueries({ queryKey: ['plan-items', planId] })
       const prev = qc.getQueryData<PlanItemWithRecipe[]>(['plan-items', planId])
@@ -426,7 +431,7 @@ function PlanPage() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['plan-items', planId], ctx.prev)
-      showToast('Erro ao actualizar multiplicador', 'error')
+      showToast('Erro ao actualizar doses', 'error')
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['plan-items', planId] }),
   })
@@ -490,8 +495,7 @@ function PlanPage() {
                   key={item.id}
                   item={item}
                   onRemove={(id) => removeMutation.mutate(id)}
-                  onMultiplierChange={(id, v) => itemMultMutation.mutate({ id, mult: v })}
-                  isUpdating={itemMultMutation.isPending}
+                  onServingsChange={(id, recipeId, v) => itemMultMutation.mutate({ id, recipeId, mult: v })}
                 />
               ))}
             </div>

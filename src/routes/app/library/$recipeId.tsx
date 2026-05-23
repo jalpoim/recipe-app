@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2, Timer } from 'lucide-react'
+import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2 } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
@@ -11,6 +11,7 @@ import {
   removePlanItem,
   fetchPlanItem,
   updatePlanItemMultiplier,
+  upsertUserRecipePreference,
 } from '../../../lib/supabase/plan-queries'
 import {
   logRecipeCooked,
@@ -23,28 +24,6 @@ import {
   fetchInteractions,
 } from '../../../lib/supabase/interaction-queries'
 import type { RecipeIngredient, RecipeStep } from '../../../types/db'
-
-// ---------- types ----------
-
-interface TimeRef {
-  start: number
-  end: number
-  seconds: number
-  label: string
-}
-
-interface TimerEntry {
-  id: string
-  stepIndex: number
-  stepLabel: string
-  totalSeconds: number
-  remaining: number
-  isRunning: boolean
-  isDone: boolean
-  startedAt: number | null
-  remainingAtPause: number
-  notifTimeout: ReturnType<typeof setTimeout> | null
-}
 
 // ---------- helpers ----------
 
@@ -75,269 +54,14 @@ function badgeClass(ratio: number) {
   return 'text-[#DC2626] bg-[#fee2e2]'
 }
 
-function formatTime(s: number) {
-  const m = Math.floor(s / 60)
-  const sec = s % 60
-  return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`
-}
-
-function playBeep() {
-  try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-    const ctx = new AudioCtx()
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.frequency.value = 880
-    gain.gain.setValueAtTime(0.3, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.6)
-    setTimeout(() => ctx.close(), 1000)
-  } catch {}
-}
-
-// Parse time references from step text: "2 minutos", "30 segundos", "10 min", "1 hora"
-function parseTimeRefs(text: string): TimeRef[] {
-  const refs: TimeRef[] = []
-  const pattern = /(\d+(?:[.,]\d+)?)\s*(hora[s]?|h\b|minuto[s]?|min\b|segundo[s]?|seg\b|s\b)/gi
-  let match: RegExpExecArray | null
-  while ((match = pattern.exec(text)) !== null) {
-    const num = parseFloat(match[1].replace(',', '.'))
-    const unit = match[2].toLowerCase()
-    let seconds = 0
-    if (unit.startsWith('hora') || unit === 'h') seconds = Math.round(num * 3600)
-    else if (unit.startsWith('minuto') || unit === 'min') seconds = Math.round(num * 60)
-    else seconds = Math.round(num)
-    if (seconds >= 10) {
-      refs.push({ start: match.index, end: match.index + match[0].length, seconds, label: match[0] })
-    }
-  }
-  return refs
-}
-
-// ---------- useTimers hook ----------
-
-function useTimers(recipeName: string) {
-  const [timers, setTimers] = useState<Map<string, TimerEntry>>(new Map())
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const { t } = useTranslation()
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setTimers((prev) => {
-        let changed = false
-        const next = new Map(prev)
-        for (const [id, entry] of next) {
-          if (!entry.isRunning || entry.isDone) continue
-          const elapsed = Math.floor((Date.now() - entry.startedAt!) / 1000)
-          const remaining = Math.max(0, entry.remainingAtPause - elapsed)
-          if (remaining !== entry.remaining) {
-            changed = true
-            if (remaining === 0) {
-              if (entry.notifTimeout) clearTimeout(entry.notifTimeout)
-              playBeep()
-              next.set(id, { ...entry, remaining: 0, isRunning: false, isDone: true })
-            } else {
-              next.set(id, { ...entry, remaining })
-            }
-          }
-        }
-        return changed ? next : prev
-      })
-    }, 500)
-    return () => clearInterval(intervalRef.current!)
-  }, [])
-
-  const startTimer = useCallback(async (id: string, seconds: number, stepIndex: number, stepLabel: string) => {
-    let notifTimeout: ReturnType<typeof setTimeout> | null = null
-    if ('Notification' in window) {
-      if (Notification.permission === 'default') await Notification.requestPermission()
-      if (Notification.permission === 'granted') {
-        notifTimeout = setTimeout(() => {
-          new Notification(`⏱ ${stepLabel}`, { body: t('cooking.timerDone', { recipe: recipeName }), silent: false })
-        }, seconds * 1000)
-      }
-    }
-    setTimers((prev) => {
-      const next = new Map(prev)
-      next.set(id, {
-        id, stepIndex, stepLabel,
-        totalSeconds: seconds, remaining: seconds,
-        isRunning: true, isDone: false,
-        startedAt: Date.now(), remainingAtPause: seconds,
-        notifTimeout,
-      })
-      return next
-    })
-  }, [recipeName, t])
-
-  const pauseTimer = useCallback((id: string) => {
-    setTimers((prev) => {
-      const entry = prev.get(id)
-      if (!entry) return prev
-      if (entry.notifTimeout) clearTimeout(entry.notifTimeout)
-      const next = new Map(prev)
-      next.set(id, { ...entry, isRunning: false, remainingAtPause: entry.remaining, notifTimeout: null })
-      return next
-    })
-  }, [])
-
-  const resumeTimer = useCallback(async (id: string) => {
-    setTimers((prev) => {
-      const entry = prev.get(id)
-      if (!entry || entry.isDone) return prev
-      const next = new Map(prev)
-      next.set(id, { ...entry, isRunning: true, startedAt: Date.now() })
-      return next
-    })
-  }, [])
-
-  const resetTimer = useCallback((id: string) => {
-    setTimers((prev) => {
-      const entry = prev.get(id)
-      if (!entry) return prev
-      if (entry.notifTimeout) clearTimeout(entry.notifTimeout)
-      const next = new Map(prev)
-      next.set(id, { ...entry, remaining: entry.totalSeconds, remainingAtPause: entry.totalSeconds, isRunning: false, isDone: false, startedAt: null, notifTimeout: null })
-      return next
-    })
-  }, [])
-
-  const removeTimer = useCallback((id: string) => {
-    setTimers((prev) => {
-      const entry = prev.get(id)
-      if (entry?.notifTimeout) clearTimeout(entry.notifTimeout)
-      const next = new Map(prev)
-      next.delete(id)
-      return next
-    })
-  }, [])
-
-  return { timers, startTimer, pauseTimer, resumeTimer, resetTimer, removeTimer }
-}
-
-// ---------- TimerBadge ----------
-
-function TimerBadge({
-  entry,
-  onPause,
-  onResume,
-  onReset,
-  onRemove,
-}: {
-  entry: TimerEntry
-  onPause: () => void
-  onResume: () => void
-  onReset: () => void
-  onRemove: () => void
-}) {
-  const [pulsing, setPulsing] = useState(false)
-  const prevDone = useRef(false)
-
-  useEffect(() => {
-    if (entry.isDone && !prevDone.current) {
-      setPulsing(true)
-      prevDone.current = true
-    }
-  }, [entry.isDone])
-
-  const colorClass = entry.isDone
-    ? 'bg-[#fee2e2] text-[#DC2626] border-[#fecaca]'
-    : entry.isRunning
-    ? 'bg-[#dcfce7] text-[#15803d] border-[#bbf7d0]'
-    : 'bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]'
-
-  return (
-    <div className={`badge-enter flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold ${colorClass} ${pulsing ? 'timer-ring-pulse' : ''}`}
-      onAnimationEnd={() => setPulsing(false)}
-    >
-      <Timer size={11} aria-hidden="true" />
-      <span className="tabular-nums">{formatTime(entry.remaining)}</span>
-      <span className="opacity-60">· {entry.stepLabel}</span>
-      {entry.isDone ? (
-        <button onClick={onReset} className="ml-0.5 hover:opacity-80 focus:outline-none" aria-label="Reset">
-          <X size={10} />
-        </button>
-      ) : entry.isRunning ? (
-        <button onClick={onPause} className="ml-0.5 hover:opacity-80 focus:outline-none" aria-label="Pause">
-          <span className="text-[10px] leading-none">❚❚</span>
-        </button>
-      ) : (
-        <button onClick={onResume} className="ml-0.5 hover:opacity-80 focus:outline-none" aria-label="Resume">
-          <span className="text-[10px] leading-none">▶</span>
-        </button>
-      )}
-      <button onClick={onRemove} className="ml-0.5 hover:opacity-80 focus:outline-none" aria-label="Remove">
-        <X size={10} />
-      </button>
-    </div>
-  )
-}
-
-// ---------- StepText with tappable time refs ----------
-
-function StepText({
-  text,
-  stepIndex,
-  onStartTimer,
-  timers,
-}: {
-  text: string
-  stepIndex: number
-  onStartTimer: (id: string, seconds: number, stepIndex: number, label: string) => void
-  timers: Map<string, TimerEntry>
-}) {
-  const { t } = useTranslation()
-  const refs = parseTimeRefs(text)
-  if (refs.length === 0) return <span>{text}</span>
-
-  const parts: React.ReactNode[] = []
-  let cursor = 0
-  for (const ref of refs) {
-    if (ref.start > cursor) parts.push(text.slice(cursor, ref.start))
-    const id = `step-${stepIndex}-${ref.start}`
-    const hasTimer = timers.has(id)
-    parts.push(
-      <button
-        key={id}
-        onClick={() => {
-          if (!hasTimer) onStartTimer(id, ref.seconds, stepIndex, t('cooking.timerStep', { step: stepIndex + 1 }))
-        }}
-        className={`time-ref-tap ${hasTimer ? 'opacity-50' : ''} focus:outline-none`}
-        aria-label={t('cooking.startTimerFor', { duration: ref.label })}
-        disabled={hasTimer}
-      >
-        {ref.label}
-      </button>
-    )
-    cursor = ref.end
-  }
-  if (cursor < text.length) parts.push(text.slice(cursor))
-  return <>{parts}</>
-}
-
 // ---------- CookingDrawer ----------
 
 function CookingDrawer({
   steps,
-  timers,
-  onStartTimer,
-  onPauseTimer,
-  onResumeTimer,
-  onResetTimer,
-  onRemoveTimer,
   onExit,
   onStepChange,
 }: {
   steps: RecipeStep[]
-  timers: Map<string, TimerEntry>
-  onStartTimer: (id: string, seconds: number, stepIndex: number, label: string) => void
-  onPauseTimer: (id: string) => void
-  onResumeTimer: (id: string) => void
-  onResetTimer: (id: string) => void
-  onRemoveTimer: (id: string) => void
   onExit: () => void
   onStepChange: (completedUpTo: number) => void
 }) {
@@ -345,18 +69,10 @@ function CookingDrawer({
   const [expanded, setExpanded] = useState(false)
   const [stepIndex, setStepIndex] = useState(0)
   const [direction, setDirection] = useState<'forward' | 'back'>('forward')
-  const [showManualTimer, setShowManualTimer] = useState(false)
-  const [manualMinutes, setManualMinutes] = useState(1)
-
-  function openTimer() {
-    setExpanded(true)
-    setShowManualTimer(true)
-  }
 
   const currStep = steps[stepIndex]
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
-  const timerList = Array.from(timers.values())
 
   function goNext() {
     if (isLast) return
@@ -364,7 +80,6 @@ function CookingDrawer({
     setDirection('forward')
     setStepIndex(next)
     onStepChange(next)
-    setShowManualTimer(false)
   }
 
   function goPrev() {
@@ -373,25 +88,17 @@ function CookingDrawer({
     setDirection('back')
     setStepIndex(next)
     onStepChange(next)
-    setShowManualTimer(false)
-  }
-
-  function handleManualTimer() {
-    const secs = Math.max(60, manualMinutes * 60)
-    const id = `step-${stepIndex}-manual-${Date.now()}`
-    onStartTimer(id, secs, stepIndex, t('cooking.timerStep', { step: stepIndex + 1 }))
-    setShowManualTimer(false)
   }
 
   return (
     <div
-      className={`cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
+      className="cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
       style={{
         bottom: 'calc(3.25rem + env(safe-area-inset-bottom))',
         height: expanded ? '75vh' : '256px',
       }}
     >
-      {/* Drag handle row + stop cooking button */}
+      {/* Drag handle + stop button */}
       <div className="flex items-center px-4 pt-2 pb-1 shrink-0 gap-2">
         <div className="flex-1 flex justify-center cursor-pointer" onClick={() => setExpanded((e) => !e)}>
           <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
@@ -406,39 +113,11 @@ function CookingDrawer({
       </div>
 
       <div className="flex flex-col flex-1 min-h-0 pb-3 overflow-hidden">
-        {/* Timer badges row */}
-        {timerList.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-4 pb-2 shrink-0">
-            {timerList.map((entry) => (
-              <TimerBadge
-                key={entry.id}
-                entry={entry}
-                onPause={() => onPauseTimer(entry.id)}
-                onResume={() => onResumeTimer(entry.id)}
-                onReset={() => onResetTimer(entry.id)}
-                onRemove={() => onRemoveTimer(entry.id)}
-              />
-            ))}
-          </div>
-        )}
-
         {/* Step counter + progress */}
         <div className="px-4 shrink-0">
-          <div className="flex items-center justify-between mb-1">
-            <p className="text-xs font-semibold text-[#9CA3AF] tracking-widest uppercase">
-              {t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
-            </p>
-            {!expanded && (
-              <button
-                onClick={openTimer}
-                aria-label={t('cooking.setTimer')}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#E5E7EB] bg-white text-xs font-medium text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus:outline-none"
-              >
-                <Timer size={13} aria-hidden="true" />
-                {t('cooking.timer')}
-              </button>
-            )}
-          </div>
+          <p className="text-xs font-semibold text-[#9CA3AF] tracking-widest uppercase mb-1">
+            {t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
+          </p>
           <div className="h-0.5 bg-[#F3F4F6] rounded-full overflow-hidden mb-2">
             <div
               className="h-full bg-[#16A34A] rounded-full transition-[width] duration-200 ease-out"
@@ -455,51 +134,11 @@ function CookingDrawer({
               direction === 'forward' ? 'step-enter-forward' : 'step-enter-back'
             }`}
           >
-            <StepText
-              text={currStep.text}
-              stepIndex={stepIndex}
-              onStartTimer={onStartTimer}
-              timers={timers}
-            />
+            {currStep.text}
           </p>
-
-          {/* Manual timer (expanded only) */}
-          {expanded && (
-            <div className="mt-3">
-              {showManualTimer ? (
-                <div className="flex items-center gap-2 mt-2">
-                  <button onClick={() => setManualMinutes((m) => Math.max(1, m - 1))}
-                    className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6]">
-                    <Minus size={12} />
-                  </button>
-                  <span className="text-sm font-bold tabular-nums w-12 text-center">
-                    {t('cooking.minutes', { count: manualMinutes })}
-                  </span>
-                  <button onClick={() => setManualMinutes((m) => Math.min(99, m + 1))}
-                    className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6]">
-                    <Plus size={12} />
-                  </button>
-                  <button onClick={handleManualTimer}
-                    className="px-3 py-1 rounded-lg bg-[#16A34A] text-white text-xs font-semibold hover:bg-[#15803d]">
-                    {t('common.confirm')}
-                  </button>
-                  <button onClick={() => setShowManualTimer(false)}
-                    className="text-[#9CA3AF] hover:text-[#6B7280]"><X size={14} /></button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setShowManualTimer(true)}
-                  className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
-                >
-                  <Clock size={12} />
-                  {t('cooking.setTimer')}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Navigation + stop cooking */}
+        {/* Navigation */}
         <div className="px-4 pt-2 shrink-0 flex gap-2">
           <button
             onClick={goPrev}
@@ -526,7 +165,6 @@ function CookingDrawer({
             </button>
           )}
         </div>
-
       </div>
     </div>
   )
@@ -608,8 +246,6 @@ function RecipeDetailPage() {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const skipFirstSave = useRef(true)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const { timers, startTimer, pauseTimer, resumeTimer, resetTimer, removeTimer } = useTimers(recipe.name)
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current) }, [])
 
@@ -707,14 +343,27 @@ function RecipeDetailPage() {
 
   const saveMultMutation = useMutation({
     mutationFn: (mult: number) =>
-      updatePlanItemMultiplier({ data: { planItemId: search.planItemId!, multiplier: mult } }),
+      Promise.all([
+        updatePlanItemMultiplier({ data: { planItemId: search.planItemId!, multiplier: mult } }),
+        upsertUserRecipePreference({ data: { recipeId: recipe.id, servings: mult } }),
+      ]),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['plan-items'] }),
   })
 
+  const savePrefMutation = useMutation({
+    mutationFn: (mult: number) =>
+      upsertUserRecipePreference({ data: { recipeId: recipe.id, servings: mult } }),
+  })
+
   useEffect(() => {
-    if (!isFromPlan) return
     if (skipFirstSave.current) { skipFirstSave.current = false; return }
-    const timer = setTimeout(() => saveMultMutation.mutate(multiplier), 600)
+    const timer = setTimeout(() => {
+      if (isFromPlan) {
+        saveMultMutation.mutate(multiplier)
+      } else {
+        savePrefMutation.mutate(multiplier)
+      }
+    }, 600)
     return () => clearTimeout(timer)
   }, [multiplier]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1039,12 +688,6 @@ function RecipeDetailPage() {
       {isCooking && (
         <CookingDrawer
           steps={recipe.recipe_steps}
-          timers={timers}
-          onStartTimer={startTimer}
-          onPauseTimer={pauseTimer}
-          onResumeTimer={resumeTimer}
-          onResetTimer={resetTimer}
-          onRemoveTimer={removeTimer}
           onExit={handleCookingDone}
           onStepChange={setCompletedUpToStep}
         />
