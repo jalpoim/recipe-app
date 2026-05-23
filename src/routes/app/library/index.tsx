@@ -1088,20 +1088,18 @@ function LibraryPage() {
               )
             })}
             <div className="flex-1" />
-            {/* Sort trigger — opens bottom sheet */}
-            {(() => {
-              const currentLabel = SORT_OPTIONS.find((s) => s.value === search.sort)
-              return (
-                <button
-                  onClick={() => setSortSheetOpen(true)}
-                  aria-label={`${t('sort.label')}: ${currentLabel ? t(currentLabel.labelKey) : ''}`}
-                  className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-[11px] font-medium text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus:outline-none"
-                >
-                  <ArrowUpDown size={10} aria-hidden="true" className="text-[#9CA3AF]" />
-                  {currentLabel ? t(currentLabel.labelKey) : ''}
-                </button>
-              )
-            })()}
+            {/* Sort trigger — icon only, dot when non-default */}
+            <button
+              onClick={() => setSortSheetOpen(true)}
+              aria-label={t('sort.label')}
+              className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
+                search.sort !== 'pcal'
+                  ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
+                  : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              <ArrowUpDown size={13} aria-hidden="true" />
+            </button>
           </div>
         </div>
 
