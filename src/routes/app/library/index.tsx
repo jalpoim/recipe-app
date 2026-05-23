@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowUpDown, Bookmark, BookmarkCheck, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -678,6 +678,63 @@ function FilterSheet({
   )
 }
 
+// ---------- SortSheet ----------
+
+const SORT_OPTIONS: { value: Sort; labelKey: string }[] = [
+  { value: 'pcal',     labelKey: 'sort.pcal' },
+  { value: 'popular',  labelKey: 'sort.popular' },
+  { value: 'protein',  labelKey: 'sort.protein' },
+  { value: 'calories', labelKey: 'sort.calories' },
+  { value: 'time',     labelKey: 'sort.time' },
+  { value: 'cooked',   labelKey: 'sort.cooked' },
+]
+
+function SortSheet({
+  open,
+  onOpenChange,
+  current,
+  onSelect,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  current: Sort
+  onSelect: (s: Sort) => void
+}) {
+  const { t } = useTranslation()
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-white rounded-t-2xl outline-none"
+          aria-label={t('sort.label')}
+        >
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+          </div>
+          <div className="px-4 pt-1 pb-2">
+            <p className="text-base font-semibold text-[#1A1A1A]">{t('sort.label')}</p>
+          </div>
+          <div className="pb-6">
+            {SORT_OPTIONS.map(({ value, labelKey }) => (
+              <button
+                key={value}
+                onClick={() => { onSelect(value); onOpenChange(false) }}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
+              >
+                <span className={current === value ? 'font-semibold text-[#16A34A]' : ''}>
+                  {t(labelKey)}
+                </span>
+                {current === value && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+              </button>
+            ))}
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  )
+}
+
 // ---------- LibraryPage ----------
 
 function LibraryPage() {
@@ -689,6 +746,7 @@ function LibraryPage() {
   const { showToast } = useToast()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
+  const [sortSheetOpen, setSortSheetOpen] = useState(false)
   const parentRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<LibrarySearch>) {
@@ -999,7 +1057,7 @@ function LibraryPage() {
             <button
               onClick={() => update({ modes: [] })}
               aria-pressed={search.modes.length === 0}
-              className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 search.modes.length === 0
                   ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1019,7 +1077,7 @@ function LibraryPage() {
                     update({ modes: next })
                   }}
                   aria-pressed={active}
-                  className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                     active
                       ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                       : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1030,29 +1088,17 @@ function LibraryPage() {
               )
             })}
             <div className="flex-1" />
-            {/* Sort cycling button — always as wide as current label, never over-sized */}
+            {/* Sort trigger — opens bottom sheet */}
             {(() => {
-              const SORTS: { value: Sort; label: string }[] = [
-                { value: 'pcal', label: 'P/Cal' },
-                { value: 'popular', label: t('sort.popular') },
-                { value: 'protein', label: t('sort.protein') },
-                { value: 'calories', label: t('sort.calories') },
-                { value: 'time', label: t('sort.time') },
-              ]
-              const currentIdx = SORTS.findIndex((s) => s.value === search.sort)
-              const currentLabel = SORTS[currentIdx]?.label ?? 'P/Cal'
-              function cycleSort() {
-                const next = SORTS[(currentIdx + 1) % SORTS.length]
-                update({ sort: next.value })
-              }
+              const currentLabel = SORT_OPTIONS.find((s) => s.value === search.sort)
               return (
                 <button
-                  onClick={cycleSort}
-                  aria-label={`${t('sort.label')}: ${currentLabel}`}
+                  onClick={() => setSortSheetOpen(true)}
+                  aria-label={`${t('sort.label')}: ${currentLabel ? t(currentLabel.labelKey) : ''}`}
                   className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-[11px] font-medium text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus:outline-none"
                 >
                   <ArrowUpDown size={10} aria-hidden="true" className="text-[#9CA3AF]" />
-                  {currentLabel}
+                  {currentLabel ? t(currentLabel.labelKey) : ''}
                 </button>
               )
             })()}
@@ -1130,6 +1176,13 @@ function LibraryPage() {
         allIngredientNames={meta?.ingredients ?? []}
         onUpdate={update}
         onClear={clearFilters}
+      />
+
+      <SortSheet
+        open={sortSheetOpen}
+        onOpenChange={setSortSheetOpen}
+        current={search.sort}
+        onSelect={(s) => update({ sort: s })}
       />
 
       {/* FAB */}
