@@ -999,7 +999,7 @@ function LibraryPage() {
             <button
               onClick={() => update({ modes: [] })}
               aria-pressed={search.modes.length === 0}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+              className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 search.modes.length === 0
                   ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1019,7 +1019,7 @@ function LibraryPage() {
                     update({ modes: next })
                   }}
                   aria-pressed={active}
-                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  className={`text-[11px] px-2 py-0.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                     active
                       ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                       : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1030,33 +1030,32 @@ function LibraryPage() {
               )
             })}
             <div className="flex-1" />
-            {/* Sort select — tight right padding so chevron hugs the text */}
-            <div className="relative shrink-0 flex items-center">
-              <ArrowUpDown
-                size={10}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-              />
-              <select
-                value={search.sort}
-                onChange={(e) => update({ sort: e.target.value as Sort })}
-                aria-label={t('sort.label')}
-                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-5 pr-4 py-1 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
-              >
-                <option value="pcal">P/Cal</option>
-                <option value="popular">{t('sort.popular')}</option>
-                <option value="protein">{t('sort.protein')}</option>
-                <option value="calories">{t('sort.calories')}</option>
-                <option value="time">{t('sort.time')}</option>
-              </select>
-              <svg
-                width="8" height="8" viewBox="0 0 10 10"
-                aria-hidden="true"
-                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-              >
-                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            </div>
+            {/* Sort cycling button — always as wide as current label, never over-sized */}
+            {(() => {
+              const SORTS: { value: Sort; label: string }[] = [
+                { value: 'pcal', label: 'P/Cal' },
+                { value: 'popular', label: t('sort.popular') },
+                { value: 'protein', label: t('sort.protein') },
+                { value: 'calories', label: t('sort.calories') },
+                { value: 'time', label: t('sort.time') },
+              ]
+              const currentIdx = SORTS.findIndex((s) => s.value === search.sort)
+              const currentLabel = SORTS[currentIdx]?.label ?? 'P/Cal'
+              function cycleSort() {
+                const next = SORTS[(currentIdx + 1) % SORTS.length]
+                update({ sort: next.value })
+              }
+              return (
+                <button
+                  onClick={cycleSort}
+                  aria-label={`${t('sort.label')}: ${currentLabel}`}
+                  className="shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#E5E7EB] bg-[#F9FAFB] text-[11px] font-medium text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus:outline-none"
+                >
+                  <ArrowUpDown size={10} aria-hidden="true" className="text-[#9CA3AF]" />
+                  {currentLabel}
+                </button>
+              )
+            })()}
           </div>
         </div>
 
