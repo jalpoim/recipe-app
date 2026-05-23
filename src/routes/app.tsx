@@ -61,9 +61,21 @@ function BottomNav() {
     prevTabRef.current = to
   }
 
+  const activeTabIndex = tabs.findIndex((tab) => pathname.startsWith(tab.to))
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] pb-safe">
-      <div className="flex items-stretch max-w-md mx-auto">
+      <div className="relative max-w-md mx-auto">
+        {/* Sliding green indicator */}
+        <div
+          aria-hidden="true"
+          className="absolute top-0 left-0 h-0.5 bg-[#16A34A] transition-[transform] duration-200 ease-in-out motion-reduce:transition-none"
+          style={{
+            width: `${100 / tabs.length}%`,
+            transform: `translateX(${Math.max(0, activeTabIndex) * 100}%)`,
+          }}
+        />
+      <div className="flex items-stretch">
         {tabs.map((tab) => {
           const isActive = pathname.startsWith(tab.to)
           const Icon = tab.icon
@@ -103,6 +115,7 @@ function BottomNav() {
             </Link>
           )
         })}
+      </div>
       </div>
     </nav>
   )

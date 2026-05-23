@@ -71,6 +71,53 @@ body {
   }
 }
 
+/* Cooking step slide */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .step-enter-forward { animation: slide-in-right 220ms ease both; }
+  .step-enter-back    { animation: slide-in-left  220ms ease both; }
+}
+
+/* "I Cooked This" bounce */
+@keyframes cooked-bounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .cooked-success { animation: cooked-bounce 300ms ease both; }
+}
+
+/* Shopping list animated strikethrough */
+.item-text { position: relative; }
+.item-text::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1px;
+  background: #9CA3AF;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 250ms ease;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .item-text.item-checked::after { transform: scaleX(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .item-text.item-checked { text-decoration: line-through; }
+}
+
+[data-theme="dark"] .item-text::after { background: #71717A; }
+
 /* Dark mode */
 [data-theme="dark"] {
   color-scheme: dark;

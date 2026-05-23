@@ -346,6 +346,7 @@ function CookingMode({
 }) {
   const { t } = useTranslation()
   const [stepIndex, setStepIndex] = useState(0)
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward')
   const [showIngredients, setShowIngredients] = useState(false)
   const [timerOpen, setTimerOpen] = useState(false)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
@@ -374,13 +375,22 @@ function CookingMode({
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
 
+  function navigateTo(index: number) {
+    setDirection(index > stepIndex ? 'forward' : 'back')
+    setStepIndex(index)
+  }
+
   function goNext() {
     if (isLast) { onFinished ? onFinished() : onExit(); return }
+    setDirection('forward')
     setStepIndex((i) => i + 1)
   }
 
   function goPrev() {
-    if (!isFirst) setStepIndex((i) => i - 1)
+    if (!isFirst) {
+      setDirection('back')
+      setStepIndex((i) => i - 1)
+    }
   }
 
   return (
@@ -429,7 +439,10 @@ function CookingMode({
           <p className="text-xs font-semibold text-[#9CA3AF] tracking-widest uppercase">
             {t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
           </p>
-          <p className="text-xl font-medium text-[#1A1A1A] leading-relaxed text-center">
+          <p
+            key={stepIndex}
+            className={`text-xl font-medium text-[#1A1A1A] leading-relaxed text-center ${direction === 'forward' ? 'step-enter-forward' : 'step-enter-back'}`}
+          >
             {currStep.text}
           </p>
         </div>
@@ -467,7 +480,7 @@ function CookingMode({
           {steps.map((_, i) => (
             <button
               key={i}
-              onClick={() => setStepIndex(i)}
+              onClick={() => navigateTo(i)}
               aria-label={t('cooking.stepDotLabel', { n: i + 1 })}
               className={`rounded-full transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 i === stepIndex
@@ -599,6 +612,7 @@ function RecipeDetailPage() {
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [lastCookLogId, setLastCookLogId] = useState<string | null>(null)
   const [cookDebounced, setCookDebounced] = useState(false)
+  const [cookIconBouncing, setCookIconBouncing] = useState(false)
   const skipFirstSave = useRef(true)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -617,6 +631,7 @@ function RecipeDetailPage() {
     mutationFn: () => logRecipeCooked({ data: { recipeId: recipe.id, source: 'manual' } }),
     onSuccess: (row) => {
       setLastCookLogId(row.id)
+      setCookIconBouncing(true)
       qc.invalidateQueries({ queryKey: ['cook-counts', recipe.id] })
       showToast(t('recipe.logCookedSuccess'), 'success')
       setCookDebounced(true)
@@ -906,7 +921,13 @@ function RecipeDetailPage() {
               disabled={logCookMutation.isPending || cookDebounced}
               className="w-full rounded-2xl bg-[#f0fdf4] dark:bg-[#16a34a]/10 border border-[#bbf7d0] dark:border-[#16a34a]/25 py-4 flex items-center justify-center gap-2 text-[#15803d] dark:text-[#4ade80] text-sm font-semibold disabled:opacity-50 hover:bg-[#dcfce7] dark:hover:bg-[#16a34a]/20 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
-              <CheckCircle2 size={17} aria-hidden="true" />
+              <span
+                className={`inline-block ${cookIconBouncing ? 'cooked-success' : ''}`}
+                onAnimationEnd={() => setCookIconBouncing(false)}
+                aria-hidden="true"
+              >
+                <CheckCircle2 size={17} aria-hidden="true" />
+              </span>
               {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
             </button>
             {lastCookLogId && (
@@ -985,7 +1006,7 @@ function RecipeDetailPage() {
             <button
               onClick={() => addMutation.mutate()}
               disabled={addMutation.isPending}
-              className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] active:scale-[0.97] transition-[transform,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
               {addMutation.isPending ? t('recipe.adding') : t('recipe.addToPlan')}
             </button>

@@ -164,8 +164,8 @@ function CheckRow({
         {partial && !checked && <div className="w-2 h-0.5 bg-[#16A34A] rounded-full" />}
       </span>
       <span
-        className={`flex-1 text-sm transition-colors ${
-          checked ? 'line-through text-[#9CA3AF]' : partial ? 'text-[#6B7280]' : 'text-[#1A1A1A] dark:text-[#F5F5F5]'
+        className={`flex-1 text-sm transition-colors item-text ${
+          checked ? 'item-checked text-[#9CA3AF]' : partial ? 'text-[#6B7280]' : 'text-[#1A1A1A] dark:text-[#F5F5F5]'
         }`}
       >
         {display}
