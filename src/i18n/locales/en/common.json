@@ -206,6 +206,23 @@
     "semana": "Weekday",
     "verão": "Summer"
   },
+  "cookHistory": {
+    "title": "Cook History",
+    "timesThisWeek_one": "{{count}} time this week",
+    "timesThisWeek_other": "{{count}} times this week",
+    "nothingYet": "Nothing cooked yet — tap \"I Cooked This\" on any recipe",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "days": {
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    }
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",

@@ -601,7 +601,7 @@ function LibraryPage() {
   const parentRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<LibrarySearch>) {
-    navigate({ search: (prev) => ({ ...prev, ...patch }) })
+    navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })
   }
 
   function openSheet(section: SheetSection) {
@@ -621,7 +621,7 @@ function LibraryPage() {
   }
 
   const [localQ, setLocalQ] = useState(search.q)
-  const debouncedQ = useDebounce(localQ, 300)
+  const debouncedQ = useDebounce(localQ, 500)
 
   useEffect(() => {
     if (debouncedQ !== search.q) {

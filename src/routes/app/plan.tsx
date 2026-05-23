@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { capture } from '../../lib/analytics'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { X, Clock, ChevronRight } from 'lucide-react'
+import { X, Clock, ChevronRight, CalendarDays, ChevronLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useToast } from '../../components/Toast'
+import { Drawer } from 'vaul'
 import {
   fetchPlanItems,
   fetchActivePlanWithCount,
@@ -12,6 +13,8 @@ import {
   updatePlanItemMultiplier,
   archiveAndCreatePlan,
 } from '../../lib/supabase/plan-queries'
+import { fetchCookLog } from '../../lib/supabase/cook-log-queries'
+import type { CookLogWithRecipe } from '../../lib/supabase/cook-log-queries'
 import type { PlanItemWithRecipe, ActivePlanWithCount, Recipe } from '../../types/db'
 
 function PlanSkeleton() {
@@ -164,6 +167,177 @@ function PlanItemCard({
   )
 }
 
+// ---------- date helpers ----------
+
+function getWeekBounds(offset: number): { start: Date; end: Date } {
+  const now = new Date()
+  const dayOfWeek = now.getDay() // 0=Sun, 1=Mon…
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7) + offset * 7)
+  monday.setHours(0, 0, 0, 0)
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  sunday.setHours(23, 59, 59, 999)
+  return { start: monday, end: sunday }
+}
+
+function toLocalDateStr(isoStr: string) {
+  const d = new Date(isoStr)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function formatDateHeading(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00')
+  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
+// ---------- CookHistorySheet ----------
+
+function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+  const { t } = useTranslation()
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  const { data: cookLog = [] } = useQuery({
+    queryKey: ['cook-log'],
+    queryFn: fetchCookLog,
+    staleTime: 2 * 60 * 1000,
+    enabled: open,
+  })
+
+  const { start, end } = useMemo(() => getWeekBounds(weekOffset), [weekOffset])
+
+  const weekEntries = useMemo(
+    () => cookLog.filter((e) => {
+      const d = new Date(e.cooked_at)
+      return d >= start && d <= end
+    }),
+    [cookLog, start, end],
+  )
+
+  // Day strip: Mon=0 … Sun=6
+  const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+  const stripDays = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(start)
+      d.setDate(start.getDate() + i)
+      const dateStr = toLocalDateStr(d.toISOString())
+      const hasEntry = weekEntries.some((e) => toLocalDateStr(e.cooked_at) === dateStr)
+      return { key: DAY_KEYS[i], hasEntry, date: d }
+    })
+  }, [start, weekEntries])
+
+  // Group entries by date, most recent first
+  const grouped = useMemo(() => {
+    const map = new Map<string, CookLogWithRecipe[]>()
+    for (const entry of weekEntries) {
+      const key = toLocalDateStr(entry.cooked_at)
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(entry)
+    }
+    return Array.from(map.entries()).sort((a, b) => b[0].localeCompare(a[0]))
+  }, [weekEntries])
+
+  const hasOlderEntries = cookLog.some((e) => new Date(e.cooked_at) < start)
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-[20px] bg-[#FAFAF8] outline-none"
+          aria-label={t('cookHistory.title')}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="h-1 w-10 rounded-full bg-[#E5E7EB]" aria-hidden="true" />
+          </div>
+
+          <div className="px-4 pb-4" style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between py-3">
+              <h2 className="text-base font-bold text-[#1A1A1A]">{t('cookHistory.title')}</h2>
+              <button
+                onClick={() => setWeekOffset((o) => o - 1)}
+                disabled={!hasOlderEntries && weekOffset === 0}
+                aria-label={t('cookHistory.prevWeek')}
+                className="flex items-center gap-1 text-xs text-[#6B7280] disabled:opacity-30 hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded-lg px-1 py-0.5"
+              >
+                <ChevronLeft size={14} aria-hidden="true" />
+                {t('cookHistory.prevWeek')}
+              </button>
+              {weekOffset < 0 && (
+                <button
+                  onClick={() => setWeekOffset((o) => o + 1)}
+                  aria-label={t('cookHistory.nextWeek')}
+                  className="flex items-center gap-1 text-xs text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded-lg px-1 py-0.5"
+                >
+                  {t('cookHistory.nextWeek')}
+                  <ChevronLeft size={14} className="rotate-180" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
+            {/* Week strip */}
+            <div className="grid grid-cols-7 gap-1 mb-3">
+              {stripDays.map(({ key, hasEntry, date }) => {
+                const isToday = toLocalDateStr(date.toISOString()) === toLocalDateStr(new Date().toISOString())
+                return (
+                  <div key={key} className="flex flex-col items-center gap-1">
+                    <span className={`text-[10px] font-medium ${isToday ? 'text-[#16A34A]' : 'text-[#9CA3AF]'}`}>
+                      {t(`cookHistory.days.${key}`)}
+                    </span>
+                    <div
+                      className={`h-5 w-5 rounded-full border-2 ${
+                        hasEntry
+                          ? 'bg-[#16A34A] border-[#16A34A]'
+                          : 'bg-white border-[#E5E7EB]'
+                      } ${isToday && !hasEntry ? 'border-[#16A34A]/40' : ''}`}
+                      aria-hidden="true"
+                    />
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Count */}
+            <p className="text-xs text-[#6B7280] mb-4">
+              {t('cookHistory.timesThisWeek', { count: weekEntries.length })}
+            </p>
+
+            {/* Divider */}
+            <div className="border-t border-[#F0F0EE] mb-4" />
+
+            {/* Log */}
+            {grouped.length === 0 ? (
+              <p className="text-sm text-[#9CA3AF] text-center py-6">{t('cookHistory.nothingYet')}</p>
+            ) : (
+              <div className="space-y-4">
+                {grouped.map(([dateStr, entries]) => (
+                  <div key={dateStr}>
+                    <p className="text-xs font-semibold text-[#6B7280] mb-2 capitalize">
+                      {formatDateHeading(dateStr)}
+                    </p>
+                    <div className="space-y-1.5">
+                      {entries.map((entry) => (
+                        <div
+                          key={entry.id}
+                          className="rounded-xl bg-white border border-[#F0F0EE] px-3 py-2 text-sm text-[#1A1A1A] font-medium"
+                        >
+                          {entry.recipe_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  )
+}
+
 // ---------- PlanPage ----------
 
 function PlanPage() {
@@ -171,6 +345,7 @@ function PlanPage() {
   const qc = useQueryClient()
   const { showToast } = useToast()
   const [confirmClear, setConfirmClear] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   const { data: plan, isLoading: isPlanLoading } = useQuery({
     queryKey: ['active-plan'],
@@ -248,14 +423,25 @@ function PlanPage() {
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
-        <div className="py-5">
-          <h1 className="text-xl font-bold text-[#1A1A1A]">{t('plan.title')}</h1>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">
-            {items.length === 0
-              ? t('plan.noItems')
-              : t('plan.itemCount', { count: items.length })}
-          </p>
+        <div className="py-5 flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-[#1A1A1A]">{t('plan.title')}</h1>
+            <p className="text-xs text-[#9CA3AF] mt-0.5">
+              {items.length === 0
+                ? t('plan.noItems')
+                : t('plan.itemCount', { count: items.length })}
+            </p>
+          </div>
+          <button
+            onClick={() => setHistoryOpen(true)}
+            aria-label={t('cookHistory.title')}
+            className="mt-1 p-2 rounded-xl text-[#6B7280] hover:text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+          >
+            <CalendarDays size={20} aria-hidden="true" />
+          </button>
         </div>
+
+        <CookHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
 
         {/* Empty state */}
         {items.length === 0 ? (

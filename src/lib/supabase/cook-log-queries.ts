@@ -2,6 +2,8 @@ import { createServerFn } from '@tanstack/react-start'
 import type { CookLog } from '../../types/db'
 import { makeClient } from './client-server'
 
+export type CookLogWithRecipe = CookLog & { recipe_name: string }
+
 // POST: log a recipe as cooked
 export const logRecipeCooked = createServerFn({ method: 'POST' })
   .inputValidator(
@@ -60,20 +62,23 @@ export const deleteCookLogEntry = createServerFn({ method: 'POST' })
 
 // GET: fetch cook log for current user (most recent first, limit 50)
 export const fetchCookLog = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<CookLog[]> => {
+  async (): Promise<CookLogWithRecipe[]> => {
     const supabase = makeClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return []
     const user = session.user
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase
       .from('cook_log')
-      .select('*')
+      .select('*, recipes(name)')
       .eq('user_id', user.id)
       .order('cooked_at', { ascending: false })
-      .limit(50)
+      .limit(50) as unknown as Promise<{ data: (CookLog & { recipes: { name: string } | null })[] | null; error: { message: string } | null }>)
     if (error) throw new Error(error.message)
-    return data ?? []
+    return (data ?? []).map((row) => ({
+      ...row,
+      recipe_name: row.recipes?.name ?? '',
+    }))
   },
 )
 

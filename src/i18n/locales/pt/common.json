@@ -206,6 +206,23 @@
     "semana": "Dia a dia",
     "verão": "Verão"
   },
+  "cookHistory": {
+    "title": "Histórico de cozinha",
+    "timesThisWeek_one": "{{count}} vez esta semana",
+    "timesThisWeek_other": "{{count}} vezes esta semana",
+    "nothingYet": "Ainda nada cozinhado — toca em \"Cozinhei isto\" numa receita",
+    "prevWeek": "Semana anterior",
+    "nextWeek": "Próxima semana",
+    "days": {
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb",
+      "sun": "Dom"
+    }
+  },
   "settings": {
     "title": "Definições",
     "language": "Idioma",

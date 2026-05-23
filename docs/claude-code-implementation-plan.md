@@ -1591,6 +1591,478 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
+### What to do next — Session 14 (micro-animations polish)
+
+---
+
+## Session 14 — Micro-animations polish
+
+**Goal:** Add targeted animations to give the app a premium feel. All animations use `transform`/`opacity` only (compositor-friendly). Every animation has a `motion-safe:` or `@media (prefers-reduced-motion: no-preference)` guard. No libraries — pure CSS + minimal React state.
+
+---
+
+### 1. Cooking step slide transition (`$recipeId.tsx` — `CookingMode`)
+
+When `stepIndex` changes, the current step text slides out left/right and the new step slides in from the opposite direction. Track `direction` ('forward' | 'back') alongside `stepIndex`. Apply `translateX` transition on the step text container. Must be interruptible — use CSS `transition` (not JS `setTimeout` sequences) so mid-animation taps respond immediately.
+
+```css
+/* in styles.css */
+@media (prefers-reduced-motion: no-preference) {
+  .step-enter-forward  { animation: slide-in-right 220ms ease both; }
+  .step-enter-back     { animation: slide-in-left  220ms ease both; }
+}
+@keyframes slide-in-right { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slide-in-left  { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+```
+
+### 2. "I Cooked This" success bounce (`$recipeId.tsx`)
+
+On successful log, the `CheckCircle2` icon briefly scales up then back: `scale(1) → scale(1.3) → scale(1)` over 300ms. Implemented as a CSS keyframe applied for one cycle when `logCookMutation.isSuccess` is true. Reset after animation ends via `onAnimationEnd`.
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .cooked-success { animation: cooked-bounce 300ms ease both; }
+}
+@keyframes cooked-bounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+```
+
+### 3. Shopping list strikethrough (`shopping.tsx`)
+
+When an item is checked, a green pseudo-element overlay grows `scaleX` from 0 to 1 over 250ms on the text. Implemented with a `::after` pseudo-element using `transform-origin: left; transform: scaleX(0→1)`.
+
+```css
+@media (prefers-reduced-motion: no-preference) {
+  .item-checked { position: relative; }
+  .item-checked::after {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    width: 100%; height: 1px;
+    background: #9CA3AF;
+    transform-origin: left;
+    transform: scaleX(1);
+    transition: transform 250ms ease;
+  }
+  .item-unchecked::after {
+    transform: scaleX(0);
+  }
+}
+```
+
+### 4. Add to plan confirmation (`$recipeId.tsx`)
+
+When `addMutation.isSuccess`, the "Add to plan" button briefly scales down to `scale(0.97)` then back to `scale(1)` with a 150ms ease. Signals a confirmed tap. Pure CSS `active:scale-[0.97] transition-transform`.
+
+### 5. Tab bar active indicator slide (`app.tsx` — `BottomNav`)
+
+A green pill underline or dot that slides horizontally between tabs rather than instantly recolouring. Use `transform: translateX()` on a shared indicator element positioned absolutely, calculated from the active tab index.
+
+---
+
+### Notes
+- All `transition` declarations must list explicit properties — never `transition: all`
+- Set `transform-origin` explicitly where needed (especially pseudo-elements)
+- Test with iOS "Reduce Motion" enabled — all animations must be absent when set
+
+---
+
+### Verify before moving on
+- Cooking steps slide left/right on Next/Previous
+- "I Cooked This" icon bounces on tap
+- Shopping list items animate a strikethrough on check
+- Add to plan button gives tap feedback
+- Tab bar indicator slides smoothly between tabs
+- All animations absent when "Reduce Motion" is enabled
+
+---
+
+### What to do next — Session 13 (recipe images)
+
+---
+
+---
+
+> **Session 13 is split into three focused sub-sessions (13a → 13b → 13c). Run them in order.**
+
+---
+
+## Architectural decisions shared across Sessions 13a–13c (locked)
+
+- **Image storage:** Supabase Storage. Two buckets: `recipe-images` (public CDN) and `recipe-images-pending` (private, awaiting moderation).
+- **Compression:** hero 1200px wide / 85% JPEG (~500–600KB); thumb 400×400px / 80% JPEG (~40–70KB). Library: `@filencloud/browser-image-compression`. Do NOT use `donaldcwl/browser-image-compression` — unmaintained since 2023.
+- **No cook-log photo flow** — images only uploaded at recipe creation time.
+- **Visibility:** user recipes default `visibility = 'private'`. Opt-in toggle to publish. Public recipes require moderation before appearing in the library.
+- **Moderation:** Sightengine Edge Function on Storage upload. Score > 0.85 → auto-reject. Below → `pending_review`. `trust_level = 1` (after 3 approved) → auto-approved.
+- **Community reporting:** 3 unique reports → auto-hide + flag for review.
+- **Delete:** soft delete (`deleted_at` timestamp). Queries filter `deleted_at IS NOT NULL`. Hard-purge deferred.
+- **i18n:** user recipes stored in translation tables with a single language row (user's active language). Falls back gracefully on language switch.
+- **Product direction:** community-enriched library, NOT a social network. No feed, no following, no notifications. Social layer only incentivises quality recipe creation.
+
+---
+
+## Session 13a — Schema, image storage, PDF extraction
+
+**Goal:** All database schema changes land, Storage buckets created, system recipe images extracted from PDFs and uploaded. No UI changes yet.
+
+---
+
+### Schema changes
+
+```sql
+-- recipes
+alter table recipes add column if not exists image_url         text;
+alter table recipes add column if not exists image_thumb_url   text;
+alter table recipes add column if not exists moderation_status text not null default 'approved'
+  check (moderation_status in ('approved', 'pending_review', 'rejected'));
+alter table recipes add column if not exists deleted_at        timestamptz;
+
+-- profiles
+create table profiles (
+  user_id      uuid primary key references auth.users(id) on delete cascade,
+  username     text unique not null,
+  display_name text not null,
+  avatar_url   text,
+  bio          text,
+  created_at   timestamptz not null default now()
+);
+alter table profiles enable row level security;
+create policy "profiles_select" on profiles for select to authenticated using (true);
+create policy "profiles_update" on profiles for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+-- auto-create profile on sign-up (trigger on auth.users INSERT)
+-- username: joao_c from Google full_name, user_a81f for magic link
+-- display_name: from full_name or email prefix
+-- avatar_url: from Google picture claim
+
+-- user_recipe_interactions
+create table user_recipe_interactions (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  recipe_id  uuid not null references recipes(id) on delete cascade,
+  type       text not null check (type in ('like', 'save', 'hide')),
+  created_at timestamptz not null default now(),
+  unique (user_id, recipe_id, type)
+);
+alter table user_recipe_interactions enable row level security;
+create policy "interactions_select" on user_recipe_interactions for select to authenticated
+  using ((select auth.uid()) = user_id);
+create policy "interactions_insert" on user_recipe_interactions for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+create policy "interactions_delete" on user_recipe_interactions for delete to authenticated
+  using ((select auth.uid()) = user_id);
+
+-- recipe_reports
+create table recipe_reports (
+  id         uuid primary key default gen_random_uuid(),
+  recipe_id  uuid not null references recipes(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (recipe_id, user_id)
+);
+alter table recipe_reports enable row level security;
+create policy "reports_insert" on recipe_reports for insert to authenticated
+  with check ((select auth.uid()) = user_id);
+
+-- ingredients nutrition columns
+alter table ingredients
+  add column if not exists calories_per_100g numeric,
+  add column if not exists protein_per_100g  numeric,
+  add column if not exists carbs_per_100g    numeric,
+  add column if not exists fat_per_100g      numeric;
+```
+
+### RLS on recipes (update existing policy)
+- System recipes (`owner_id IS NULL`): visible to all authenticated, regardless of `moderation_status`
+- User recipes (`owner_id = user_id`): always visible to owner
+- User public recipes (`visibility = 'public'`): visible only when `moderation_status = 'approved'`
+- Soft-deleted recipes: excluded from all queries (`deleted_at IS NULL`)
+
+### Storage buckets
+- Create `recipe-images` (public)
+- Create `recipe-images-pending` (private)
+- Storage layout: `{bucketName}/{recipeId}/hero.jpg` and `{recipeId}/thumb.jpg`
+
+### Image pipeline (Edge Function: `moderate-recipe-image`)
+```
+Client uploads hero + thumb to recipe-images-pending
+  → Storage webhook triggers Edge Function
+  → Sightengine scan on hero
+  → score > 0.85 → delete both files, set moderation_status = 'rejected'
+  → score ≤ 0.85 → move both to recipe-images (public)
+                    set moderation_status = 'pending_review'
+  → trust_level = 1 (from app_metadata) → auto-set moderation_status = 'approved'
+```
+
+### PDF image extraction script
+```bash
+pdfimages -j cookbook.pdf output-dir/
+```
+Script: `scripts/extract-cookbook-images.ts`
+- Extracts images from Cooking Abs PDF (116 recipes) and Joe x Fitness PDF (~50 recipes)
+- Resizes to hero (1200px, 85%) + thumb (400×400px, 80%) using `@filencloud/browser-image-compression`
+- Uploads both variants to `recipe-images` bucket (bypasses moderation — system images are pre-approved)
+- Updates `recipes.image_url` and `recipes.image_thumb_url`
+- Idempotent — skips recipes that already have `image_url` set
+
+### Nutrition seed script
+Script: `scripts/seed-ingredient-nutrition.ts`
+- Downloads USDA FoodData Central Foundation Foods + SR Legacy datasets (free CSV)
+- Matches against existing `ingredients` rows by name
+- Populates `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`
+- Idempotent — skips rows already populated
+
+### Verify before moving on (13a)
+- All schema changes applied without errors
+- `profiles`, `user_recipe_interactions`, `recipe_reports` tables exist with correct RLS
+- Storage buckets `recipe-images` and `recipe-images-pending` created
+- `moderate-recipe-image` Edge Function deployed and reachable
+- PDF extraction script runs to completion; spot-check 5 recipes have `image_url` populated
+- Nutrition seed script runs; spot-check `chicken` and `rice` rows have non-null `calories_per_100g`
+
+---
+
+### What to do next — Session 13b (recipe creation form)
+
+---
+
+## Session 13b — Recipe creation form
+
+**Goal:** Users can create their own recipes. FAB on the library tab opens a full-page creation form. On save, navigate to the new recipe's detail page.
+
+---
+
+### Entry point
+- FAB: `+` button fixed bottom-right of library tab, above the bottom nav (`z-20`, `right-4 bottom-20`)
+- Tapping navigates to `/app/library/create` (new route, full page — not a modal)
+- FAB hidden on `/app/library/create` itself
+
+### Form layout (`/app/library/create`)
+Single page, collapsible sections. Header: back chevron + "New recipe" title + "Save" button (disabled until required fields filled).
+
+**Required fields (always visible, above the fold):**
+- Recipe name (text input)
+- Proteins (multi-select chip row from existing slug list — min 1 required)
+- Ingredients section (always expanded — min 1 required)
+- Steps section (always expanded — min 1 required)
+
+**Optional sections (collapsed by default, tap header to expand):**
+- Image (upload picker + preview)
+- Time — "Total time (min)" number input
+- Tags (taxonomy sections: Method, Cuisine, Diet, Meal Type, Context — multi-select chips)
+- Macros (see below)
+- Publish toggle — "Share with community" (default OFF)
+
+**Servings:** always visible below recipe name. Number input, default 1. Required.
+
+### Ingredient rows
+Each row: `[ingredient combobox] [qty input] [unit selector] [× remove]`
+- Combobox searches `ingredients` table; shows top 5 matches as dropdown
+- Selecting a match sets `ingredient_id` and auto-fills default unit
+- No match → free text; `ingredient_id = null`; included in Haiku estimation batch
+- "Add ingredient" button appends a new empty row
+
+### Step rows
+Each row: numbered label + textarea
+- "Add step" button appends a new row; steps auto-numbered
+- No drag-to-reorder in v1
+
+### Macros section
+- Shows 4 number inputs: Calories, Protein, Carbs, Fat (all optional)
+- "Estimate macros" button — calls Claude Haiku once for all free-text ingredients; populates inputs with estimates; user can edit before saving
+- Matched USDA ingredients contribute automatically; only unmatched go to Haiku
+- Macro calculation: `macros_total = true` always for user-created recipes (totals / servings for per-serving display)
+
+### Publish toggle
+- "Share with community" toggle (default OFF)
+- When ON: saving submits to moderation queue (`moderation_status = 'pending_review'`)
+- After creation, owner can tap "Make public" on detail page at any time
+- Username confirmation sheet on first publish: "Your recipe will be published as **[username]** — want to change this?" with edit field
+
+### Save behaviour
+- Recipe saved as `visibility = 'private'` first regardless of toggle
+- If toggle ON: also sets `visibility = 'public'` + triggers moderation flow
+- On success: navigate to `/app/library/:recipeId`
+
+### Edit flow (from detail page)
+- "Edit" button visible only to recipe owner on detail page
+- Navigates to `/app/library/:recipeId/edit` — same form, pre-populated
+- Saving a public recipe re-sets `moderation_status = 'pending_review'`; recipe hidden from public library during re-moderation; owner's private copy always accessible
+
+### i18n
+- Recipe name, ingredient names, step text stored in `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` with `language = current i18n language`
+
+### Verify before moving on (13b)
+- FAB visible on library, hidden on create form
+- Required field validation prevents saving with empty name/proteins/ingredients/steps
+- Ingredient combobox shows matches from DB; free text accepted when no match
+- "Estimate macros" calls Haiku and populates inputs correctly
+- Saved recipe appears in library under "Mine" chip, private by default
+- Publish toggle submits to moderation; recipe not visible in main library until approved
+- Username confirmation sheet appears on first publish attempt
+- Navigating to detail page after save shows the new recipe correctly
+- Edit form pre-populates and re-triggers moderation for public recipes
+
+---
+
+### What to do next — Session 13c (card redesign, likes/saves, profiles, Popular sort)
+
+---
+
+## Session 13c — Card redesign, likes/saves, profiles, Popular sort
+
+**Goal:** Redesign the recipe card to show thumbnails, likes, and creator info. Add like/save interactions. Add profile pages. Add "Popular" sort and "Mine"/"Saved" mode chips to the library.
+
+---
+
+### Redesigned recipe card
+
+```
+┌──────────────────────────────────────────┐
+│ [img] Frango Teriyaki           P/Cal ↑  │
+│       ⏱ 20min  🟢 Chicken               │
+│       ♥ 124    by João                  │  ← only for public user recipes
+│                                          │
+│  Cal    Pro    Carbs    Fat              │
+│  450    42g    28g      14g             │
+└──────────────────────────────────────────┘
+```
+
+- Thumbnail: 72×72px square left side, `rounded-xl object-cover`. Fallback = protein-coloured gradient placeholder
+- Like + creator row: hidden when like count = 0, recipe is private, or recipe is system
+- Creator row: not rendered at all for system recipes
+- No-macro state: macro grid hidden; space filled by up to 2 rows of tags; `P/Cal` badge hidden
+- Card height: `min-height` set to prevent layout shift across states
+- 3–4 cards visible per screen
+
+### Likes
+- Heart icon on recipe detail page. Toggling calls insert/delete on `user_recipe_interactions` type `'like'`
+- Like count shown on card (hidden when 0 or system recipe)
+- Works on ALL recipes — system and user-created
+- Like count column: materialised via a `like_count` column on `recipes` updated by a Postgres trigger on `user_recipe_interactions` insert/delete (avoids COUNT() on every card render)
+
+### Saves
+- Bookmark icon on recipe detail page. Toggling calls insert/delete type `'save'`
+- Private — no count shown publicly
+- Accessible via "Saved" mode chip in library
+
+### Hide
+- `type = 'hide'` in `user_recipe_interactions` — no UI in v1; feeds future recommendation filtering
+
+### Library mode chips
+- Two chips at the start of the filter chip row: `Saved` and `Mine`
+- Mode toggles — change the dataset, not the filters. Full search + tag filtering applies within each mode
+- `Mine`: `owner_id = current user` (private + public, excludes `deleted_at IS NOT NULL`)
+- `Saved`: joined to `user_recipe_interactions` type `'save'` for current user
+
+### Moderation status badge (owner-only)
+- Shown on recipe card and detail page header for the owner
+- States: "Pending review" (yellow) / "Rejected" (red). No badge when approved
+
+### Popular sort
+- New sort option: "Popular" (by `like_count DESC`)
+- Default sort for the main library when no filters active
+- Added to existing sort sheet alongside P/Cal, Protein, Calories, Time
+
+### Profile pages (`/app/profile/:username`)
+- Route: `/app/profile/$username` — accessible by tapping creator name on any card
+- Public content: display name, avatar, bio, grid of approved public recipes
+- Empty state: "No recipes published yet"
+- Settings → "Change username" links to profile edit sheet
+
+### Verify before moving on (13c)
+- Recipe cards show thumbnails; fallback gradient renders when no image
+- Like button toggles correctly; like count updates in real time
+- Save button toggles; recipe appears/disappears from "Saved" mode
+- "Mine" chip shows only the current user's recipes (private + public)
+- "Popular" sort orders by like count correctly
+- Clicking creator name navigates to their profile page
+- Moderation status badge visible to owner only; hidden for other users
+- `like_count` column updates via trigger — no N+1 COUNT() queries
+
+---
+
+### What to do next — Session 12 (cook history calendar)
+
+---
+
+## Session 12 — Cook history calendar on Plan tab
+
+**Goal:** Add a calendar icon to the top-right of the Plan tab that opens a bottom sheet showing the user's cook history as a weekly strip + scrollable log.
+
+**Data source:** `cook_log` table, `fetchCookLog()` server function. No schema changes needed.
+
+---
+
+### 1. Plan tab header change (`src/routes/app/plan/index.tsx`)
+
+Add a `CalendarCheck` (or `CalendarDays`) icon button to the top-right of the Plan header, alongside any existing icons. On tap: open a Vaul bottom sheet.
+
+---
+
+### 2. CookHistorySheet component
+
+New component (inline or separate file). Fetches cook log via `useQuery({ queryKey: ['cook-log'], queryFn: fetchCookLog })`.
+
+**Layout:**
+
+```
+┌─────────────────────────────────┐
+│  Cook History          [← week] │
+│                                 │
+│  M   T   W   T   F   S   S     │
+│  ●   ●   ○   ●   ○   ○   ○     │
+│                                 │
+│  3 times this week              │
+├─────────────────────────────────┤
+│  Thursday, May 22               │
+│  ┌──────────────────────────┐   │
+│  │ Frango Teriyaki          │   │
+│  └──────────────────────────┘   │
+└─────────────────────────────────┘
+```
+
+**Weekly strip:**
+- 7 columns (Mon–Sun), label + dot
+- Green filled dot (`bg-[#16A34A]`) = at least one entry on that day
+- Empty dot = no entries
+- Week state managed with `useState(weekOffset)` — 0 = current week, -1 = last week, etc.
+- `← week` button decrements offset; hide or disable when no older entries exist
+
+**Scrollable log:**
+- Group `cook_log` entries by local date
+- For each group: date heading + recipe name chips/cards
+- Most recent first
+- Only show entries in the currently selected week
+
+**i18n keys to add:**
+```json
+"cookHistory": {
+  "title": "Cook History",
+  "timesThisWeek_one": "{{count}} time this week",
+  "timesThisWeek_other": "{{count}} times this week",
+  "nothingYet": "Nothing cooked yet — tap \"I Cooked This\" on any recipe"
+}
+```
+
+---
+
+### Verify before moving on
+
+- Calendar icon visible on Plan tab header
+- Tapping opens sheet; weekly strip shows correct days
+- Days with cook log entries show green dots
+- Previous week navigation works
+- Sheet shows recipe names grouped by day
+- Works in both PT and EN
+
+---
+
 ### What to do next — Session 11 (cook log UI)
 
 Sessions 10.5 is fully done. Schema and server functions for Session 11 are also done. Only the UI remains:
