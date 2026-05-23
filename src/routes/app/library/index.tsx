@@ -83,7 +83,7 @@ type LibrarySearch = {
   tags: string[]
   ingredients: string[]
   sort: Sort
-  mode: LibraryMode
+  modes: LibraryMode[]
 }
 
 function CardSkeleton() {
@@ -148,9 +148,11 @@ export const Route = createFileRoute('/app/library/')({
     sort: (['pcal', 'protein', 'calories', 'time', 'popular', 'cooked'] as Sort[]).includes(search.sort as Sort)
       ? (search.sort as Sort)
       : 'pcal',
-    mode: (['all', 'mine', 'saved', 'curated'] as LibraryMode[]).includes(search.mode as LibraryMode)
-      ? (search.mode as LibraryMode)
-      : 'all',
+    modes: Array.isArray(search.modes)
+      ? (search.modes as string[]).filter((s): s is LibraryMode =>
+          (['mine', 'saved', 'curated'] as string[]).includes(s),
+        )
+      : [],
   }),
   component: LibraryPage,
 })
@@ -488,70 +490,14 @@ function FilterSheet({
                     {t(`proteins.${slug}`, slug)}
                   </button>
                 ))}
-              </div>
-              <button
-                aria-expanded={proteinsExpanded}
-                onClick={() => setProteinsExpanded((e) => !e)}
-                className="mt-2 text-xs text-[#16A34A] font-medium focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-              >
-                {proteinsExpanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
-              </button>
-            </div>
-
-            {/* Ingredientes */}
-            <div ref={ingredientsRef}>
-              <p className={sectionHeader}>{t('filters.ingredients')}</p>
-
-              {search.ingredients.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {search.ingredients.map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => removeIngredient(ing)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
-                    >
-                      {ing} <X size={10} aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <input
-                type="text"
-                value={ingSearch}
-                onChange={(e) => setIngSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && ingSearch.trim()) {
-                    addIngredient(ingSearch.trim())
-                    setIngSearch('')
-                  }
-                }}
-                placeholder={t('filters.searchIngredient')}
-                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-              />
-
-              {filteredIngs.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
-                  {filteredIngs.slice(0, 40).map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => addIngredient(ing)}
-                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                    >
-                      {ing}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
                 <button
-                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
-                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                  aria-expanded={proteinsExpanded}
+                  onClick={() => setProteinsExpanded((e) => !e)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                 >
-                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
+                  {proteinsExpanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
                 </button>
-              )}
+              </div>
             </div>
 
             {/* Tempo */}
@@ -640,6 +586,69 @@ function FilterSheet({
                 })}
               </div>
             </div>
+
+            {/* Ingredientes — last, so keyboard doesn't push other filters off-screen */}
+            <div ref={ingredientsRef}>
+              <p className={sectionHeader}>{t('filters.ingredients')}</p>
+
+              {search.ingredients.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {search.ingredients.map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => removeIngredient(ing)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
+                    >
+                      {ing} <X size={10} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <input
+                type="text"
+                value={ingSearch}
+                onChange={(e) => setIngSearch(e.target.value)}
+                onFocus={() => {
+                  if (!ingredientsRef.current || !scrollRef.current) return
+                  const containerTop = scrollRef.current.getBoundingClientRect().top
+                  const elTop = ingredientsRef.current.getBoundingClientRect().top
+                  const offset = scrollRef.current.scrollTop + (elTop - containerTop) - 16
+                  scrollRef.current.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && ingSearch.trim()) {
+                    addIngredient(ingSearch.trim())
+                    setIngSearch('')
+                  }
+                }}
+                placeholder={t('filters.searchIngredient')}
+                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+              />
+
+              {filteredIngs.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
+                  {filteredIngs.slice(0, 40).map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => addIngredient(ing)}
+                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    >
+                      {ing}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
+                <button
+                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
+                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                >
+                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* bottom action */}
@@ -718,7 +727,16 @@ function LibraryPage() {
     setLocalQ(search.q)
   }, [search.q])
 
-  // mode is in filterKey — changes trigger a full re-fetch
+  // Save scroll position on unmount (navigating to a recipe detail)
+  useEffect(() => {
+    return () => {
+      if (parentRef.current) {
+        sessionStorage.setItem('library_scroll', String(parentRef.current.scrollTop))
+      }
+    }
+  }, [])
+
+  // modes is in filterKey — changes trigger a full re-fetch
   // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
   // popular sort is also handled client-side over the loaded pages
   const filterKey = useMemo(
@@ -729,10 +747,10 @@ function LibraryPage() {
       tags: search.tags,
       ingredients: search.ingredients,
       q: deferredQ,
-      mode: search.mode,
+      modes: search.modes,
       lang,
     }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.mode, lang],
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang],
   )
 
   const {
@@ -751,7 +769,7 @@ function LibraryPage() {
           limit: PAGE_SIZE,
           cursor: (pageParam as LibraryCursor | null) ?? null,
           sort: search.sort,
-          mode: search.mode,
+          modes: search.modes,
           proteins: search.proteins,
           maxCal: search.maxCal,
           maxTime: search.maxTime,
@@ -789,6 +807,19 @@ function LibraryPage() {
         return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
     }
   }, [allRecipes, search.sort])
+
+  // Restore scroll position once recipes are available (after back navigation with cached data)
+  const hasRecipes = sortedRecipes.length > 0
+  useEffect(() => {
+    if (!hasRecipes || !parentRef.current) return
+    const saved = sessionStorage.getItem('library_scroll')
+    if (!saved) return
+    sessionStorage.removeItem('library_scroll')
+    const top = Number(saved)
+    requestAnimationFrame(() => {
+      if (parentRef.current) parentRef.current.scrollTop = top
+    })
+  }, [hasRecipes])
 
   // Library meta — proteins, tags, ingredient names — language-aware
   const { data: meta } = useQuery({
@@ -980,20 +1011,41 @@ function LibraryPage() {
 
           {/* Row 2: Mode chips + Settings */}
           <div className="flex items-center gap-1.5 mt-2.5">
-            {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
-              <button
-                key={m}
-                onClick={() => update({ mode: m })}
-                aria-pressed={search.mode === m}
-                className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                  search.mode === m
-                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                {t(`library.${m}`)}
-              </button>
-            ))}
+            {/* "Todas" — exclusive, active when nothing else is selected */}
+            <button
+              onClick={() => update({ modes: [] })}
+              aria-pressed={search.modes.length === 0}
+              className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                search.modes.length === 0
+                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              {t('library.all')}
+            </button>
+            {/* Multi-selectable mode chips */}
+            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
+              const active = search.modes.includes(m)
+              return (
+                <button
+                  key={m}
+                  onClick={() => {
+                    const next = active
+                      ? search.modes.filter((x) => x !== m)
+                      : [...search.modes, m]
+                    update({ modes: next })
+                  }}
+                  aria-pressed={active}
+                  className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                    active
+                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                  }`}
+                >
+                  {t(`library.${m}`)}
+                </button>
+              )
+            })}
             <div className="flex-1" />
             <Link
               to="/app/settings"
@@ -1051,7 +1103,7 @@ function LibraryPage() {
                         recipe={sortedRecipes[virtualItem.index]}
                         cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
                         isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
-                        showOwnerBadge={search.mode === 'all' || search.mode === 'saved'}
+                        showOwnerBadge={search.modes.length === 0 || search.modes.includes('saved')}
                         onToggleSave={(e) => {
                           e.preventDefault()
                           const r = sortedRecipes[virtualItem.index]

@@ -29,7 +29,7 @@ export type FetchLibraryInput = {
   limit: number
   cursor: LibraryCursor | null
   sort: Sort
-  mode?: LibraryMode
+  modes: LibraryMode[]
   proteins: string[]
   maxCal: number | undefined
   maxTime: number | undefined
@@ -73,40 +73,49 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     const supabase = makeClient()
     const lang = getLang()
 
-    const { limit, cursor, sort, mode = 'all', proteins, maxCal, maxTime, tags, ingredients, q } = input
+    const { limit, cursor, sort, modes = [], proteins, maxCal, maxTime, tags, ingredients, q } = input
     const sortCol = SORT_COL[sort]
     const ascending = SORT_ASC[sort]
 
+    // Filter out 'all' token — empty array means show everything
+    const activeModes = modes.filter((m) => m !== 'all')
+
     // Get session for mode-specific filters
     let userId: string | null = null
-    if (mode === 'mine' || mode === 'saved') {
+    let savedIds: string[] = []
+    if (activeModes.includes('mine') || activeModes.includes('saved')) {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
       userId = session.user.id
+      if (activeModes.includes('saved')) {
+        const { data: savedRows } = await supabase
+          .from('user_recipe_interactions')
+          .select('recipe_id')
+          .eq('user_id', userId)
+          .eq('type', 'save')
+        savedIds = (savedRows ?? []).map((r) => r.recipe_id)
+      }
     }
 
     let query = supabase
       .from('recipes')
       .select(`${RECIPE_FIELDS}, recipe_ingredients(${INGREDIENT_FIELDS})`)
+      .is('deleted_at', null)
 
-    // --- Mode filters ---
-    if (mode === 'mine' && userId) {
-      query = query.eq('owner_id', userId).is('deleted_at', null)
-    } else if (mode === 'saved' && userId) {
-      const { data: savedRows } = await supabase
-        .from('user_recipe_interactions')
-        .select('recipe_id')
-        .eq('user_id', userId)
-        .eq('type', 'save')
-      const savedIds = (savedRows ?? []).map((r) => r.recipe_id)
-      if (savedIds.length === 0) return { data: [], nextCursor: null }
-      query = query.in('id', savedIds)
-    } else if (mode === 'curated') {
-      // System-curated recipes only (no owner)
-      query = query.is('owner_id', null).is('deleted_at', null)
-    } else {
-      // Default: all non-deleted, visible recipes
-      query = query.is('deleted_at', null)
+    // --- Mode filters (OR logic across selected modes) ---
+    if (activeModes.length > 0) {
+      const orParts: string[] = []
+      if (activeModes.includes('mine') && userId) {
+        orParts.push(`owner_id.eq.${userId}`)
+      }
+      if (activeModes.includes('saved') && savedIds.length > 0) {
+        orParts.push(`id.in.(${savedIds.join(',')})`)
+      }
+      if (activeModes.includes('curated')) {
+        orParts.push('owner_id.is.null')
+      }
+      if (orParts.length === 0) return { data: [], nextCursor: null }
+      query = query.or(orParts.join(','))
     }
 
     // --- Server-side filters ---
