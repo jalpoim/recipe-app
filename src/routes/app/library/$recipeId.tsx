@@ -395,7 +395,7 @@ function CookingDrawer({
 
   return (
     <div
-      className={`cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
+      className={`cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
       style={{
         bottom: 'calc(3.25rem + env(safe-area-inset-bottom))',
         height: expanded ? '75vh' : '188px',
@@ -415,7 +415,7 @@ function CookingDrawer({
         </button>
       </div>
 
-      <div className="flex flex-col h-full pb-3 overflow-hidden">
+      <div className="flex flex-col flex-1 min-h-0 pb-3 overflow-hidden">
         {/* Timer badges row */}
         {timerList.length > 0 && (
           <div className="flex flex-wrap gap-1.5 px-4 pb-2 shrink-0">
