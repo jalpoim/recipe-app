@@ -46,6 +46,8 @@ function IngredientCombobox({
   const { t } = useTranslation()
   const [text, setText] = useState(value.rawText)
   const [open, setOpen] = useState(false)
+  const [qty, setQty] = useState(value.quantity != null ? String(value.quantity) : '')
+  const [unit, setUnit] = useState(value.unit ?? '')
   const debouncedText = useDebounce(text, 250)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -67,6 +69,7 @@ function IngredientCombobox({
   function handleSelect(ing: { name: string; default_unit: string | null }) {
     setText(ing.name)
     onValueChange({ ...value, rawText: ing.name, name: ing.name, unit: ing.default_unit })
+    setUnit(ing.default_unit ?? '')
     setOpen(false)
   }
 
@@ -75,9 +78,6 @@ function IngredientCombobox({
     onValueChange({ ...value, rawText: newText, name: null })
     setOpen(newText.length >= 2)
   }
-
-  const [qty, setQty] = useState(value.quantity != null ? String(value.quantity) : '')
-  const [unit, setUnit] = useState(value.unit ?? '')
 
   function handleQtyChange(newQty: string) {
     setQty(newQty)

@@ -195,12 +195,13 @@ export const searchIngredients = createServerFn({ method: 'GET' })
       .limit(8)
     if ((byName ?? []).length >= 4) return byName ?? []
 
-    const { data: byAlias } = await supabase
+    const nameIds = (byName ?? []).map((r) => r.id)
+    let aliasQuery = supabase
       .from('ingredients')
       .select('id, name, default_unit, category')
       .contains('aliases', [q.toLowerCase()])
-      .not('id', 'in', `(${(byName ?? []).map((r) => r.id).join(',') || 'null'})`)
-      .limit(8 - (byName ?? []).length)
+    if (nameIds.length > 0) aliasQuery = aliasQuery.not('id', 'in', `(${nameIds.join(',')})`)
+    const { data: byAlias } = await aliasQuery.limit(8 - (byName ?? []).length)
 
     return [...(byName ?? []), ...(byAlias ?? [])]
   })
