@@ -500,6 +500,80 @@ function FilterSheet({
               </div>
             </div>
 
+            {/* Ingredientes */}
+            <div ref={ingredientsRef}>
+              <p className={sectionHeader}>{t('filters.ingredients')}</p>
+
+              {search.ingredients.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {search.ingredients.map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => removeIngredient(ing)}
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
+                    >
+                      {ing} <X size={10} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="relative">
+                <input
+                  type="text"
+                  value={ingSearch}
+                  onChange={(e) => setIngSearch(e.target.value)}
+                  onFocus={() => {
+                    if (!ingredientsRef.current || !scrollRef.current) return
+                    const containerTop = scrollRef.current.getBoundingClientRect().top
+                    const elTop = ingredientsRef.current.getBoundingClientRect().top
+                    const offset = scrollRef.current.scrollTop + (elTop - containerTop) - 16
+                    scrollRef.current.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && ingSearch.trim()) {
+                      addIngredient(ingSearch.trim())
+                      setIngSearch('')
+                    }
+                  }}
+                  placeholder={t('filters.searchIngredient')}
+                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 pr-9 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                />
+                {ingSearch.trim().length > 0 && (
+                  <button
+                    onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
+                    aria-label={t('filters.searchFreeText', { term: ingSearch.trim() })}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#16A34A] text-white flex items-center justify-center hover:bg-[#15803d] transition-colors focus:outline-none"
+                  >
+                    <Plus size={13} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+
+              {filteredIngs.length > 0 && (
+                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
+                  {filteredIngs.slice(0, 40).map((ing) => (
+                    <button
+                      key={ing}
+                      onClick={() => addIngredient(ing)}
+                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    >
+                      {ing}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
+                <button
+                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
+                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                >
+                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
+                </button>
+              )}
+            </div>
+
             {/* Tempo */}
             <div ref={timeRef}>
               <p className={sectionHeader}>{t('filters.time')}</p>
@@ -587,68 +661,6 @@ function FilterSheet({
               </div>
             </div>
 
-            {/* Ingredientes — last, so keyboard doesn't push other filters off-screen */}
-            <div ref={ingredientsRef}>
-              <p className={sectionHeader}>{t('filters.ingredients')}</p>
-
-              {search.ingredients.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {search.ingredients.map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => removeIngredient(ing)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
-                    >
-                      {ing} <X size={10} aria-hidden="true" />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <input
-                type="text"
-                value={ingSearch}
-                onChange={(e) => setIngSearch(e.target.value)}
-                onFocus={() => {
-                  if (!ingredientsRef.current || !scrollRef.current) return
-                  const containerTop = scrollRef.current.getBoundingClientRect().top
-                  const elTop = ingredientsRef.current.getBoundingClientRect().top
-                  const offset = scrollRef.current.scrollTop + (elTop - containerTop) - 16
-                  scrollRef.current.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' })
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && ingSearch.trim()) {
-                    addIngredient(ingSearch.trim())
-                    setIngSearch('')
-                  }
-                }}
-                placeholder={t('filters.searchIngredient')}
-                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-              />
-
-              {filteredIngs.length > 0 && (
-                <div className="mt-2 max-h-40 overflow-y-auto rounded-xl bg-white border border-[#E5E7EB] divide-y divide-[#F3F4F6]">
-                  {filteredIngs.slice(0, 40).map((ing) => (
-                    <button
-                      key={ing}
-                      onClick={() => addIngredient(ing)}
-                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                    >
-                      {ing}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
-                <button
-                  onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
-                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
-                >
-                  + {t('filters.searchFreeText', { term: ingSearch.trim() })}
-                </button>
-              )}
-            </div>
           </div>
 
           {/* bottom action */}

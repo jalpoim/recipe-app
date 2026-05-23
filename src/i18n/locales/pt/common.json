@@ -48,7 +48,7 @@
     "searchRecipe": "Nome da receita…",
     "searchIngredient": "Pesquisar ingrediente…",
     "noResults": "Sem resultados",
-    "searchFreeText": "Pesquisar por \"{{term}}\"",
+    "searchFreeText": "Adicionar \"{{term}}\"",
     "empty": "Sem receitas com estes filtros",
     "sheetTitle": "Filtros",
     "choosingReplacement": "A escolher substituto — toca numa receita",
@@ -120,8 +120,8 @@
   },
   "recipe": {
     "servings": "Porções",
-    "base": "dose base",
-    "bases": "doses base",
+    "base": "dose",
+    "bases": "doses",
     "ingredients": "Ingredientes",
     "steps": "Preparação",
     "back": "Voltar",
@@ -169,7 +169,7 @@
     "totalCalories": "Calorias totais",
     "totalProtein": "Proteína total",
     "totalTime": "Tempo total",
-    "multiplier": "Multiplicador",
+    "multiplier": "Porções",
     "addedToast": "Adicionado ao plano ✓",
     "itemCount_one": "{{count}} receita",
     "itemCount_other": "{{count}} receitas"

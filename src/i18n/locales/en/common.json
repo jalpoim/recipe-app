@@ -48,7 +48,7 @@
     "searchRecipe": "Recipe name…",
     "searchIngredient": "Search ingredient…",
     "noResults": "No results",
-    "searchFreeText": "Search for \"{{term}}\"",
+    "searchFreeText": "Add \"{{term}}\"",
     "empty": "No recipes with these filters",
     "sheetTitle": "Filters",
     "choosingReplacement": "Choosing replacement — tap a recipe",
@@ -120,8 +120,8 @@
   },
   "recipe": {
     "servings": "Servings",
-    "base": "base serving",
-    "bases": "base servings",
+    "base": "serving",
+    "bases": "servings",
     "ingredients": "Ingredients",
     "steps": "Preparation",
     "back": "Back",
@@ -169,7 +169,7 @@
     "totalCalories": "Total calories",
     "totalProtein": "Total protein",
     "totalTime": "Total time",
-    "multiplier": "Multiplier",
+    "multiplier": "Servings",
     "addedToast": "Added to plan ✓",
     "itemCount_one": "{{count}} recipe",
     "itemCount_other": "{{count}} recipes"

@@ -463,7 +463,7 @@ function PlanPage() {
             aria-label={t('cookHistory.title')}
             className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
           >
-            <CalendarDays size={17} aria-hidden="true" />
+            <CalendarDays size={20} aria-hidden="true" />
           </button>
         </div>
 
