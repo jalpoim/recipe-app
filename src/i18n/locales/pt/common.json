@@ -64,7 +64,8 @@
     "all": "Todas",
     "mine": "Minhas",
     "saved": "Guardadas",
-    "curated": "Selecionadas",
+    "curated": "Oficiais",
+    "ownBadge": "Minha",
     "newRecipe": "Nova receita"
   },
   "moderation": {

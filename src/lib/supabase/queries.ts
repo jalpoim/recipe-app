@@ -77,7 +77,7 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
 
     // Get session for mode-specific filters
     let userId: string | null = null
-    if (mode === 'mine' || mode === 'saved' || mode === 'curated') {
+    if (mode === 'mine' || mode === 'saved') {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
       userId = session.user.id

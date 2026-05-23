@@ -9,7 +9,6 @@ import { useToast } from '../../../components/Toast'
 import {
   addRecipeToPlan,
   removePlanItem,
-  replacePlanItem,
   fetchPlanItem,
   updatePlanItemMultiplier,
 } from '../../../lib/supabase/plan-queries'
@@ -66,7 +65,6 @@ export const Route = createFileRoute('/app/library/$recipeId')({
   validateSearch: (search) => ({
     from: search.from === 'plan' ? ('plan' as const) : undefined,
     planItemId: typeof search.planItemId === 'string' ? search.planItemId : undefined,
-    replacing: typeof search.replacing === 'string' ? search.replacing : undefined,
   }),
   loaderDeps: ({ search }) => ({ planItemId: search.planItemId }),
   loader: async ({ params, deps }) => {
@@ -751,19 +749,6 @@ function RecipeDetailPage() {
     },
   })
 
-  // Replace plan item
-  const replaceMutation = useMutation({
-    mutationFn: () =>
-      replacePlanItem({ data: { planItemId: search.replacing!, newRecipeId: recipe.id } }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['active-plan'] })
-      qc.invalidateQueries({ queryKey: ['plan-items'] })
-      navigate({ to: '/app/plan' })
-    },
-    onError: () => showToast('Erro ao substituir receita', 'error'),
-  })
-
-  const isReplacing = !!search.replacing
   const hasSteps = recipe.recipe_steps.length > 0
 
   if (isCooking) {
@@ -1042,15 +1027,7 @@ function RecipeDetailPage() {
         style={{ bottom: 'calc(3.25rem + env(safe-area-inset-bottom))' }}
       >
         <div className="mx-auto max-w-md space-y-2">
-          {isReplacing ? (
-            <button
-              onClick={() => replaceMutation.mutate()}
-              disabled={replaceMutation.isPending}
-              className="w-full rounded-2xl bg-[#B45309] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#92400e] transition-colors focus-visible:ring-2 focus-visible:ring-[#B45309]/40 focus:outline-none"
-            >
-              {replaceMutation.isPending ? t('recipe.replacingAction') : t('recipe.useForReplace')}
-            </button>
-          ) : isFromPlan ? (
+          {isFromPlan ? (
             <div className="flex gap-2">
               {confirmRemove ? (
                 <>
@@ -1069,31 +1046,12 @@ function RecipeDetailPage() {
                   </button>
                 </>
               ) : (
-                <>
-                  <button
-                    onClick={() => setConfirmRemove(true)}
-                    className="flex-1 rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                  >
-                    {t('recipe.removeFromPlan')}
-                  </button>
-                  <Link
-                    to="/app/library"
-                    search={{
-                      q: '',
-                      proteins: [],
-                      maxCal: undefined,
-                      maxTime: undefined,
-                      tags: [],
-                      ingredients: [],
-                      sort: 'pcal' as const,
-                      mode: 'all' as const,
-                      replacing: search.planItemId,
-                    }}
-                    className="flex-1 rounded-2xl bg-[#F3F4F6] border border-[#E5E7EB] text-[#1A1A1A] py-3.5 text-sm font-semibold text-center hover:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                  >
-                    {t('recipe.replace')}
-                  </Link>
-                </>
+                <button
+                  onClick={() => setConfirmRemove(true)}
+                  className="w-full rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+                >
+                  {t('recipe.removeFromPlan')}
+                </button>
               )}
             </div>
           ) : (

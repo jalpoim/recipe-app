@@ -61,7 +61,7 @@ function ProfileRecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
     <Link
       to="/app/library/$recipeId"
       params={{ recipeId: recipe.id }}
-      search={{ from: undefined, planItemId: undefined, replacing: undefined }}
+      search={{ from: undefined, planItemId: undefined }}
       className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
     >
       <div className="flex items-start gap-3">
@@ -117,7 +117,7 @@ function ProfilePage() {
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-6">
         <div className="text-center space-y-3">
           <p className="text-[#1A1A1A] font-semibold">Perfil não encontrado</p>
-          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const, replacing: undefined }} className="text-sm text-[#16A34A] underline">
+          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const }} className="text-sm text-[#16A34A] underline">
             {t('recipe.back')}
           </Link>
         </div>
@@ -132,7 +132,7 @@ function ProfilePage() {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           <Link
             to="/app/library"
-            search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const, replacing: undefined }}
+            search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const }}
             aria-label={t('recipe.back')}
             className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
           >

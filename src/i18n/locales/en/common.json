@@ -65,6 +65,7 @@
     "mine": "Mine",
     "saved": "Saved",
     "curated": "Curated",
+    "ownBadge": "Mine",
     "newRecipe": "New recipe"
   },
   "moderation": {

@@ -78,7 +78,6 @@ type LibrarySearch = {
   ingredients: string[]
   sort: Sort
   mode: LibraryMode
-  replacing: string | undefined
 }
 
 function CardSkeleton() {
@@ -146,7 +145,6 @@ export const Route = createFileRoute('/app/library/')({
     mode: (['all', 'mine', 'saved', 'curated'] as LibraryMode[]).includes(search.mode as LibraryMode)
       ? (search.mode as LibraryMode)
       : 'all',
-    replacing: typeof search.replacing === 'string' ? search.replacing : undefined,
   }),
   component: LibraryPage,
 })
@@ -179,14 +177,12 @@ function fmt(n: number) {
 
 function RecipeCard({
   recipe,
-  replacing,
   cookCount = 0,
   isSaved = false,
   showOwnerBadge = false,
   onToggleSave,
 }: {
   recipe: RecipeWithIngredients
-  replacing?: string
   cookCount?: number
   isSaved?: boolean
   showOwnerBadge?: boolean
@@ -210,30 +206,46 @@ function RecipeCard({
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: recipe.id }}
-        search={{ from: undefined, planItemId: undefined, replacing: replacing ?? undefined }}
-        onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: replacing ? 'replacing' : 'library' })}
+        search={{ from: undefined, planItemId: undefined }}
+        onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: 'library' })}
         className="block p-4"
       >
         <div className="flex items-start gap-3">
-          {/* Thumbnail */}
-          {recipe.image_thumb_url ? (
-            <img
-              src={recipe.image_thumb_url}
-              alt=""
-              className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="w-[72px] h-[72px] rounded-xl shrink-0"
-              style={{ background: thumbnailBg }}
-              aria-hidden="true"
-            />
-          )}
+          {/* Thumbnail with save overlay */}
+          <div className="relative w-[72px] h-[72px] shrink-0">
+            {recipe.image_thumb_url ? (
+              <img
+                src={recipe.image_thumb_url}
+                alt=""
+                className="w-full h-full rounded-xl object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div
+                className="w-full h-full rounded-xl"
+                style={{ background: thumbnailBg }}
+                aria-hidden="true"
+              />
+            )}
+            {onToggleSave && (
+              <button
+                onClick={onToggleSave}
+                aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
+                aria-pressed={isSaved}
+                className={`absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shadow-sm ${
+                  isSaved
+                    ? 'bg-[#16A34A] text-white'
+                    : 'bg-white/90 text-[#9CA3AF] hover:bg-[#16A34A] hover:text-white'
+                }`}
+              >
+                {isSaved ? <BookmarkCheck size={11} aria-hidden="true" /> : <Bookmark size={11} aria-hidden="true" />}
+              </button>
+            )}
+          </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2 pr-8">{recipe.name}</h2>
+              <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2">{recipe.name}</h2>
               {hasMacros && (
                 <span
                   className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
@@ -264,7 +276,7 @@ function RecipeCard({
               )}
               {showOwnerBadge && isUserRecipe && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#15803d] font-medium">
-                  Minha
+                  {t('library.ownBadge')}
                 </span>
               )}
             </div>
@@ -306,22 +318,6 @@ function RecipeCard({
           <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
         )}
       </Link>
-
-      {/* Save button — absolutely positioned top-right */}
-      {onToggleSave && (
-        <button
-          onClick={onToggleSave}
-          aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
-          aria-pressed={isSaved}
-          className={`absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-            isSaved
-              ? 'bg-[#dcfce7] text-[#15803d]'
-              : 'bg-[#F3F4F6] text-[#9CA3AF] hover:bg-[#dcfce7] hover:text-[#15803d]'
-          }`}
-        >
-          {isSaved ? <BookmarkCheck size={13} aria-hidden="true" /> : <Bookmark size={13} aria-hidden="true" />}
-        </button>
-      )}
     </div>
   )
 }
@@ -926,24 +922,6 @@ function LibraryPage() {
   return (
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
-        {/* Replace mode banner */}
-        {search.replacing && (
-          <div className="pt-4 pb-0">
-            <div className="flex items-center justify-between rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2.5">
-              <p className="text-xs text-[#B45309] font-medium">
-                {t('filters.choosingReplacement')}
-              </p>
-              <button
-                onClick={() => update({ replacing: undefined })}
-                aria-label={t('filters.cancelReplacement')}
-                className="text-[#B45309] hover:text-[#92400e] ml-2 focus-visible:ring-2 focus-visible:ring-[#B45309]/30 focus:outline-none rounded"
-              >
-                <X size={14} aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="py-5">
           <div className="flex items-center justify-between mb-3">
@@ -984,18 +962,16 @@ function LibraryPage() {
           </div>
 
           {/* Mode chips */}
-          {!search.replacing && (
-            <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
-                <CategoryChip
-                  key={m}
-                  label={t(`library.${m}`)}
-                  active={search.mode === m}
-                  onClick={() => update({ mode: m })}
-                />
-              ))}
-            </div>
-          )}
+          <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
+              <CategoryChip
+                key={m}
+                label={t(`library.${m}`)}
+                active={search.mode === m}
+                onClick={() => update({ mode: m })}
+              />
+            ))}
+          </div>
 
           {/* Category chip row */}
           <div className="flex gap-2 mt-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -1098,7 +1074,6 @@ function LibraryPage() {
                     ) : (
                       <RecipeCard
                         recipe={sortedRecipes[virtualItem.index]}
-                        replacing={search.replacing}
                         cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
                         isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
                         showOwnerBadge={search.mode === 'all' || search.mode === 'saved'}
@@ -1129,17 +1104,15 @@ function LibraryPage() {
         onClear={clearFilters}
       />
 
-      {/* FAB — hidden when replacing */}
-      {!search.replacing && (
-        <Link
-          to="/app/library/create"
-          aria-label={t('library.newRecipe')}
-          className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-          style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 1rem)' }}
-        >
-          <Plus size={24} aria-hidden="true" />
-        </Link>
-      )}
+      {/* FAB */}
+      <Link
+        to="/app/library/create"
+        aria-label={t('library.newRecipe')}
+        className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 1rem)' }}
+      >
+        <Plus size={24} aria-hidden="true" />
+      </Link>
     </div>
   )
 }

@@ -236,7 +236,7 @@ function CreateRecipePage() {
       }),
     onSuccess: ({ id }) => {
       queryClient.invalidateQueries({ queryKey: ['library'] })
-      navigate({ to: '/app/library/$recipeId', params: { recipeId: id }, search: { from: undefined, planItemId: undefined, replacing: undefined } })
+      navigate({ to: '/app/library/$recipeId', params: { recipeId: id }, search: { from: undefined, planItemId: undefined } })
     },
     onError: () => showToast(t('common.error'), 'error'),
   })
@@ -306,7 +306,7 @@ function CreateRecipePage() {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => navigate({ to: '/app/library', search: { q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const, replacing: undefined } })}
+            onClick={() => navigate({ to: '/app/library', search: { q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, mode: 'all' as const } })}
             aria-label={t('recipe.back')}
             className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
           >

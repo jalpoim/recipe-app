@@ -91,7 +91,7 @@ function PlanItemCard({
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: item.recipe_id }}
-        search={{ from: 'plan', planItemId: item.id, replacing: undefined }}
+        search={{ from: 'plan', planItemId: item.id }}
         className="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
         aria-label={item.recipe.name}
       />

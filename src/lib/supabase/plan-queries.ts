@@ -235,35 +235,6 @@ export const removePlanItem = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
-// POST: replace one plan item with a different recipe
-export const replacePlanItem = createServerFn({ method: 'POST' })
-  .inputValidator((input: { planItemId: string; newRecipeId: string }) => input)
-  .handler(async ({ data }): Promise<PlanItem> => {
-    const supabase = makeClient()
-
-    const { data: old, error: fetchErr } = await supabase
-      .from('plan_items')
-      .select('position, plan_id')
-      .eq('id', data.planItemId)
-      .single()
-    if (fetchErr) throw new Error(fetchErr.message)
-
-    await supabase.from('plan_items').delete().eq('id', data.planItemId)
-
-    const { data: item, error } = await supabase
-      .from('plan_items')
-      .insert({
-        plan_id: old.plan_id,
-        recipe_id: data.newRecipeId,
-        position: old.position,
-        portion_multiplier: 1,
-      })
-      .select()
-      .single()
-    if (error) throw new Error(error.message)
-    return item
-  })
-
 // POST: update default multiplier
 export const updatePlanMultiplier = createServerFn({ method: 'POST' })
   .inputValidator((input: { planId: string; multiplier: number }) => input)
