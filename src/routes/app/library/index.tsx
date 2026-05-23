@@ -938,7 +938,7 @@ function LibraryPage() {
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="pt-4 pb-3">
-          {/* Row 1: Search bar + sort + settings */}
+          {/* Row 1: Search bar + settings button */}
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
               <Search
@@ -984,34 +984,6 @@ function LibraryPage() {
               </button>
             </div>
 
-            {/* Sort select */}
-            <div className="relative shrink-0 flex items-center">
-              <ArrowUpDown
-                size={10}
-                aria-hidden="true"
-                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-              />
-              <select
-                value={search.sort}
-                onChange={(e) => update({ sort: e.target.value as Sort })}
-                aria-label={t('sort.label')}
-                className="appearance-none bg-white border border-[#E5E7EB] rounded-xl shadow-sm pl-5 pr-5 py-2.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer h-10"
-              >
-                <option value="pcal">P/Cal</option>
-                <option value="popular">{t('sort.popular')}</option>
-                <option value="protein">{t('sort.protein')}</option>
-                <option value="calories">{t('sort.calories')}</option>
-                <option value="time">{t('sort.time')}</option>
-              </select>
-              <svg
-                width="10" height="10" viewBox="0 0 10 10"
-                aria-hidden="true"
-                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
-              >
-                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            </div>
-
             {/* Settings button */}
             <Link
               to="/app/settings"
@@ -1022,7 +994,7 @@ function LibraryPage() {
             </Link>
           </div>
 
-          {/* Row 2: Mode chips only — always fits */}
+          {/* Row 2: Mode chips + sort */}
           <div className="flex items-center gap-1.5 mt-2.5">
             <button
               onClick={() => update({ modes: [] })}
@@ -1057,6 +1029,34 @@ function LibraryPage() {
                 </button>
               )
             })}
+            <div className="flex-1" />
+            {/* Sort select — tight right padding so chevron hugs the text */}
+            <div className="relative shrink-0 flex items-center">
+              <ArrowUpDown
+                size={10}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              />
+              <select
+                value={search.sort}
+                onChange={(e) => update({ sort: e.target.value as Sort })}
+                aria-label={t('sort.label')}
+                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-5 pr-4 py-1 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
+              >
+                <option value="pcal">P/Cal</option>
+                <option value="popular">{t('sort.popular')}</option>
+                <option value="protein">{t('sort.protein')}</option>
+                <option value="calories">{t('sort.calories')}</option>
+                <option value="time">{t('sort.time')}</option>
+              </select>
+              <svg
+                width="8" height="8" viewBox="0 0 10 10"
+                aria-hidden="true"
+                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              >
+                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </div>
           </div>
         </div>
 
