@@ -388,7 +388,7 @@ function CookingDrawer({
       className={`cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
       style={{
         bottom: 'calc(3.25rem + env(safe-area-inset-bottom))',
-        height: expanded ? '75vh' : '188px',
+        height: expanded ? '75vh' : '256px',
       }}
     >
       {/* Drag handle row + stop cooking button */}
@@ -432,9 +432,9 @@ function CookingDrawer({
               <button
                 onClick={openTimer}
                 aria-label={t('cooking.setTimer')}
-                className="flex items-center gap-1 text-[10px] text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#E5E7EB] bg-white text-xs font-medium text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus:outline-none"
               >
-                <Timer size={12} aria-hidden="true" />
+                <Timer size={13} aria-hidden="true" />
                 {t('cooking.timer')}
               </button>
             )}
@@ -765,7 +765,7 @@ function RecipeDetailPage() {
   return (
     <div
       className="min-h-screen bg-[#FAFAF8]"
-      style={{ paddingBottom: isCooking ? 'calc(188px + 3.25rem + env(safe-area-inset-bottom) + 1.5rem)' : 'calc(12rem + env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: isCooking ? 'calc(256px + 3.25rem + env(safe-area-inset-bottom) + 1.5rem)' : 'calc(12rem + env(safe-area-inset-bottom))' }}
     >
       <div className="mx-auto w-full max-w-md">
 
@@ -837,19 +837,21 @@ function RecipeDetailPage() {
             </div>
           )}
 
-          {/* Time + servings — always visible; shows active multiplier when cooking */}
-          <div className="flex items-center gap-4 text-sm text-[#6B7280]">
-            {recipe.time_min != null && (
-              <span className="flex items-center gap-1.5">
-                <Clock size={14} aria-hidden="true" />
-                {recipe.time_min} {t('common.min')}
+          {/* Time + servings — hidden during cooking to save space */}
+          {!isCooking && (
+            <div className="flex items-center gap-4 text-sm text-[#6B7280]">
+              {recipe.time_min != null && (
+                <span className="flex items-center gap-1.5">
+                  <Clock size={14} aria-hidden="true" />
+                  {recipe.time_min} {t('common.min')}
+                </span>
+              )}
+              <span>
+                {recipe.servings}{' '}
+                {recipe.servings !== 1 ? t('recipe.bases') : t('recipe.base')}
               </span>
-            )}
-            <span>
-              {isCooking ? multiplier : recipe.servings}{' '}
-              {(isCooking ? multiplier : recipe.servings) !== 1 ? t('recipe.bases') : t('recipe.base')}
-            </span>
-          </div>
+            </div>
+          )}
 
           {/* Ingredients — always visible */}
           {recipe.recipe_ingredients.length > 0 && (
