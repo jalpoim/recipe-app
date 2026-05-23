@@ -204,8 +204,6 @@
   },
   "cooking": {
     "mode": "Modo cozinha",
-    "exit": "Sair",
-    "exitLabel": "Sair do modo cozinha",
     "stepOf": "Passo {{current}} de {{total}}",
     "prev": "Anterior",
     "next": "Próximo",
@@ -220,9 +218,11 @@
     "increaseMinutes": "Aumentar minutos",
     "minutes": "{{count}} min",
     "timerDone": "Temporizador concluído — {{recipe}}",
-    "prevStepLabel": "Ir para passo anterior",
-    "nextStepLabel": "Ir para próximo passo",
-    "stepDotLabel": "Ir para passo {{n}}"
+    "unlockMultiplier": "Desbloquear porções",
+    "multiplierLockedHint": "As porções estão bloqueadas durante o modo cozinha.",
+    "timerStep": "P{{step}}",
+    "startTimerFor": "Iniciar {{duration}}",
+    "stopCooking": "Parar de cozinhar"
   },
   "tagSections": {
     "method": "Método",

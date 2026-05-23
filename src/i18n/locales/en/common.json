@@ -204,8 +204,6 @@
   },
   "cooking": {
     "mode": "Cooking mode",
-    "exit": "Exit",
-    "exitLabel": "Exit cooking mode",
     "stepOf": "Step {{current}} of {{total}}",
     "prev": "Previous",
     "next": "Next",
@@ -220,9 +218,11 @@
     "increaseMinutes": "Increase minutes",
     "minutes": "{{count}} min",
     "timerDone": "Timer done — {{recipe}}",
-    "prevStepLabel": "Go to previous step",
-    "nextStepLabel": "Go to next step",
-    "stepDotLabel": "Go to step {{n}}"
+    "unlockMultiplier": "Unlock servings",
+    "multiplierLockedHint": "Servings are locked during cooking mode.",
+    "timerStep": "S{{step}}",
+    "startTimerFor": "Start {{duration}}",
+    "stopCooking": "Stop cooking"
   },
   "tagSections": {
     "method": "Method",
