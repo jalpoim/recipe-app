@@ -1596,6 +1596,38 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 
 ---
 
+## Locale auto-detection — architecture (implemented May 2026)
+
+### Signal used
+
+`Accept-Language` / `navigator.language` is the industry standard. It reflects the user's OS/browser language preference directly, is available on page load before any auth, and is infrastructure-agnostic (works the same on Vercel, Netlify, or any other host). No IP geolocation needed.
+
+### Language detection
+`navigator.language` is already used by `i18next-browser-languagedetector` for initial language selection. The custom `detectLocaleFromBrowser()` in `src/lib/detect-locale.ts` reads the same value and returns `'en'` or `'pt'` (defaulting to `'pt'`).
+
+### Measurement unit detection
+The country subtag from `Accept-Language` determines units (`en-US` → US → imperial, everything else → metric). Only US, Liberia (LR), and Myanmar (MM) use imperial — everyone else gets metric. This is fully portable and requires no third-party APIs.
+
+### Bootstrap flow
+On first login per browser (`locale_bootstrapped_v1` localStorage key):
+1. Detect language + unit from `navigator.language`
+2. Apply language to i18next immediately
+3. Persist measurement unit to `profiles.measurement_unit` (fire-and-forget)
+4. Mark bootstrap done — never runs again unless localStorage is cleared
+
+This means a user's first experience is in their language with correct units, without any onboarding friction. Deliberate changes in Settings always win because the bootstrap flag prevents re-detection.
+
+### Settings UI
+`/app/settings` now has a "Measurement units" section (Metric / Imperial) that reads from and writes to `profiles.measurement_unit`. Uses the same checkmark row pattern as Language and Theme.
+
+### Schema change
+`profiles.measurement_unit text NOT NULL DEFAULT 'metric' CHECK (measurement_unit IN ('metric', 'imperial'))` — applied via MCP execute_sql (May 2026).
+
+### Future: using measurement_unit in the app
+When displaying recipe ingredient quantities, check `profile.measurement_unit` and convert accordingly. All stored quantities are metric (grams, ml). The conversion layer should live in a utility function in `src/lib/units.ts` — not yet built, implement when the cooking companion or ingredient quantities UI needs it.
+
+---
+
 ## Session 14 — Micro-animations polish
 
 **Goal:** Add targeted animations to give the app a premium feel. All animations use `transform`/`opacity` only (compositor-friendly). Every animation has a `motion-safe:` or `@media (prefers-reduced-motion: no-preference)` guard. No libraries — pure CSS + minimal React state.

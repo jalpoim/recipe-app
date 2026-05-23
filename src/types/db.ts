@@ -518,6 +518,7 @@ export type Database = {
           display_name: string
           avatar_url: string | null
           bio: string | null
+          measurement_unit: 'metric' | 'imperial'
           created_at: string
         }
         Insert: {
@@ -526,6 +527,7 @@ export type Database = {
           display_name: string
           avatar_url?: string | null
           bio?: string | null
+          measurement_unit?: 'metric' | 'imperial'
           created_at?: string
         }
         Update: {
@@ -534,6 +536,7 @@ export type Database = {
           display_name?: string
           avatar_url?: string | null
           bio?: string | null
+          measurement_unit?: 'metric' | 'imperial'
           created_at?: string
         }
         Relationships: []

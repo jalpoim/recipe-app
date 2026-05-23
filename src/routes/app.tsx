@@ -5,9 +5,12 @@ import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
+import { saveMeasurementUnit } from '../lib/supabase/profile-queries'
 import { getAuthUser } from '../lib/supabase/server'
 import { supabase } from '../lib/supabase/browser'
 import { capture, identifyUser } from '../lib/analytics'
+import { detectLocaleFromBrowser } from '../lib/detect-locale'
+import i18n from '../i18n'
 
 export const Route = createFileRoute('/app')({
   beforeLoad: async () => {
@@ -134,11 +137,35 @@ function TopProgressBar() {
   )
 }
 
+const LOCALE_BOOTSTRAP_KEY = 'locale_bootstrapped_v1'
+
 function AppLayout() {
   const { user } = Route.useRouteContext()
+
   useEffect(() => {
     if (user) identifyUser(user.id, user.email)
   }, [user.id])
+
+  // On first visit per browser: detect language + units from Accept-Language and save to profile.
+  // Uses a localStorage flag so this runs once and never overrides a deliberate user preference.
+  useEffect(() => {
+    if (!user) return
+    if (typeof localStorage === 'undefined') return
+    if (localStorage.getItem(LOCALE_BOOTSTRAP_KEY)) return
+
+    const { language, measurementUnit } = detectLocaleFromBrowser()
+
+    // Apply detected language to i18next immediately
+    if (i18n.language !== language) {
+      i18n.changeLanguage(language)
+    }
+
+    // Persist measurement unit to profile (fire-and-forget; non-critical)
+    saveMeasurementUnit({ data: measurementUnit }).catch(() => {})
+
+    localStorage.setItem(LOCALE_BOOTSTRAP_KEY, '1')
+  }, [user.id])
+
   return (
     <>
       <TopProgressBar />

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import i18n from '../../i18n'
 import { signOut } from '../../lib/supabase/server'
+import { fetchMyProfile, saveMeasurementUnit } from '../../lib/supabase/profile-queries'
 import {
   fetchHouseholdInfo,
   createHousehold,
@@ -13,6 +14,7 @@ import {
   leaveHousehold,
 } from '../../lib/supabase/household-queries'
 import type { HouseholdInfo } from '../../types/db'
+import type { MeasurementUnit } from '../../lib/detect-locale'
 
 export const Route = createFileRoute('/app/settings')({
   component: SettingsPage,
@@ -251,6 +253,19 @@ function SettingsPage() {
   const email = user?.email ?? ''
   const initial = displayName[0]?.toUpperCase() ?? '?'
 
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => fetchMyProfile(),
+  })
+
+  const queryClient = useQueryClient()
+  const unitMutation = useMutation({
+    mutationFn: (unit: MeasurementUnit) => saveMeasurementUnit({ data: unit }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-profile'] }),
+  })
+
+  const currentUnit: MeasurementUnit = profile?.measurement_unit ?? 'metric'
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md">
@@ -323,6 +338,28 @@ function SettingsPage() {
                     {mode === 'light' ? t('settings.light') : t('settings.dark')}
                   </span>
                   {theme === mode && (
+                    <Check size={16} className="text-[#16A34A]" aria-hidden="true" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Measurement units */}
+          <section>
+            <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+              {t('settings.units')}
+            </p>
+            <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden divide-y divide-[#F3F4F6]">
+              {(['metric', 'imperial'] as const).map((unit) => (
+                <button
+                  key={unit}
+                  onClick={() => unitMutation.mutate(unit)}
+                  disabled={unitMutation.isPending}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                >
+                  <span className="font-medium">{t(`settings.${unit}`)}</span>
+                  {currentUnit === unit && (
                     <Check size={16} className="text-[#16A34A]" aria-hidden="true" />
                   )}
                 </button>
