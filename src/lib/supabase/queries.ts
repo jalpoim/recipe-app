@@ -16,6 +16,8 @@ export type RecipeWithIngredients = Recipe & {
 export type RecipeDetail = Recipe & {
   recipe_ingredients: RecipeIngredient[]
   recipe_steps: RecipeStep[]
+  author_display_name: string | null
+  author_username: string | null
 }
 
 export type Sort = 'pcal' | 'protein' | 'calories' | 'time' | 'popular' | 'cooked'
@@ -219,12 +221,19 @@ export const fetchRecipeById = createServerFn({ method: 'GET' })
 
     const { data, error } = await supabase
       .from('recipes')
-      .select('*, recipe_ingredients(*), recipe_steps(*)')
+      .select('*, recipe_ingredients(*), recipe_steps(*), profiles!owner_id(display_name, username)')
       .eq('id', id)
       .single()
     if (error) throw new Error(error.message)
 
-    const recipe = data as unknown as RecipeDetail
+    const raw = data as unknown as Record<string, unknown>
+    const profileData = raw.profiles as { display_name: string | null; username: string | null } | null
+    const recipe = {
+      ...raw,
+      profiles: undefined,
+      author_display_name: profileData?.display_name ?? null,
+      author_username: profileData?.username ?? null,
+    } as unknown as RecipeDetail
     recipe.recipe_ingredients.sort((a, b) => a.position - b.position)
     recipe.recipe_steps.sort((a, b) => a.position - b.position)
 

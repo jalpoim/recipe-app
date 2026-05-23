@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { makeClient } from './client-server'
-import type { RecipeIngredientInsert, RecipeStepInsert } from '../../types/db'
+import type { RecipeIngredientInsert, RecipeStepInsert, UserProtein } from '../../types/db'
 
 export type IngredientRow = {
   position: number
@@ -266,4 +266,40 @@ Values should be per serving, rounded to the nearest integer. Use 0 if truly zer
     } catch {
       throw new Error('Failed to parse macro estimate response')
     }
+  })
+
+export type { UserProtein }
+
+export const fetchUserProteins = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<UserProtein[]> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
+    const { data, error } = await supabase
+      .from('user_proteins')
+      .select('id, slug, display_name, language')
+      .eq('user_id', session.user.id)
+      .order('created_at')
+    if (error) throw new Error(error.message)
+    return (data ?? []) as UserProtein[]
+  },
+)
+
+export const createUserProtein = createServerFn({ method: 'POST' })
+  .inputValidator((input: { displayName: string; language: string }) => input)
+  .handler(async ({ data }): Promise<UserProtein> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const slug = data.displayName.trim().toLowerCase().replace(/\s+/g, '-')
+    const { data: row, error } = await supabase
+      .from('user_proteins')
+      .upsert(
+        { user_id: session.user.id, slug, display_name: data.displayName.trim(), language: data.language },
+        { onConflict: 'user_id,slug', ignoreDuplicates: false },
+      )
+      .select('id, slug, display_name, language')
+      .single()
+    if (error) throw new Error(error.message)
+    return row as UserProtein
   })

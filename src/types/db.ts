@@ -577,6 +577,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_proteins: {
+        Row: {
+          id: string
+          user_id: string
+          slug: string
+          display_name: string
+          language: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          slug: string
+          display_name: string
+          language?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          slug?: string
+          display_name?: string
+          language?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -652,3 +679,4 @@ export type NotificationPreferences = Database['public']['Tables']['notification
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type RecipeReport = Database['public']['Tables']['recipe_reports']['Row']
+export type UserProtein = Database['public']['Tables']['user_proteins']['Row']

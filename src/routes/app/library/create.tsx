@@ -3,17 +3,16 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { createRecipe, searchIngredients, estimateMacros, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
+import { createRecipe, searchIngredients, estimateMacros, fetchUserProteins, createUserProtein, type IngredientRow, type StepRow, type UserProtein } from '../../../lib/supabase/recipe-queries'
 import { useToast } from '../../../components/Toast'
 
 export const Route = createFileRoute('/app/library/create')({
   component: CreateRecipePage,
 })
 
-const PROTEIN_SLUGS = [
-  'chicken', 'salmon', 'tuna', 'turkey', 'cod', 'eggs', 'beef',
-  'pork', 'whey', 'tofu', 'shrimp', 'clams', 'sea-bream', 'squid', 'fish', 'legumes',
-]
+const PROTEIN_TIER1 = ['chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'eggs', 'shrimp']
+const PROTEIN_TIER2 = ['turkey', 'lamb', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'tofu', 'legumes', 'whey']
+const ALL_PROTEIN_SLUGS = [...PROTEIN_TIER1, ...PROTEIN_TIER2]
 
 const TAG_SECTIONS_CREATE: { key: string; tags: string[] }[] = [
   { key: 'method',  tags: ['air-fryer', 'forno', 'fogão', 'micro-ondas', 'sem-cozinha', 'uma-frigideira', 'bimby', 'grelhador'] },
@@ -172,6 +171,103 @@ function CollapsibleSection({
   )
 }
 
+function ProteinPicker({
+  selected,
+  onToggle,
+  userProteins,
+  onAddCustom,
+}: {
+  selected: string[]
+  onToggle: (slug: string) => void
+  userProteins: UserProtein[]
+  onAddCustom: (displayName: string) => void
+}) {
+  const { t, i18n } = useTranslation()
+  const lang = i18n.language.startsWith('en') ? 'en' : 'pt'
+  const [expanded, setExpanded] = useState(false)
+  const [customInput, setCustomInput] = useState('')
+  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
+  const chipActive = 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A]'
+  const visible = expanded ? ALL_PROTEIN_SLUGS : PROTEIN_TIER1
+
+  const normalizedInput = customInput.trim().toLowerCase().replace(/\s+/g, '-')
+  const isInSystem = ALL_PROTEIN_SLUGS.includes(normalizedInput)
+  const isInUser = userProteins.some((p) => p.slug === normalizedInput)
+  const showAddRow = customInput.trim().length > 0 && !isInSystem && !isInUser
+
+  function handleAddCustom() {
+    if (!customInput.trim()) return
+    onAddCustom(customInput.trim())
+    setCustomInput('')
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
+        {visible.map((slug) => (
+          <button
+            key={slug}
+            type="button"
+            onClick={() => onToggle(slug)}
+            aria-pressed={selected.includes(slug)}
+            className={`${chipBase} ${selected.includes(slug) ? chipActive : chipInactive}`}
+          >
+            {t(`proteins.${slug}`, slug)}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((e) => !e)}
+        className="text-xs text-[#16A34A] font-medium focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+      >
+        {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
+      </button>
+      {userProteins.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+            {t('create.myProteins', 'Os meus')}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {userProteins.map((p) => (
+              <button
+                key={p.slug}
+                type="button"
+                onClick={() => onToggle(p.slug)}
+                aria-pressed={selected.includes(p.slug)}
+                className={`${chipBase} ${selected.includes(p.slug) ? chipActive : chipInactive}`}
+              >
+                {p.language === lang ? p.display_name : p.display_name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={customInput}
+          onChange={(e) => setCustomInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
+          placeholder={t('create.addProteinPlaceholder', 'Adicionar proteína…')}
+          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+        />
+        {showAddRow && (
+          <button
+            type="button"
+            onClick={handleAddCustom}
+            className="shrink-0 text-xs px-3 py-2 rounded-xl border border-[#16A34A] bg-[#f0fdf4] text-[#15803d] font-medium transition-colors hover:bg-[#dcfce7] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none whitespace-nowrap"
+          >
+            + {customInput.trim()}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function CreateRecipePage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -190,12 +286,28 @@ function CreateRecipePage() {
     { position: 0, text: '', timerSeconds: null },
   ])
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [customTagInput, setCustomTagInput] = useState('')
   const [calories, setCalories] = useState<string>('')
   const [protein, setProtein] = useState<string>('')
   const [carbs, setCarbs] = useState<string>('')
   const [fat, setFat] = useState<string>('')
   const [publish, setPublish] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const { data: userProteins = [], refetch: refetchUserProteins } = useQuery({
+    queryKey: ['user-proteins'],
+    queryFn: () => fetchUserProteins(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const addCustomProteinMutation = useMutation({
+    mutationFn: (displayName: string) =>
+      createUserProtein({ data: { displayName, language: lang } }),
+    onSuccess: (protein) => {
+      refetchUserProteins()
+      setSelectedProteins((prev) => [...prev, protein.slug])
+    },
+  })
 
   const estimateMutation = useMutation({
     mutationFn: () => estimateMacros({
@@ -244,9 +356,7 @@ function CreateRecipePage() {
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!name.trim()) errs.name = t('create.validationName')
-    if (selectedProteins.length === 0) errs.proteins = t('create.validationProteins')
     if (!ingredients.some((i) => i.rawText.trim())) errs.ingredients = t('create.validationIngredients')
-    if (!steps.some((s) => s.text.trim())) errs.steps = t('create.validationSteps')
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -293,6 +403,15 @@ function CreateRecipePage() {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     )
+  }
+
+  const systemTagSlugs = TAG_SECTIONS_CREATE.flatMap((s) => s.tags)
+
+  function addCustomTag() {
+    const slug = customTagInput.trim().toLowerCase().replace(/\s+/g, '-')
+    if (!slug || selectedTags.includes(slug)) return
+    setSelectedTags((prev) => [...prev, slug])
+    setCustomTagInput('')
   }
 
   const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
@@ -363,23 +482,15 @@ function CreateRecipePage() {
           </div>
         </div>
 
-        {/* Proteins — required */}
-        <div className={`rounded-2xl bg-white border shadow-sm p-4 ${errors.proteins ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
+        {/* Proteins — optional */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <p className="text-sm font-semibold text-[#1A1A1A] mb-3">{t('create.proteinsLabel')}</p>
-          <div className="flex flex-wrap gap-2">
-            {PROTEIN_SLUGS.map((slug) => (
-              <button
-                key={slug}
-                type="button"
-                onClick={() => toggleProtein(slug)}
-                aria-pressed={selectedProteins.includes(slug)}
-                className={`${chipBase} ${selectedProteins.includes(slug) ? chipActive : chipInactive}`}
-              >
-                {t(`proteins.${slug}`)}
-              </button>
-            ))}
-          </div>
-          {errors.proteins && <p className="mt-2 text-xs text-[#DC2626]">{errors.proteins}</p>}
+          <ProteinPicker
+            selected={selectedProteins}
+            onToggle={toggleProtein}
+            userProteins={userProteins}
+            onAddCustom={(displayName) => addCustomProteinMutation.mutate(displayName)}
+          />
         </div>
 
         {/* Ingredients — required */}
@@ -404,8 +515,8 @@ function CreateRecipePage() {
           {errors.ingredients && <p className="text-xs text-[#DC2626]">{errors.ingredients}</p>}
         </div>
 
-        {/* Steps — required */}
-        <div className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.steps ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
+        {/* Steps — optional */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
           <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.stepsLabel')}</p>
           {steps.map((step, idx) => (
             <div key={idx} className="flex items-start gap-2">
@@ -436,7 +547,6 @@ function CreateRecipePage() {
           >
             + {t('create.addStep')}
           </button>
-          {errors.steps && <p className="text-xs text-[#DC2626]">{errors.steps}</p>}
         </div>
 
         {/* Time — optional collapsible */}
@@ -474,6 +584,51 @@ function CreateRecipePage() {
                 </div>
               </div>
             ))}
+            {/* Custom tags */}
+            {selectedTags.filter((tag) => !systemTagSlugs.includes(tag)).length > 0 && (
+              <div>
+                <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                  {t('create.customTagsSection', 'Os meus tags')}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedTags.filter((tag) => !systemTagSlugs.includes(tag)).map((tag) => (
+                    <span
+                      key={tag}
+                      className={`${chipBase} ${chipActive} flex items-center gap-1`}
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}
+                        aria-label={`Remover tag ${tag}`}
+                        className="focus:outline-none"
+                      >
+                        <X size={10} aria-hidden="true" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Add custom tag */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customTagInput}
+                onChange={(e) => setCustomTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
+                placeholder={t('create.addCustomTag', 'Adicionar tag…')}
+                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+              />
+              <button
+                type="button"
+                onClick={addCustomTag}
+                disabled={!customTagInput.trim()}
+                className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#16A34A] hover:bg-[#f0fdf4] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shrink-0"
+              >
+                <Plus size={16} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </CollapsibleSection>
 

@@ -71,18 +71,18 @@ body {
   }
 }
 
-/* Cooking step slide */
-@keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
+/* Cooking step slide — vertical (next step from below, previous from above) */
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-@keyframes slide-in-left {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
+@keyframes slide-in-down {
+  from { opacity: 0; transform: translateY(-24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .step-enter-forward { animation: slide-in-right 220ms ease both; }
-  .step-enter-back    { animation: slide-in-left  220ms ease both; }
+  .step-enter-forward { animation: slide-in-up   220ms ease both; }
+  .step-enter-back    { animation: slide-in-down 220ms ease both; }
 }
 
 /* "I Cooked This" bounce */

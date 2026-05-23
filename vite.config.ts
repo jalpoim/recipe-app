@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import { devtools } from '@tanstack/devtools-vite'
 import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-import viteReact from '@vitejs/plugin-react'
+import viteReact, { reactCompilerPreset } from '@vitejs/plugin-react'
+import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { nitro } from 'nitro/vite'
@@ -14,6 +15,7 @@ const config = defineConfig({
     tanstackStart(),
     nitro(),
     viteReact(),
+    babel({ presets: [reactCompilerPreset()] }),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'auto',

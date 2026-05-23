@@ -1557,7 +1557,8 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | Language switch cache fix | ✅ Done | lang added to filterKey so switching language triggers refetch (May 2026) |
 | Web interface guideline fixes | ✅ Done | motion-reduce on skeletons, aria-hidden+Escape on CookingMode sheet backdrop, overscroll-contain, variable shadow fix on tags.map, dark mode on sticky bottom bar (May 2026) |
 | CookingMode + StepTimer i18n | ✅ Done | cooking namespace added to both locales; all hardcoded PT strings replaced with t() calls (May 2026) |
-| Recipe creation UI | ❌ Not done | Deferred — see locked decisions below |
+| Recipe creation UI | ✅ Done | create.tsx + edit route; image upload; estimate macros; publish toggle |
+| Recipe card — saves, curated mode, cooked sort | ✅ Done | Session 16 — bookmark on card, protein pastels, curated chip, replace flow removed |
 
 ### Recipe library — what's in the DB
 
@@ -1591,7 +1592,7 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
-### What to do next — Session 14 (micro-animations polish)
+### What to do next — Session 17 (recipe creation improvements, protein expansion, library UX, cooking polish)
 
 ---
 
@@ -2078,6 +2079,447 @@ Sessions 10.5 is fully done. Schema and server functions for Session 11 are also
 - Users: joao.chaves.g@hotmail.com (main), jchavesalp@gmail.com (test account), mariaa.ramalho97@gmail.com (girlfriend)
 - Household: `6cf657e3-823c-4a9a-bf27-b2cd3b857641` (owner: jchavesalp, member: mariaa)
 - No regressions: plan page, shopping list, household flows all work as before
+
+---
+
+## Session 17 — Recipe creation improvements, protein expansion, library UX simplification, cooking companion polish
+
+**Source:** User testing feedback (May 2026) — girlfriend's review + user observations.
+
+---
+
+### A. Recipe creation — relaxed validation
+
+**Steps not required.** Remove the `validationSteps` check in `create.tsx`. A recipe without steps is valid (e.g. a sauce, a raw prep, a simple mix). The steps section remains optional — collapse it by default if no steps exist.
+
+**Proteins not required.** Remove the `validationProteins` check. Change the label from "Proteínas (mín. 1)" to "Proteínas". Recipes with no main protein source (yogurt sauce, chocolate syrup, calda de caramelo) are valid.
+
+Update i18n keys:
+- Remove `create.validationProteins` (or change text to "Select at least one protein for better filtering")
+- Update `create.proteinsLabel` to remove the "(mín. 1)" suffix
+
+---
+
+### B. Revised protein slug list (19 slugs, locked)
+
+Replace the current 16-slug list with the following 19, based on Portuguese market research and fitness meal-prep usage. Remove `clams`, `squid`, and the generic `fish` catch-all. Add `sardine`, `hake`, `sea-bass`, `mackerel`, `octopus`, `lamb`. Rename the PT label for `beef` from "Carne" (ambiguous) to "Carne de Vaca".
+
+| Slug | PT label | EN label | Tier |
+|---|---|---|---|
+| `chicken` | Frango | Chicken | 1 — default visible |
+| `beef` | Carne de Vaca | Beef | 1 — default visible |
+| `pork` | Porco | Pork | 1 — default visible |
+| `salmon` | Salmão | Salmon | 1 — default visible |
+| `tuna` | Atum | Tuna | 1 — default visible |
+| `cod` | Bacalhau | Cod | 1 — default visible |
+| `eggs` | Ovos | Eggs | 1 — default visible |
+| `shrimp` | Camarão | Shrimp | 1 — default visible |
+| `turkey` | Peru | Turkey | 2 — behind Ver mais |
+| `lamb` | Borrego | Lamb | 2 — behind Ver mais |
+| `sardine` | Sardinha | Sardines | 2 — behind Ver mais |
+| `hake` | Pescada | Hake | 2 — behind Ver mais |
+| `sea-bream` | Dourada | Sea bream | 2 — behind Ver mais |
+| `sea-bass` | Robalo | Sea bass | 2 — behind Ver mais |
+| `mackerel` | Carapau | Mackerel | 2 — behind Ver mais |
+| `octopus` | Polvo | Octopus | 2 — behind Ver mais |
+| `tofu` | Tofu | Tofu | 2 — behind Ver mais |
+| `legumes` | Leguminosas | Legumes | 2 — behind Ver mais |
+| `whey` | Whey | Whey | 2 — behind Ver mais |
+
+**Remove from locale files and DB:** `clams`, `squid`, `fish` (generic catch-all — replaced by specific slugs above).
+
+**Show more / Show less toggle** (both in `create.tsx` protein picker and in FilterSheet):
+- Show Tier 1 (8 chips) by default
+- `aria-expanded` on the toggle button; "Ver mais" / "Ver menos" label
+- State: local `useState(expanded)`, not persisted
+- Search field above the chip grid filters all 19 regardless of expanded/collapsed state
+- If typed text matches nothing → inline `+ Adicionar "[texto]"` row appears (one tap, no form — custom protein saved to recipe only, logged for analytics)
+
+---
+
+### C. Custom proteins
+
+Allow users to add a protein that's not in the system list.
+
+**Schema:**
+```sql
+create table user_proteins (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null references auth.users(id) on delete cascade,
+  slug         text not null,
+  display_name text not null,
+  language     text not null default 'pt',
+  created_at   timestamptz not null default now(),
+  unique (user_id, slug)
+);
+alter table user_proteins enable row level security;
+create policy "user_proteins_all" on user_proteins for all to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+```
+
+**UX in the protein picker (create form):**
+- Below the protein chip grid, a small text input: "Adicionar proteína…"
+- On submit (Enter or + button): slug = lowercase kebab-case of input, display_name = input as-is
+- Inserted into `user_proteins`; chip immediately appears in the picker as selected
+- Custom proteins appear in a "Os meus" section separate from system proteins
+- In `filterKey` / query: union system slugs + user slugs when filtering library
+
+**Server function:** `createUserProtein({ displayName, language })` in `src/lib/supabase/recipe-queries.ts`.
+**Query:** `fetchUserProteins()` — returns `UserProtein[]` for current user.
+
+---
+
+### D. Custom tags in recipe creation
+
+The `create.tsx` tag section only shows system tags. Add free-text entry for custom tags.
+
+**UX:**
+- Below the system tag sections, a text input: "Adicionar tag…"
+- On Enter / + button: tag slug = lowercase kebab-case, added to the recipe's `tags[]` array
+- Custom tags rendered as chips with an × to remove, in a "Os meus tags" subsection
+- Custom tags NOT stored in a separate table — stored directly in `recipes.tags[]` like system tags
+- In FilterSheet: if current user has recipes with custom tags, show them in a "Os meus tags" section (filtered to tags not in locale files)
+
+---
+
+### E. Library UX simplification — one filter row
+
+**Goal:** Reduce two filter rows to one.
+
+#### E1. Mode selector → compact popover
+
+Replace the horizontal mode chip row (`Todas · Minhas · Guardadas · Oficiais`) with a single button that shows the current selection and opens a dropdown/popover.
+
+- Default appearance: `[Todas ▾]` — a compact pill button showing the current mode
+- Tapping opens a dropdown (Radix `Popover` or a simple absolute-positioned div):
+  - `○ Todas` — exclusive; selecting it deselects all others
+  - `○ Minhas` — multi-selectable with Guardadas/Oficiais
+  - `○ Guardadas` — multi-selectable
+  - `○ Oficiais` — multi-selectable
+
+- **Multi-select logic:** when `Minhas + Guardadas` are both active, the query returns the union (mine OR saved). Update `LibraryMode` type and `fetchLibrary` to accept `modes: LibraryMode[]` instead of `mode: LibraryMode`. Union is handled server-side: fetch mine IDs + saved IDs, deduplicate, filter.
+
+- Button label when multiple: `Minhas + Guardadas` (concatenated), truncated to 20 chars with ellipsis if needed.
+
+- Close on outside click, close on selection.
+
+#### E2. Remove Proteína / Tempo / Calorias chips
+
+Delete the three category chip buttons. Users access protein/time/cal filters via the Filtros button.
+
+#### E3. Filtros button — icon only
+
+Remove the "Filtros" text label from the filter button. Keep only the `SlidersHorizontal` icon + the active count badge (green dot when filters active).
+
+#### E4. Single row result
+
+The header area becomes: `[search bar]` on line 1, `[mode dropdown] [spacer] [Filtros icon]` on line 2. Two rows total instead of three.
+
+**Note:** `sheetSection` state and the per-section scroll behaviour in FilterSheet can stay — the sheet is now only opened via the Filtros button, always opening to the top.
+
+---
+
+### F. Cooking companion — deferred to Session 18
+
+The cooking companion is being fully redesigned as a drawer-based mode on the recipe detail page rather than a separate full-screen experience. See Session 18 for the complete spec.
+
+The only change applied in Session 17: **replace the horizontal step slide animation with a vertical one** (next step slides in from below, previous from above — consistent with the vertical sequence of the step list).
+
+```css
+@keyframes slide-in-up   { from { opacity: 0; transform: translateY(24px); }  to { opacity: 1; transform: translateY(0); } }
+@keyframes slide-in-down { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); } }
+```
+
+Classes: `.step-enter-forward` → `slide-in-up`, `.step-enter-back` → `slide-in-down`. Wrapped in `@media (prefers-reduced-motion: no-preference)`.
+
+---
+
+### G. Bug: Plan multiplier — unnecessary re-renders
+
+When changing `portion_multiplier` on one plan item card, all other cards re-render due to shared state or unstable references.
+
+**Fix:** Enable the React Compiler (see Section J) — it handles this automatically across the entire app. Do not add manual `React.memo` or `useCallback`; that is redundant once the compiler is running. Additionally, move per-item multiplier state to the item card itself (local `useState` for the UI control, with a debounced mutation) so the state change is strictly local.
+
+---
+
+### H. Bug: "Created by" not showing on own recipes
+
+Recipe detail page should show `by [username]` below the recipe name for user-created recipes (both own and others'). Currently missing on own recipes.
+
+**Investigation steps:**
+1. Check `profiles` table — does a row exist for the current user? The auto-create trigger may not have run for existing users.
+2. Check `fetchRecipeById` — does it join to `profiles`? Add `profiles!recipes_owner_id_fkey(username, display_name)` to the select.
+3. Check the render condition — is `recipe.owner_id` null for own recipes (shouldn't be)?
+4. Fix: ensure the profile row is created on sign-in if missing (`upsert on conflict do nothing`). Show `by {profile.display_name ?? profile.username}` whenever `owner_id IS NOT NULL`.
+
+---
+
+### I. Save icon — larger tap target
+
+Increase the bookmark icon size on recipe cards from `w-6 h-6` (Bookmark size 14) to `w-8 h-8` (Bookmark size 18). The current size is too small for one-handed mobile use.
+
+---
+
+### J. React 19 adoptions
+
+The app is on React 19.2 but uses none of its new capabilities. Apply the following — all are low-risk, high-value, and do not conflict with TanStack Query.
+
+#### J1. React Compiler (resolves Section G)
+
+```bash
+pnpm add babel-plugin-react-compiler
+```
+
+```ts
+// vite.config.ts
+viteReact({ babel: { plugins: ['babel-plugin-react-compiler'] } })
+```
+
+Run `npx react-compiler-healthcheck` first and fix any Rules of Hooks violations before enabling. Once the compiler is running, remove any existing `useMemo` / `useCallback` / `React.memo` that exist purely for render performance (keep ones at interop boundaries with non-React consumers).
+
+**Do not use `useOptimistic` or `useActionState`** — known incompatibility with TanStack Query's `useSyncExternalStore` internals causes a `2→3→2` flash bug. Stay on TanStack Query's `onMutate` / `queryClient.setQueryData` optimistic pattern.
+
+#### J2. `useDeferredValue` on the recipe search input
+
+In `index.tsx`, pipe the search input through `useDeferredValue` before it becomes a query key:
+
+```tsx
+const deferredQ = useDeferredValue(localQ)
+// use deferredQ in the queryKey instead of localQ
+```
+
+Pair with `placeholderData: keepPreviousData` already on the infinite query. Result: the list doesn't stutter on every keystroke; React renders the new list when it has capacity.
+
+#### J3. `preconnect` to Supabase
+
+In `src/routes/__root.tsx`, add to the root `<head>`:
+
+```tsx
+import { preconnect } from 'react-dom'
+// inside component, before first render:
+preconnect('https://kgvycfrvxzkfhvuazzle.supabase.co')
+```
+
+This tells the browser to establish the TCP+TLS connection to Supabase before any JS fetch runs. Free latency reduction on initial load, one line.
+
+#### J4. `<Activity>` for bottom tab state preservation
+
+Wrap each bottom tab's content in `<Activity mode={activeTab === 'x' ? 'visible' : 'hidden'}>` in `src/routes/app.tsx`. This keeps filter state, scroll position, and open sheets alive when the user switches tabs, instead of unmounting and remounting. TanStack Query pauses background refetches for hidden tabs automatically (effects are suspended).
+
+---
+
+### Verify before moving on
+
+- Creating a recipe without steps succeeds
+- Creating a recipe without proteins succeeds; recipe still appears in library
+- All 8 Tier 1 proteins visible by default; "Ver mais" shows all 19; "Ver menos" collapses back
+- `beef` displays as "Carne de Vaca" in PT; `clams`/`squid`/`fish` no longer appear anywhere
+- Typing a protein not in the list → inline "+ Adicionar" row → saves to recipe
+- Custom tags can be typed and saved to a recipe; not visible to other users
+- Library header: search bar on row 1; mode dropdown + filtros icon on row 2 (two rows total)
+- Mode dropdown opens on tap; Todas is exclusive; Minhas+Guardadas can be co-selected
+- Filtros button shows icon + active count only (no label text)
+- Cooking companion: Next step slides in from below, Previous from above (vertical only — full redesign in Session 18)
+- Changing one plan item's multiplier does not flash/re-render other cards (React Compiler running)
+- `npx react-compiler-healthcheck` passes with no violations
+- Search input response feels instant; list updates are deferred (no stutter on fast typing)
+- Switching tabs preserves library filter state and scroll position
+- "by [username]" appears on own recipes in recipe detail page
+- Bookmark icon on recipe card is visibly larger and easier to tap
+
+---
+
+## Session 18 — Cooking companion redesign
+
+**Source:** User testing feedback (May 2026) — cooking mode is unused because the recipe detail page is preferred. Goal: make the recipe detail page itself the cooking companion, so users never have to choose between focus and safety.
+
+**Core insight:** Every existing cooking companion forces a choice between *focus* (one step, full screen) and *safety* (see all ingredients and steps at once). The solution is not a better step-by-step mode — it is transforming the recipe detail page in place, so both are available simultaneously.
+
+---
+
+### 1. Concept: one screen, two states
+
+The existing full-screen cooking companion (`CookingMode` component) is **replaced entirely**. The recipe detail page gains a "Cozinhar" toggle. Tapping it does not navigate anywhere — it transforms the page in place:
+
+- Hero image and non-cooking metadata collapse upward, freeing screen space
+- Ingredient list stays fully visible and scrollable (the whole point)
+- A **persistent bottom drawer** slides up in peek state showing the current step, step counter, navigation arrows, and timer
+- Expanding the drawer to full screen gives focus mode for users who want it
+- Toggling off cooking mode reverses everything — page restores exactly as it was
+
+The recipe detail page IS the pre-cook screen. No separate "prepare to cook" flow needed.
+
+---
+
+### 2. What happens to each element when cooking mode activates
+
+**Hidden (collapse animation):**
+- Hero image — collapses height to 0, fades out simultaneously
+- Tags, P/Cal badge, macro grid — fade out with slight upward drift, staggered 30ms apart
+- Like / save / edit / "by [username]" buttons — fade out
+
+**Stays visible:**
+- Recipe name — scales down slightly and locks as a compact sticky header (View Transitions API shared element)
+- Servings + multiplier control — critical for scaling quantities mid-cook; stays interactive
+- Full ingredient list — fully scrollable; ingredients dim progressively as steps are completed
+- Bottom drawer (new) — slides up from below in peek state
+
+**On toggle off:** exact reverse sequence. Drawer slides down first, then metadata fades in, then hero expands. Scroll position preserved.
+
+---
+
+### 3. Bottom drawer — states and content
+
+**Peek state (default):**
+```
+────────────────────────────────
+  ▔▔▔▔  (drag handle)
+  Passo 4 / 11  ●●●●○○○○○○○  ⏱ 2:34 · P3
+  Junta o frango e salteia em lume alto…  (truncated)
+  [← Anterior]              [Próximo →]
+────────────────────────────────
+```
+
+**Expanded state (tap or drag up):**
+```
+────────────────────────────────
+  Passo 4 / 11
+  ─────────────────────────────
+  Junta o frango previamente marinado
+  e salteia em lume alto durante 3-4
+  minutos até dourar de cada lado.
+  Deixa repousar **2 minutos**.   ← tappable timer trigger
+  ─────────────────────────────
+  [← Anterior]              [Próximo →]
+────────────────────────────────
+```
+
+Tapping outside or dragging down collapses back to peek. The ingredient list above remains visible and scrollable in peek state.
+
+---
+
+### 4. Timer — redesigned
+
+**Inline time references as tap targets:**
+Step text is parsed for time references ("2 minutos", "30 segundos", "deixa repousar 10 min"). These render as tappable green underlined text. Tapping starts a timer for that duration. No manual input needed for steps with explicit times.
+
+**Persistent timer badge (cross-step):**
+When a timer is running, a compact badge appears at the top of the drawer in both peek and expanded states:
+```
+⏱ 2:34 · Passo 3
+```
+This directly solves the "which step is this timer from" problem. Multiple timers stack as multiple badges. Tapping a badge expands its detail (remaining time, which step, pause/reset).
+
+**Timer completion:**
+- Web Audio API beep (existing)
+- Concentric ring pulse animation radiates from the badge: `transform: scale(1→2)` + `opacity: 1→0`, 600ms, one cycle only
+
+**Remove:** the current manual minute +/- controls. They are replaced by inline tap targets. A fallback manual input (number field) appears only if the step has no detectable time reference.
+
+---
+
+### 5. Ingredient dimming as steps advance
+
+When the user advances past a step, ingredients that appear in that step's text (matched via the same text-matching heuristic from the plan discussion — not Claude, not a join table) are dimmed to `opacity: 0.4` with a 200ms ease transition. Not struck through — just muted. Remaining ingredients stay full opacity and feel more prominent by contrast.
+
+This is best-effort — ingredients that can't be matched to any step stay full opacity throughout. Graceful degradation, never misleading.
+
+---
+
+### 6. Animation system — complete spec
+
+All animations use `transform` and `opacity` only (compositor-accelerated), except the hero height collapse which touches layout but runs only once per mode toggle. All wrapped in `@media (prefers-reduced-motion: no-preference)`.
+
+#### Cooking mode toggle (enter)
+| Element | Animation | Duration | Easing |
+|---|---|---|---|
+| Hero image | `opacity: 1→0` + `height: Xpx→0` simultaneously | 300ms | ease-out |
+| Tags / badges / buttons | `opacity: 1→0` + `translateY: 0→-8px`, staggered 30ms apart | 200ms | ease-out |
+| Recipe name | View Transitions shared element — scales down and repositions to compact header | 280ms | ease-in-out |
+| Bottom drawer | `translateY: 100%→0` with spring overshoot | 350ms | spring (cubic-bezier(0.34, 1.56, 0.64, 1)) |
+
+#### Cooking mode toggle (exit) — reverse order
+Drawer slides down first (200ms), then metadata fades in (200ms), then hero expands (300ms).
+
+#### Step navigation
+| Element | Animation | Duration |
+|---|---|---|
+| Step text (next) | `translateY: 24px→0` + `opacity: 0→1` | 220ms ease |
+| Step text (previous) | `translateY: -24px→0` + `opacity: 0→1` | 220ms ease |
+| Step counter digits | Odometer roll — digits translate vertically like a mechanical counter | 180ms ease-in-out |
+| Progress bar | `scaleX` grows proportionally | 200ms ease |
+| Ingredient dimming | `opacity: 1→0.4` on matched ingredients | 200ms ease |
+
+#### Drawer expand / collapse
+| State | Animation |
+|---|---|
+| Peek → full | Height spring with slight overshoot; step counter fades out as full step text fades in (cross-fade, not sequential) |
+| Full → peek | Step text fades out first, then height springs down |
+| Drag handle | Subtle width pulse on first appearance to signal draggability |
+
+#### Timer
+| Event | Animation |
+|---|---|
+| Inline time reference tap | Text flashes green background via `::after` pseudo-element, 300ms |
+| Countdown ring | `stroke-dashoffset` animates continuously — SVG circle, pure CSS |
+| Timer complete | Concentric ring pulse: `scale(1→2)` + `opacity(1→0)`, 600ms, one cycle |
+| Badge appearance | Slides in from right: `translateX(20px→0)` + `opacity: 0→1`, 200ms |
+
+#### View Transitions API (recipe name shared element)
+Use `view-transition-name` on the recipe name element. The browser handles the shared element interpolation between the full-size name position and the compact sticky header position. Degrades to instant transition on unsupported browsers (~5% of users).
+
+```css
+.recipe-title { view-transition-name: recipe-title; }
+```
+
+```ts
+document.startViewTransition(() => {
+  setCookingMode(true)
+})
+```
+
+---
+
+### 7. Open decision
+
+**Multiplier lock during cooking:** when the user is mid-cook and changes the serving multiplier, should ingredient quantities update live in the list, or should the multiplier be locked once cooking starts to avoid confusion mid-step?
+
+Options:
+- **Lock it** — safe, predictable, show a "locked" icon with a tap-to-unlock confirmation
+- **Live update** — flexible, but quantities changing while you're halfway through a step is disorienting
+- **Recommendation:** lock by default with a clear unlock gesture. Cooking is execution, not planning.
+
+This decision must be made before implementation.
+
+---
+
+### 8. What is removed
+
+- `CookingMode` component (`$recipeId.tsx`) — deleted entirely
+- `isCooking` state and all conditional rendering around it
+- The "Cozinhar" button that entered the old full-screen mode (replaced by the new toggle)
+- Manual timer minute +/- controls (replaced by inline tap targets)
+- "Sair" / exit button (no longer needed — toggle on the main page exits)
+- The `cooking.*` i18n keys that no longer apply: `exit`, `exitLabel`, `prevStepLabel`, `nextStepLabel`, `stepDotLabel` — audit and remove unused keys
+
+---
+
+### Verify before moving on
+
+- Tapping "Cozinhar" collapses hero and metadata with staggered animation; drawer slides up
+- Ingredient list remains fully scrollable while drawer is in peek state
+- Advancing steps slides text vertically; step counter digits roll like an odometer
+- Ingredients dim progressively as steps advance (best-effort text match)
+- Time references in step text are tappable and start timers
+- Timer badge shows step attribution ("⏱ 2:34 · Passo 3") and persists across step navigation
+- Multiple simultaneous timers stack as separate badges
+- Timer completion triggers ring pulse animation and audio beep
+- Drawer expands to full screen on tap/drag; collapses back to peek
+- Toggling cooking mode off restores the page exactly (scroll position, hero, metadata)
+- Recipe name shared element transition runs smoothly in Chrome/Safari 18+; instant fallback elsewhere
+- All animations absent when "Reduce Motion" is enabled
+- Multiplier control behaviour matches the locked/unlocked decision
 
 ---
 

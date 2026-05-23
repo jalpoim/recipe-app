@@ -798,7 +798,7 @@ function RecipeDetailPage() {
             aria-pressed={isSaved}
             className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60 ${isSaved ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]' : 'bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#16A34A]'}`}
           >
-            {isSaved ? <BookmarkCheck size={14} aria-hidden="true" /> : <Bookmark size={14} aria-hidden="true" />}
+            {isSaved ? <BookmarkCheck size={18} aria-hidden="true" /> : <Bookmark size={18} aria-hidden="true" />}
           </button>
           {/* Edit button — owner only */}
           {isOwner && (
@@ -851,6 +851,13 @@ function RecipeDetailPage() {
                 </span>
               ))}
             </div>
+          )}
+
+          {/* Author */}
+          {recipe.owner_id != null && recipe.author_display_name != null && (
+            <p className="text-xs text-[#9CA3AF]">
+              {t('recipe.by')} <span className="font-medium text-[#6B7280]">{recipe.author_display_name}</span>
+            </p>
           )}
 
           {/* Moderation badge — owner only */}

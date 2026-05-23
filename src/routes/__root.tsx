@@ -1,5 +1,6 @@
 import { HeadContent, Scripts, createRootRoute, Outlet } from '@tanstack/react-router'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { preconnect } from 'react-dom'
 import '../i18n'
 import { ToastProvider } from '../components/Toast'
 import { initAnalytics } from '../lib/analytics'
@@ -58,6 +59,7 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  preconnect('https://kgvycfrvxzkfhvuazzle.supabase.co')
   return (
     <html lang="pt">
       <head>

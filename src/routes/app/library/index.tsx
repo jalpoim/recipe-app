@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
 import { Bookmark, BookmarkCheck, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
@@ -25,25 +25,31 @@ import type { Recipe } from '../../../types/db'
 
 // Muted pastel thumbnail colors per protein slug
 const PROTEIN_COLORS: Record<string, string> = {
-  chicken:   'linear-gradient(135deg, #fef3c7, #fde68a)',
-  salmon:    'linear-gradient(135deg, #ffe4e6, #fecdd3)',
-  tuna:      'linear-gradient(135deg, #dbeafe, #bfdbfe)',
-  turkey:    'linear-gradient(135deg, #fef9c3, #fef08a)',
-  cod:       'linear-gradient(135deg, #e0f2fe, #bae6fd)',
-  eggs:      'linear-gradient(135deg, #fefce8, #fef9c3)',
-  beef:      'linear-gradient(135deg, #fee2e2, #fecaca)',
-  pork:      'linear-gradient(135deg, #fce7f3, #fbcfe8)',
-  whey:      'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-  tofu:      'linear-gradient(135deg, #dcfce7, #bbf7d0)',
-  shrimp:    'linear-gradient(135deg, #fff7ed, #fed7aa)',
-  clams:     'linear-gradient(135deg, #cffafe, #a5f3fc)',
-  'sea-bream': 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
-  squid:     'linear-gradient(135deg, #ede9fe, #ddd6fe)',
-  fish:      'linear-gradient(135deg, #dbeafe, #bfdbfe)',
-  legumes:   'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+  chicken:    'linear-gradient(135deg, #fef3c7, #fde68a)',
+  beef:       'linear-gradient(135deg, #fee2e2, #fecaca)',
+  pork:       'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+  salmon:     'linear-gradient(135deg, #ffe4e6, #fecdd3)',
+  tuna:       'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+  cod:        'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+  eggs:       'linear-gradient(135deg, #fefce8, #fef9c3)',
+  shrimp:     'linear-gradient(135deg, #fff7ed, #fed7aa)',
+  turkey:     'linear-gradient(135deg, #fef9c3, #fef08a)',
+  lamb:       'linear-gradient(135deg, #fdf4ff, #f5d0fe)',
+  sardine:    'linear-gradient(135deg, #e0f2fe, #7dd3fc)',
+  hake:       'linear-gradient(135deg, #f0fdf4, #bbf7d0)',
+  'sea-bream': 'linear-gradient(135deg, #eff6ff, #bfdbfe)',
+  'sea-bass': 'linear-gradient(135deg, #f0fdfa, #99f6e4)',
+  mackerel:   'linear-gradient(135deg, #fefce8, #fde047)',
+  octopus:    'linear-gradient(135deg, #fdf4ff, #e9d5ff)',
+  tofu:       'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+  legumes:    'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+  whey:       'linear-gradient(135deg, #ede9fe, #ddd6fe)',
 }
 
 const PAGE_SIZE = 24
+
+const PROTEIN_TIER1 = ['chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'eggs', 'shrimp']
+const PROTEIN_TIER2 = ['turkey', 'lamb', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'tofu', 'legumes', 'whey']
 
 // ---------- hooks ----------
 
@@ -326,30 +332,7 @@ function RecipeCard({
   )
 }
 
-// ---------- CategoryChip ----------
 
-function CategoryChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string
-  active: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border font-medium transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none whitespace-nowrap max-w-[160px] truncate ${
-        active
-          ? 'border-[#16A34A] text-[#15803d] bg-[#dcfce7]'
-          : 'border-[#E5E7EB] text-[#6B7280] bg-white'
-      }`}
-    >
-      {label}
-    </button>
-  )
-}
 
 // ---------- FilterSheet ----------
 
@@ -358,7 +341,6 @@ interface FilterSheetProps {
   onOpenChange: (open: boolean) => void
   section: SheetSection
   search: LibrarySearch
-  allProteins: string[]
   allTags: string[]
   allIngredientNames: string[]
   onUpdate: (patch: Partial<LibrarySearch>) => void
@@ -370,7 +352,6 @@ function FilterSheet({
   onOpenChange,
   section,
   search,
-  allProteins,
   allTags,
   allIngredientNames,
   onUpdate,
@@ -380,6 +361,7 @@ function FilterSheet({
   const [ingSearch, setIngSearch] = useState('')
   const debouncedIngSearch = useDebounce(ingSearch, 150)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+  const [proteinsExpanded, setProteinsExpanded] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const proteinRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef<HTMLDivElement>(null)
@@ -496,17 +478,24 @@ function FilterSheet({
             <div ref={proteinRef}>
               <p className={sectionHeader}>{t('filters.protein')}</p>
               <div className="flex flex-wrap gap-2">
-                {allProteins.map((slug) => (
+                {(proteinsExpanded ? [...PROTEIN_TIER1, ...PROTEIN_TIER2] : PROTEIN_TIER1).map((slug) => (
                   <button
                     key={slug}
                     onClick={() => toggleProtein(slug)}
                     aria-pressed={search.proteins.includes(slug)}
                     className={chipCls(search.proteins.includes(slug))}
                   >
-                    {t(`proteins.${slug}`)}
+                    {t(`proteins.${slug}`, slug)}
                   </button>
                 ))}
               </div>
+              <button
+                aria-expanded={proteinsExpanded}
+                onClick={() => setProteinsExpanded((e) => !e)}
+                className="mt-2 text-xs text-[#16A34A] font-medium focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              >
+                {proteinsExpanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
+              </button>
             </div>
 
             {/* Tempo */}
@@ -691,6 +680,8 @@ function LibraryPage() {
   const { showToast } = useToast()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
+  const [modeDropdownOpen, setModeDropdownOpen] = useState(false)
+  const modeDropdownRef = useRef<HTMLDivElement>(null)
   const parentRef = useRef<HTMLDivElement>(null)
 
   function update(patch: Partial<LibrarySearch>) {
@@ -716,6 +707,7 @@ function LibraryPage() {
 
   const [localQ, setLocalQ] = useState(search.q)
   const debouncedQ = useDebounce(localQ, 500)
+  const deferredQ = useDeferredValue(search.q)
 
   useEffect(() => {
     if (debouncedQ !== search.q) {
@@ -728,6 +720,17 @@ function LibraryPage() {
     setLocalQ(search.q)
   }, [search.q])
 
+  useEffect(() => {
+    if (!modeDropdownOpen) return
+    function handleOutside(e: MouseEvent) {
+      if (modeDropdownRef.current && !modeDropdownRef.current.contains(e.target as Node)) {
+        setModeDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutside)
+    return () => document.removeEventListener('mousedown', handleOutside)
+  }, [modeDropdownOpen])
+
   // mode is in filterKey — changes trigger a full re-fetch
   // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
   // popular sort is also handled client-side over the loaded pages
@@ -738,11 +741,11 @@ function LibraryPage() {
       maxTime: search.maxTime,
       tags: search.tags,
       ingredients: search.ingredients,
-      q: search.q,
+      q: deferredQ,
       mode: search.mode,
       lang,
     }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, search.q, search.mode, lang],
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.mode, lang],
   )
 
   const {
@@ -894,17 +897,6 @@ function LibraryPage() {
     }
   }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const proteinLabel = useMemo(() => {
-    if (search.proteins.length === 0) return t('filters.protein')
-    return search.proteins.map((s) => t(`proteins.${s}`)).join(' · ')
-  }, [search.proteins, t])
-
-  const timeLabel =
-    search.maxTime !== undefined ? `< ${search.maxTime} min` : t('filters.time')
-
-  const calLabel =
-    search.maxCal !== undefined ? `< ${search.maxCal} cal` : t('filters.calories')
-
   const hasActiveFilters = Boolean(
     search.q ||
       search.proteins.length ||
@@ -965,52 +957,64 @@ function LibraryPage() {
             )}
           </div>
 
-          {/* Mode chips */}
-          <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
-              <CategoryChip
-                key={m}
-                label={t(`library.${m}`)}
-                active={search.mode === m}
-                onClick={() => update({ mode: m })}
-              />
-            ))}
-          </div>
+          {/* Mode dropdown + Filtros icon */}
+          <div className="flex items-center gap-2 mt-3">
+            {/* Mode selector */}
+            <div ref={modeDropdownRef} className="relative">
+              <button
+                onClick={() => setModeDropdownOpen((o) => !o)}
+                aria-haspopup="listbox"
+                aria-expanded={modeDropdownOpen}
+                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-[#E5E7EB] bg-white text-[#1A1A1A] font-medium transition-colors hover:border-[#D1D5DB] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              >
+                {t(`library.${search.mode}`)}
+                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" className="text-[#9CA3AF]">
+                  <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                </svg>
+              </button>
+              {modeDropdownOpen && (
+                <div
+                  role="listbox"
+                  className="absolute top-full left-0 mt-1 w-36 rounded-xl border border-[#E5E7EB] bg-white shadow-md z-20 py-1 overflow-hidden"
+                >
+                  {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
+                    <button
+                      key={m}
+                      role="option"
+                      aria-selected={search.mode === m}
+                      onClick={() => { update({ mode: m }); setModeDropdownOpen(false) }}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                        search.mode === m
+                          ? 'text-[#15803d] font-semibold bg-[#f0fdf4]'
+                          : 'text-[#1A1A1A] hover:bg-[#F9FAFB]'
+                      }`}
+                    >
+                      {t(`library.${m}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
 
-          {/* Category chip row */}
-          <div className="flex gap-2 mt-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex-1" />
+
+            {/* Filtros icon-only button */}
             <button
               onClick={() => openSheet('protein')}
-              aria-label="Abrir filtros"
-              className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border font-medium transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none relative ${
+              aria-label={t('filters.sheetTitle')}
+              className={`relative flex items-center justify-center w-8 h-8 rounded-full border transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 activeFilterCount > 0
                   ? 'border-[#16A34A] text-[#15803d] bg-[#dcfce7]'
-                  : 'border-[#E5E7EB] text-[#6B7280] bg-white'
+                  : 'border-[#E5E7EB] text-[#6B7280] bg-white hover:border-[#D1D5DB]'
               }`}
             >
-              <SlidersHorizontal size={12} aria-hidden="true" />
-              Filtros
+              <SlidersHorizontal size={14} aria-hidden="true" />
               {activeFilterCount > 0 && (
-                <span className="ml-0.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
                   {activeFilterCount}
                 </span>
               )}
             </button>
-            <CategoryChip
-              label={proteinLabel}
-              active={search.proteins.length > 0}
-              onClick={() => openSheet('protein')}
-            />
-            <CategoryChip
-              label={timeLabel}
-              active={search.maxTime !== undefined}
-              onClick={() => openSheet('time')}
-            />
-            <CategoryChip
-              label={calLabel}
-              active={search.maxCal !== undefined}
-              onClick={() => openSheet('calories')}
-            />
           </div>
         </div>
 
@@ -1101,7 +1105,6 @@ function LibraryPage() {
         onOpenChange={setSheetOpen}
         section={sheetSection}
         search={search}
-        allProteins={meta?.proteins ?? []}
         allTags={meta?.tags ?? []}
         allIngredientNames={meta?.ingredients ?? []}
         onUpdate={update}
