@@ -2562,15 +2562,146 @@ This decision must be made before implementation.
 
 ---
 
+## Session 19 — Image upload for user-created recipes
+
+**Goal:** User-created recipes can have a photo. Private recipes only — no moderation pipeline needed yet.
+
+**Prerequisites:** `pnpm add @filencloud/browser-image-compression` (if not already installed).
+
+---
+
+### 1. Storage
+
+Use the existing `recipe-images` public bucket. Path: `{recipeId}/hero.jpg` and `{recipeId}/thumb.jpg`. UUID-based paths provide sufficient obscurity for private recipe images in v1.
+
+### 2. Image upload UI (create.tsx + edit.tsx)
+
+In the optional Image section that already exists in both forms:
+
+- File input (`accept="image/*"`) that opens the native camera/gallery picker on mobile
+- On file selected: client-side compress with `@filencloud/browser-image-compression`:
+  - Hero: max 1200px wide, JPEG 85%
+  - Thumb: 400×400 cover crop, JPEG 80%
+- Show a preview of the compressed image before saving
+- Upload both variants to Storage on form save (after the recipe row is created, so `recipeId` is available)
+- Update `recipes.image_url` and `recipes.image_thumb_url` with the public CDN URLs
+- On edit: show existing image with a "Remove" option; re-upload if changed
+
+### 3. Storage RLS
+
+Add a policy to `recipe-images` that allows authenticated users to upload to their own recipe paths:
+```sql
+-- In Supabase dashboard → Storage → recipe-images → Policies
+-- INSERT: authenticated users can upload to any path (recipe ownership enforced by app logic)
+-- SELECT: public (already set for public bucket)
+```
+
+### Verify before moving on
+
+- Creating a recipe with a photo shows the thumbnail on the recipe card and detail page
+- Editing a recipe replaces the photo correctly
+- Removing the photo clears `image_url` and `image_thumb_url` (falls back to protein gradient)
+- Existing recipes without images still show gradient thumbnails
+
+---
+
+## Session 20 — Public recipe visibility gate
+
+**Goal:** "Share with community" actually gates the recipe behind moderation instead of publishing it instantly.
+
+**No Edge Function required.** Admin approval is a manual SQL update in the Supabase dashboard for now.
+
+---
+
+### 1. Fix the create/edit mutation
+
+In `createRecipe` (and `updateRecipe`) server functions, when `visibility = 'public'`, explicitly set `moderation_status = 'pending_review'`. Do not rely on the DB default (which is `'approved'`).
+
+```ts
+// in the INSERT / UPDATE payload:
+moderation_status: visibility === 'public' ? 'pending_review' : 'approved',
+```
+
+### 2. RLS check
+
+Verify the existing recipes SELECT policy already excludes `pending_review` public recipes from other users' queries. The Session 13a spec says: "User public recipes (`visibility = 'public'`): visible only when `moderation_status = 'approved'`". Confirm this is in the live policy — if not, update it.
+
+### 3. Owner badge on their own pending recipes
+
+In `RecipeCard` and the detail page, if `recipe.owner_id === currentUserId` and `recipe.moderation_status === 'pending_review'`, show a yellow "Em revisão" badge. If `rejected`, show a red "Rejeitada" badge with a "Ver motivo" that shows a generic explanation (no per-recipe rejection reason in v1).
+
+### 4. Admin approval workflow
+
+No UI needed. Admin approves a recipe by running in Supabase SQL editor:
+```sql
+UPDATE recipes SET moderation_status = 'approved' WHERE id = '<recipeId>';
+```
+
+Document this in a `docs/admin.md` file so it's findable.
+
+### Verify before moving on
+
+- Creating a recipe with "Share with community" ON → recipe visible to owner only, shows "Em revisão" badge
+- Recipe does NOT appear in the main library for other users until approved
+- Running the SQL approval → recipe appears in library immediately
+- Existing system recipes and already-approved user recipes unaffected
+
+---
+
+## Session 21 — Data quality: ingredient aliases + nutrition
+
+**Goal:** Better ingredient search (aliases) and populate nutrition data for the ingredients table.
+
+---
+
+### 1. Ingredient aliases
+
+Check if `aliases text[]` column exists on the `ingredients` table:
+```sql
+SELECT column_name FROM information_schema.columns
+WHERE table_name = 'ingredients' AND column_name = 'aliases';
+```
+
+If missing, add it:
+```sql
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS aliases text[] NOT NULL DEFAULT '{}';
+CREATE INDEX IF NOT EXISTS ingredients_aliases_gin ON ingredients USING gin(aliases);
+```
+
+Then run the existing script: `npx tsx scripts/generate-ingredient-aliases.ts`
+
+Update the ingredient autocomplete query in `searchIngredients` (in `src/lib/supabase/recipe-queries.ts`) to also match against aliases:
+```ts
+// current: .ilike('name', `%${q}%`)
+// updated: check name OR any alias
+.or(`name.ilike.%${q}%,aliases.cs.{${q}}`)
+// or via RPC if the OR syntax is awkward
+```
+
+### 2. Ingredient nutrition seed
+
+Write `scripts/seed-ingredient-nutrition.ts`:
+
+1. Download USDA FoodData Central SR Legacy CSV from `https://fdc.nal.usda.gov/download-datasets.html` — save to `scripts/usda-data/` (add to `.gitignore`)
+2. Parse `food.csv` + `food_nutrient.csv` to build a lookup `{ foodName: { calories, protein_g, carbs_g, fat_g } }` per 100g (nutrient IDs: 1008=calories, 1003=protein, 1005=carbs, 1004=fat)
+3. For each row in `ingredients` table: fuzzy name match (exact first, then case-insensitive, then strip parentheticals)
+4. On match: `UPDATE ingredients SET calories_per_100g = ..., protein_per_100g = ..., ...`
+5. Idempotent: skip rows where `calories_per_100g IS NOT NULL`
+6. Log matched count + unmatched names
+
+Run with: `npx tsx scripts/seed-ingredient-nutrition.ts`
+
+### Verify before moving on
+
+- `SELECT COUNT(*) FROM ingredients WHERE aliases != '{}'` returns > 0
+- Typing a synonym in the ingredient search on the create form returns the right ingredient
+- `SELECT COUNT(*) FROM ingredients WHERE calories_per_100g IS NOT NULL` returns a majority of rows
+
+---
+
 ## Known bugs + features backlog (updated Session 17)
 
 ### Bugs — remaining open
-
-#### 3. Estimate macros button missing from recipe creation form
-The Macros section exists in the creation form but the "Estimate macros" button (calls Claude Haiku on free-text ingredients) was never implemented. Add per spec.
-
-#### 4. Ingredient qty + unit fields missing from creation form
-Each ingredient row should be `[combobox] [qty input] [unit selector] [× remove]`. Only the combobox exists. Add qty and unit inputs.
 
 #### 15. Ingredient aliases
 - Add `aliases text[]` column (GIN indexed) to `ingredients` table
@@ -2579,10 +2710,12 @@ Each ingredient row should be `[combobox] [qty input] [unit selector] [× remove
 
 ---
 
-### Resolved (Session 17)
+### Resolved (Sessions 16–17)
 
 - ✅ #1 Rogue divider after first ingredient
 - ✅ #2 Shopping list group cards stuck dark in light mode
+- ✅ #3 Estimate macros button — implemented in create.tsx (`estimateMutation` calling `estimateMacros` server fn)
+- ✅ #4 Ingredient qty + unit fields — implemented in create.tsx (`IngredientRow` component)
 - ✅ #5 Recipe creation FAB too low (hidden behind bottom nav)
 - ✅ #6 "See More" on filter tags does nothing
 - ✅ #7 "Mine" filter stale after recipe creation
