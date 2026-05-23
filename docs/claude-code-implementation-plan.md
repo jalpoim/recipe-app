@@ -1559,6 +1559,13 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | CookingMode + StepTimer i18n | ✅ Done | cooking namespace added to both locales; all hardcoded PT strings replaced with t() calls (May 2026) |
 | Recipe creation UI | ✅ Done | create.tsx + edit route; image upload; estimate macros; publish toggle |
 | Recipe card — saves, curated mode, cooked sort | ✅ Done | Session 16 — bookmark on card, protein pastels, curated chip, replace flow removed |
+| Session 17 — recipe creation improvements | ✅ Done | Relaxed validation (steps + proteins optional); 19-slug protein list with Tier 1/2; custom proteins (user_proteins table); custom tags; ProteinPicker extracted to `src/components/ProteinPicker.tsx`; edit form at full parity with create form |
+| Session 17 — library UX simplification | ✅ Done | Header reduced to 2 rows: search+sort+filter icon (row 1), mode chips+Settings (row 2); title row and count row removed; Plan tab header replaced with compact meta row (count + calendar icon); Shopping tab header removed entirely |
+| Session 17 — multi-select mode | ✅ Done | `mode: LibraryMode` → `modes: LibraryMode[]`; "Todas" clears to empty array (show all); Minhas/Guardadas/Oficiais combinable via OR conditions in fetchLibrary; all callers updated |
+| Session 17 — scroll position preservation | ✅ Done | sessionStorage saves scroll on library unmount, `requestAnimationFrame` restore on back navigation once cached recipes render |
+| Session 17 — FilterSheet fixes | ✅ Done | Ingredientes moved back to last position (Proteína→Tempo→Calorias→Tags→Ingredientes); ingredient input auto-scrolls section into view on focus; protein "Ver mais" changed to dashed chip style |
+| Session 17 — React Compiler + React 19 | ✅ Done | `@rolldown/plugin-babel` + `reactCompilerPreset`; `useDeferredValue` on search input; `preconnect` to Supabase in root; scroll preservation via sessionStorage (React `<Activity>` deferred — experimental in TanStack Router) |
+| Session 17 — bug fixes | ✅ Done | "Created by" on own recipes (separate profiles query); P/Cal badge hidden when no macros; optional ingredient double-label; save icon tap target; FAB height; "See More" tag wiring; Mine filter invalidation on create; shopping dark mode |
 
 ### Recipe library — what's in the DB
 
@@ -1592,7 +1599,7 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
-### What to do next — Session 17 (recipe creation improvements, protein expansion, library UX, cooking polish)
+### What to do next — Session 18 (cooking companion redesign)
 
 ---
 
@@ -2555,15 +2562,9 @@ This decision must be made before implementation.
 
 ---
 
-## Known bugs + features backlog (Session 16)
+## Known bugs + features backlog (updated Session 17)
 
-### Bugs
-
-#### 1. Rogue divider after first ingredient on recipe detail page
-`src/routes/app/library/$recipeId.tsx` — visible white border line renders after the first ingredient only. Fix: ensure `divide-y` children have consistent border rendering; no border above the first item.
-
-#### 2. Shopping list group cards stuck dark in light mode
-`src/routes/app/shopping.tsx` — category group containers use hardcoded dark background classes instead of theme-aware ones. Fix: replace with `bg-white dark:bg-gray-800` equivalents.
+### Bugs — remaining open
 
 #### 3. Estimate macros button missing from recipe creation form
 The Macros section exists in the creation form but the "Estimate macros" button (calls Claude Haiku on free-text ingredients) was never implemented. Add per spec.
@@ -2571,46 +2572,27 @@ The Macros section exists in the creation form but the "Estimate macros" button 
 #### 4. Ingredient qty + unit fields missing from creation form
 Each ingredient row should be `[combobox] [qty input] [unit selector] [× remove]`. Only the combobox exists. Add qty and unit inputs.
 
-#### 5. Recipe creation FAB too low — hidden behind bottom nav
-The `+` FAB on the library page sits below the bottom nav. Increase `bottom` offset to clear the nav (e.g. `bottom-20` or `bottom-24`).
-
-#### 6. "See More" on filter tags does nothing
-FilterSheet tags section has a "See More" / "Ver mais" toggle that doesn't expand the tag list. Fix the state wiring.
-
-#### 7. "Mine" filter stale after recipe creation
-After creating a recipe, activating the "Mine" chip shows the old cached list. Fix: call `queryClient.invalidateQueries` on the library query key after a successful creation mutation.
-
-#### 8. "Created by" not showing on own recipes
-Recipe cards for user-created recipes should show "by [username]" linking to `/app/profile/$username`. This row is missing or not rendering for the current user's own recipes.
-
-#### 9. P/Cal "0" badge shows when recipe has no macros
-When `calories` and `protein` are both null or zero, hide the P/Cal badge entirely instead of showing "0".
-
-#### 10. Optional ingredients show duplicate label
-Ingredients with `(opcional)` in their `raw_text` also render an `opcional` badge — double-labelled. Fix: strip the `(opcional)` prefix from display text when the badge is present.
-
----
-
-### Features
-
-#### 11. Protein-coloured muted pastel thumbnails
-Recipe card fallback thumbnail (when no image) should use a muted pastel colour keyed to the recipe's first protein slug. Map: chicken → warm amber, salmon → dusty orange, beef → muted red, pork → rose, eggs → soft yellow, tuna → slate blue, cod → light teal, turkey → warm brown, shrimp → blush pink, tofu → sage green, whey → lavender. Multiple proteins → use first slug.
-
-#### 12. Save (bookmark) button on recipe card
-Add a tappable bookmark icon to the bottom-right of each recipe card. Tapping toggles `type='save'` in `user_recipe_interactions` (same mutation as the detail page save button). Optimistic update. Only show on system and public user recipes — not on private recipes the user owns.
-
-#### 13. Popular and Most Cooked sort options
-- Rename/confirm "Popular" sort = `like_count DESC`
-- Add "Most Cooked" sort = `cook_count DESC`
-- "Most Cooked" hidden in sort sheet until total `cook_log` entries across all users ≥ 50 (frontend threshold check)
-
-#### 14. "Curated" mode chip in library
-Add a "Curated" chip to the library mode chip row (alongside Mine, Saved, All). Filters to `owner_id IS NULL` (system recipes only). Label: "Curated" in EN, "Selecionados" in PT.
-
 #### 15. Ingredient aliases
 - Add `aliases text[]` column (GIN indexed) to `ingredients` table
 - Write `scripts/generate-ingredient-aliases.ts`: runs all 184 ingredient names through Claude Haiku with a strict prompt that only accepts true synonyms (same ingredient, different name — no substitutes, no similar-but-different items). Outputs aliases directly to DB with no manual approval step.
 - Update ingredient autocomplete query: check `name ILIKE %term%` first, then `term ILIKE ANY(aliases)` as fallback
+
+---
+
+### Resolved (Session 17)
+
+- ✅ #1 Rogue divider after first ingredient
+- ✅ #2 Shopping list group cards stuck dark in light mode
+- ✅ #5 Recipe creation FAB too low (hidden behind bottom nav)
+- ✅ #6 "See More" on filter tags does nothing
+- ✅ #7 "Mine" filter stale after recipe creation
+- ✅ #8 "Created by" not showing on own recipes
+- ✅ #9 P/Cal "0" badge when no macros
+- ✅ #10 Optional ingredients duplicate label
+- ✅ #11 Protein-coloured muted pastel thumbnails
+- ✅ #12 Save (bookmark) button on recipe card
+- ✅ #13 Popular + Most Cooked sort options
+- ✅ #14 "Curated" mode chip in library (now Oficiais, multi-selectable)
 
 ---
 
