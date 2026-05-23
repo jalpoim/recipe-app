@@ -13,7 +13,7 @@ import {
   updatePlanItemMultiplier,
   archiveAndCreatePlan,
 } from '../../lib/supabase/plan-queries'
-import { fetchCookLog } from '../../lib/supabase/cook-log-queries'
+import { fetchCookLog, deleteCookLogEntry } from '../../lib/supabase/cook-log-queries'
 import type { CookLogWithRecipe } from '../../lib/supabase/cook-log-queries'
 import type { PlanItemWithRecipe, ActivePlanWithCount, Recipe } from '../../types/db'
 
@@ -196,12 +196,30 @@ function formatDateHeading(dateStr: string) {
 function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const { t } = useTranslation()
   const [weekOffset, setWeekOffset] = useState(0)
+  const qc = useQueryClient()
 
   const { data: cookLog = [] } = useQuery({
     queryKey: ['cook-log'],
     queryFn: fetchCookLog,
     staleTime: 2 * 60 * 1000,
     enabled: open,
+  })
+
+  const deleteEntryMutation = useMutation({
+    mutationFn: (cookLogId: string) => deleteCookLogEntry({ data: { cookLogId } }),
+    onMutate: async (cookLogId) => {
+      await qc.cancelQueries({ queryKey: ['cook-log'] })
+      const prev = qc.getQueryData<CookLogWithRecipe[]>(['cook-log'])
+      qc.setQueryData<CookLogWithRecipe[]>(['cook-log'], (old) => old?.filter((e) => e.id !== cookLogId) ?? [])
+      return { prev }
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['cook-log'], ctx.prev)
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['cook-log'] })
+      qc.invalidateQueries({ queryKey: ['cook-counts'] })
+    },
   })
 
   const { start, end } = useMemo(() => getWeekBounds(weekOffset), [weekOffset])
@@ -321,9 +339,17 @@ function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                       {entries.map((entry) => (
                         <div
                           key={entry.id}
-                          className="rounded-xl bg-white border border-[#F0F0EE] px-3 py-2 text-sm text-[#1A1A1A] font-medium"
+                          className="rounded-xl bg-white border border-[#F0F0EE] px-3 py-2 flex items-center justify-between gap-2"
                         >
-                          {entry.recipe_name}
+                          <span className="text-sm text-[#1A1A1A] font-medium flex-1 truncate">{entry.recipe_name}</span>
+                          <button
+                            onClick={() => deleteEntryMutation.mutate(entry.id)}
+                            disabled={deleteEntryMutation.isPending}
+                            aria-label={`Eliminar registo de ${entry.recipe_name}`}
+                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus:outline-none disabled:opacity-40"
+                          >
+                            <X size={12} aria-hidden="true" />
+                          </button>
                         </div>
                       ))}
                     </div>

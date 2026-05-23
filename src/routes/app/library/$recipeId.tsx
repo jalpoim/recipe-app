@@ -117,18 +117,6 @@ function parseTimeRefs(text: string): TimeRef[] {
   return refs
 }
 
-// Dim ingredient IDs whose names appear in completed step texts
-function getDimmedIngredients(completedTexts: string[], ingredients: RecipeIngredient[]): Set<string> {
-  const combined = completedTexts.join(' ').toLowerCase()
-  const dimmed = new Set<string>()
-  for (const ing of ingredients) {
-    if (!ing.name) continue
-    const name = ing.name.toLowerCase()
-    if (name.length >= 4 && combined.includes(name)) dimmed.add(ing.id)
-  }
-  return dimmed
-}
-
 // ---------- useTimers hook ----------
 
 function useTimers(recipeName: string) {
@@ -360,6 +348,11 @@ function CookingDrawer({
   const [showManualTimer, setShowManualTimer] = useState(false)
   const [manualMinutes, setManualMinutes] = useState(1)
 
+  function openTimer() {
+    setExpanded(true)
+    setShowManualTimer(true)
+  }
+
   const currStep = steps[stepIndex]
   const isFirst = stepIndex === 0
   const isLast = stepIndex === steps.length - 1
@@ -389,9 +382,6 @@ function CookingDrawer({
     onStartTimer(id, secs, stepIndex, t('cooking.timerStep', { step: stepIndex + 1 }))
     setShowManualTimer(false)
   }
-
-  const refs = parseTimeRefs(currStep.text)
-  const hasInlineTimers = refs.length > 0
 
   return (
     <div
@@ -438,6 +428,16 @@ function CookingDrawer({
             <p className="text-xs font-semibold text-[#9CA3AF] tracking-widest uppercase">
               {t('cooking.stepOf', { current: stepIndex + 1, total: steps.length })}
             </p>
+            {!expanded && (
+              <button
+                onClick={openTimer}
+                aria-label={t('cooking.setTimer')}
+                className="flex items-center gap-1 text-[10px] text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none"
+              >
+                <Timer size={12} aria-hidden="true" />
+                {t('cooking.timer')}
+              </button>
+            )}
           </div>
           <div className="h-0.5 bg-[#F3F4F6] rounded-full overflow-hidden mb-2">
             <div
@@ -448,7 +448,7 @@ function CookingDrawer({
         </div>
 
         {/* Step text */}
-        <div className={`flex-1 px-4 overflow-y-auto overscroll-contain ${expanded ? '' : 'line-clamp-2'}`}>
+        <div className="flex-1 px-4 overflow-y-auto overscroll-contain">
           <p
             key={`${stepIndex}-${direction}`}
             className={`text-sm text-[#1A1A1A] leading-relaxed ${
@@ -463,8 +463,8 @@ function CookingDrawer({
             />
           </p>
 
-          {/* Manual timer fallback (expanded only, no inline times) */}
-          {expanded && !hasInlineTimers && (
+          {/* Manual timer (expanded only) */}
+          {expanded && (
             <div className="mt-3">
               {showManualTimer ? (
                 <div className="flex items-center gap-2 mt-2">
@@ -644,12 +644,6 @@ function RecipeDetailPage() {
     exitCooking()
     logCookMutation.mutate()
   }
-
-  // Ingredient dimming
-  const completedTexts = recipe.recipe_steps
-    .slice(0, completedUpToStep)
-    .map((s) => s.text)
-  const dimmedIds = isCooking ? getDimmedIngredients(completedTexts, recipe.recipe_ingredients) : new Set<string>()
 
   // Interactions
   const { data: interactions = [] } = useQuery({
@@ -857,6 +851,42 @@ function RecipeDetailPage() {
             </span>
           </div>
 
+          {/* Ingredients — always visible */}
+          {recipe.recipe_ingredients.length > 0 && (
+            <div>
+              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.ingredients')}</h2>
+              <div className="space-y-3">
+                {ingredientSections.map(({ label, items }) => (
+                  <div key={label ?? '__main__'} className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
+                    {label && (
+                      <div className="px-4 py-2 border-b border-[#F3F4F6] flex items-center gap-2">
+                        <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{label}</span>
+                        <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">{t('recipe.optional')}</span>
+                      </div>
+                    )}
+                    <div className="divide-y divide-[#F3F4F6]">
+                      {items.map((ing) => (
+                        <div
+                          key={ing.id}
+                          className={`px-4 py-3 flex items-baseline justify-between gap-2 ${ing.is_optional && !label ? 'opacity-60' : ''}`}
+                        >
+                          <span className={`text-sm ${ing.is_optional && !label ? 'text-[#6B7280]' : 'text-[#1A1A1A]'}`}>
+                            {scaleIngredient(ing, multiplier, recipe.servings)}
+                          </span>
+                          {ing.is_optional && !label && (
+                            <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                              {t('recipe.optional')}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Collapsing metadata — fades out when cooking starts */}
           <div
             style={{
@@ -948,45 +978,6 @@ function RecipeDetailPage() {
                   <div className="text-[9px] text-[#9CA3AF] font-medium">{unit}</div>
                 </div>
               ))}
-            </div>
-          )}
-
-          {/* Ingredients — always visible, dim during cooking */}
-          {recipe.recipe_ingredients.length > 0 && (
-            <div>
-              <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">{t('recipe.ingredients')}</h2>
-              <div className="space-y-3">
-                {ingredientSections.map(({ label, items }) => (
-                  <div key={label ?? '__main__'} className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
-                    {label && (
-                      <div className="px-4 py-2 border-b border-[#F3F4F6] flex items-center gap-2">
-                        <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">{label}</span>
-                        <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5">{t('recipe.optional')}</span>
-                      </div>
-                    )}
-                    <div className="divide-y divide-[#F3F4F6]">
-                      {items.map((ing) => {
-                        const dimmed = dimmedIds.has(ing.id)
-                        return (
-                          <div
-                            key={ing.id}
-                            className={`px-4 py-3 flex items-baseline justify-between gap-2 transition-opacity duration-200 ${dimmed ? 'opacity-40' : (ing.is_optional && !label ? 'opacity-60' : '')}`}
-                          >
-                            <span className={`text-sm ${ing.is_optional && !label && !dimmed ? 'text-[#6B7280]' : 'text-[#1A1A1A]'}`}>
-                              {scaleIngredient(ing, multiplier, recipe.servings)}
-                            </span>
-                            {ing.is_optional && !label && (
-                              <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">
-                                {t('recipe.optional')}
-                              </span>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           )}
 

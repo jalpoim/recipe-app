@@ -221,6 +221,24 @@ function CategoryPicker({
   )
 }
 
+function buildRecipeShareText(items: PlanItemWithRecipe[]): string {
+  const lines: string[] = []
+  for (const item of items) {
+    const visibleIngs = item.recipe.recipe_ingredients.filter((i) => !i.is_pantry)
+    if (visibleIngs.length === 0) continue
+    lines.push(`${item.recipe.name.toUpperCase()} (${item.portion_multiplier}×)`)
+    for (const ing of visibleIngs) {
+      const qty = scaleQty(ing.quantity, item.portion_multiplier, item.recipe.servings)
+      const qtyStr = fmtQty(qty)
+      const name = ing.name ?? ing.raw_text
+      const parts = [qtyStr, ing.unit, name].filter(Boolean)
+      lines.push(`• ${parts.join(' ')}`)
+    }
+    lines.push('')
+  }
+  return lines.join('\n').trim()
+}
+
 // ---------- Por receita view ----------
 
 function RecipeView({
@@ -234,7 +252,13 @@ function RecipeView({
 }) {
   if (items.length === 0) return null
 
+  const shareText = buildRecipeShareText(items)
+
   return (
+    <>
+      <div className="flex justify-end mb-3">
+        <ShareButton text={shareText} />
+      </div>
     <div className="space-y-3">
       {items.map((item) => {
         const visibleIngs = item.recipe.recipe_ingredients.filter((i) => !i.is_pantry)
@@ -270,6 +294,7 @@ function RecipeView({
         )
       })}
     </div>
+    </>
   )
 }
 

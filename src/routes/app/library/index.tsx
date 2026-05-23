@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
-import { Bookmark, BookmarkCheck, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowUpDown, Bookmark, BookmarkCheck, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -216,7 +216,7 @@ function RecipeCard({
         params={{ recipeId: recipe.id }}
         search={{ from: undefined, planItemId: undefined }}
         onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: 'library' })}
-        className="block p-4"
+        className="block px-4 pt-4 pb-3"
       >
         <div className="flex items-start gap-3">
           {/* Thumbnail */}
@@ -1032,13 +1032,18 @@ function LibraryPage() {
               )
             })}
             <div className="flex-1" />
-            {/* Sort select */}
+            {/* Sort select — styled distinctly from toggle chips */}
             <div className="relative shrink-0 flex items-center">
+              <ArrowUpDown
+                size={10}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              />
               <select
                 value={search.sort}
                 onChange={(e) => update({ sort: e.target.value as Sort })}
                 aria-label={t('sort.label')}
-                className="appearance-none bg-white border border-[#E5E7EB] rounded-full pl-2.5 pr-6 py-1.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
+                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-6 pr-6 py-1.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
               >
                 <option value="pcal">P/Cal</option>
                 <option value="popular">{t('sort.popular')}</option>
