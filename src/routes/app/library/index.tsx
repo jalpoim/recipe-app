@@ -1000,7 +1000,7 @@ function LibraryPage() {
             <button
               onClick={() => update({ modes: [] })}
               aria-pressed={search.modes.length === 0}
-              className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 search.modes.length === 0
                   ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1021,7 +1021,7 @@ function LibraryPage() {
                     update({ modes: next })
                   }}
                   aria-pressed={active}
-                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                     active
                       ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                       : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1043,7 +1043,7 @@ function LibraryPage() {
                 value={search.sort}
                 onChange={(e) => update({ sort: e.target.value as Sort })}
                 aria-label={t('sort.label')}
-                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-6 pr-6 py-1.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
+                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-5 pr-5 py-1 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
               >
                 <option value="pcal">P/Cal</option>
                 <option value="popular">{t('sort.popular')}</option>
