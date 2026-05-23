@@ -211,8 +211,8 @@ function RecipeCard({
         className="block p-4"
       >
         <div className="flex items-start gap-3">
-          {/* Thumbnail with save overlay */}
-          <div className="relative w-[72px] h-[72px] shrink-0">
+          {/* Thumbnail */}
+          <div className="w-[72px] h-[72px] shrink-0">
             {recipe.image_thumb_url ? (
               <img
                 src={recipe.image_thumb_url}
@@ -226,20 +226,6 @@ function RecipeCard({
                 style={{ background: thumbnailBg }}
                 aria-hidden="true"
               />
-            )}
-            {onToggleSave && (
-              <button
-                onClick={onToggleSave}
-                aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
-                aria-pressed={isSaved}
-                className={`absolute bottom-1 right-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shadow-sm ${
-                  isSaved
-                    ? 'bg-[#16A34A] text-white'
-                    : 'bg-white/90 text-[#9CA3AF] hover:bg-[#16A34A] hover:text-white'
-                }`}
-              >
-                {isSaved ? <BookmarkCheck size={11} aria-hidden="true" /> : <Bookmark size={11} aria-hidden="true" />}
-              </button>
             )}
           </div>
 
@@ -314,8 +300,26 @@ function RecipeCard({
           </div>
         )}
 
-        {cookCount > 0 && (
-          <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
+        {(cookCount > 0 || onToggleSave) && (
+          <div className="mt-2 flex items-center gap-2">
+            {cookCount > 0 && (
+              <p className="text-[10px] text-[#9CA3AF] flex-1">{t('recipe.cookedCount', { count: cookCount })}</p>
+            )}
+            {onToggleSave && (
+              <button
+                onClick={onToggleSave}
+                aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
+                aria-pressed={isSaved}
+                className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  isSaved
+                    ? 'text-[#16A34A]'
+                    : 'text-[#D1D5DB] hover:text-[#16A34A]'
+                }`}
+              >
+                {isSaved ? <BookmarkCheck size={14} aria-hidden="true" /> : <Bookmark size={14} aria-hidden="true" />}
+              </button>
+            )}
+          </div>
         )}
       </Link>
     </div>
