@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, ChevronLeft, ChevronRight, Lock, X, UtensilsCrossed, CheckCircle2, Timer } from 'lucide-react'
+import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, ChevronLeft, ChevronRight, X, UtensilsCrossed, CheckCircle2, Timer } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
@@ -398,16 +398,21 @@ function CookingDrawer({
       className={`cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]`}
       style={{
         bottom: 'calc(3.25rem + env(safe-area-inset-bottom))',
-        height: expanded ? '75vh' : '160px',
+        height: expanded ? '75vh' : '188px',
       }}
     >
-      {/* Drag handle */}
-      <div
-        className="flex justify-center pt-2.5 pb-1 cursor-pointer shrink-0"
-        onClick={() => setExpanded((e) => !e)}
-        aria-label={expanded ? t('common.close') : t('cooking.mode')}
-      >
-        <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+      {/* Drag handle row + stop cooking button */}
+      <div className="flex items-center px-4 pt-2 pb-1 shrink-0 gap-2">
+        <div className="flex-1 flex justify-center cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+          <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+        </div>
+        <button
+          onClick={onExit}
+          aria-label={t('cooking.stopCooking')}
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
       </div>
 
       <div className="flex flex-col h-full pb-3 overflow-hidden">
@@ -522,16 +527,6 @@ function CookingDrawer({
           )}
         </div>
 
-        {expanded && (
-          <div className="px-4 pt-1 shrink-0">
-            <button
-              onClick={onExit}
-              className="w-full text-xs text-[#9CA3AF] hover:text-[#6B7280] py-1 transition-colors focus:outline-none"
-            >
-              {t('cooking.stopCooking')}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -605,8 +600,6 @@ function RecipeDetailPage() {
 
   const [multiplier, setMultiplier] = useState(planItem?.portion_multiplier ?? recipe.servings)
   const [isCooking, setIsCooking] = useState(false)
-  const [multiplierLocked, setMultiplierLocked] = useState(false)
-  const [showUnlockConfirm, setShowUnlockConfirm] = useState(false)
   const [completedUpToStep, setCompletedUpToStep] = useState(-1)
   const [confirmRemove, setConfirmRemove] = useState(false)
   const [lastCookLogId, setLastCookLogId] = useState<string | null>(null)
@@ -633,7 +626,6 @@ function RecipeDetailPage() {
   function enterCooking() {
     const toggle = () => {
       setIsCooking(true)
-      setMultiplierLocked(true)
       setCompletedUpToStep(-1)
     }
     if (typeof document !== 'undefined' && 'startViewTransition' in document) {
@@ -645,7 +637,6 @@ function RecipeDetailPage() {
 
   function exitCooking() {
     setIsCooking(false)
-    setMultiplierLocked(false)
     setCompletedUpToStep(-1)
   }
 
@@ -780,7 +771,7 @@ function RecipeDetailPage() {
   return (
     <div
       className="min-h-screen bg-[#FAFAF8]"
-      style={{ paddingBottom: isCooking ? 'calc(160px + 3.25rem + env(safe-area-inset-bottom) + 2rem)' : 'calc(12rem + env(safe-area-inset-bottom))' }}
+      style={{ paddingBottom: isCooking ? 'calc(188px + 3.25rem + env(safe-area-inset-bottom) + 1.5rem)' : 'calc(12rem + env(safe-area-inset-bottom))' }}
     >
       <div className="mx-auto w-full max-w-md">
 
@@ -852,7 +843,7 @@ function RecipeDetailPage() {
             </div>
           )}
 
-          {/* Time + servings — always visible */}
+          {/* Time + servings — always visible; shows active multiplier when cooking */}
           <div className="flex items-center gap-4 text-sm text-[#6B7280]">
             {recipe.time_min != null && (
               <span className="flex items-center gap-1.5">
@@ -861,63 +852,63 @@ function RecipeDetailPage() {
               </span>
             )}
             <span>
-              {recipe.servings} {recipe.servings !== 1 ? t('recipe.bases') : t('recipe.base')}
+              {isCooking ? multiplier : recipe.servings}{' '}
+              {(isCooking ? multiplier : recipe.servings) !== 1 ? t('recipe.bases') : t('recipe.base')}
             </span>
           </div>
 
-          {/* Tags — collapsed during cooking */}
-          {!isCooking && recipe.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {recipe.tags.map((tag) => (
-                <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium">
-                  {t(`tags.${tag}`, tag)}
-                </span>
-              ))}
+          {/* Collapsing metadata — fades out when cooking starts */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateRows: isCooking ? '0fr' : '1fr',
+              transition: 'grid-template-rows 350ms ease-out, opacity 300ms ease-out',
+              opacity: isCooking ? 0 : 1,
+            }}
+          >
+            <div className="overflow-hidden space-y-5">
+              {recipe.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {recipe.tags.map((tag) => (
+                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium">
+                      {t(`tags.${tag}`, tag)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {recipe.owner_id != null && recipe.author_display_name != null && (
+                <p className="text-xs text-[#9CA3AF]">
+                  {t('recipe.by')} <span className="font-medium text-[#6B7280]">{recipe.author_display_name}</span>
+                </p>
+              )}
+
+              {isOwner && recipe.moderation_status === 'pending_review' && (
+                <div className="rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2">
+                  <p className="text-xs font-semibold text-[#B45309]">{t('moderation.pending')}</p>
+                  <p className="text-xs text-[#B45309]/80 mt-0.5">{t('moderation.pendingHint')}</p>
+                </div>
+              )}
+              {isOwner && recipe.moderation_status === 'rejected' && (
+                <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2">
+                  <p className="text-xs font-semibold text-[#DC2626]">{t('moderation.rejected')}</p>
+                  <p className="text-xs text-[#DC2626]/80 mt-0.5">{t('moderation.rejectedHint')}</p>
+                </div>
+              )}
+
+              {myCookCount > 0 && (
+                <p className="text-sm text-[#9CA3AF]">
+                  {t('recipe.cookedCount', { count: myCookCount })}
+                </p>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* Author — hidden during cooking */}
-          {!isCooking && recipe.owner_id != null && recipe.author_display_name != null && (
-            <p className="text-xs text-[#9CA3AF]">
-              {t('recipe.by')} <span className="font-medium text-[#6B7280]">{recipe.author_display_name}</span>
-            </p>
-          )}
-
-          {/* Moderation badges — hidden during cooking */}
-          {!isCooking && isOwner && recipe.moderation_status === 'pending_review' && (
-            <div className="rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2">
-              <p className="text-xs font-semibold text-[#B45309]">{t('moderation.pending')}</p>
-              <p className="text-xs text-[#B45309]/80 mt-0.5">{t('moderation.pendingHint')}</p>
-            </div>
-          )}
-          {!isCooking && isOwner && recipe.moderation_status === 'rejected' && (
-            <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2">
-              <p className="text-xs font-semibold text-[#DC2626]">{t('moderation.rejected')}</p>
-              <p className="text-xs text-[#DC2626]/80 mt-0.5">{t('moderation.rejectedHint')}</p>
-            </div>
-          )}
-
-          {/* Personal cook count */}
-          {!isCooking && myCookCount > 0 && (
-            <p className="text-sm text-[#9CA3AF]">
-              {t('recipe.cookedCount', { count: myCookCount })}
-            </p>
-          )}
-
-          {/* Portion stepper — locked during cooking */}
-          <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-[#1A1A1A]">{t('recipe.servings')}</span>
-              {multiplierLocked ? (
-                <button
-                  onClick={() => setShowUnlockConfirm(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] text-[#9CA3AF] text-sm hover:bg-[#F3F4F6] transition-colors focus:outline-none"
-                  aria-label={t('cooking.unlockMultiplier')}
-                >
-                  <Lock size={14} aria-hidden="true" />
-                  <span className="font-bold text-[#1A1A1A]">{multiplier}</span>
-                </button>
-              ) : (
+          {/* Portion stepper — hidden during cooking (multiplier shown in servings line above) */}
+          {!isCooking && (
+            <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-[#1A1A1A]">{t('recipe.servings')}</span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setMultiplier((m) => Math.max(1, m - 1))}
@@ -938,28 +929,9 @@ function RecipeDetailPage() {
                     <Plus size={16} aria-hidden="true" />
                   </button>
                 </div>
-              )}
-            </div>
-            {showUnlockConfirm && (
-              <div className="mt-3 pt-3 border-t border-[#F3F4F6]">
-                <p className="text-xs text-[#6B7280] mb-2">{t('cooking.multiplierLockedHint')}</p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowUnlockConfirm(false)}
-                    className="flex-1 py-2 rounded-xl border border-[#E5E7EB] text-xs font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    onClick={() => { setMultiplierLocked(false); setShowUnlockConfirm(false) }}
-                    className="flex-1 py-2 rounded-xl bg-[#1A1A1A] text-white text-xs font-semibold hover:bg-[#374151] transition-colors focus:outline-none"
-                  >
-                    {t('cooking.unlockMultiplier')}
-                  </button>
-                </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Macros — collapsed during cooking */}
           {!isCooking && (
@@ -1085,70 +1057,62 @@ function RecipeDetailPage() {
         />
       )}
 
-      {/* Sticky bottom bar */}
-      <div
-        className="fixed left-0 right-0 px-4 py-3 bg-[#FAFAF8] border-t border-[#F0F0EE]"
-        style={{ bottom: 'calc(3.25rem + env(safe-area-inset-bottom))' }}
-      >
-        <div className="mx-auto max-w-md space-y-2">
-          {isFromPlan ? (
-            <div className="flex gap-2">
-              {confirmRemove ? (
-                <>
+      {/* Sticky bottom bar — hidden during cooking (drawer has its own controls) */}
+      {!isCooking && (
+        <div
+          className="fixed left-0 right-0 px-4 py-3 bg-[#FAFAF8] border-t border-[#F0F0EE]"
+          style={{ bottom: 'calc(3.25rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="mx-auto max-w-md space-y-2">
+            {isFromPlan ? (
+              <div className="flex gap-2">
+                {confirmRemove ? (
+                  <>
+                    <button
+                      onClick={() => setConfirmRemove(false)}
+                      className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white text-[#6B7280] py-3.5 text-sm font-semibold hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      onClick={() => removeMutation.mutate()}
+                      disabled={removeMutation.isPending}
+                      className="flex-1 rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+                    >
+                      {t('common.confirm')}
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => setConfirmRemove(false)}
-                    className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white text-[#6B7280] py-3.5 text-sm font-semibold hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    onClick={() => setConfirmRemove(true)}
+                    className="w-full rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
                   >
-                    {t('common.cancel')}
+                    {t('recipe.removeFromPlan')}
                   </button>
-                  <button
-                    onClick={() => removeMutation.mutate()}
-                    disabled={removeMutation.isPending}
-                    className="flex-1 rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                  >
-                    {t('common.confirm')}
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setConfirmRemove(true)}
-                  className="w-full rounded-2xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] py-3.5 text-sm font-semibold hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                >
-                  {t('recipe.removeFromPlan')}
-                </button>
-              )}
-            </div>
-          ) : !isCooking ? (
-            <button
-              onClick={() => addMutation.mutate()}
-              disabled={addMutation.isPending}
-              className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] active:scale-[0.97] transition-[transform,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-            >
-              {addMutation.isPending ? t('recipe.adding') : t('recipe.addToPlan')}
-            </button>
-          ) : null}
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => addMutation.mutate()}
+                disabled={addMutation.isPending}
+                className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] active:scale-[0.97] transition-[transform,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              >
+                {addMutation.isPending ? t('recipe.adding') : t('recipe.addToPlan')}
+              </button>
+            )}
 
-          {hasSteps && !isCooking && (
-            <button
-              onClick={enterCooking}
-              className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none flex items-center justify-center gap-2"
-            >
-              <UtensilsCrossed size={15} aria-hidden="true" />
-              {t('recipe.cook')}
-            </button>
-          )}
-
-          {isCooking && (
-            <button
-              onClick={exitCooking}
-              className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#6B7280] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none flex items-center justify-center gap-2"
-            >
-              <X size={15} aria-hidden="true" />
-              {t('cooking.stopCooking')}
-            </button>
-          )}
+            {hasSteps && (
+              <button
+                onClick={enterCooking}
+                className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none flex items-center justify-center gap-2"
+              >
+                <UtensilsCrossed size={15} aria-hidden="true" />
+                {t('recipe.cook')}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

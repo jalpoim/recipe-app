@@ -756,7 +756,7 @@ function ShoppingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
-      <div className="mx-auto w-full max-w-md px-4">
+      <div className="mx-auto w-full max-w-md px-4 pt-4">
         {/* no header row — bottom nav provides tab context */}
 
         {isEmpty ? (

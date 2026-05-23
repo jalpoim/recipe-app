@@ -318,13 +318,13 @@ function RecipeCard({
                 onClick={onToggleSave}
                 aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
                 aria-pressed={isSaved}
-                className={`ml-auto w-6 h-6 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                   isSaved
                     ? 'text-[#16A34A]'
                     : 'text-[#D1D5DB] hover:text-[#16A34A]'
                 }`}
               >
-                {isSaved ? <BookmarkCheck size={14} aria-hidden="true" /> : <Bookmark size={14} aria-hidden="true" />}
+                {isSaved ? <BookmarkCheck size={16} aria-hidden="true" /> : <Bookmark size={16} aria-hidden="true" />}
               </button>
             )}
           </div>
@@ -938,84 +938,69 @@ function LibraryPage() {
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="pt-4 pb-3">
-          {/* Row 1: Search bar with embedded sort + filter */}
-          <div className="flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
-            <Search
-              size={15}
-              className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              value={localQ}
-              onChange={(e) => setLocalQ(e.target.value)}
-              placeholder={t('filters.searchRecipe')}
-              aria-label={t('filters.searchRecipe')}
-              className="flex-1 py-2.5 px-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none bg-transparent min-w-0"
-            />
-            {localQ && (
-              <button
-                onClick={() => { setLocalQ(''); update({ q: '' }) }}
-                aria-label="Limpar pesquisa"
-                className="shrink-0 mr-1 p-1 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none rounded"
-              >
-                <X size={13} aria-hidden="true" />
-              </button>
-            )}
-
-            {/* Divider */}
-            <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
-
-            {/* Sort select */}
-            <div className="relative shrink-0 flex items-center">
-              <select
-                value={search.sort}
-                onChange={(e) => update({ sort: e.target.value as Sort })}
-                aria-label={t('sort.label')}
-                className="appearance-none bg-transparent pl-2.5 pr-6 py-2.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
-              >
-                <option value="pcal">P/Cal</option>
-                <option value="popular">{t('sort.popular')}</option>
-                <option value="protein">{t('sort.protein')}</option>
-                <option value="calories">{t('sort.calories')}</option>
-                <option value="time">{t('sort.time')}</option>
-              </select>
-              <svg
-                width="10" height="10" viewBox="0 0 10 10"
+          {/* Row 1: Search bar + settings button */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
+              <Search
+                size={15}
+                className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none"
                 aria-hidden="true"
-                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              />
+              <input
+                type="text"
+                value={localQ}
+                onChange={(e) => setLocalQ(e.target.value)}
+                placeholder={t('filters.searchRecipe')}
+                aria-label={t('filters.searchRecipe')}
+                className="flex-1 py-2.5 px-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none bg-transparent min-w-0"
+              />
+              {localQ && (
+                <button
+                  onClick={() => { setLocalQ(''); update({ q: '' }) }}
+                  aria-label="Limpar pesquisa"
+                  className="shrink-0 mr-1 p-1 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none rounded"
+                >
+                  <X size={13} aria-hidden="true" />
+                </button>
+              )}
+
+              {/* Divider */}
+              <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
+
+              {/* Filter icon */}
+              <button
+                onClick={() => openSheet('protein')}
+                aria-label={t('filters.sheetTitle')}
+                className={`relative shrink-0 flex items-center justify-center w-10 h-10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                  activeFilterCount > 0 ? 'text-[#15803d]' : 'text-[#6B7280] hover:text-[#1A1A1A]'
+                }`}
               >
-                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
+                <SlidersHorizontal size={15} aria-hidden="true" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute top-1.5 right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
 
-            {/* Divider */}
-            <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
-
-            {/* Filter icon */}
-            <button
-              onClick={() => openSheet('protein')}
-              aria-label={t('filters.sheetTitle')}
-              className={`relative shrink-0 flex items-center justify-center w-10 h-10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                activeFilterCount > 0 ? 'text-[#15803d]' : 'text-[#6B7280] hover:text-[#1A1A1A]'
-              }`}
+            {/* Settings button */}
+            <Link
+              to="/app/settings"
+              aria-label={t('settings.title')}
+              className="shrink-0 w-10 h-10 rounded-xl border border-[#E5E7EB] bg-white shadow-sm flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
             >
-              <SlidersHorizontal size={15} aria-hidden="true" />
-              {activeFilterCount > 0 && (
-                <span className="absolute top-1.5 right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
+              <Settings size={16} aria-hidden="true" />
+            </Link>
           </div>
 
-          {/* Row 2: Mode chips + Settings */}
+          {/* Row 2: Mode chips + sort */}
           <div className="flex items-center gap-1.5 mt-2.5">
             {/* "Todas" — exclusive, active when nothing else is selected */}
             <button
               onClick={() => update({ modes: [] })}
               aria-pressed={search.modes.length === 0}
-              className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+              className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                 search.modes.length === 0
                   ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                   : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1036,7 +1021,7 @@ function LibraryPage() {
                     update({ modes: next })
                   }}
                   aria-pressed={active}
-                  className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
                     active
                       ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                       : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
@@ -1047,13 +1032,28 @@ function LibraryPage() {
               )
             })}
             <div className="flex-1" />
-            <Link
-              to="/app/settings"
-              aria-label={t('settings.title')}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-            >
-              <Settings size={15} aria-hidden="true" />
-            </Link>
+            {/* Sort select */}
+            <div className="relative shrink-0 flex items-center">
+              <select
+                value={search.sort}
+                onChange={(e) => update({ sort: e.target.value as Sort })}
+                aria-label={t('sort.label')}
+                className="appearance-none bg-white border border-[#E5E7EB] rounded-full pl-2.5 pr-6 py-1.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
+              >
+                <option value="pcal">P/Cal</option>
+                <option value="popular">{t('sort.popular')}</option>
+                <option value="protein">{t('sort.protein')}</option>
+                <option value="calories">{t('sort.calories')}</option>
+                <option value="time">{t('sort.time')}</option>
+              </select>
+              <svg
+                width="10" height="10" viewBox="0 0 10 10"
+                aria-hidden="true"
+                className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]"
+              >
+                <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </div>
           </div>
         </div>
 
