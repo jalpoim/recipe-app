@@ -102,12 +102,13 @@ function scaleIngredient(
   multiplier: number,
   baseServings: number,
 ): string {
-  if (ing.quantity == null) return ing.raw_text
+  const rawDisplay = ing.raw_text.replace(/^\(opcional\)\s*/i, '')
+  if (ing.quantity == null) return rawDisplay
   const factor = multiplier / (baseServings || 1)
   const scaled = ing.quantity * factor
   const qty = fmt(scaled)
   const parts = [qty, ing.unit, ing.name].filter(Boolean)
-  return parts.length > 1 ? parts.join(' ') : ing.raw_text
+  return parts.length > 1 ? parts.join(' ') : rawDisplay
 }
 
 function badgeClass(ratio: number) {
@@ -833,9 +834,11 @@ function RecipeDetailPage() {
             <h1 className="text-2xl font-bold text-[#1A1A1A] leading-snug flex-1">
               {recipe.name}
             </h1>
-            <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full ${badgeClass(ratio)}`}>
-              {fmt(ratio)}
-            </span>
+            {recipe.calories != null && recipe.protein != null && (
+              <span className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full ${badgeClass(ratio)}`}>
+                {fmt(ratio)}
+              </span>
+            )}
           </div>
 
           {/* Time + servings */}

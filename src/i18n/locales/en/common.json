@@ -57,12 +57,14 @@
     "protein": "Protein ↓",
     "calories": "Calories ↑",
     "time": "Time ↑",
-    "popular": "Popular ↓"
+    "popular": "Popular ↓",
+    "cooked": "Most cooked ↓"
   },
   "library": {
     "all": "All",
     "mine": "Mine",
     "saved": "Saved",
+    "curated": "Curated",
     "newRecipe": "New recipe"
   },
   "moderation": {
@@ -95,6 +97,9 @@
     "proteinLabel": "Protein (g)",
     "carbsLabel": "Carbs (g)",
     "fatLabel": "Fat (g)",
+    "estimateMacros": "Estimate macros with AI",
+    "macrosEstimated": "Macros estimated ✓",
+    "macrosEstimateError": "Could not estimate macros",
     "validationName": "Name is required",
     "validationProteins": "Select at least one protein",
     "validationIngredients": "Add at least one ingredient",

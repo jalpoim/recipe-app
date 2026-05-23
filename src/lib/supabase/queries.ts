@@ -18,8 +18,8 @@ export type RecipeDetail = Recipe & {
   recipe_steps: RecipeStep[]
 }
 
-export type Sort = 'pcal' | 'protein' | 'calories' | 'time' | 'popular'
-export type LibraryMode = 'all' | 'mine' | 'saved'
+export type Sort = 'pcal' | 'protein' | 'calories' | 'time' | 'popular' | 'cooked'
+export type LibraryMode = 'all' | 'mine' | 'saved' | 'curated'
 
 export type LibraryCursor = { value: number | null; id: string }
 
@@ -42,7 +42,7 @@ export type FetchLibraryResult = {
 }
 
 const RECIPE_FIELDS =
-  'id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, like_count, moderation_status, deleted_at'
+  'id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, like_count, cook_count, moderation_status, deleted_at'
 
 const INGREDIENT_FIELDS = 'id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label'
 
@@ -52,6 +52,7 @@ const SORT_COL: Record<Sort, string> = {
   calories: 'calories',
   time: 'time_min',
   popular: 'like_count',
+  cooked: 'cook_count',
 }
 
 // true = ascending, false = descending
@@ -61,6 +62,7 @@ const SORT_ASC: Record<Sort, boolean> = {
   calories: true,
   time: true,
   popular: false,
+  cooked: false,
 }
 
 export const fetchLibrary = createServerFn({ method: 'GET' })
@@ -75,7 +77,7 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
 
     // Get session for mode-specific filters
     let userId: string | null = null
-    if (mode === 'mine' || mode === 'saved') {
+    if (mode === 'mine' || mode === 'saved' || mode === 'curated') {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) throw new Error('Not authenticated')
       userId = session.user.id
@@ -89,7 +91,6 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     if (mode === 'mine' && userId) {
       query = query.eq('owner_id', userId).is('deleted_at', null)
     } else if (mode === 'saved' && userId) {
-      // Get saved recipe IDs first
       const { data: savedRows } = await supabase
         .from('user_recipe_interactions')
         .select('recipe_id')
@@ -98,6 +99,9 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
       const savedIds = (savedRows ?? []).map((r) => r.recipe_id)
       if (savedIds.length === 0) return { data: [], nextCursor: null }
       query = query.in('id', savedIds)
+    } else if (mode === 'curated') {
+      // System-curated recipes only (no owner)
+      query = query.is('owner_id', null).is('deleted_at', null)
     } else {
       // Default: all non-deleted, visible recipes
       query = query.is('deleted_at', null)

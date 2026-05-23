@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, X } from 'lucide-react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { createRecipe, searchIngredients, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
+import { createRecipe, searchIngredients, estimateMacros, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
 import { useToast } from '../../../components/Toast'
 
 export const Route = createFileRoute('/app/library/create')({
@@ -76,27 +76,60 @@ function IngredientCombobox({
     setOpen(newText.length >= 2)
   }
 
+  const [qty, setQty] = useState(value.quantity != null ? String(value.quantity) : '')
+  const [unit, setUnit] = useState(value.unit ?? '')
+
+  function handleQtyChange(newQty: string) {
+    setQty(newQty)
+    onValueChange({ ...value, quantity: newQty ? parseFloat(newQty) : null })
+  }
+
+  function handleUnitChange(newUnit: string) {
+    setUnit(newUnit)
+    onValueChange({ ...value, unit: newUnit.trim() || null })
+  }
+
   return (
-    <div ref={containerRef} className="relative flex items-center gap-2">
-      <span className="shrink-0 w-5 text-xs text-[#9CA3AF] text-right">{index + 1}.</span>
-      <input
-        type="text"
-        value={text}
-        onChange={(e) => handleTextChange(e.target.value)}
-        onFocus={() => { if (text.length >= 2) setOpen(true) }}
-        placeholder={t('create.ingredientPlaceholder')}
-        className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-      />
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label="Remover ingrediente"
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-      >
-        <X size={14} aria-hidden="true" />
-      </button>
+    <div ref={containerRef} className="relative">
+      <div className="flex items-center gap-1.5">
+        <span className="shrink-0 w-5 text-xs text-[#9CA3AF] text-right">{index + 1}.</span>
+        <input
+          type="number"
+          min={0}
+          step="any"
+          value={qty}
+          onChange={(e) => handleQtyChange(e.target.value)}
+          placeholder="Qtd"
+          aria-label="Quantidade"
+          className="w-14 shrink-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+        />
+        <input
+          type="text"
+          value={unit}
+          onChange={(e) => handleUnitChange(e.target.value)}
+          placeholder="Un."
+          aria-label="Unidade"
+          className="w-14 shrink-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+        />
+        <input
+          type="text"
+          value={text}
+          onChange={(e) => handleTextChange(e.target.value)}
+          onFocus={() => { if (text.length >= 2) setOpen(true) }}
+          placeholder={t('create.ingredientPlaceholder')}
+          className="flex-1 min-w-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label="Remover ingrediente"
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+        >
+          <X size={13} aria-hidden="true" />
+        </button>
+      </div>
       {open && suggestions.length > 0 && (
-        <div className="absolute top-full left-6 right-10 mt-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-hidden">
+        <div className="absolute top-full left-6 right-8 mt-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-hidden">
           {suggestions.map((s) => (
             <button
               key={s.id}
@@ -143,6 +176,7 @@ function CreateRecipePage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { showToast } = useToast()
+  const queryClient = useQueryClient()
   const lang = i18n.language.startsWith('en') ? 'en' : 'pt'
 
   const [name, setName] = useState('')
@@ -162,6 +196,24 @@ function CreateRecipePage() {
   const [fat, setFat] = useState<string>('')
   const [publish, setPublish] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const estimateMutation = useMutation({
+    mutationFn: () => estimateMacros({
+      data: {
+        name: name.trim(),
+        ingredients: ingredients.filter((i) => i.rawText.trim()).map((i) => i.rawText),
+        servings,
+      },
+    }),
+    onSuccess: (result) => {
+      if (result.calories != null) setCalories(String(result.calories))
+      if (result.protein != null) setProtein(String(result.protein))
+      if (result.carbs != null) setCarbs(String(result.carbs))
+      if (result.fat != null) setFat(String(result.fat))
+      showToast(t('create.macrosEstimated'), 'success')
+    },
+    onError: () => showToast(t('create.macrosEstimateError'), 'error'),
+  })
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -183,6 +235,7 @@ function CreateRecipePage() {
         },
       }),
     onSuccess: ({ id }) => {
+      queryClient.invalidateQueries({ queryKey: ['library'] })
       navigate({ to: '/app/library/$recipeId', params: { recipeId: id }, search: { from: undefined, planItemId: undefined, replacing: undefined } })
     },
     onError: () => showToast(t('common.error'), 'error'),
@@ -426,26 +479,41 @@ function CreateRecipePage() {
 
         {/* Macros — optional collapsible */}
         <CollapsibleSection title={t('create.macrosLabel')}>
-          <div className="grid grid-cols-2 gap-3">
-            {(
-              [
-                { label: t('create.caloriesLabel'), value: calories, setter: setCalories },
-                { label: t('create.proteinLabel'), value: protein, setter: setProtein },
-                { label: t('create.carbsLabel'), value: carbs, setter: setCarbs },
-                { label: t('create.fatLabel'), value: fat, setter: setFat },
-              ]
-            ).map(({ label, value, setter }) => (
-              <div key={label}>
-                <label className="block text-xs text-[#6B7280] mb-1">{label}</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={value}
-                  onChange={(e) => setter(e.target.value)}
-                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-                />
-              </div>
-            ))}
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => estimateMutation.mutate()}
+              disabled={estimateMutation.isPending || !name.trim() || !ingredients.some((i) => i.rawText.trim())}
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#16A34A] font-medium disabled:opacity-40 hover:bg-[#f0fdf4] hover:border-[#16A34A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              {estimateMutation.isPending ? (
+                <div className="w-4 h-4 rounded-full border-2 border-[#16A34A] border-t-transparent animate-spin" />
+              ) : (
+                <Sparkles size={14} aria-hidden="true" />
+              )}
+              {t('create.estimateMacros')}
+            </button>
+            <div className="grid grid-cols-2 gap-3">
+              {(
+                [
+                  { label: t('create.caloriesLabel'), value: calories, setter: setCalories },
+                  { label: t('create.proteinLabel'), value: protein, setter: setProtein },
+                  { label: t('create.carbsLabel'), value: carbs, setter: setCarbs },
+                  { label: t('create.fatLabel'), value: fat, setter: setFat },
+                ]
+              ).map(({ label, value, setter }) => (
+                <div key={label}>
+                  <label className="block text-xs text-[#6B7280] mb-1">{label}</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={value}
+                    onChange={(e) => setter(e.target.value)}
+                    className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </CollapsibleSection>
 

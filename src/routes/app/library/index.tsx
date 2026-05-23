@@ -1,10 +1,10 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import { capture } from '../../../lib/analytics'
-import { Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
+import { Bookmark, BookmarkCheck, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
-import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   fetchLibrary,
@@ -15,7 +15,33 @@ import {
   type LibraryCursor,
 } from '../../../lib/supabase/queries'
 import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
+import {
+  fetchInteractions,
+  upsertInteraction,
+  removeInteraction,
+} from '../../../lib/supabase/interaction-queries'
+import { useToast } from '../../../components/Toast'
 import type { Recipe } from '../../../types/db'
+
+// Muted pastel thumbnail colors per protein slug
+const PROTEIN_COLORS: Record<string, string> = {
+  chicken:   'linear-gradient(135deg, #fef3c7, #fde68a)',
+  salmon:    'linear-gradient(135deg, #ffe4e6, #fecdd3)',
+  tuna:      'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+  turkey:    'linear-gradient(135deg, #fef9c3, #fef08a)',
+  cod:       'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+  eggs:      'linear-gradient(135deg, #fefce8, #fef9c3)',
+  beef:      'linear-gradient(135deg, #fee2e2, #fecaca)',
+  pork:      'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+  whey:      'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+  tofu:      'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+  shrimp:    'linear-gradient(135deg, #fff7ed, #fed7aa)',
+  clams:     'linear-gradient(135deg, #cffafe, #a5f3fc)',
+  'sea-bream': 'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+  squid:     'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+  fish:      'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+  legumes:   'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+}
 
 const PAGE_SIZE = 24
 
@@ -114,10 +140,10 @@ export const Route = createFileRoute('/app/library/')({
     maxTime: typeof search.maxTime === 'number' ? search.maxTime : undefined,
     tags: Array.isArray(search.tags) ? (search.tags as string[]) : [],
     ingredients: Array.isArray(search.ingredients) ? (search.ingredients as string[]) : [],
-    sort: (['pcal', 'protein', 'calories', 'time', 'popular'] as Sort[]).includes(search.sort as Sort)
+    sort: (['pcal', 'protein', 'calories', 'time', 'popular', 'cooked'] as Sort[]).includes(search.sort as Sort)
       ? (search.sort as Sort)
       : 'pcal',
-    mode: (['all', 'mine', 'saved'] as LibraryMode[]).includes(search.mode as LibraryMode)
+    mode: (['all', 'mine', 'saved', 'curated'] as LibraryMode[]).includes(search.mode as LibraryMode)
       ? (search.mode as LibraryMode)
       : 'all',
     replacing: typeof search.replacing === 'string' ? search.replacing : undefined,
@@ -155,10 +181,16 @@ function RecipeCard({
   recipe,
   replacing,
   cookCount = 0,
+  isSaved = false,
+  showOwnerBadge = false,
+  onToggleSave,
 }: {
   recipe: RecipeWithIngredients
   replacing?: string
   cookCount?: number
+  isSaved?: boolean
+  showOwnerBadge?: boolean
+  onToggleSave?: (e: React.MouseEvent) => void
 }) {
   const { t } = useTranslation()
   const cal = perServing(recipe, 'calories')
@@ -167,104 +199,130 @@ function RecipeCard({
   const fat = perServing(recipe, 'fat')
   const ratio = pcalRatio(recipe)
   const hasMacros = recipe.calories != null
-  const isPublicUser = recipe.visibility === 'public' && recipe.owner_id != null
-  const showLikes = isPublicUser && (recipe.like_count ?? 0) > 0
+  const isUserRecipe = recipe.owner_id != null
+  const showLikes = isUserRecipe && (recipe.like_count ?? 0) > 0
+  const thumbnailBg = recipe.image_thumb_url
+    ? undefined
+    : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)')
 
   return (
-    <Link
-      to="/app/library/$recipeId"
-      params={{ recipeId: recipe.id }}
-      search={{ from: undefined, planItemId: undefined, replacing: replacing ?? undefined }}
-      onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: replacing ? 'replacing' : 'library' })}
-      className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
-    >
-      <div className="flex items-start gap-3">
-        {/* Thumbnail */}
-        {recipe.image_thumb_url ? (
-          <img
-            src={recipe.image_thumb_url}
-            alt=""
-            className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
-            loading="lazy"
-          />
-        ) : (
-          <div
-            className="w-[72px] h-[72px] rounded-xl shrink-0 flex items-center justify-center text-2xl"
-            style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
-            aria-hidden="true"
-          />
+    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-all">
+      <Link
+        to="/app/library/$recipeId"
+        params={{ recipeId: recipe.id }}
+        search={{ from: undefined, planItemId: undefined, replacing: replacing ?? undefined }}
+        onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: replacing ? 'replacing' : 'library' })}
+        className="block p-4"
+      >
+        <div className="flex items-start gap-3">
+          {/* Thumbnail */}
+          {recipe.image_thumb_url ? (
+            <img
+              src={recipe.image_thumb_url}
+              alt=""
+              className="w-[72px] h-[72px] rounded-xl object-cover shrink-0"
+              loading="lazy"
+            />
+          ) : (
+            <div
+              className="w-[72px] h-[72px] rounded-xl shrink-0"
+              style={{ background: thumbnailBg }}
+              aria-hidden="true"
+            />
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2 pr-8">{recipe.name}</h2>
+              {hasMacros && (
+                <span
+                  className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
+                  title="Rácio proteína/calorias (×10). Verde ≥ 1.0 · Amarelo ≥ 0.7 · Vermelho < 0.7"
+                >
+                  P/Cal {fmt(ratio)}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280] flex-wrap">
+              {recipe.proteins.length > 0 && (
+                <span className="font-medium text-[#1A1A1A]">
+                  {t(`proteins.${recipe.proteins[0]}`)}
+                </span>
+              )}
+              {recipe.time_min != null && (
+                <span className="flex items-center gap-1">
+                  <Clock size={11} aria-hidden="true" />
+                  {recipe.time_min} min
+                </span>
+              )}
+              {showLikes && (
+                <span className="flex items-center gap-1 text-[#9CA3AF]">
+                  <Heart size={10} aria-hidden="true" />
+                  {recipe.like_count}
+                </span>
+              )}
+              {showOwnerBadge && isUserRecipe && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#15803d] font-medium">
+                  Minha
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {hasMacros && (
+          <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+            {(
+              [
+                { label: 'Cal', value: cal },
+                { label: 'P', value: pro },
+                { label: 'C', value: carb },
+                { label: 'G', value: fat },
+              ] as const
+            ).map(({ label, value }) => (
+              <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
+                <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
+                <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(value)}</div>
+              </div>
+            ))}
+          </div>
         )}
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2">{recipe.name}</h2>
-            {hasMacros && (
+        {!hasMacros && recipe.tags.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1">
+            {recipe.tags.slice(0, 4).map((tag) => (
               <span
-                className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
-                title="Rácio proteína/calorias (×10). Verde ≥ 1.0 · Amarelo ≥ 0.7 · Vermelho < 0.7"
+                key={tag}
+                className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium"
               >
-                P/Cal {fmt(ratio)}
+                {t(`tags.${tag}`, { defaultValue: tag })}
               </span>
-            )}
+            ))}
           </div>
+        )}
 
-          <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280] flex-wrap">
-            {recipe.proteins.length > 0 && (
-              <span className="font-medium text-[#1A1A1A]">
-                {t(`proteins.${recipe.proteins[0]}`)}
-              </span>
-            )}
-            {recipe.time_min != null && (
-              <span className="flex items-center gap-1">
-                <Clock size={11} aria-hidden="true" />
-                {recipe.time_min} min
-              </span>
-            )}
-            {showLikes && (
-              <span className="flex items-center gap-1 text-[#9CA3AF]">
-                <Heart size={10} aria-hidden="true" />
-                {recipe.like_count}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+        {cookCount > 0 && (
+          <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
+        )}
+      </Link>
 
-      {hasMacros && (
-        <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
-          {(
-            [
-              { label: 'Cal', value: cal },
-              { label: 'P', value: pro },
-              { label: 'C', value: carb },
-              { label: 'G', value: fat },
-            ] as const
-          ).map(({ label, value }) => (
-            <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
-              <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
-              <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(value)}</div>
-            </div>
-          ))}
-        </div>
+      {/* Save button — absolutely positioned top-right */}
+      {onToggleSave && (
+        <button
+          onClick={onToggleSave}
+          aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
+          aria-pressed={isSaved}
+          className={`absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+            isSaved
+              ? 'bg-[#dcfce7] text-[#15803d]'
+              : 'bg-[#F3F4F6] text-[#9CA3AF] hover:bg-[#dcfce7] hover:text-[#15803d]'
+          }`}
+        >
+          {isSaved ? <BookmarkCheck size={13} aria-hidden="true" /> : <Bookmark size={13} aria-hidden="true" />}
+        </button>
       )}
-
-      {!hasMacros && recipe.tags.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1">
-          {recipe.tags.slice(0, 4).map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium"
-            >
-              {t(`tags.${tag}`, { defaultValue: tag })}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {cookCount > 0 && (
-        <p className="mt-2 text-[10px] text-[#9CA3AF]">{t('recipe.cookedCount', { count: cookCount })}</p>
-      )}
-    </Link>
+    </div>
   )
 }
 
@@ -630,6 +688,7 @@ function LibraryPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: '/app/library/' })
   const queryClient = useQueryClient()
+  const { showToast } = useToast()
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
   const parentRef = useRef<HTMLDivElement>(null)
@@ -733,6 +792,8 @@ function LibraryPage() {
         return copy.sort((a, b) => (a.time_min ?? 999) - (b.time_min ?? 999))
       case 'popular':
         return copy.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))
+      case 'cooked':
+        return copy.sort((a, b) => (b.cook_count ?? 0) - (a.cook_count ?? 0))
       case 'pcal':
       default:
         return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
@@ -753,6 +814,45 @@ function LibraryPage() {
       queryFn: () => fetchLibraryMeta({ data: { lang } }),
     })
   }, [queryClient, lang])
+
+  // Saved interactions
+  const { data: interactions = [] } = useQuery({
+    queryKey: ['interactions'],
+    queryFn: fetchInteractions,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const savedIds = useMemo(
+    () => new Set(interactions.filter((i) => i.type === 'save').map((i) => i.recipe_id)),
+    [interactions],
+  )
+
+  const saveMutation = useMutation({
+    mutationFn: (vars: { recipeId: string; wasSaved: boolean }) =>
+      vars.wasSaved
+        ? removeInteraction({ data: { recipeId: vars.recipeId, type: 'save' } })
+        : upsertInteraction({ data: { recipeId: vars.recipeId, type: 'save' } }),
+    onMutate: (vars) => {
+      queryClient.setQueryData(['interactions'], (prev: typeof interactions) => {
+        if (!prev) return prev
+        if (vars.wasSaved) {
+          return prev.filter((i) => !(i.recipe_id === vars.recipeId && i.type === 'save'))
+        }
+        return [...prev, { id: 'tmp', user_id: '', recipe_id: vars.recipeId, type: 'save' as const, created_at: '' }]
+      })
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['interactions'] })
+      showToast('Erro ao guardar receita', 'error')
+    },
+    onSuccess: (_, vars) => {
+      if (!vars.wasSaved) {
+        showToast('Receita guardada ✓', 'success')
+        capture('recipe_saved', { recipeId: vars.recipeId })
+      }
+      queryClient.invalidateQueries({ queryKey: ['library'] })
+    },
+  })
 
   // Cook counts for visible recipes
   const recipeIds = useMemo(() => sortedRecipes.map((r) => r.id), [sortedRecipes])
@@ -886,7 +986,7 @@ function LibraryPage() {
           {/* Mode chips */}
           {!search.replacing && (
             <div className="flex gap-2 mt-3 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {(['all', 'mine', 'saved'] as LibraryMode[]).map((m) => (
+              {(['all', 'mine', 'saved', 'curated'] as LibraryMode[]).map((m) => (
                 <CategoryChip
                   key={m}
                   label={t(`library.${m}`)}
@@ -950,6 +1050,7 @@ function LibraryPage() {
             <option value="protein">{t('sort.protein')}</option>
             <option value="calories">{t('sort.calories')}</option>
             <option value="time">{t('sort.time')}</option>
+            {/* Hidden until enough cook_log data to make it meaningful */}
           </select>
         </div>
 
@@ -999,6 +1100,13 @@ function LibraryPage() {
                         recipe={sortedRecipes[virtualItem.index]}
                         replacing={search.replacing}
                         cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
+                        isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
+                        showOwnerBadge={search.mode === 'all' || search.mode === 'saved'}
+                        onToggleSave={(e) => {
+                          e.preventDefault()
+                          const r = sortedRecipes[virtualItem.index]
+                          saveMutation.mutate({ recipeId: r.id, wasSaved: savedIds.has(r.id) })
+                        }}
                       />
                     )}
                   </div>
@@ -1026,7 +1134,8 @@ function LibraryPage() {
         <Link
           to="/app/library/create"
           aria-label={t('library.newRecipe')}
-          className="fixed z-20 right-4 bottom-20 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 1rem)' }}
         >
           <Plus size={24} aria-hidden="true" />
         </Link>

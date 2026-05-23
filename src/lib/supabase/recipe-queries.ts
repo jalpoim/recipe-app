@@ -187,11 +187,82 @@ export const searchIngredients = createServerFn({ method: 'GET' })
   .inputValidator((q: string) => q)
   .handler(async ({ data: q }) => {
     const supabase = makeClient()
-    const { data, error } = await supabase
+    // Search by name first, then fall back to aliases
+    const { data: byName } = await supabase
       .from('ingredients')
       .select('id, name, default_unit, category')
       .ilike('name', `%${q}%`)
       .limit(8)
-    if (error) throw new Error(error.message)
-    return data ?? []
+    if ((byName ?? []).length >= 4) return byName ?? []
+
+    const { data: byAlias } = await supabase
+      .from('ingredients')
+      .select('id, name, default_unit, category')
+      .contains('aliases', [q.toLowerCase()])
+      .not('id', 'in', `(${(byName ?? []).map((r) => r.id).join(',') || 'null'})`)
+      .limit(8 - (byName ?? []).length)
+
+    return [...(byName ?? []), ...(byAlias ?? [])]
+  })
+
+export type EstimateMacrosInput = {
+  name: string
+  ingredients: string[]
+  servings: number
+}
+
+export type EstimateMacrosResult = {
+  calories: number | null
+  protein: number | null
+  carbs: number | null
+  fat: number | null
+}
+
+export const estimateMacros = createServerFn({ method: 'POST' })
+  .inputValidator((input: EstimateMacrosInput) => input)
+  .handler(async ({ data }): Promise<EstimateMacrosResult> => {
+    const apiKey = process.env['ANTHROPIC_API_KEY']
+    if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set')
+
+    const prompt = `You are a nutrition expert. Estimate the macros per serving for this recipe.
+
+Recipe: ${data.name}
+Servings: ${data.servings}
+Ingredients:
+${data.ingredients.map((i, n) => `${n + 1}. ${i}`).join('\n')}
+
+Respond with ONLY a JSON object (no markdown, no explanation):
+{"calories": <number>, "protein": <number>, "carbs": <number>, "fat": <number>}
+
+Values should be per serving, rounded to the nearest integer. Use 0 if truly zero.`
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 128,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    })
+
+    if (!response.ok) throw new Error(`Anthropic API error: ${response.status}`)
+    const json = await response.json() as { content: Array<{ text: string }> }
+    const text = json.content?.[0]?.text?.trim() ?? '{}'
+
+    try {
+      const parsed = JSON.parse(text) as Record<string, unknown>
+      return {
+        calories: typeof parsed.calories === 'number' ? Math.round(parsed.calories) : null,
+        protein: typeof parsed.protein === 'number' ? Math.round(parsed.protein) : null,
+        carbs: typeof parsed.carbs === 'number' ? Math.round(parsed.carbs) : null,
+        fat: typeof parsed.fat === 'number' ? Math.round(parsed.fat) : null,
+      }
+    } catch {
+      throw new Error('Failed to parse macro estimate response')
+    }
   })

@@ -32,6 +32,7 @@ export type Database = {
           moderation_status: 'approved' | 'pending_review' | 'rejected'
           deleted_at: string | null
           like_count: number
+          cook_count: number
           created_at: string
           updated_at: string
         }
@@ -56,6 +57,7 @@ export type Database = {
           moderation_status?: 'approved' | 'pending_review' | 'rejected'
           deleted_at?: string | null
           like_count?: number
+          cook_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -80,6 +82,7 @@ export type Database = {
           moderation_status?: 'approved' | 'pending_review' | 'rejected'
           deleted_at?: string | null
           like_count?: number
+          cook_count?: number
           created_at?: string
           updated_at?: string
         }
@@ -355,6 +358,7 @@ export type Database = {
           protein_per_100g: number | null
           carbs_per_100g: number | null
           fat_per_100g: number | null
+          aliases: string[]
         }
         Insert: {
           id?: string
@@ -367,6 +371,7 @@ export type Database = {
           protein_per_100g?: number | null
           carbs_per_100g?: number | null
           fat_per_100g?: number | null
+          aliases?: string[]
         }
         Update: {
           id?: string
@@ -379,6 +384,7 @@ export type Database = {
           protein_per_100g?: number | null
           carbs_per_100g?: number | null
           fat_per_100g?: number | null
+          aliases?: string[]
         }
         Relationships: []
       }

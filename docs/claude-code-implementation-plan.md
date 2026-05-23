@@ -2078,3 +2078,141 @@ Sessions 10.5 is fully done. Schema and server functions for Session 11 are also
 - Users: joao.chaves.g@hotmail.com (main), jchavesalp@gmail.com (test account), mariaa.ramalho97@gmail.com (girlfriend)
 - Household: `6cf657e3-823c-4a9a-bf27-b2cd3b857641` (owner: jchavesalp, member: mariaa)
 - No regressions: plan page, shopping list, household flows all work as before
+
+---
+
+## Known bugs + features backlog (Session 16)
+
+### Bugs
+
+#### 1. Rogue divider after first ingredient on recipe detail page
+`src/routes/app/library/$recipeId.tsx` — visible white border line renders after the first ingredient only. Fix: ensure `divide-y` children have consistent border rendering; no border above the first item.
+
+#### 2. Shopping list group cards stuck dark in light mode
+`src/routes/app/shopping.tsx` — category group containers use hardcoded dark background classes instead of theme-aware ones. Fix: replace with `bg-white dark:bg-gray-800` equivalents.
+
+#### 3. Estimate macros button missing from recipe creation form
+The Macros section exists in the creation form but the "Estimate macros" button (calls Claude Haiku on free-text ingredients) was never implemented. Add per spec.
+
+#### 4. Ingredient qty + unit fields missing from creation form
+Each ingredient row should be `[combobox] [qty input] [unit selector] [× remove]`. Only the combobox exists. Add qty and unit inputs.
+
+#### 5. Recipe creation FAB too low — hidden behind bottom nav
+The `+` FAB on the library page sits below the bottom nav. Increase `bottom` offset to clear the nav (e.g. `bottom-20` or `bottom-24`).
+
+#### 6. "See More" on filter tags does nothing
+FilterSheet tags section has a "See More" / "Ver mais" toggle that doesn't expand the tag list. Fix the state wiring.
+
+#### 7. "Mine" filter stale after recipe creation
+After creating a recipe, activating the "Mine" chip shows the old cached list. Fix: call `queryClient.invalidateQueries` on the library query key after a successful creation mutation.
+
+#### 8. "Created by" not showing on own recipes
+Recipe cards for user-created recipes should show "by [username]" linking to `/app/profile/$username`. This row is missing or not rendering for the current user's own recipes.
+
+#### 9. P/Cal "0" badge shows when recipe has no macros
+When `calories` and `protein` are both null or zero, hide the P/Cal badge entirely instead of showing "0".
+
+#### 10. Optional ingredients show duplicate label
+Ingredients with `(opcional)` in their `raw_text` also render an `opcional` badge — double-labelled. Fix: strip the `(opcional)` prefix from display text when the badge is present.
+
+---
+
+### Features
+
+#### 11. Protein-coloured muted pastel thumbnails
+Recipe card fallback thumbnail (when no image) should use a muted pastel colour keyed to the recipe's first protein slug. Map: chicken → warm amber, salmon → dusty orange, beef → muted red, pork → rose, eggs → soft yellow, tuna → slate blue, cod → light teal, turkey → warm brown, shrimp → blush pink, tofu → sage green, whey → lavender. Multiple proteins → use first slug.
+
+#### 12. Save (bookmark) button on recipe card
+Add a tappable bookmark icon to the bottom-right of each recipe card. Tapping toggles `type='save'` in `user_recipe_interactions` (same mutation as the detail page save button). Optimistic update. Only show on system and public user recipes — not on private recipes the user owns.
+
+#### 13. Popular and Most Cooked sort options
+- Rename/confirm "Popular" sort = `like_count DESC`
+- Add "Most Cooked" sort = `cook_count DESC`
+- "Most Cooked" hidden in sort sheet until total `cook_log` entries across all users ≥ 50 (frontend threshold check)
+
+#### 14. "Curated" mode chip in library
+Add a "Curated" chip to the library mode chip row (alongside Mine, Saved, All). Filters to `owner_id IS NULL` (system recipes only). Label: "Curated" in EN, "Selecionados" in PT.
+
+#### 15. Ingredient aliases
+- Add `aliases text[]` column (GIN indexed) to `ingredients` table
+- Write `scripts/generate-ingredient-aliases.ts`: runs all 184 ingredient names through Claude Haiku with a strict prompt that only accepts true synonyms (same ingredient, different name — no substitutes, no similar-but-different items). Outputs aliases directly to DB with no manual approval step.
+- Update ingredient autocomplete query: check `name ILIKE %term%` first, then `term ILIKE ANY(aliases)` as fallback
+
+---
+
+## Session 15 — Cookbook image extraction + ingredient nutrition
+
+**Goal:** Populate recipe images for all 211 system recipes from the two cookbook PDFs, deploy the moderation Edge Function, and seed ingredient nutrition data from USDA. No UI changes.
+
+**Prerequisites:**
+- `pdfimages` installed locally (`brew install poppler`)
+- PDFs at: `~/Downloads/EBOOK PORTUGUES.pdf` (Cooking Abs, 116 recipes) and `~/Downloads/Joe x Fitness  COOKBOOK (2).pdf` (Joe x Fitness, 50 recipes)
+- `SUPABASE_SERVICE_ROLE_KEY` already in `.env.local`
+- `SIGHTENGINE_API_USER` and `SIGHTENGINE_API_SECRET` added to `.env.local` (get from sightengine.com)
+
+**Install before starting:**
+```bash
+pnpm add @filencloud/browser-image-compression sharp
+```
+
+---
+
+### 1. Cookbook image extraction script (`scripts/extract-cookbook-images.ts`)
+
+The script must:
+
+1. Use `pdfimages -j "<pdf_path>" <output_dir>` (via Node `child_process.execSync`) to extract JPEG images from each PDF into a temp dir.
+2. For each extracted image, determine which recipe it belongs to. Strategy: the script has a hardcoded JSON map of `{ pdfImageIndex: recipeId }` — generate this map by running a dry-run first that prints image filenames and dimensions so you can visually match them to recipe names. Cooking Abs images are embedded 1-per-recipe in order; Joe x Fitness similarly.
+3. For each matched image:
+   - Resize to **hero**: 1200px wide, maintain aspect ratio, JPEG 85% — using `sharp`
+   - Resize to **thumb**: 400×400px cover crop, JPEG 80% — using `sharp`
+   - Upload both to `recipe-images` bucket at `{recipeId}/hero.jpg` and `{recipeId}/thumb.jpg` (public bucket, bypasses moderation — system images pre-approved)
+   - Update `recipes.image_url` and `recipes.image_thumb_url` with the public CDN URL
+4. Idempotent: skip recipes that already have `image_url` set.
+5. Log progress. On failure for a recipe, log and continue (don't abort the whole run).
+6. Refuse to run if `NODE_ENV=production`.
+
+**Note on matching:** run the script once with `--dry-run` flag that just lists extracted images (index, filename, dimensions in px) without uploading anything. Use that output to build the index map.
+
+---
+
+### 2. Moderation Edge Function (`supabase/functions/moderate-recipe-image/index.ts`)
+
+Deploy via `supabase functions deploy moderate-recipe-image`.
+
+The function is triggered by a Storage webhook on `recipe-images-pending` INSERT events. It:
+
+1. Receives the Storage webhook payload (bucket, object path).
+2. Downloads the hero image from `recipe-images-pending`.
+3. Calls Sightengine API (nudity + violence check). Uses `SIGHTENGINE_API_USER` and `SIGHTENGINE_API_SECRET` from Deno env.
+4. If score > 0.85 on any category → delete both files from pending, set `moderation_status = 'rejected'` on the recipe.
+5. If score ≤ 0.85:
+   - Move both hero + thumb from `recipe-images-pending` to `recipe-images`
+   - Set `moderation_status = 'pending_review'`
+   - Check `app_metadata.trust_level` for the recipe owner — if `trust_level >= 1` (after 3 previously approved recipes), auto-set `moderation_status = 'approved'`
+6. Recipe `id` is extracted from the Storage path: `{recipeId}/hero.jpg`.
+
+Configure the Storage webhook in Supabase dashboard: Storage → Webhooks → `recipe-images-pending` INSERT → point to the deployed function URL.
+
+---
+
+### 3. Ingredient nutrition seed script (`scripts/seed-ingredient-nutrition.ts`)
+
+1. Download USDA FoodData Central SR Legacy CSV from: `https://fdc.nal.usda.gov/download-datasets.html` (the "Foundation Foods" or "SR Legacy" CSV zip — free, no API key needed). Save to `scripts/usda-data/` (gitignored).
+2. Parse `food.csv` and `nutrient.csv` / `food_nutrient.csv` from the zip to build a lookup: `{ foodName: { calories, protein_g, carbs_g, fat_g } }` per 100g.
+3. For each row in the `ingredients` table (fetched via service role), attempt a fuzzy name match against the USDA lookup (exact match first, then case-insensitive, then strip trailing parenthetical qualifiers).
+4. On match: update `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`.
+5. Log: matched count, unmatched names (so you can manually fix).
+6. Idempotent: skip rows where `calories_per_100g IS NOT NULL`.
+
+---
+
+### Verify before moving on
+
+- `pdfimages` dry-run lists all images from both PDFs
+- After full run: `SELECT COUNT(*) FROM recipes WHERE image_url IS NOT NULL AND owner_id IS NULL` → 211
+- Spot-check 5 recipes: hero and thumb URLs load in browser, thumbnails render correctly on recipe cards
+- `moderate-recipe-image` Edge Function deployed (`supabase functions list` shows it)
+- Storage webhook configured in dashboard for `recipe-images-pending` INSERT
+- After running nutrition script: `SELECT COUNT(*) FROM ingredients WHERE calories_per_100g IS NOT NULL` → majority of 184 rows populated
+- Spot-check: `chicken breast` and `brown rice` have non-null macros
