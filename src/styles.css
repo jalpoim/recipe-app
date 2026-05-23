@@ -225,12 +225,17 @@ body {
 [data-theme="dark"] .border-\[\#F0F0EE\] { border-color: #252523 !important; }
 [data-theme="dark"] .border-\[\#F3F4F6\] { border-color: #2A2A28 !important; }
 [data-theme="dark"] .border-\[\#D1D5DB\] { border-color: #3F3F3C !important; }
+/* divide-* overrides: cover all selector strategies Tailwind v4 may generate */
+[data-theme="dark"] .divide-\[\#F3F4F6\] > *,
 [data-theme="dark"] .divide-\[\#F3F4F6\] > * + *,
 [data-theme="dark"] .divide-\[\#F3F4F6\] > :not([hidden]) ~ :not([hidden]),
-[data-theme="dark"] .divide-\[\#F3F4F6\] > :not(:first-child) { border-color: #2A2A28 !important; }
+[data-theme="dark"] .divide-\[\#F3F4F6\] > :not(:first-child),
+[data-theme="dark"] .divide-\[\#F3F4F6\] > :not(:last-child) { border-color: #2A2A28 !important; }
+[data-theme="dark"] .divide-\[\#F9FAFB\] > *,
 [data-theme="dark"] .divide-\[\#F9FAFB\] > * + *,
 [data-theme="dark"] .divide-\[\#F9FAFB\] > :not([hidden]) ~ :not([hidden]),
-[data-theme="dark"] .divide-\[\#F9FAFB\] > :not(:first-child) { border-color: #252523 !important; }
+[data-theme="dark"] .divide-\[\#F9FAFB\] > :not(:first-child),
+[data-theme="dark"] .divide-\[\#F9FAFB\] > :not(:last-child) { border-color: #252523 !important; }
 
 /* Hover borders */
 [data-theme="dark"] .hover\:border-\[\#fecaca\]:hover { border-color: #7F1D1D !important; }
