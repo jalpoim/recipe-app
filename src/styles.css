@@ -19,6 +19,9 @@
   touch-action: manipulation;
 }
 
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
 html,
 body {
   min-height: 100%;

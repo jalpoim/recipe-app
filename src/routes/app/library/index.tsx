@@ -994,45 +994,47 @@ function LibraryPage() {
             </Link>
           </div>
 
-          {/* Row 2: Mode chips + sort */}
-          <div className="flex items-center gap-1.5 mt-2.5">
-            {/* "Todas" — exclusive, active when nothing else is selected */}
-            <button
-              onClick={() => update({ modes: [] })}
-              aria-pressed={search.modes.length === 0}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                search.modes.length === 0
-                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-              }`}
-            >
-              {t('library.all')}
-            </button>
-            {/* Multi-selectable mode chips */}
-            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
-              const active = search.modes.includes(m)
-              return (
-                <button
-                  key={m}
-                  onClick={() => {
-                    const next = active
-                      ? search.modes.filter((x) => x !== m)
-                      : [...search.modes, m]
-                    update({ modes: next })
-                  }}
-                  aria-pressed={active}
-                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                    active
-                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                  }`}
-                >
-                  {t(`library.${m}`)}
-                </button>
-              )
-            })}
-            <div className="flex-1" />
-            {/* Sort select — styled distinctly from toggle chips */}
+          {/* Row 2: Mode chips (scrollable) + sort (pinned) */}
+          <div className="flex items-center gap-2 mt-2.5">
+            {/* Horizontally scrollable chip strip */}
+            <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar flex items-center gap-1.5">
+              {/* "Todas" — exclusive, active when nothing else is selected */}
+              <button
+                onClick={() => update({ modes: [] })}
+                aria-pressed={search.modes.length === 0}
+                className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  search.modes.length === 0
+                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                {t('library.all')}
+              </button>
+              {/* Multi-selectable mode chips */}
+              {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
+                const active = search.modes.includes(m)
+                return (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      const next = active
+                        ? search.modes.filter((x) => x !== m)
+                        : [...search.modes, m]
+                      update({ modes: next })
+                    }}
+                    aria-pressed={active}
+                    className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                      active
+                        ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                    }`}
+                  >
+                    {t(`library.${m}`)}
+                  </button>
+                )
+              })}
+            </div>
+            {/* Sort select — always visible, pinned to right */}
             <div className="relative shrink-0 flex items-center">
               <ArrowUpDown
                 size={10}
