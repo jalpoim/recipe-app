@@ -279,10 +279,10 @@ function RecipeCard({
           <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
             {(
               [
-                { label: 'Cal', value: cal },
-                { label: 'P', value: pro },
-                { label: 'C', value: carb },
-                { label: 'G', value: fat },
+                { label: t('recipe.calAbbr'), value: cal },
+                { label: t('recipe.proteinAbbr'), value: pro },
+                { label: t('recipe.carbsAbbr'), value: carb },
+                { label: t('recipe.fatAbbr'), value: fat },
               ] as const
             ).map(({ label, value }) => (
               <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
