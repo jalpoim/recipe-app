@@ -938,7 +938,7 @@ function LibraryPage() {
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Header */}
         <div className="pt-4 pb-3">
-          {/* Row 1: Search bar + settings button */}
+          {/* Row 1: Search bar + sort + settings */}
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
               <Search
@@ -984,57 +984,7 @@ function LibraryPage() {
               </button>
             </div>
 
-            {/* Settings button */}
-            <Link
-              to="/app/settings"
-              aria-label={t('settings.title')}
-              className="shrink-0 w-10 h-10 rounded-xl border border-[#E5E7EB] bg-white shadow-sm flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-            >
-              <Settings size={16} aria-hidden="true" />
-            </Link>
-          </div>
-
-          {/* Row 2: Mode chips (scrollable) + sort (pinned) */}
-          <div className="flex items-center gap-2 mt-2.5">
-            {/* Horizontally scrollable chip strip */}
-            <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar flex items-center gap-1.5">
-              {/* "Todas" — exclusive, active when nothing else is selected */}
-              <button
-                onClick={() => update({ modes: [] })}
-                aria-pressed={search.modes.length === 0}
-                className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                  search.modes.length === 0
-                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                {t('library.all')}
-              </button>
-              {/* Multi-selectable mode chips */}
-              {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
-                const active = search.modes.includes(m)
-                return (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      const next = active
-                        ? search.modes.filter((x) => x !== m)
-                        : [...search.modes, m]
-                      update({ modes: next })
-                    }}
-                    aria-pressed={active}
-                    className={`shrink-0 text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                      active
-                        ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                    }`}
-                  >
-                    {t(`library.${m}`)}
-                  </button>
-                )
-              })}
-            </div>
-            {/* Sort select — always visible, pinned to right */}
+            {/* Sort select */}
             <div className="relative shrink-0 flex items-center">
               <ArrowUpDown
                 size={10}
@@ -1045,7 +995,7 @@ function LibraryPage() {
                 value={search.sort}
                 onChange={(e) => update({ sort: e.target.value as Sort })}
                 aria-label={t('sort.label')}
-                className="appearance-none bg-[#F9FAFB] border border-[#E5E7EB] rounded-full pl-5 pr-5 py-1 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer"
+                className="appearance-none bg-white border border-[#E5E7EB] rounded-xl shadow-sm pl-5 pr-5 py-2.5 text-xs font-medium text-[#6B7280] focus:outline-none cursor-pointer h-10"
               >
                 <option value="pcal">P/Cal</option>
                 <option value="popular">{t('sort.popular')}</option>
@@ -1061,6 +1011,52 @@ function LibraryPage() {
                 <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
               </svg>
             </div>
+
+            {/* Settings button */}
+            <Link
+              to="/app/settings"
+              aria-label={t('settings.title')}
+              className="shrink-0 w-10 h-10 rounded-xl border border-[#E5E7EB] bg-white shadow-sm flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <Settings size={16} aria-hidden="true" />
+            </Link>
+          </div>
+
+          {/* Row 2: Mode chips only — always fits */}
+          <div className="flex items-center gap-1.5 mt-2.5">
+            <button
+              onClick={() => update({ modes: [] })}
+              aria-pressed={search.modes.length === 0}
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                search.modes.length === 0
+                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              {t('library.all')}
+            </button>
+            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
+              const active = search.modes.includes(m)
+              return (
+                <button
+                  key={m}
+                  onClick={() => {
+                    const next = active
+                      ? search.modes.filter((x) => x !== m)
+                      : [...search.modes, m]
+                    update({ modes: next })
+                  }}
+                  aria-pressed={active}
+                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                    active
+                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                  }`}
+                >
+                  {t(`library.${m}`)}
+                </button>
+              )
+            })}
           </div>
         </div>
 
