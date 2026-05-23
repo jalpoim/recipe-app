@@ -216,7 +216,7 @@ function RecipeCard({
         params={{ recipeId: recipe.id }}
         search={{ from: undefined, planItemId: undefined }}
         onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: 'library' })}
-        className="block px-4 pt-4 pb-3"
+        className="block px-4 pt-4 pb-2"
       >
         <div className="flex items-start gap-3">
           {/* Thumbnail */}
@@ -309,7 +309,7 @@ function RecipeCard({
         )}
 
         {(cookCount > 0 || onToggleSave) && (
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-2">
             {cookCount > 0 && (
               <p className="text-[10px] text-[#9CA3AF] flex-1">{t('recipe.cookedCount', { count: cookCount })}</p>
             )}
