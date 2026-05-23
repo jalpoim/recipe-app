@@ -351,7 +351,7 @@ function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                             onClick={() => deleteEntryMutation.mutate(entry.id)}
                             disabled={deletingId === entry.id}
                             aria-label={`Eliminar registo de ${entry.recipe_name}`}
-                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus:outline-none disabled:opacity-40"
+                            className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] active:text-[#DC2626] active:bg-[#fee2e2] transition-colors focus:outline-none disabled:opacity-40"
                           >
                             <X size={12} aria-hidden="true" />
                           </button>

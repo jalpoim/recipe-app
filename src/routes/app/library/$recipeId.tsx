@@ -16,7 +16,6 @@ import {
 import {
   logRecipeCooked,
   fetchRecipeCookCounts,
-  deleteCookLogEntry,
 } from '../../../lib/supabase/cook-log-queries'
 import {
   upsertInteraction,
@@ -328,15 +327,6 @@ function RecipeDetailPage() {
       setCookDebounced(true)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       debounceRef.current = setTimeout(() => setCookDebounced(false), 3000)
-    },
-    onError: () => showToast(t('common.error'), 'error'),
-  })
-
-  const undoCookMutation = useMutation({
-    mutationFn: () => deleteCookLogEntry({ data: { cookLogId: lastCookLogId! } }),
-    onSuccess: () => {
-      setLastCookLogId(null)
-      qc.invalidateQueries({ queryKey: ['cook-counts', recipe.id] })
     },
     onError: () => showToast(t('common.error'), 'error'),
   })
@@ -670,15 +660,6 @@ function RecipeDetailPage() {
                 </span>
                 {myCookCount > 0 || lastCookLogId ? t('recipe.logCookedAgain') : t('recipe.logCooked')}
               </button>
-              {lastCookLogId && (
-                <button
-                  onClick={() => undoCookMutation.mutate()}
-                  disabled={undoCookMutation.isPending}
-                  className="w-full text-center text-xs text-[#9CA3AF] hover:text-[#6B7280] py-2 disabled:opacity-50 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
-                >
-                  {t('recipe.undoCook')}
-                </button>
-              )}
             </div>
           )}
         </div>

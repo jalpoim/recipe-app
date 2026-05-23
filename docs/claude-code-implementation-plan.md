@@ -2805,3 +2805,627 @@ Configure the Storage webhook in Supabase dashboard: Storage → Webhooks → `r
 - Storage webhook configured in dashboard for `recipe-images-pending` INSERT
 - After running nutrition script: `SELECT COUNT(*) FROM ingredients WHERE calories_per_100g IS NOT NULL` → majority of 184 rows populated
 - Spot-check: `chicken breast` and `brown rice` have non-null macros
+
+> **Note:** The ingredient nutrition seed script above (step 3) is superseded by Session 19 below, which is a far more comprehensive approach. Skip it here and do Session 19 instead.
+
+---
+
+## Session 18 — Ingredient form v2: qty+unit pill with bottom sheet
+
+**Goal:** Replace the three-field ingredient row (qty text input + unit text input + name text input) in the recipe creation form with a cleaner layout: a compact `[200 g ▾]` pill on the left that opens a unit-selection bottom sheet, a number input for quantity, and the name field getting the remaining width. No more free-text unit entry — units come from a controlled vocabulary, enabling reliable unit conversion later.
+
+### Schema / data
+No schema changes. This session is UI only.
+
+### Unit vocabulary
+Grouped into three sections for the bottom sheet:
+
+| Section | Units |
+|---|---|
+| Metric | g, kg, ml, L |
+| Imperial | oz, lb, cup, tbsp, tsp, fl oz |
+| Count | unit, slice, clove, pinch, bunch, handful, sheet, can, sachet |
+
+Default unit when none pre-filled: `g`.
+
+### Changes to `src/routes/app/library/create.tsx`
+
+Replace the `IngredientCombobox` row layout:
+
+- **Quantity**: `<input type="number">`, `w-16`, shows the numeric value
+- **Unit pill**: a compact button showing `{unit || 'g'}`, opens a Vaul bottom sheet (`UnitSheet`) on tap. Styled as a rounded chip: `rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-2 text-sm`. Turns green border when a non-default unit is selected.
+- **Name field**: `flex-1 min-w-0`, placeholder shortened to `"Ingredient…"` (drop the example text — qty+unit fields already communicate structure)
+- **Remove button**: keep as-is
+
+`UnitSheet` component (Vaul drawer, same pattern as `SortSheet`):
+- Three labeled sections: Metric · Imperial · Count
+- Each unit is a full-width tappable row, checkmark on the selected one
+- Tapping a unit closes the sheet and updates the field
+- No search needed — list is short enough to scroll
+
+`handleUnitChange` already exists and just needs to be called from the sheet selection. No logic changes.
+
+Also fix: the remove button on ingredient rows uses `hover:bg-[#fee2e2]` / `hover:text-[#DC2626]` — replace with `active:` variants (same iOS Safari stuck-hover fix applied to cook history this session).
+
+### Verify before moving on
+- Creating a recipe: tapping the unit pill opens a sheet with three grouped sections
+- Selecting a unit from the sheet closes it and updates the pill label
+- Name field has visible placeholder text on a real device (375px width)
+- Selecting an ingredient from autocomplete still pre-fills the unit correctly
+- Editing an existing recipe: unit pill shows the stored unit
+- No TypeScript errors
+
+---
+
+## Session 19 — Ingredient database: USDA bulk import + AI supplementation
+
+**Goal:** Replace the current hand-curated ~184-ingredient table with a clean, canonical, macro-rich, dietary-flagged ingredient database of ~10,000–12,000 entries. Every entry is a unique kitchen ingredient — no branded products, no restaurant items, no 30 variations of Greek yogurt. This enables: (a) accurate auto-estimation of recipe macros from ingredients, (b) ingredient-level dietary exclusion, (c) reliable unit conversion. This session is entirely scripts — no UI changes.
+
+> **Supersedes** the ingredient nutrition seed script in Session 15 step 3. Do this instead.
+
+### Key design principle: canonical ingredients, not USDA rows verbatim
+
+USDA SR Legacy contains 7,793 entries but many are redundant variations, branded items, baby foods, or restaurant foods that have no place in a recipe ingredient autocomplete. The import script must:
+
+1. **Filter** irrelevant categories first
+2. **Canonicalize** remaining entries to clean kitchen names (via Haiku)
+3. **Deduplicate** entries that map to the same canonical ingredient
+4. **Store one row per canonical ingredient** with the most representative macro values
+
+This produces ~1,200–1,500 USDA-sourced canonical ingredients plus ~8,000–10,000 Haiku-generated global ingredients, totalling ~10,000–12,000 unique, searchable entries.
+
+The JSON files are already downloaded and located at `docs/usda/` (gitignored). The relevant files:
+- `FoodData_Central_foundation_food_json_2026-04-30.json` — 395 items, highest quality, April 2026. **Primary source.**
+- `FoodData_Central_sr_legacy_food_json_2018-04.json` — 7,793 items, broader coverage. **Gap-fill source.**
+- `FoodData_Central_branded_food_json_2026-04-30.json` — 3.1GB, branded products. **Do not import** — too large and wrong scope. Keep for future selective lookup if needed.
+- `surveyDownload 2.json` — FNDDS dietary survey data. **Do not import** — wrong scope.
+
+Macro nutrient IDs (per 100g, confirmed from data inspection):
+- `1008` = Energy (kcal) = `calories_per_100g`
+- `1003` = Protein (g) = `protein_per_100g`
+- `1005` = Carbohydrate (g) = `carbs_per_100g`
+- `1004` = Total lipid/fat (g) = `fat_per_100g`
+
+### Schema changes
+
+```sql
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS calories_per_100g   numeric;
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS protein_per_100g    numeric;
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS carbs_per_100g      numeric;
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS fat_per_100g        numeric;
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS dietary_flags       text[]  NOT NULL DEFAULT '{}';
+ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS classification_source text   DEFAULT 'manual';
+-- classification_source values: 'usda', 'ai', 'manual', 'user_submitted'
+```
+
+`dietary_flags` uses exactly these 12 tokens:
+`meat`, `poultry`, `fish`, `shellfish`, `dairy`, `egg`, `honey`, `gluten`, `tree_nut`, `peanut`, `soy`, `sesame`
+
+### Import script: `scripts/seed-ingredient-database.ts`
+
+**Step 1 — Category filter**
+
+Drop all USDA entries whose `foodCategory.description` matches any of these — they contain nothing useful for home cooking recipes:
+- "Baby Foods"
+- "Fast Foods"
+- "Restaurant Foods"
+- "American Indian/Alaska Native Foods"
+- "Meals, Entrees, and Side Dishes"
+
+**Do NOT drop** "Sausages and Luncheon Meats" — it contains legitimate recipe ingredients (Italian sausage, chorizo, salami, mortadella, pepperoni, bratwurst). Filter within it by description instead.
+
+Within all remaining categories, also drop entries whose `description` contains any of (case-insensitive):
+`"restaurant"`, `"fast food"`, `"babyfood"`, `"baby food"`, `"frozen, prepared"`, `"from kid's menu"`, `"breaded, fried"`, and any all-caps brand names (regex: `\b[A-Z]{3,}\b` in description — catches CHOBANI, APPLEBEE'S, DENNY'S, OSCAR MAYER, etc.)
+
+After filtering: ~2,500–3,000 USDA entries remain.
+
+**Step 2 — Deterministic pre-processing (code, no AI)**
+
+Before sending to Haiku, strip the following patterns from each USDA description via regex:
+- Quality/grade: `, choice`, `, select`, `, prime`, `, grade A`, `, NFS`
+- Trim level: `separable lean only`, `separable lean and fat`, `trimmed to \d+["/]+ fat`
+- Cooking state (will be handled by keeping raw): `, cooked, [a-z, ]+`, `, raw` (strip suffix — the canonical form is already raw)
+- Size prefix: `^(Large|Medium|Small), ` at start of description
+- Redundant qualifiers: `, unprepared`, `, without salt`, `, with salt added`, `, without skin`, `, skin removed`
+- Packaging redundancy: `, canned` → keep this intentionally (canned tuna ≠ fresh tuna — see rules below)
+
+This step reduces description verbosity before Haiku processes them, making the naming task cleaner and cheaper.
+
+**Step 3 — Haiku canonicalization**
+
+Send pre-processed entries in batches of 50 to Haiku. This prompt encodes the full merge/keep ruleset:
+
+```
+You are a food database assistant and dietitian. For each USDA food description, return a clean canonical kitchen ingredient name that a home cook would recognise.
+
+IMPORTANT: Return structured output, not just a name string. Each entry must have three separate fields:
+- `canonical_name`: the base ingredient name a home cook uses ("Greek yogurt", "salmon", "chickpeas")
+- `variant`: the specific variant qualifier that distinguishes this from other forms, or null ("nonfat", "smoked", "dried", "in water", "steel-cut")
+- `canonical_full`: the final stored name, combining both ("Greek yogurt, nonfat", "smoked salmon", "chickpeas, dried")
+
+This structure enables better deduplication and search than a single freeform string.
+
+MERGE these into one canonical entry (same `canonical_full`):
+- Same ingredient, different cooking state: "chicken breast, roasted" and "chicken breast, pan-fried" → `canonical_full: "chicken breast"` (always use raw/uncooked as canonical)
+- Grade/quality markers: beef "choice" vs "select" → same entry
+- Organic vs conventional → same entry (same macros)
+- Salted vs unsalted butter/nuts → same entry (salt is nutritionally negligible)
+- Whole vs sliced/diced/chopped produce: "broccoli, florets" → `canonical_full: "broccoli"`
+- Trivially different naming: "olive oil, salad or cooking" → `canonical_full: "olive oil"`
+- Powdered vs granulated sugar → `canonical_full: "sugar"`
+- Multigrain bread labeled as "whole grain" → `canonical_full: "multigrain bread"` (note: multigrain ≠ whole grain — do not merge with whole wheat bread)
+
+KEEP SEPARATE (meaningfully different macros or culinary identity — each gets its own `canonical_full`):
+
+Fat content and lean percentage:
+- Dairy fat tiers: nonfat, low-fat (1-2%), whole — Greek yogurt nonfat has 17g protein, whole milk has 9g protein per 100g
+- Ground meat lean %: 70/30, 80/20, 85/15, 90/10, 95/5 — very different calorie and fat profiles
+- Milk fat: skim, 1%, 2%, whole
+
+Meat and fish cuts:
+- Poultry: breast, thigh, drumstick, wing — different fat ratios
+- Beef: sirloin, ribeye, chuck, tenderloin, brisket, flank, skirt — ribeye has ~70% more fat than sirloin
+- Fish: keep all species distinct; fresh vs smoked vs canned for each
+
+Processing and preservation state (these are genuinely different products):
+- Fresh vs smoked: salmon, mackerel, trout, ham — smoked dramatically changes sodium and fat
+- Canned in water vs canned in oil: tuna, sardines, mackerel — oil-packed has 2-3× the fat
+- Fresh vs dried herbs: fresh basil vs dried basil — different culinary concentration and use
+- Sun-dried vs fresh vs canned tomatoes; tomato paste vs passata — caloric density varies 4×
+- Canned vs dried legumes: chickpeas dried (~378 kcal/100g) vs canned (~164 kcal/100g) — water content makes these nutritionally different; same for lentils, black beans, kidney beans, cannellini
+
+Egg components: whole egg, egg white, egg yolk — three distinct nutritional profiles
+
+Flour types (completely different macros and culinary roles):
+- All-purpose flour (mostly carbs), whole wheat flour (more fibre), bread flour (higher protein), almond flour (~54g fat, ~21g protein — keto staple), oat flour, rice flour, chickpea flour (~22g protein), coconut flour (~40g fibre)
+
+Grain variants:
+- Rice: white rice, brown rice (different fibre), basmati, jasmine, arborio/risotto rice, wild rice
+- Oats: steel-cut oats, rolled oats, instant oats — same total macros but different glycemic response; steel-cut GI ~42 vs instant ~79
+- Pasta by protein source: regular pasta (~7g protein), whole wheat pasta (~8g protein), chickpea pasta (~14g protein), lentil pasta (~14g protein), red lentil pasta — keep distinct
+
+Plant-based milks (these differ as much as different food groups — never collapse to one entry):
+- Oat milk (~17g carbs/cup), almond milk (~2g carbs), soy milk (~7g protein, 8g carbs), rice milk (~22g carbs), coconut milk (full-fat vs light), cashew milk, hemp milk — each is a distinct entry; fortified vs unfortified versions within the same type also differ nutritionally
+
+Protein powders (major fitness app use case):
+- Whey concentrate (~75% protein, residual lactose), whey isolate (~90% protein, near-zero fat/lactose), casein protein (slow-digesting), hydrolyzed whey, plant protein (pea, rice, hemp blends) — all distinct entries
+
+Fermented foods:
+- Miso: white miso (shiro — sweet, lower sodium), red miso (aka — fermented longer, higher sodium), mixed miso (awase) — different sodium and flavour compound profiles
+- Soy sauce vs tamari (gluten-free, more umami) vs coconut aminos (lower sodium, slightly sweet) — genuinely different sodium and amino acid profiles; flag tamari as gluten-free
+- Kefir: dairy kefir vs water kefir vs coconut kefir — protein ranges from ~8g/cup (dairy) to near zero (water)
+- Kimchi vs fresh cabbage — fermentation creates dramatically different sodium content
+
+Coconut products: coconut milk full-fat, coconut milk light (~half the calories), coconut cream, coconut water, coconut oil, desiccated coconut — all distinct
+
+Cooking wines and vinegars (often confused, completely different macros):
+- Mirin (~30 kcal, 8g sugar per tbsp) vs rice vinegar (~3 kcal, ~0g sugar) — do not merge
+- Sake, Chinese Shaoxing wine, dry sherry — keep distinct (different alcohol and sugar content)
+- Balsamic vinegar (~14 kcal/tbsp, 2-3g sugar) vs white wine vinegar (~3 kcal) — keep distinct
+
+FEW-SHOT EXAMPLES (follow this output format exactly):
+Input: "Yogurt, Greek, plain, nonfat (Includes foods for USDA's Food Distribution Program)"
+Output: { "usda_description": "...", "canonical_name": "Greek yogurt", "variant": "nonfat", "canonical_full": "Greek yogurt, nonfat" }
+
+Input: "Beef, chuck, arm pot roast, separable lean only, trimmed to 0\" fat, choice, raw"
+Output: { "usda_description": "...", "canonical_name": "beef chuck", "variant": null, "canonical_full": "beef chuck" }
+
+Input: "Tuna, light, canned in water, drained solids"
+Output: { "usda_description": "...", "canonical_name": "tuna", "variant": "canned in water", "canonical_full": "canned tuna in water" }
+
+Input: "Salmon, Atlantic, farmed, raw"
+Output: { "usda_description": "...", "canonical_name": "salmon", "variant": null, "canonical_full": "salmon" }
+
+Input: "Salmon, Atlantic, farmed, cooked, dry heat"
+Output: { "usda_description": "...", "canonical_name": "salmon", "variant": null, "canonical_full": "salmon" } (same as raw — merge cooking states)
+
+Input: "Chickpeas (garbanzo beans, bengal gram), mature seeds, canned, drained solids"
+Output: { "usda_description": "...", "canonical_name": "chickpeas", "variant": "canned", "canonical_full": "chickpeas, canned" }
+
+Return JSON array: [{ "usda_description": "...", "canonical_name": "...", "variant": "..." or null, "canonical_full": "..." }]
+```
+
+**Step 4 — Deduplicate by `canonical_full`**
+
+Group pre-processed USDA entries by their `canonical_full` value. For each group, select macro values from the most representative entry:
+- Prefer `raw` over `cooked`
+- Prefer `plain` / `unflavored` over flavored
+- `canonical_full` values that differ (e.g. "Greek yogurt, nonfat" vs "Greek yogurt, whole milk") are different groups — never merge across them
+
+Discard other entries within each group. Expected output: ~2,000–2,500 canonical USDA-sourced ingredient entries.
+
+**Step 5 — Insert to database**
+
+For each canonical ingredient, extract macros using nutrient IDs above, derive `dietary_flags` from USDA food category:
+
+| USDA food category contains | dietary_flags |
+|---|---|
+| "Beef Products", "Pork Products", "Lamb, Veal, and Game" | `['meat']` |
+| "Poultry Products" | `['poultry']` |
+| "Finfish" | `['fish']` |
+| "Shellfish", "Crustacean", "Mollusks" | `['shellfish']` |
+| "Dairy and Egg Products" (non-egg items) | `['dairy']` |
+| "Dairy and Egg Products" (egg items — description contains "egg") | `['egg']` |
+| "Cereal Grains and Pasta", "Baked Products" (wheat-based) | `['gluten']` |
+| "Nut and Seed Products" (non-peanut, non-sesame) | `['tree_nut']` |
+| "Legumes" (peanut items — description contains "peanut") | `['peanut']` |
+| "Legumes" (soy items — description contains "soy" or "tofu" or "edamame") | `['soy']` |
+
+Set `classification_source = 'usda'`.
+
+**Idempotent:** on conflict by `name` (case-insensitive), update macros and flags only if existing row has `classification_source = 'usda'`. Never overwrite `user_submitted` or `manual` data.
+
+### Haiku supplementation pass: `scripts/supplement-ingredients.ts`
+
+Run after the USDA import. Three tasks:
+
+1. **Portuguese names** — batch 50 USDA-sourced ingredients per call, generate `name_pt` for any that don't have one.
+
+2. **Cooking units** — for entries where `default_unit` is null or awkward (e.g. "100g portion"), assign a natural cooking unit (garlic → `clove`, olive oil → `tbsp`, eggs → `unit`).
+
+3. **Global cuisine and specialty expansion** — generate ingredients not present after the USDA import. Run separate batches per category. Set `classification_source = 'ai'`. Batch 20 new ingredients per Haiku call.
+
+Categories to generate (each a separate batch run):
+- Portuguese/Iberian staples (bacalhau, chouriço, presunto, piri piri, berbere)
+- West African produce (egusi, plantain varieties, fufu flours, moringa)
+- Southeast Asian pantry (fish sauce, shrimp paste, galangal, kaffir lime leaves, pandan)
+- Middle Eastern spices and ingredients (za'atar, sumac, pomegranate molasses, halloumi)
+- Latin American staples (masa harina, chipotle, tomatillo, epazote, different chile types)
+- East Asian pantry (different miso types — white/red/mixed, different soy sauces, mirin, sake, Shaoxing wine, dashi)
+- South Asian spices (asafoetida, ajwain, amchur, curry leaf, tamarind paste)
+- Fermented and cultured foods not in USDA (kefir variants, kvass, tempeh, natto)
+- Plant-based milks with variant detail (oat milk, almond milk, soy milk, rice milk, cashew milk, hemp milk — each fortified and unfortified as separate entries where macros differ)
+- Protein powders (whey concentrate, whey isolate, casein, pea protein, rice protein, hemp protein, plant protein blends)
+- Alternative flours not in USDA (chickpea flour, teff flour, sorghum flour, cassava flour, tigernut flour)
+- Specialty cooking wines and vinegars (mirin, sake, Shaoxing wine, balsamic vinegar reduction, sherry vinegar)
+
+Haiku prompt for new ingredients:
+```
+Generate a JSON array of real cooking ingredients for [category]. Each entry:
+{ name_en, name_pt, dietary_flags (only from: meat/poultry/fish/shellfish/dairy/egg/honey/gluten/tree_nut/peanut/soy/sesame), default_unit, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
+
+Rules:
+- Only include dietary flags that are definitively and unambiguously true
+- Set any macro to null if you are not confident in the value — do not guess
+- Include meaningful variants as separate entries: fat content, processing state (smoked/dried/canned), preparation (white miso vs red miso)
+- Do NOT include branded products, restaurant foods, baby foods, or composite dishes
+- Use English names a home cook would recognise; Portuguese names should be the most common term used in Portugal
+```
+
+**Rate limiting:** 100ms delay between Haiku batches. Total estimated cost: $3–7.
+
+### Runtime new-ingredient classification
+
+When a user saves a recipe and a typed ingredient doesn't fuzzy-match anything in the database (Levenshtein distance > threshold, or no match in `name ILIKE %term%` or `aliases`), call Haiku to classify it and insert as a new row with `classification_source = 'ai'`. Rate limit: max 20 new unrecognized ingredient classifications per user per day.
+
+### Verify before moving on
+- `SELECT COUNT(*) FROM ingredients` → 10,000+
+- `SELECT COUNT(*) FROM ingredients WHERE calories_per_100g IS NOT NULL` → >80% of rows
+- `SELECT COUNT(*) FROM ingredients WHERE 'dairy' = ANY(dietary_flags)` → several hundred rows
+
+**Deduplication checks — confirm the canonical approach worked:**
+- `SELECT name FROM ingredients WHERE name ILIKE '%yogurt%' ORDER BY name` → fat variants present (Greek yogurt nonfat, Greek yogurt low-fat, Greek yogurt whole milk, plain yogurt) but no branded or baby food entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%chicken%' ORDER BY name` → cuts only (chicken breast, chicken thigh, chicken drumstick, chicken wing, ground chicken) — no restaurant entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%tuna%' ORDER BY name` → "tuna", "canned tuna in water", "canned tuna in oil" present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%salmon%' ORDER BY name` → "salmon", "smoked salmon", "canned salmon" distinct
+- `SELECT name FROM ingredients WHERE name ILIKE '%chickpea%' ORDER BY name` → "chickpeas, dried" and "chickpeas, canned" both present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%flour%' ORDER BY name` → all-purpose flour, whole wheat flour, almond flour, oat flour, rice flour, chickpea flour, bread flour all present
+- `SELECT name FROM ingredients WHERE name ILIKE '%sausage%' ORDER BY name` → Italian sausage, chorizo, bratwurst present (category not dropped)
+- `SELECT name FROM ingredients WHERE name ILIKE '%tomato%' ORDER BY name` → fresh tomato, canned tomato, tomato paste, tomato passata, sun-dried tomato all present
+- `SELECT name FROM ingredients WHERE name ILIKE '%egg%' ORDER BY name` → "egg", "egg white", "egg yolk" present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%milk%' ORDER BY name` → oat milk, almond milk, soy milk, rice milk, whole milk, 2% milk, skim milk all present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%miso%' ORDER BY name` → white miso, red miso present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%oat%' ORDER BY name` → steel-cut oats and rolled oats both present
+- `SELECT name FROM ingredients WHERE name ILIKE '%pasta%' ORDER BY name` → regular pasta, whole wheat pasta, chickpea pasta present as distinct entries
+- `SELECT name FROM ingredients WHERE name ILIKE '%whey%' OR name ILIKE '%protein powder%' ORDER BY name` → whey concentrate, whey isolate, casein present
+- `SELECT name FROM ingredients WHERE name ILIKE '%mirin%' OR name ILIKE '%rice vinegar%' ORDER BY name` → both present as distinct entries (not merged)
+- `SELECT name FROM ingredients WHERE name ILIKE '%bacalhau%'` → present (Portuguese cod, Haiku-generated)
+- `SELECT * FROM ingredients WHERE name ILIKE '%tahini%'` → present with `sesame` flag
+- `SELECT * FROM ingredients WHERE name ILIKE '%tamari%'` → present, `soy` flag set, note gluten-free
+
+**Macro spot-checks (verify canonical approach produced accurate values):**
+- `chicken breast`: ~165 kcal, ~31g protein, ~0g carbs, ~3.6g fat per 100g
+- `egg white`: ~52 kcal, ~11g protein, ~0.7g carbs, ~0.2g fat per 100g
+- `egg yolk`: ~322 kcal, ~16g protein, ~4g carbs, ~27g fat per 100g
+- `chickpeas, dried`: ~378 kcal, ~20g protein — confirm significantly higher than canned
+- `chickpeas, canned`: ~164 kcal, ~9g protein — confirm significantly lower than dried
+- `almond flour`: ~600 kcal, ~21g protein, ~10g carbs, ~54g fat per 100g (vs all-purpose ~364 kcal)
+- `oat milk`: ~45 kcal, ~1.5g protein, ~9g carbs, ~1.5g fat per 100g (vs almond milk ~15 kcal — confirms they're genuinely distinct)
+- `whey isolate`: ~370 kcal, ~90g protein per 100g (vs whey concentrate ~400 kcal, ~75g protein)
+
+---
+
+## Session 20 — Unit conversion: display-time, global, smart rounding
+
+**Goal:** When a user has `measurement_unit = 'imperial'` set in their profile, all recipe ingredient quantities are displayed in imperial units. No stored conversion — recipes are authored in their original units and converted at display time only. Users in the same household see the same conversion based on their own profile setting.
+
+### Conversion logic
+
+Add a utility `src/lib/units.ts`:
+
+```ts
+type MetricUnit = 'g' | 'kg' | 'ml' | 'L'
+type ImperialUnit = 'oz' | 'lb' | 'cup' | 'tbsp' | 'tsp' | 'fl oz'
+type UnitKind = 'mass' | 'volume' | 'count' | 'unknown'
+
+// Returns converted value + display unit, or original if not convertible
+function convertUnit(value: number, unit: string, toSystem: 'metric' | 'imperial'): { value: number; unit: string }
+```
+
+Conversion factors (metric → imperial):
+- `g` → `oz`: × 0.035274
+- `kg` → `lb`: × 2.20462
+- `ml` → `fl oz`: × 0.033814
+- `L` → `cups`: × 4.22675
+
+**Smart rounding rules (imperial output):**
+- `oz`: round to nearest 0.25 if < 4oz, else nearest 0.5
+- `lb`: round to nearest 0.25
+- `fl oz`: round to nearest 0.5
+- `cups`: if ≥ 2 cups, round to nearest 0.25; if < 0.25 cups, express as tbsp (1 cup = 16 tbsp); if < 1 tbsp, express as tsp (1 tbsp = 3 tsp)
+- Count units (`clove`, `pinch`, `slice`, `unit`, etc.) — never convert, pass through as-is
+- Unknown/free-text units — pass through as-is
+
+**Reverse conversion** (imperial → metric for authors using imperial):  
+The same function handles both directions. An imperial user creating a recipe with `7 oz` stores `quantity = 7, unit = 'oz'`. A metric viewer sees `198g` (rounded).
+
+### Integration points
+
+1. **`scaleIngredient()` in `$recipeId.tsx`** — already called for every ingredient display. Pass the active `measurementUnit` from user profile (fetched via existing profile query). After scaling, apply `convertUnit()`.
+
+2. **`src/lib/supabase/queries.ts`** — `fetchRecipeById()` doesn't need changes; conversion happens client-side.
+
+3. **Settings page** — `measurement_unit` toggle already exists in the UI. Verify it saves to `profiles.measurement_unit` correctly (this may already work; check before adding code).
+
+4. **Plan page ingredient display** — if/when ingredient quantities appear in plan summary, apply the same conversion.
+
+### Verify before moving on
+- Recipe with `200g chicken` → imperial user sees `7 oz`
+- Recipe with `500ml stock` → imperial user sees `2 cups` (not `16.9 fl oz`)
+- Recipe with `1 clove garlic` → both users see `1 clove`
+- Recipe with `2 tbsp olive oil` (stored in tbsp) → metric user sees `2 tbsp` (no conversion — tbsp is a count-like unit)
+- Changing Settings unit toggle → recipe page immediately shows updated units on next visit
+- No TypeScript errors
+
+---
+
+## Session 21 — Dietary preferences: settings, library, recipe tagging
+
+**Goal:** Let users set a dietary mode (vegetarian / vegan / pescatarian) and intolerances (any combination of the EU 14 allergens + custom ingredient exclusions). These preferences are applied as a permanent baseline filter in the library — recipes containing excluded ingredients are hidden. The recipe creation flow surfaces auto-detected dietary tags from ingredient flags.
+
+### Schema changes
+
+```sql
+-- On profiles table
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS dietary_mode text DEFAULT 'none';
+-- Values: 'none', 'vegetarian', 'vegan', 'pescatarian'
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS intolerances text[] NOT NULL DEFAULT '{}';
+-- Values (subset of the 12 flags): 'gluten', 'dairy', 'egg', 'fish', 'shellfish', 'tree_nut', 'peanut', 'soy', 'sesame'
+-- Plus EU-specific: 'celery', 'mustard', 'lupin', 'sulphites', 'molluscs'
+
+-- For custom ingredient exclusions (beyond named allergens)
+CREATE TABLE user_ingredient_exclusions (
+  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  ingredient_id uuid REFERENCES ingredients(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, ingredient_id)
+);
+```
+
+Enable RLS on `user_ingredient_exclusions`: users can only read/write their own rows.
+
+### Dietary mode → excluded flags mapping
+
+| Mode | Excluded flags |
+|---|---|
+| vegetarian | meat, poultry, fish, shellfish |
+| vegan | meat, poultry, fish, shellfish, dairy, egg, honey |
+| pescatarian | meat, poultry |
+| none | (nothing excluded by mode) |
+
+At query time: combine mode flags + intolerance flags into a single exclusion set. A recipe is excluded if **any** of its ingredients has **any** flag in the exclusion set.
+
+### `fetchLibrary()` changes (`src/lib/supabase/queries.ts`)
+
+Accept two new optional parameters: `excludedFlags: string[]` and `excludedIngredientIds: string[]`.
+
+Exclusion logic (add to the existing query):
+```sql
+-- Exclude recipes where any ingredient has an excluded flag
+AND NOT EXISTS (
+  SELECT 1 FROM recipe_ingredients ri
+  JOIN ingredients ing ON ing.id = ri.ingredient_id
+  WHERE ri.recipe_id = recipes.id
+  AND ing.dietary_flags && $excludedFlags  -- array overlap operator
+)
+-- Exclude recipes with custom excluded ingredients
+AND NOT EXISTS (
+  SELECT 1 FROM recipe_ingredients ri
+  WHERE ri.recipe_id = recipes.id
+  AND ri.ingredient_id = ANY($excludedIngredientIds)
+)
+```
+
+The exclusion is computed in the server function from the user's profile. Not passed via URL params (it's a persistent preference, not a session filter).
+
+### Library filter sheet
+
+Add a **Diet** section at the top of the filter sheet, above Proteins. Shows the user's active dietary preferences as pre-applied chip selections (same style as protein chips). User can deselect them for this session — store session overrides in URL search params (`dietOverride: string[]`). A "from your preferences" label in small muted text below the chips explains why they're pre-selected.
+
+If the user has dietary preferences and at least one recipe is hidden: show a one-time dismissible banner at the top of the library list: *"Some recipes are hidden based on your dietary preferences."* Store dismissal in `localStorage`. Never show again after dismissed.
+
+### Recipe creation: auto-detected tags
+
+After a recipe is saved, derive dietary suitability from its ingredients:
+
+- If none of the recipe's ingredients have flags in `{meat, poultry, fish, shellfish}` → add tag `vegetariano`
+- If none of the recipe's ingredients have flags in `{meat, poultry, fish, shellfish, dairy, egg, honey}` → add tag `vegano`
+- If none have `gluten` flag → add tag `sem-glúten`
+- If none have `dairy` flag → add tag `sem-lactose`
+
+**In the creation form:** after the user's ingredient list has at least 2 entries, compute the derived tags client-side and display them below the manual tag picker in a distinct row:
+
+> *Auto-detected: Gluten-free · Dairy-free* (each shown as a dismissible chip — tap × to remove)
+
+Deduplication: if the author already selected `sem-glúten`, don't show it in the auto-detected row. On save, merge author tags + accepted auto-detected tags into `recipes.tags[]`.
+
+### Recipe detail: tag correction
+
+On the recipe detail page, authors see their recipe's full tag list. Add a small "Incorrect tag?" link that opens a simple form: select which tag is wrong, submit. This creates a row in a `tag_correction_reports` table (`recipe_id`, `tag`, `reported_by`, `created_at`). No automated action in v1 — just a report log for manual review.
+
+```sql
+CREATE TABLE tag_correction_reports (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipe_id uuid REFERENCES recipes(id) ON DELETE CASCADE,
+  tag text NOT NULL,
+  reported_by uuid REFERENCES auth.users(id),
+  created_at timestamptz DEFAULT now()
+);
+```
+
+### Settings UI
+
+Settings page — add a new **Diet** section between Language and Appearance:
+
+**Diet (single-select radio group):**
+None · Vegetarian · Vegan · Pescatarian
+
+**Intolerances (multi-select chips):**
+Primary (always visible): Gluten · Dairy · Eggs · Fish · Shellfish · Tree nuts · Peanuts · Soy · Sesame
+"See more" reveals: Celery · Mustard · Molluscs · Lupin · Sulphites
+
+**Exclude ingredients (autocomplete):**
+Text field backed by `ingredients` table search. Selected ingredients appear as dismissible chips below the field. Each chip tap removes the exclusion. These write to `user_ingredient_exclusions`.
+
+### i18n keys to add
+
+```json
+"dietary": {
+  "title": "Dietary preferences",
+  "mode": "Diet",
+  "none": "None",
+  "vegetarian": "Vegetarian",
+  "vegan": "Vegan",
+  "pescatarian": "Pescatarian",
+  "intolerances": "Intolerances",
+  "seeMore": "See more allergens",
+  "seeLess": "See fewer",
+  "excludeIngredients": "Exclude ingredients",
+  "excludePlaceholder": "Search ingredient to exclude…",
+  "hiddenBanner": "Some recipes are hidden based on your dietary preferences.",
+  "autoDetected": "Auto-detected from ingredients",
+  "incorrectTag": "Incorrect tag?",
+  "reportTag": "Report incorrect tag",
+  "reportSent": "Thank you — we'll review it."
+}
+```
+
+### Verify before moving on
+- Vegan user: chicken recipes don't appear in library
+- Gluten-free user: pasta recipes don't appear
+- Filter sheet shows dietary preferences as pre-applied chips
+- Unchecking a dietary chip in the filter sheet temporarily shows the hidden recipes
+- Hidden banner appears once, then stays dismissed after reload
+- Recipe creation: auto-detected tags appear when ≥ 2 ingredients added
+- If user already selected `sem-glúten`, it doesn't appear in auto-detected row
+- Tag correction report form submits without errors
+- Settings dietary section saves and reloads correctly
+- No TypeScript errors
+
+---
+
+## Session 22 — Onboarding flow: post-signup setup
+
+**Goal:** Right after a new user's first sign-in, show a focused 2-screen onboarding flow before they reach the library. Collects: (1) preferred measurement units, (2) dietary quick-select. Both are optional (skip/set-later available). On completion, writes to the `profiles` table. Returning users who have already completed onboarding skip it entirely.
+
+### Detecting new users
+
+Add `onboarding_completed boolean DEFAULT false` to `profiles`. After magic link callback, check this flag. If false → redirect to `/app/onboarding` before `/app/library`. If true → skip.
+
+### Route: `/app/onboarding`
+
+Two-step flow, navigated with Next/Back. Progress dots at the top (2 dots). No bottom nav visible during onboarding.
+
+**Step 1 — Units**
+
+Heading: *"How do you measure ingredients?"*
+Two large cards, tap to select:
+
+- 🫙 **Metric** — *grams, millilitres, kilograms* (default selected)
+- 🥛 **Imperial** — *ounces, pounds, cups*
+
+Next button → Step 2. Skip link bottom-right → completes onboarding with defaults.
+
+**Step 2 — Dietary preferences**
+
+Heading: *"Any dietary preferences?"*
+Subheading: *"We'll hide recipes that don't match."*
+
+Single-select pill row for diet mode: None (default) · Vegetarian · Vegan · Pescatarian
+
+Multi-select chip grid for common intolerances (show top 6 only — no "See more" on this screen to keep it simple):
+Gluten · Dairy · Eggs · Nuts · Shellfish · Soy
+
+Below the chips, in small muted text:
+*"More dietary and allergy options available in Settings →"* (tappable, links to Settings after onboarding completes)
+
+Done button → saves preferences, sets `onboarding_completed = true`, navigates to `/app/library`.
+Skip link → completes with whatever is selected (including nothing), same navigation.
+
+### i18n keys to add
+
+```json
+"onboarding": {
+  "step1Title": "How do you measure ingredients?",
+  "metric": "Metric",
+  "metricHint": "grams, millilitres, kilograms",
+  "imperial": "Imperial",
+  "imperialHint": "ounces, pounds, cups",
+  "step2Title": "Any dietary preferences?",
+  "step2Hint": "We'll hide recipes that don't match.",
+  "moreOptions": "More dietary and allergy options in Settings →",
+  "next": "Next",
+  "done": "Done",
+  "skip": "Skip for now"
+}
+```
+
+### Verify before moving on
+- New user (fresh account): after magic link sign-in → redirected to `/app/onboarding`
+- Returning user: `/app/onboarding` immediately redirects to `/app/library`
+- Completing Step 2 → `profiles.measurement_unit` and `profiles.dietary_mode` and `profiles.intolerances` updated
+- `onboarding_completed = true` after Done or Skip
+- Step 1 → Step 2 navigation works, Back on Step 2 returns to Step 1
+- "More options in Settings" link navigates correctly after onboarding
+- No bottom nav visible during onboarding
+- No TypeScript errors
+
+---
+
+## Pre-launch checklist
+
+Before making the app URL publicly shareable, complete these steps. None require code changes — they are configuration and account-level settings.
+
+### Anthropic API safeguards
+- Set a hard monthly budget cap in the Anthropic console: start at **$50/month**
+- Configure email alerts at 50% ($25) and 80% ($40) of monthly budget
+- Verify the Haiku model ID in all scripts uses `claude-haiku-4-5-20251001` (current pricing: $0.80/MTok input, $4/MTok output)
+
+### Rate limits to implement (code changes, one PR)
+- AI macro estimation (`estimateMacros` server fn): max **10 calls per user per day** — track in a `daily_ai_usage` table or a simple counter in `profiles`
+- New ingredient Haiku classification: max **20 unrecognized ingredients per user per day**
+- Image uploads: max **5MB per file** (Supabase Storage bucket policy), max **20 uploads per user per day**
+
+### Supabase
+- Upgrade to **Pro plan ($25/month)** — eliminates the 1-week inactivity pause that would kill a live app
+- Storage bucket `recipe-images`: verify public access is set correctly, hero images load without authentication
+- Run `supabase db advisors` and fix any flagged issues before launch
+
+### Vercel
+- Vercel Hobby is fine for soft launch (beta, shared-link only)
+- Upgrade to **Pro ($20/month)** when the URL becomes public and you start acquiring real users — Hobby terms prohibit commercial use
+
+### Monitoring
+- Add Supabase usage to your regular check (Dashboard → Usage) — watch Storage and bandwidth
+- Set up a Vercel spend alert if you upgrade to Pro
+- After first 100 users, check `SELECT COUNT(*), classification_source FROM ingredients GROUP BY classification_source` to see how fast user-submitted ingredients are growing
