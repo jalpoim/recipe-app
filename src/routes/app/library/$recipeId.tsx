@@ -323,7 +323,7 @@ function RecipeDetailPage() {
     queryFn: () => fetchMyProfile(),
     staleTime: 5 * 60 * 1000,
   })
-  const measurementSystem = profile?.measurement_unit ?? 'metric'
+  const measurementSystem = (profile?.measurement_unit ?? 'metric') as 'metric' | 'imperial'
 
   // Cook counts
   const { data: cookCounts } = useQuery({

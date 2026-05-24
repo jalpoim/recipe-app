@@ -14,7 +14,7 @@ export const fetchActivePlanWithCount = createServerFn({ method: 'GET' }).handle
     const { data, error } = await supabase
       .rpc('get_active_plan', {
         p_user_id: session.user.id,
-        p_household_id: householdId,
+        p_household_id: householdId ?? undefined,
       })
       .maybeSingle()
     if (error) throw new Error(error.message)

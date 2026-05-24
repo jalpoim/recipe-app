@@ -187,49 +187,41 @@ export const searchIngredients = createServerFn({ method: 'GET' })
   .inputValidator((q: string) => q)
   .handler(async ({ data: q }) => {
     const supabase = makeClient()
-    const lower = q.toLowerCase()
 
-    // Search catalog by name, then aliases, then recipe_ingredients.name for broader coverage
-    const [byNameResult, byAliasResult, byRecipeIngResult] = await Promise.all([
+    // Fuzzy search via pg_trgm (also searches ingredient_translations)
+    const { data: fuzzy } = await supabase.rpc('search_ingredients_fuzzy', {
+      search_term: q,
+      result_limit: 10,
+    })
+
+    const ids = (fuzzy ?? []).map((r) => r.id)
+    if (ids.length === 0) return []
+
+    // Fetch ingredient metadata + PT translation (display name)
+    const [metaResult, translationsResult] = await Promise.all([
       supabase
         .from('ingredients')
-        .select('id, name, default_unit, category')
-        .ilike('name', `%${q}%`)
-        .limit(8),
+        .select('id, default_unit, category')
+        .in('id', ids),
       supabase
-        .from('ingredients')
-        .select('id, name, default_unit, category')
-        .filter('aliases', 'cs', `{${lower}}`)
-        .limit(8),
-      supabase
-        .from('recipe_ingredients')
-        .select('name')
-        .ilike('name', `%${q}%`)
-        .not('name', 'is', null)
-        .limit(12),
+        .from('ingredient_translations')
+        .select('ingredient_id, name')
+        .in('ingredient_id', ids)
+        .eq('language', 'pt'),
     ])
 
-    const catalogById = new Map<string, { id: string; name: string; default_unit: string | null; category: string | null }>()
-    for (const row of [...(byNameResult.data ?? []), ...(byAliasResult.data ?? [])]) {
-      catalogById.set(row.id, row)
-    }
-    const catalogResults = Array.from(catalogById.values()).slice(0, 8)
+    const metaById = new Map((metaResult.data ?? []).map((r) => [r.id, r]))
+    const ptNameById = new Map((translationsResult.data ?? []).map((r) => [r.ingredient_id, r.name]))
 
-    // Supplement with recipe ingredient names not already covered by catalog
-    const catalogNames = new Set(catalogResults.map((r) => r.name.toLowerCase()))
-    const extraNames: string[] = []
-    for (const row of byRecipeIngResult.data ?? []) {
-      const n = row.name!
-      if (!catalogNames.has(n.toLowerCase()) && !extraNames.includes(n)) {
-        extraNames.push(n)
-        if (catalogResults.length + extraNames.length >= 10) break
+    return (fuzzy ?? []).map((r) => {
+      const meta = metaById.get(r.id)
+      return {
+        id: r.id,
+        name: ptNameById.get(r.id) ?? r.name,
+        default_unit: meta?.default_unit ?? null,
+        category: meta?.category ?? null,
       }
-    }
-
-    return [
-      ...catalogResults,
-      ...extraNames.map((name) => ({ id: null, name, default_unit: null, category: null })),
-    ]
+    })
   })
 
 export type EstimateMacrosInput = {

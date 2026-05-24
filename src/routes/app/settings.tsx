@@ -345,7 +345,7 @@ function SettingsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-profile'] }),
   })
 
-  const currentUnit: MeasurementUnit = profile?.measurement_unit ?? 'metric'
+  const currentUnit: MeasurementUnit = (profile?.measurement_unit ?? 'metric') as MeasurementUnit
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -453,7 +453,7 @@ function SettingsPage() {
             <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
               {t('settings.dietary')}
             </p>
-            <DietarySection profile={profile} />
+            <DietarySection profile={profile as { dietary_mode: DietaryMode; intolerances: string[] } | null} />
           </section>
 
           {/* Household */}

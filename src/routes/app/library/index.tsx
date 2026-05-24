@@ -828,7 +828,7 @@ function LibraryPage() {
   })
 
   const excludedFlags = useMemo(() => {
-    const modeFlags = DIETARY_FLAGS[profile?.dietary_mode ?? 'none'] ?? []
+    const modeFlags = DIETARY_FLAGS[(profile?.dietary_mode ?? 'none') as DietaryMode] ?? []
     const intoleranceFlags = profile?.intolerances ?? []
     return [...new Set([...modeFlags, ...intoleranceFlags])]
   }, [profile])
