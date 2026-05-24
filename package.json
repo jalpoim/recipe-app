@@ -33,6 +33,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-i18next": "^17.0.8",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.18",
     "vaul": "^1.1.2"
   },

@@ -7,10 +7,12 @@
  *  - ~/Downloads/Joe x Fitness  COOKBOOK (2).pdf → 50 Joe x Fitness recipes
  *
  * Usage:
- *   npx tsx scripts/extract-cookbook-images.ts --dry-run     (list proposed matches, no uploads)
- *   npx tsx scripts/extract-cookbook-images.ts               (full run)
- *   npx tsx scripts/extract-cookbook-images.ts --pdf cooking (only Cooking Abs)
- *   npx tsx scripts/extract-cookbook-images.ts --pdf joe     (only Joe x Fitness)
+ *   npx tsx scripts/extract-cookbook-images.ts --dry-run           (list proposed matches, no uploads)
+ *   npx tsx scripts/extract-cookbook-images.ts                     (full run, skip already-uploaded)
+ *   npx tsx scripts/extract-cookbook-images.ts --force             (re-upload even if image already set)
+ *   npx tsx scripts/extract-cookbook-images.ts --pdf cooking       (only Cooking Abs)
+ *   npx tsx scripts/extract-cookbook-images.ts --pdf joe           (only Joe x Fitness)
+ *   npx tsx scripts/extract-cookbook-images.ts --pdf joe --force   (re-upload Joe images)
  *
  * Requires: VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY in .env.local
  * Requires: pdfimages + pdfinfo (brew install poppler), sharp (pnpm add sharp)
@@ -41,6 +43,7 @@ if (!url || !serviceKey) {
 const supabase = createClient(url, serviceKey, { auth: { persistSession: false } })
 
 const DRY_RUN = process.argv.includes('--dry-run')
+const FORCE = process.argv.includes('--force') // re-upload even if image_url already set
 const PDF_FILTER = (() => {
   const i = process.argv.indexOf('--pdf')
   return i !== -1 ? process.argv[i + 1] : null
@@ -62,6 +65,10 @@ type PdfSource = {
   jsonPath?: string
   // Override minimum pixel dimension for this source (default: MIN_DIMENSION)
   min_px?: number
+  // Skip images on pages before this number (1-indexed)
+  min_page?: number
+  // Use Haiku vision to classify images and select only "final plated dish" photos
+  use_vision_selection?: boolean
 }
 
 const PDF_SOURCES: PdfSource[] = [
@@ -73,7 +80,9 @@ const PDF_SOURCES: PdfSource[] = [
     created_before: '2026-05-20T00:00:00Z',
     expected_count: 50,
     jsonPath: path.resolve(process.cwd(), 'scripts/joe-x-fitness-recipes.json'),
-    min_px: 430, // include smaller step/ingredient photos since hero shots are scarce
+    min_px: 430,
+    min_page: 11, // skip intro pages 1-10
+    use_vision_selection: true, // best image = last prep image = final plated dish
   },
   {
     key: 'cooking',
@@ -81,6 +90,7 @@ const PDF_SOURCES: PdfSource[] = [
     label: 'Cooking Abs (PT)',
     created_after: '2026-05-21T00:00:00Z',
     expected_count: 116,
+    min_page: 20, // skip intro/content-creator pages 1-19
   },
 ]
 
@@ -94,7 +104,7 @@ type ImageInfo = {
 
 // Parse `pdfimages -list` output to get metadata for all images.
 // Returns deduplicated list (first occurrence per object ID) sorted by image index.
-function listUniqueImages(pdfPath: string): ImageInfo[] {
+function listUniqueImages(pdfPath: string, minPage?: number): ImageInfo[] {
   const raw = execSync(`pdfimages -list "${pdfPath}" 2>/dev/null`, { maxBuffer: 10 * 1024 * 1024 }).toString()
   const lines = raw.split('\n').slice(2).filter(l => l.trim())
 
@@ -116,6 +126,9 @@ function listUniqueImages(pdfPath: string): ImageInfo[] {
 
     // Skip transparency masks (type: smask)
     if (type === 'smask') continue
+
+    // Skip pages before min_page (intro/content-creator pages)
+    if (minPage && page < minPage) continue
 
     // Dedup by object ID (same embedded image referenced from multiple pages)
     if (seen.has(objectId)) continue
@@ -209,6 +222,90 @@ async function uploadImage(buffer: Buffer, storagePath: string): Promise<string>
   return supabase.storage.from('recipe-images').getPublicUrl(storagePath).data.publicUrl
 }
 
+// Classify a single image as "final plated dish" vs "preparation step" using Haiku vision.
+// Returns true if the image looks like a finished, plated dish ready to eat.
+async function classifyAsFinalDish(imageBuffer: Buffer): Promise<boolean> {
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  if (!anthropicKey) throw new Error('ANTHROPIC_API_KEY not set')
+
+  const base64 = imageBuffer.toString('base64')
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 64,
+      system: `You classify cookbook photos for a meal prep app. Output only JSON: {"type": "final_dish" | "preparation", "confidence": "high" | "medium" | "low"}.
+
+"final_dish": A finished, plated meal presented and ready to eat. The food is cooked and served.
+"preparation": Any other step — raw ingredients, chopping, mixing, cooking in pans, baking in progress, measuring, hands working with food, kitchen tools, or any mid-process shot.
+
+When in doubt between the two, label as "preparation" with confidence "low".
+Respond ONLY with valid JSON — no other text.`,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          { type: 'text', text: 'Classify this cookbook photo.' },
+        ],
+      }],
+    }),
+  })
+
+  if (!res.ok) return false // fail closed — skip if API error
+
+  const json = await res.json() as { content?: { text?: string }[] }
+  const text = json?.content?.[0]?.text?.trim() ?? ''
+  try {
+    const result = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? '{}') as { type?: string; confidence?: string }
+    return result.type === 'final_dish' && result.confidence !== 'low'
+  } catch {
+    return false
+  }
+}
+
+// Run Haiku vision on all portrait images and return only those classified as final dishes.
+// Falls back to all images if fewer than expectedCount final-dish images are found.
+async function selectFinalDishImages(
+  images: ImageInfo[],
+  tmpDir: string,
+  expectedCount: number,
+): Promise<ImageInfo[]> {
+  console.log(`  Running Haiku vision on ${images.length} images to find final dish shots...`)
+  const finalDish: ImageInfo[] = []
+  let classified = 0
+
+  for (const img of images) {
+    const filePath = findImageFile(tmpDir, img.index)
+    if (!filePath) { process.stdout.write('?'); continue }
+    const raw = await readImageAsJpeg(filePath)
+    if (!raw) { process.stdout.write('?'); continue }
+
+    // Resize to thumbnail before sending to keep API cost low
+    const thumb = await sharp(raw).resize({ width: 400, height: 400, fit: 'inside' }).jpeg({ quality: 70 }).toBuffer()
+    const isFinal = await classifyAsFinalDish(thumb)
+    process.stdout.write(isFinal ? '✓' : '·')
+    if (isFinal) finalDish.push(img)
+    classified++
+
+    // Small delay to stay under Haiku rate limits
+    if (classified % 20 === 0) await new Promise(r => setTimeout(r, 500))
+  }
+  console.log()
+
+  if (finalDish.length >= expectedCount) {
+    console.log(`  → ${finalDish.length} final-dish images found (need ${expectedCount})`)
+    return finalDish
+  }
+
+  console.log(`  → Only ${finalDish.length} final-dish images found (need ${expectedCount}), falling back to all ${images.length} portrait images`)
+  return images
+}
+
 // Fetch system recipes in insertion order for a given time window
 async function fetchRecipesInOrder(
   created_after: string,
@@ -233,13 +330,13 @@ async function processPdfSource(source: PdfSource) {
     return
   }
 
-  // Step 1: Get image metadata from PDF (deduped)
+  // Step 1: Get image metadata from PDF (deduped, filtered by min_page)
   console.log('  Scanning PDF image metadata...')
-  const allUniqueImages = listUniqueImages(source.pdfPath)
-  console.log(`  ${allUniqueImages.length} unique images in PDF`)
+  const allUniqueImages = listUniqueImages(source.pdfPath, source.min_page)
+  console.log(`  ${allUniqueImages.length} unique images in PDF${source.min_page ? ` (page ≥${source.min_page})` : ''}`)
 
   const minPx = source.min_px ?? MIN_DIMENSION
-  const recipeImages = filterRecipeImages(allUniqueImages, minPx)
+  let recipeImages = filterRecipeImages(allUniqueImages, minPx)
   console.log(`  ${recipeImages.length} portrait recipe-sized images (≥${minPx}px, ratio ≥${MIN_PORTRAIT_RATIO})`)
 
   // Step 2: Fetch recipes from DB in insertion order
@@ -258,6 +355,11 @@ async function processPdfSource(source: PdfSource) {
   const tmpDir = path.join(os.tmpdir(), `recipe-images-${source.key}-${Date.now()}`)
   console.log(`  Extracting images from PDF...`)
   extractAllImages(source.pdfPath, tmpDir)
+
+  // Step 3b: Vision selection — classify images and keep only final plated dishes
+  if (source.use_vision_selection) {
+    recipeImages = await selectFinalDishImages(recipeImages, tmpDir, dbRecipes.length)
+  }
 
   const matchCount = Math.min(recipeImages.length, dbRecipes.length)
 
@@ -286,16 +388,17 @@ async function processPdfSource(source: PdfSource) {
     const recipe = dbRecipes[i]
     const img = recipeImages[i]
 
-    // Check if already has image
-    const { data: existing } = await supabase
-      .from('recipes')
-      .select('image_url')
-      .eq('id', recipe.id)
-      .single()
-
-    if (existing?.image_url) {
-      skipped++
-      continue
+    // Check if already has image (skip unless --force)
+    if (!FORCE) {
+      const { data: existing } = await supabase
+        .from('recipes')
+        .select('image_url')
+        .eq('id', recipe.id)
+        .single()
+      if (existing?.image_url) {
+        skipped++
+        continue
+      }
     }
 
     const imagePath = findImageFile(tmpDir, img.index)
