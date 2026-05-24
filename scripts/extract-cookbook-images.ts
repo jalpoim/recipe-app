@@ -71,6 +71,9 @@ type PdfSource = {
   min_px?: number
   // Language of recipe names in this PDF ('pt' | 'en')
   name_language: 'pt' | 'en'
+  // If set, only process recipes whose names appear in this JSON file (array of {name})
+  // Used when multiple cookbooks were seeded in the same time window
+  jsonPath?: string
 }
 
 const PDF_SOURCES: PdfSource[] = [
@@ -91,6 +94,7 @@ const PDF_SOURCES: PdfSource[] = [
     min_px: 430,
     min_page: 11,
     name_language: 'en',
+    jsonPath: path.resolve(process.cwd(), 'scripts/joe-x-fitness-recipes.json'),
   },
 ]
 
@@ -481,6 +485,7 @@ async function fetchRecipes(
   created_after: string,
   created_before: string | undefined,
   name_language: 'pt' | 'en',
+  jsonPath?: string,
 ): Promise<DbRecipe[]> {
   let q = supabase
     .from('recipes')
@@ -491,7 +496,7 @@ async function fetchRecipes(
   const { data, error } = await q.order('created_at', { ascending: true })
   if (error) throw new Error(error.message)
 
-  const recipes = (data ?? []) as DbRecipe[]
+  let recipes = (data ?? []) as DbRecipe[]
 
   if (name_language === 'en') {
     // Replace names with English translations for matching against English PDF
@@ -503,7 +508,14 @@ async function fetchRecipes(
       .eq('language', 'en')
 
     const enMap = new Map(((rtrans ?? []) as Array<{ recipe_id: string; name: string }>).map(t => [t.recipe_id, t.name]))
-    return recipes.map(r => ({ id: r.id, name: enMap.get(r.id) ?? r.name }))
+    recipes = recipes.map(r => ({ id: r.id, name: enMap.get(r.id) ?? r.name }))
+  }
+
+  // Filter to only recipes listed in the JSON file (disambiguates overlapping time windows)
+  if (jsonPath && fs.existsSync(jsonPath)) {
+    const jsonRecipes = JSON.parse(fs.readFileSync(jsonPath, 'utf8')) as Array<{ name: string }>
+    const allowed = new Set(jsonRecipes.map(r => r.name))
+    recipes = recipes.filter(r => allowed.has(r.name))
   }
 
   return recipes
@@ -524,7 +536,7 @@ async function processPdfSource(source: PdfSource) {
   console.log(`  PDF: ${totalPages} total pages (scanning from page ${minPage})`)
 
   // Fetch recipes and their display names in the PDF's language
-  const recipes = await fetchRecipes(source.created_after, source.created_before, source.name_language)
+  const recipes = await fetchRecipes(source.created_after, source.created_before, source.name_language, source.jsonPath)
   console.log(`  ${recipes.length} recipes in DB`)
 
   if (recipes.length === 0) {
