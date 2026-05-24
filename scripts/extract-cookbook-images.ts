@@ -235,13 +235,16 @@ function wordOverlap(a: string, b: string): number {
   return overlap / Math.max(wordsA.size, wordsB.size)
 }
 
-// For each recipe name, find the page where it most likely first appears.
-// Returns Map<recipeId, pageNumber> — only recipes confidently matched get an entry.
+// For each recipe name, find the page where the actual recipe starts.
+// Key insight: index/TOC pages mention many recipes but have no food photos.
+// A real recipe page (or its spread) always has at least one portrait image nearby.
+// Returns Map<recipeId, pageNumber>
 function findRecipeTitlePages(
   pdfPath: string,
   totalPages: number,
   recipes: DbRecipe[],
   minPage: number,
+  portraitImagePages: Set<number>, // pages that contain portrait-sized images
   verbose = false,
 ): Map<string, number> {
   const normalizedNames = recipes.map(r => ({ id: r.id, name: r.name, norm: normalize(r.name) }))
@@ -251,57 +254,72 @@ function findRecipeTitlePages(
   console.log(`  Scanning ${totalPages - minPage + 1} pages for recipe titles...`)
 
   // Score each (recipe, page) pair
-  const scores: Array<{ id: string; name: string; page: number; score: number }> = []
+  type PageScore = { id: string; name: string; page: number; textScore: number; hasNearbyImage: boolean }
+  const scores: PageScore[] = []
+
+  // Count how many recipes match each page (index pages match many; recipe pages match ~1)
+  const matchesPerPage = new Map<number, number>()
 
   for (let page = minPage; page <= totalPages; page++) {
     const text = extractPageText(pdfPath, page)
     const normPage = normalize(text)
+    let pageMatchCount = 0
 
     for (const r of normalizedNames) {
-      // Check substring first (fast path)
+      let textScore = 0
       if (normPage.includes(r.norm)) {
-        scores.push({ id: r.id, name: r.name, page, score: 1.0 })
-        continue
-      }
-      // Word overlap fallback
-      const lines = normPage.split('\n')
-      for (const line of lines) {
-        if (line.length < 4) continue
-        const s = wordOverlap(r.norm, line)
-        if (s >= 0.7) {
-          scores.push({ id: r.id, name: r.name, page, score: s })
-          break
+        textScore = 1.0
+      } else {
+        const lines = normPage.split('\n')
+        for (const line of lines) {
+          if (line.length < 4) continue
+          const s = wordOverlap(r.norm, line)
+          if (s >= 0.7) { textScore = s; break }
         }
       }
+      if (textScore > 0) {
+        // A real recipe page has at least one portrait image within ±3 pages of the title
+        const hasNearbyImage = [0, 1, 2, 3].some(offset =>
+          portraitImagePages.has(page + offset) || portraitImagePages.has(page - offset)
+        )
+        scores.push({ id: r.id, name: r.name, page, textScore, hasNearbyImage })
+        pageMatchCount++
+      }
     }
+    matchesPerPage.set(page, pageMatchCount)
   }
 
-  // For each recipe, take the earliest high-confidence page match
+  // For each recipe, rank candidates: prefer pages with nearby images and low match-count
+  // (avoids index/TOC pages that mention many recipes and have no images)
   for (const r of normalizedNames) {
     const candidates = scores
       .filter(s => s.id === r.id)
-      .sort((a, b) => a.page - b.page || b.score - a.score)
+      .sort((a, b) => {
+        // 1. Prefer pages with nearby images over those without
+        if (a.hasNearbyImage !== b.hasNearbyImage) return a.hasNearbyImage ? -1 : 1
+        // 2. Prefer pages that match fewer recipes (real recipe page ≈ 1–2 matches)
+        const aMatches = matchesPerPage.get(a.page) ?? 0
+        const bMatches = matchesPerPage.get(b.page) ?? 0
+        if (aMatches !== bMatches) return aMatches - bMatches
+        // 3. Earlier page wins if otherwise equal
+        return a.page - b.page
+      })
 
     if (candidates.length === 0) {
       if (verbose) console.log(`  ⚠ No page found for: ${r.name}`)
       continue
     }
 
-    const best = candidates[0]
-    if (!usedPages.has(best.page)) {
-      result.set(r.id, best.page)
-      usedPages.add(best.page)
-      if (verbose) console.log(`  p${best.page} → "${r.name}" (score ${best.score.toFixed(2)})`)
-    } else {
-      // Page already claimed — use next best non-conflicting candidate
-      const alt = candidates.find(c => !usedPages.has(c.page))
-      if (alt) {
-        result.set(r.id, alt.page)
-        usedPages.add(alt.page)
-        if (verbose) console.log(`  p${alt.page} → "${r.name}" (alt, score ${alt.score.toFixed(2)})`)
-      } else if (verbose) {
-        console.log(`  ⚠ Conflict — no unambiguous page for: ${r.name}`)
+    const pick = candidates.find(c => !usedPages.has(c.page))
+    if (pick) {
+      result.set(r.id, pick.page)
+      usedPages.add(pick.page)
+      if (verbose) {
+        const flag = pick.hasNearbyImage ? '📷' : '⚠ no img'
+        console.log(`  p${pick.page} → "${r.name}" (${flag}, ${matchesPerPage.get(pick.page)} page-matches)`)
       }
+    } else if (verbose) {
+      console.log(`  ⚠ All candidate pages already claimed for: ${r.name}`)
     }
   }
 
@@ -544,8 +562,17 @@ async function processPdfSource(source: PdfSource) {
     return
   }
 
-  // Find which page each recipe title appears on
-  const titlePages = findRecipeTitlePages(source.pdfPath, totalPages, recipes, minPage)
+  // Get all portrait images first — needed to filter index/TOC page matches
+  const minPx = source.min_px ?? MIN_DIMENSION
+  const allUniqueImages = listUniqueImages(source.pdfPath, minPage)
+  const recipeImages = filterRecipeImages(allUniqueImages, minPx)
+  console.log(`  ${recipeImages.length} portrait images found (≥${minPx}px, ratio ≥${MIN_PORTRAIT_RATIO})`)
+
+  // Build set of pages that contain portrait images (used to filter out index/TOC matches)
+  const portraitImagePages = new Set(recipeImages.map(img => img.page))
+
+  // Find which page each recipe title appears on (skips index/TOC pages with no nearby images)
+  const titlePages = findRecipeTitlePages(source.pdfPath, totalPages, recipes, minPage, portraitImagePages)
   console.log(`  Matched ${titlePages.size}/${recipes.length} recipes to pages`)
 
   const unmatched = recipes.filter(r => !titlePages.has(r.id))
@@ -556,12 +583,6 @@ async function processPdfSource(source: PdfSource) {
 
   // Build page ranges for matched recipes
   const pageRanges = buildPageRanges(titlePages, totalPages)
-
-  // Get all portrait images from PDF
-  const minPx = source.min_px ?? MIN_DIMENSION
-  const allUniqueImages = listUniqueImages(source.pdfPath, minPage)
-  const recipeImages = filterRecipeImages(allUniqueImages, minPx)
-  console.log(`  ${recipeImages.length} portrait images found (≥${minPx}px, ratio ≥${MIN_PORTRAIT_RATIO})`)
 
   // Group images by recipe page range
   const imagesByRecipe = new Map<string, ImageInfo[]>()
