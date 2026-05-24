@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const SIGHTENGINE_API_URL = 'https://api.sightengine.com/1.0/check.json'
+const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages'
 const REJECTION_THRESHOLD = 0.85
 const TRUST_LEVEL_AUTO_APPROVE = 1
 
@@ -63,14 +64,17 @@ Deno.serve(async (req) => {
     const worstScore = Math.max(nudityScore, violenceScore)
 
     if (worstScore > REJECTION_THRESHOLD) {
-      // Reject: delete from pending, set status
-      await Promise.all([
-        supabase.storage.from('recipe-images-pending').remove([`${recipeId}/hero.jpg`]),
-        supabase.storage.from('recipe-images-pending').remove([`${recipeId}/thumb.jpg`]),
-      ])
-      await supabase.from('recipes').update({ moderation_status: 'rejected' }).eq('id', recipeId)
-      console.log(`Rejected ${recipeId} (score ${worstScore.toFixed(2)})`)
+      await rejectImage(supabase, recipeId)
+      console.log(`Rejected ${recipeId} — safety score ${worstScore.toFixed(2)}`)
       return new Response('rejected', { status: 200 })
+    }
+
+    // Food relevance check via Claude Haiku vision
+    const isFood = await checkIsFood(heroBlob)
+    if (!isFood) {
+      await rejectImage(supabase, recipeId)
+      console.log(`Rejected ${recipeId} — not a food image`)
+      return new Response('rejected_not_food', { status: 200 })
     }
 
     // Approved: move hero + thumb from pending → live bucket
@@ -117,6 +121,48 @@ Deno.serve(async (req) => {
     return new Response('internal error', { status: 500 })
   }
 })
+
+async function rejectImage(supabase: ReturnType<typeof createClient>, recipeId: string) {
+  await Promise.all([
+    supabase.storage.from('recipe-images-pending').remove([`${recipeId}/hero.jpg`]),
+    supabase.storage.from('recipe-images-pending').remove([`${recipeId}/thumb.jpg`]),
+  ])
+  await supabase.from('recipes').update({ moderation_status: 'rejected' }).eq('id', recipeId)
+}
+
+async function checkIsFood(imageBlob: Blob): Promise<boolean> {
+  const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(await imageBlob.arrayBuffer())))
+
+  const res = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 10,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+          { type: 'text', text: 'Does this image show food, a dish, or a meal? Answer only "yes" or "no".' },
+        ],
+      }],
+    }),
+  })
+
+  if (!res.ok) {
+    console.error('Haiku vision error:', res.status)
+    return true // fail open — don't block on API error
+  }
+
+  const json = await res.json()
+  const answer: string = json?.content?.[0]?.text?.trim().toLowerCase() ?? ''
+  return answer.startsWith('yes')
+}
 
 async function moveFile(
   supabase: ReturnType<typeof createClient>,
