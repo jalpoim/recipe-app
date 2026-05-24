@@ -10,13 +10,16 @@ import {
 } from '../lib/supabase/admin-queries'
 import { getAuthUser } from '../lib/supabase/server'
 
-const ADMIN_USER_ID = '9a5a4a71-bcd3-4e64-b734-b258b93e7576'
+const ADMIN_USER_IDS = new Set([
+  '9a5a4a71-bcd3-4e64-b734-b258b93e7576', // joao.chaves.g@hotmail.com
+  'dd8ec600-bc81-4657-a0d3-23eb00524b23',  // jchavesalp@gmail.com
+])
 const TRUST_AFTER_N = 5
 
 export const Route = createFileRoute('/admin')({
   beforeLoad: async () => {
     const user = await getAuthUser()
-    if (!user || user.id !== ADMIN_USER_ID) throw redirect({ to: '/app/library', search: {} as never })
+    if (!user || !ADMIN_USER_IDS.has(user.id)) throw redirect({ to: '/app/library', search: {} as never })
   },
   component: AdminPage,
 })
