@@ -5,7 +5,9 @@ import { ArrowLeft, Bookmark, BookmarkCheck, Clock, Edit, Heart, Minus, Plus, Ch
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchRecipeById } from '../../../lib/supabase/queries'
+import { fetchMyProfile } from '../../../lib/supabase/profile-queries'
 import { useToast } from '../../../components/Toast'
+import { convertUnit, formatQuantity } from '../../../lib/units'
 import {
   addRecipeToPlan,
   removePlanItem,
@@ -37,13 +39,19 @@ function scaledMacro(raw: number | null, servings: number, macrosTotal: boolean,
   return perServing * multiplier
 }
 
-function scaleIngredient(ing: RecipeIngredient, multiplier: number, baseServings: number): string {
+function scaleIngredient(
+  ing: RecipeIngredient,
+  multiplier: number,
+  baseServings: number,
+  measurementSystem: 'metric' | 'imperial' = 'metric',
+): string {
   const rawDisplay = ing.raw_text.replace(/^\(opcional\)\s*/i, '')
   if (ing.quantity == null) return rawDisplay
   const factor = multiplier / (baseServings || 1)
   const scaled = ing.quantity * factor
-  const qty = fmt(scaled)
-  const parts = [qty, ing.unit, ing.name].filter(Boolean)
+  const { value: converted, unit: displayUnit } = convertUnit(scaled, ing.unit ?? '', measurementSystem)
+  const qty = formatQuantity(converted)
+  const parts = [qty, displayUnit, ing.name].filter(Boolean)
   return parts.length > 1 ? parts.join(' ') : rawDisplay
 }
 
@@ -309,6 +317,14 @@ function RecipeDetailPage() {
     onError: () => showToast(t('common.error'), 'error'),
   })
 
+  // User profile (for unit conversion)
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => fetchMyProfile(),
+    staleTime: 5 * 60 * 1000,
+  })
+  const measurementSystem = profile?.measurement_unit ?? 'metric'
+
   // Cook counts
   const { data: cookCounts } = useQuery({
     queryKey: ['cook-counts', recipe.id],
@@ -512,7 +528,7 @@ function RecipeDetailPage() {
                           className={`px-4 py-3 flex items-baseline justify-between gap-2 ${ing.is_optional && !label ? 'opacity-60' : ''}`}
                         >
                           <span className={`text-sm ${ing.is_optional && !label ? 'text-[#6B7280]' : 'text-[#1A1A1A]'}`}>
-                            {scaleIngredient(ing, multiplier, recipe.servings)}
+                            {scaleIngredient(ing, multiplier, recipe.servings, measurementSystem)}
                           </span>
                           {ing.is_optional && !label && (
                             <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">

@@ -1,11 +1,62 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, Minus, Plus, Sparkles, X } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, Check, Minus, Plus, Sparkles, X } from 'lucide-react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { Drawer } from 'vaul'
 import { createRecipe, searchIngredients, estimateMacros, fetchUserProteins, createUserProtein, deleteUserProtein, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
 import { useToast } from '../../../components/Toast'
 import { ProteinPicker } from '../../../components/ProteinPicker'
+
+const UNIT_SECTIONS = [
+  { label: 'Métrico',    units: ['g', 'kg', 'ml', 'L'] },
+  { label: 'Imperial',  units: ['oz', 'lb', 'cup', 'tbsp', 'tsp', 'fl oz'] },
+  { label: 'Contagem',  units: ['unit', 'slice', 'clove', 'pinch', 'bunch', 'handful', 'sheet', 'can', 'sachet'] },
+] as const
+
+function UnitSheet({
+  open,
+  onOpenChange,
+  selected,
+  onSelect,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  selected: string
+  onSelect: (unit: string) => void
+}) {
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl flex flex-col max-h-[70vh]">
+          <div className="mx-auto w-10 h-1 rounded-full bg-[#E5E7EB] mt-3 mb-1 shrink-0" />
+          <Drawer.Title className="sr-only">Selecionar unidade</Drawer.Title>
+          <div className="overflow-y-auto pb-8">
+            {UNIT_SECTIONS.map((section) => (
+              <div key={section.label}>
+                <p className="px-4 pt-4 pb-1 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">
+                  {section.label}
+                </p>
+                {section.units.map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => { onSelect(u); onOpenChange(false) }}
+                    className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#1A1A1A] active:bg-[#F9FAFB] transition-colors"
+                  >
+                    {u}
+                    {selected === u && <Check size={16} className="text-[#16A34A]" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  )
+}
 
 export const Route = createFileRoute('/app/library/create')({
   component: CreateRecipePage,
@@ -39,11 +90,12 @@ function IngredientCombobox({
   onRemove: () => void
   index: number
 }) {
-  const { t } = useTranslation()
+  useTranslation()
   const [text, setText] = useState(value.rawText)
   const [open, setOpen] = useState(false)
+  const [unitSheetOpen, setUnitSheetOpen] = useState(false)
   const [qty, setQty] = useState(value.quantity != null ? String(value.quantity) : '')
-  const [unit, setUnit] = useState(value.unit ?? '')
+  const [unit, setUnit] = useState(value.unit ?? 'g')
   const debouncedText = useDebounce(text, 250)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -63,9 +115,10 @@ function IngredientCombobox({
   }, [])
 
   function handleSelect(ing: { name: string; default_unit: string | null }) {
+    const selectedUnit = ing.default_unit ?? 'g'
     setText(ing.name)
     onValueChange({ ...value, rawText: ing.name, name: ing.name, unit: ing.default_unit })
-    setUnit(ing.default_unit ?? '')
+    setUnit(selectedUnit)
     setOpen(false)
   }
 
@@ -82,8 +135,10 @@ function IngredientCombobox({
 
   function handleUnitChange(newUnit: string) {
     setUnit(newUnit)
-    onValueChange({ ...value, unit: newUnit.trim() || null })
+    onValueChange({ ...value, unit: newUnit || null })
   }
+
+  const isNonDefault = unit !== 'g' && unit !== ''
 
   return (
     <div ref={containerRef} className="relative">
@@ -99,27 +154,31 @@ function IngredientCombobox({
           aria-label="Quantidade"
           className="w-14 shrink-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
         />
-        <input
-          type="text"
-          value={unit}
-          onChange={(e) => handleUnitChange(e.target.value)}
-          placeholder="Un."
-          aria-label="Unidade"
-          className="w-14 shrink-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
-        />
+        <button
+          type="button"
+          onClick={() => setUnitSheetOpen(true)}
+          aria-label="Selecionar unidade"
+          className={`shrink-0 rounded-xl border px-2 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+            isNonDefault
+              ? 'border-[#16A34A] bg-[#f0fdf4] text-[#15803d]'
+              : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#1A1A1A]'
+          }`}
+        >
+          {unit || 'g'}
+        </button>
         <input
           type="text"
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
           onFocus={() => { if (text.length >= 2) setOpen(true) }}
-          placeholder={t('create.ingredientPlaceholder')}
+          placeholder="Ingrediente…"
           className="flex-1 min-w-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
         />
         <button
           type="button"
           onClick={onRemove}
           aria-label="Remover ingrediente"
-          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] active:text-[#DC2626] active:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
         >
           <X size={13} aria-hidden="true" />
         </button>
@@ -139,6 +198,12 @@ function IngredientCombobox({
           ))}
         </div>
       )}
+      <UnitSheet
+        open={unitSheetOpen}
+        onOpenChange={setUnitSheetOpen}
+        selected={unit}
+        onSelect={handleUnitChange}
+      />
     </div>
   )
 }
