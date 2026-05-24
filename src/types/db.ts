@@ -540,6 +540,9 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           measurement_unit: 'metric' | 'imperial'
+          dietary_mode: 'none' | 'vegetarian' | 'vegan' | 'pescatarian'
+          intolerances: string[]
+          onboarding_completed: boolean
           created_at: string
         }
         Insert: {
@@ -549,6 +552,9 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           measurement_unit?: 'metric' | 'imperial'
+          dietary_mode?: 'none' | 'vegetarian' | 'vegan' | 'pescatarian'
+          intolerances?: string[]
+          onboarding_completed?: boolean
           created_at?: string
         }
         Update: {
@@ -558,8 +564,23 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           measurement_unit?: 'metric' | 'imperial'
+          dietary_mode?: 'none' | 'vegetarian' | 'vegan' | 'pescatarian'
+          intolerances?: string[]
+          onboarding_completed?: boolean
           created_at?: string
         }
+        Relationships: []
+      }
+      user_ingredient_exclusions: {
+        Row: { user_id: string; ingredient_id: string }
+        Insert: { user_id: string; ingredient_id: string }
+        Update: { user_id?: string; ingredient_id?: string }
+        Relationships: []
+      }
+      tag_correction_reports: {
+        Row: { id: string; recipe_id: string; tag: string; reported_by: string | null; created_at: string }
+        Insert: { id?: string; recipe_id: string; tag: string; reported_by?: string | null; created_at?: string }
+        Update: { id?: string; recipe_id?: string; tag?: string; reported_by?: string | null; created_at?: string }
         Relationships: []
       }
       recipe_reports: {
@@ -704,3 +725,6 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type RecipeReport = Database['public']['Tables']['recipe_reports']['Row']
 export type UserProtein = Database['public']['Tables']['user_proteins']['Row']
+export type UserIngredientExclusion = Database['public']['Tables']['user_ingredient_exclusions']['Row']
+export type TagCorrectionReport = Database['public']['Tables']['tag_correction_reports']['Row']
+export type DietaryMode = 'none' | 'vegetarian' | 'vegan' | 'pescatarian'

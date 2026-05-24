@@ -36,6 +36,8 @@ export type FetchLibraryInput = {
   tags: string[]
   ingredients: string[]
   q: string
+  excludedFlags?: string[]
+  excludedIngredientIds?: string[]
 }
 
 export type FetchLibraryResult = {
@@ -73,12 +75,33 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     const supabase = makeClient()
     const lang = getLang()
 
-    const { limit, cursor, sort, modes = [], proteins, maxCal, maxTime, tags, ingredients, q } = input
+    const { limit, cursor, sort, modes = [], proteins, maxCal, maxTime, tags, ingredients, q, excludedFlags = [], excludedIngredientIds = [] } = input
     const sortCol = SORT_COL[sort]
     const ascending = SORT_ASC[sort]
 
     // Filter out 'all' token — empty array means show everything
     const activeModes = modes.filter((m) => m !== 'all')
+
+    // Resolve dietary exclusions → recipe IDs to hide
+    let excludedRecipeIds: string[] = []
+    if (excludedFlags.length > 0 || excludedIngredientIds.length > 0) {
+      let flaggedIngIds: string[] = []
+      if (excludedFlags.length > 0) {
+        const { data: flaggedIngs } = await supabase
+          .from('ingredients')
+          .select('id')
+          .overlaps('dietary_flags', excludedFlags)
+        flaggedIngIds = (flaggedIngs ?? []).map(i => i.id)
+      }
+      const allExcludedIngIds = [...new Set([...flaggedIngIds, ...excludedIngredientIds])]
+      if (allExcludedIngIds.length > 0) {
+        const { data: excludedRis } = await supabase
+          .from('recipe_ingredients')
+          .select('recipe_id')
+          .in('ingredient_id', allExcludedIngIds)
+        excludedRecipeIds = [...new Set((excludedRis ?? []).map(r => r.recipe_id))]
+      }
+    }
 
     // Get session for mode-specific filters
     let userId: string | null = null
@@ -126,6 +149,7 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     if (tags.length > 0) query = query.contains('tags', tags)
     if (maxCal !== undefined) query = query.lte('calories', maxCal)
     if (maxTime !== undefined) query = query.lte('time_min', maxTime)
+    if (excludedRecipeIds.length > 0) query = query.not('id', 'in', `(${excludedRecipeIds.join(',')})`)
 
     // --- Cursor WHERE clause ---
     if (cursor) {

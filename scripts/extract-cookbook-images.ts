@@ -91,6 +91,7 @@ const PDF_SOURCES: PdfSource[] = [
     created_after: '2026-05-21T00:00:00Z',
     expected_count: 116,
     min_page: 20, // skip intro/content-creator pages 1-19
+    use_vision_selection: true, // use Haiku vision to select only final plated dish images
   },
 ]
 

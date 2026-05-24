@@ -1,11 +1,11 @@
-import { createFileRoute, Link, Outlet, redirect, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
-import { saveMeasurementUnit } from '../lib/supabase/profile-queries'
+import { saveMeasurementUnit, fetchMyProfile } from '../lib/supabase/profile-queries'
 import { getAuthUser } from '../lib/supabase/server'
 import { supabase } from '../lib/supabase/browser'
 import { capture, identifyUser } from '../lib/analytics'
@@ -141,10 +141,23 @@ const LOCALE_BOOTSTRAP_KEY = 'locale_bootstrapped_v1'
 
 function AppLayout() {
   const { user } = Route.useRouteContext()
+  const navigate = useNavigate()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isOnboarding = pathname === '/app/onboarding'
 
   useEffect(() => {
     if (user) identifyUser(user.id, user.email)
   }, [user.id])
+
+  // Redirect new users to onboarding on first login
+  useEffect(() => {
+    if (isOnboarding) return
+    fetchMyProfile().then((profile) => {
+      if (profile && !profile.onboarding_completed) {
+        navigate({ to: '/app/onboarding' })
+      }
+    })
+  }, [user.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // On first visit per browser: detect language + units from Accept-Language and save to profile.
   // Uses a localStorage flag so this runs once and never overrides a deliberate user preference.
@@ -170,7 +183,7 @@ function AppLayout() {
     <>
       <TopProgressBar />
       <Outlet />
-      <BottomNav />
+      {!isOnboarding && <BottomNav />}
     </>
   )
 }

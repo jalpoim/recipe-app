@@ -18,6 +18,7 @@ import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AppShoppingRouteImport } from './routes/app/shopping'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppPlanRouteImport } from './routes/app/plan'
+import { Route as AppOnboardingRouteImport } from './routes/app/onboarding'
 import { Route as AppLibraryIndexRouteImport } from './routes/app/library/index'
 import { Route as AppProfileUsernameRouteImport } from './routes/app/profile/$username'
 import { Route as AppLibraryCreateRouteImport } from './routes/app/library/create'
@@ -69,6 +70,11 @@ const AppPlanRoute = AppPlanRouteImport.update({
   path: '/plan',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLibraryIndexRoute = AppLibraryIndexRouteImport.update({
   id: '/library/',
   path: '/library/',
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/app': typeof AppRouteWithChildren
+  '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
   '/app/shopping': typeof AppShoppingRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
     | '/app/shopping'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
     | '/app/shopping'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
     | '/app/shopping'
@@ -266,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPlanRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/onboarding': {
+      id: '/app/onboarding'
+      path: '/onboarding'
+      fullPath: '/app/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/library/': {
       id: '/app/library/'
       path: '/library'
@@ -305,6 +324,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppOnboardingRoute: typeof AppOnboardingRoute
   AppPlanRoute: typeof AppPlanRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppShoppingRoute: typeof AppShoppingRoute
@@ -317,6 +337,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppOnboardingRoute: AppOnboardingRoute,
   AppPlanRoute: AppPlanRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppShoppingRoute: AppShoppingRoute,

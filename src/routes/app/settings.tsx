@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import i18n from '../../i18n'
 import { signOut } from '../../lib/supabase/server'
-import { fetchMyProfile, saveMeasurementUnit } from '../../lib/supabase/profile-queries'
+import { fetchMyProfile, saveMeasurementUnit, saveDietaryPreferences } from '../../lib/supabase/profile-queries'
+import type { DietaryMode } from '../../types/db'
 import {
   fetchHouseholdInfo,
   createHousehold,
@@ -231,6 +232,86 @@ function HouseholdSection() {
   )
 }
 
+const DIETARY_MODES: DietaryMode[] = ['none', 'vegetarian', 'vegan', 'pescatarian']
+const INTOLERANCES = ['gluten', 'dairy', 'egg', 'nuts', 'soy'] as const
+
+function DietarySection({ profile }: { profile: { dietary_mode: DietaryMode; intolerances: string[] } | null | undefined }) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [savedMsg, setSavedMsg] = useState(false)
+
+  const mode: DietaryMode = profile?.dietary_mode ?? 'none'
+  const intolerances: string[] = profile?.intolerances ?? []
+
+  const mutation = useMutation({
+    mutationFn: (vars: { dietaryMode: DietaryMode; intolerances: string[] }) =>
+      saveDietaryPreferences({ data: vars }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] })
+      queryClient.invalidateQueries({ queryKey: ['library'] })
+      queryClient.invalidateQueries({ queryKey: ['ingredient-exclusions'] })
+      setSavedMsg(true)
+      setTimeout(() => setSavedMsg(false), 2000)
+    },
+  })
+
+  function setMode(m: DietaryMode) {
+    mutation.mutate({ dietaryMode: m, intolerances })
+  }
+
+  function toggleIntolerance(flag: string) {
+    const next = intolerances.includes(flag)
+      ? intolerances.filter((f) => f !== flag)
+      : [...intolerances, flag]
+    mutation.mutate({ dietaryMode: mode, intolerances: next })
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-medium text-[#6B7280] mb-2">{t('settings.dietaryModeLabel')}</p>
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden divide-y divide-[#F3F4F6]">
+          {DIETARY_MODES.map((m) => (
+            <button
+              key={m}
+              onClick={() => setMode(m)}
+              disabled={mutation.isPending}
+              className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+            >
+              <span className="font-medium">{t(`settings.dietary${m.charAt(0).toUpperCase() + m.slice(1)}`)}</span>
+              {mode === m && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-xs font-medium text-[#6B7280] mb-2">{t('settings.intolerancesLabel')}</p>
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden divide-y divide-[#F3F4F6]">
+          {INTOLERANCES.map((flag) => {
+            const active = intolerances.includes(flag)
+            return (
+              <button
+                key={flag}
+                onClick={() => toggleIntolerance(flag)}
+                disabled={mutation.isPending}
+                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+              >
+                <span className="font-medium">{t(`settings.intolerance${flag.charAt(0).toUpperCase() + flag.slice(1)}`)}</span>
+                {active && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {savedMsg && (
+        <p className="text-xs text-[#16A34A] text-center">{t('settings.dietarySaved')}</p>
+      )}
+    </div>
+  )
+}
+
 function SettingsPage() {
   const { t, i18n: i18nInst } = useTranslation()
   const { theme, setTheme } = useTheme()
@@ -365,6 +446,14 @@ function SettingsPage() {
                 </button>
               ))}
             </div>
+          </section>
+
+          {/* Dietary preferences */}
+          <section>
+            <p className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3">
+              {t('settings.dietary')}
+            </p>
+            <DietarySection profile={profile} />
           </section>
 
           {/* Household */}

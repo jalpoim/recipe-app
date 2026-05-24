@@ -20,8 +20,16 @@ import {
   upsertInteraction,
   removeInteraction,
 } from '../../../lib/supabase/interaction-queries'
+import { fetchMyProfile, fetchIngredientExclusions } from '../../../lib/supabase/profile-queries'
 import { useToast } from '../../../components/Toast'
-import type { Recipe } from '../../../types/db'
+import type { Recipe, DietaryMode } from '../../../types/db'
+
+const DIETARY_FLAGS: Record<DietaryMode, string[]> = {
+  none: [],
+  vegetarian: ['meat', 'poultry', 'fish', 'shellfish'],
+  vegan: ['meat', 'poultry', 'fish', 'shellfish', 'dairy', 'egg', 'honey'],
+  pescatarian: ['meat', 'poultry'],
+}
 
 // Muted pastel thumbnail colors per protein slug
 const PROTEIN_COLORS: Record<string, string> = {
@@ -806,6 +814,25 @@ function LibraryPage() {
     }
   }, [])
 
+  // Dietary exclusions from profile
+  const { data: profile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => fetchMyProfile(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const { data: excludedIngredientIds = [] } = useQuery({
+    queryKey: ['ingredient-exclusions'],
+    queryFn: () => fetchIngredientExclusions(),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const excludedFlags = useMemo(() => {
+    const modeFlags = DIETARY_FLAGS[profile?.dietary_mode ?? 'none'] ?? []
+    const intoleranceFlags = profile?.intolerances ?? []
+    return [...new Set([...modeFlags, ...intoleranceFlags])]
+  }, [profile])
+
   // modes is in filterKey — changes trigger a full re-fetch
   // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
   // popular sort is also handled client-side over the loaded pages
@@ -819,8 +846,10 @@ function LibraryPage() {
       q: deferredQ,
       modes: search.modes,
       lang,
+      excludedFlags,
+      excludedIngredientIds,
     }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang],
+    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, excludedFlags, excludedIngredientIds],
   )
 
   const {
@@ -846,6 +875,8 @@ function LibraryPage() {
           tags: search.tags,
           ingredients: search.ingredients,
           q: search.q,
+          excludedFlags,
+          excludedIngredientIds,
         },
       }),
     initialPageParam: null as LibraryCursor | null,
@@ -1114,6 +1145,13 @@ function LibraryPage() {
             </button>
           </div>
         </div>
+
+        {/* Dietary exclusion banner */}
+        {excludedFlags.length > 0 && (
+          <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
+            <span className="flex-1">{t('library.dietaryBanner')}</span>
+          </div>
+        )}
 
         {/* Recipe list — virtualised */}
         {isLoading ? (

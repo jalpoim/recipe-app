@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { makeClient } from './client-server'
+import type { DietaryMode } from '../../types/db'
 import type { Profile } from '../../types/db'
 import type { MeasurementUnit } from '../detect-locale'
 
@@ -58,6 +59,99 @@ export const saveMeasurementUnit = createServerFn({ method: 'POST' })
       .from('profiles')
       .update({ measurement_unit: unit })
       .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const saveDietaryPreferences = createServerFn({ method: 'POST' })
+  .inputValidator((input: { dietaryMode: DietaryMode; intolerances: string[] }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ dietary_mode: data.dietaryMode, intolerances: data.intolerances })
+      .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const completeOnboarding = createServerFn({ method: 'POST' })
+  .inputValidator((input: { measurementUnit: MeasurementUnit; dietaryMode: DietaryMode; intolerances: string[] }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        measurement_unit: data.measurementUnit,
+        dietary_mode: data.dietaryMode,
+        intolerances: data.intolerances,
+        onboarding_completed: true,
+      })
+      .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const fetchIngredientExclusions = createServerFn({ method: 'GET' }).handler(
+  async (): Promise<string[]> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
+
+    const { data } = await supabase
+      .from('user_ingredient_exclusions')
+      .select('ingredient_id')
+      .eq('user_id', session.user.id)
+    return (data ?? []).map(r => r.ingredient_id)
+  },
+)
+
+export const upsertIngredientExclusion = createServerFn({ method: 'POST' })
+  .inputValidator((ingredientId: string) => ingredientId)
+  .handler(async ({ data: ingredientId }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('user_ingredient_exclusions')
+      .upsert({ user_id: session.user.id, ingredient_id: ingredientId })
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const removeIngredientExclusion = createServerFn({ method: 'POST' })
+  .inputValidator((ingredientId: string) => ingredientId)
+  .handler(async ({ data: ingredientId }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('user_ingredient_exclusions')
+      .delete()
+      .eq('user_id', session.user.id)
+      .eq('ingredient_id', ingredientId)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+export const reportTagCorrection = createServerFn({ method: 'POST' })
+  .inputValidator((input: { recipeId: string; tag: string }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const { error } = await supabase
+      .from('tag_correction_reports')
+      .insert({ recipe_id: data.recipeId, tag: data.tag, reported_by: session.user.id })
     if (error) throw new Error(error.message)
     return { ok: true }
   })

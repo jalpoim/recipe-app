@@ -1547,8 +1547,8 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | i18n — PT + EN, recipe/ingredient/step translations | ✅ Done | |
 | PWA manifest + icons | ✅ Done | |
 | Settings — profile, sign out, household management | ✅ Done | |
-| cook_log table + server functions | ✅ Schema+fns done | **No UI yet — nothing calls logRecipeCooked** |
-| user_recipe_interactions table + server functions | ✅ Schema+fns done | **No UI yet** |
+| cook_log table + server functions | ✅ Done | "I Cooked This" button on detail page + cooking companion; personal cook count shown; logRecipeCooked called with source='manual' |
+| user_recipe_interactions table + server functions | ✅ Done | Like/save/hide wired; bookmark on card; Saved mode chip in library |
 | System tag translations (i18n keys) | ✅ Done | tags.* block in both locale files; FilterSheet + RecipeCard use t('tags.*') |
 | Tags section collapse in FilterSheet | ✅ Done | 6 tags shown by default, Ver mais/Ver menos toggle |
 | Filter chip visual feedback | ✅ Done | Section highlight on sheet open via sheetSection state |
@@ -1566,6 +1566,12 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 | Session 17 — FilterSheet fixes | ✅ Done | Ingredientes moved back to last position (Proteína→Tempo→Calorias→Tags→Ingredientes); ingredient input auto-scrolls section into view on focus; protein "Ver mais" changed to dashed chip style |
 | Session 17 — React Compiler + React 19 | ✅ Done | `@rolldown/plugin-babel` + `reactCompilerPreset`; `useDeferredValue` on search input; `preconnect` to Supabase in root; scroll preservation via sessionStorage (React `<Activity>` deferred — experimental in TanStack Router) |
 | Session 17 — bug fixes | ✅ Done | "Created by" on own recipes (separate profiles query); P/Cal badge hidden when no macros; optional ingredient double-label; save icon tap target; FAB height; "See More" tag wiring; Mine filter invalidation on create; shopping dark mode |
+| Session 12 — Cook history calendar | ✅ Done | CookHistorySheet in plan.tsx; weekly dot strip; prev/next week navigation; grouped log by day; i18n wired |
+| Session 14 — Micro-animations | ✅ Done | Cooking step slide (step-enter-forward/back); I Cooked This bounce (cooked-success); all motion-safe guarded |
+| Session 15 — Cookbook image extraction | ✅ Done | extract-cookbook-images.ts; Cooking Abs (116 recipes, min_page=20); Joe x Fitness (50 recipes, Haiku vision dish selection); admin moderation UI at /admin |
+| Session 18 — Ingredient form v2 (unit pill) | ✅ Done | UnitSheet Vaul drawer; 19 controlled units in 3 sections; pill button replaces text input |
+| Session 19 — USDA ingredient database | ✅ Done | 3,852 system ingredients; Foundation Foods + SR Legacy; Haiku canonicalization; dietary flags; macros per 100g |
+| Session 20 — Unit conversion | ✅ Done | src/lib/units.ts; convertUnit() + formatQuantity(); metric↔imperial; smart rounding; Unicode fractions; wired to recipe detail scaleIngredient |
 
 ### Recipe library — what's in the DB
 
@@ -1599,7 +1605,7 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 - **Translations** — `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` tables keyed by `(entity_id, language)`. Falls back to PT if EN row missing.
 - **Macros** — stored, not computed. `macros_total = true` means divide by servings for per-serving display.
 
-### What to do next — Session 18 (cooking companion redesign)
+### What to do next — Session 21 (dietary preferences)
 
 ---
 

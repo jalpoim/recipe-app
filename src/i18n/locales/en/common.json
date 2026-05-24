@@ -69,7 +69,8 @@
     "saved": "Saved",
     "curated": "Curated",
     "ownBadge": "Mine",
-    "newRecipe": "New recipe"
+    "newRecipe": "New recipe",
+    "dietaryBanner": "Some recipes are hidden based on your dietary preferences."
   },
   "moderation": {
     "pending": "In review",
@@ -268,6 +269,19 @@
     "semana": "Weekday",
     "verão": "Summer"
   },
+  "onboarding": {
+    "unitsTitle": "How do you prefer measurements?",
+    "unitsSubtitle": "You can change this later in Settings.",
+    "dietaryTitle": "Any dietary preferences?",
+    "dietarySubtitle": "We'll use this to hide incompatible recipes from your library.",
+    "dietaryNoneDesc": "Show all recipes",
+    "dietaryVegetarianDesc": "No meat, poultry, fish or shellfish",
+    "dietaryVeganDesc": "No animal products",
+    "dietaryPescatarianDesc": "No meat or poultry",
+    "continue": "Continue",
+    "back": "Back",
+    "finish": "Get started"
+  },
   "cookHistory": {
     "title": "Cook History",
     "timesThisWeek_one": "{{count}} time this week",
@@ -294,6 +308,19 @@
     "units": "Measurement units",
     "metric": "Metric (g, ml, kg)",
     "imperial": "Imperial (oz, lb, cups)",
+    "dietary": "Dietary preferences",
+    "dietaryModeLabel": "Diet",
+    "dietaryNone": "No restrictions",
+    "dietaryVegetarian": "Vegetarian",
+    "dietaryVegan": "Vegan",
+    "dietaryPescatarian": "Pescatarian",
+    "intolerancesLabel": "Intolerances",
+    "intoleranceGluten": "Gluten-free",
+    "intoleranceDairy": "Dairy-free",
+    "intoleranceEgg": "Egg-free",
+    "intoleranceNuts": "Nut-free",
+    "intoleranceSoy": "Soy-free",
+    "dietarySaved": "Preferences saved ✓",
     "household": "Household",
     "householdCreate": "Create household",
     "householdCreateHint": "Create a household to share your plan with another person.",

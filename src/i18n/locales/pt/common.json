@@ -69,7 +69,8 @@
     "saved": "Guardadas",
     "curated": "Oficiais",
     "ownBadge": "Minha",
-    "newRecipe": "Nova receita"
+    "newRecipe": "Nova receita",
+    "dietaryBanner": "Algumas receitas estão ocultas com base nas tuas preferências alimentares."
   },
   "moderation": {
     "pending": "Em revisão",
@@ -268,6 +269,19 @@
     "semana": "Dia a dia",
     "verão": "Verão"
   },
+  "onboarding": {
+    "unitsTitle": "Como preferes as medidas?",
+    "unitsSubtitle": "Podes alterar isto mais tarde em Definições.",
+    "dietaryTitle": "Tens restrições alimentares?",
+    "dietarySubtitle": "Usamos isto para ocultar receitas incompatíveis da biblioteca.",
+    "dietaryNoneDesc": "Mostrar todas as receitas",
+    "dietaryVegetarianDesc": "Sem carne, aves, peixe ou marisco",
+    "dietaryVeganDesc": "Sem produtos de origem animal",
+    "dietaryPescatarianDesc": "Sem carne ou aves",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "finish": "Começar"
+  },
   "cookHistory": {
     "title": "Histórico de cozinha",
     "timesThisWeek_one": "{{count}} vez esta semana",
@@ -294,6 +308,19 @@
     "units": "Unidades de medida",
     "metric": "Métrico (g, ml, kg)",
     "imperial": "Imperial (oz, lb, cups)",
+    "dietary": "Preferências alimentares",
+    "dietaryModeLabel": "Dieta",
+    "dietaryNone": "Sem restrições",
+    "dietaryVegetarian": "Vegetariano",
+    "dietaryVegan": "Vegano",
+    "dietaryPescatarian": "Pescatariano",
+    "intolerancesLabel": "Intolerâncias",
+    "intoleranceGluten": "Sem glúten",
+    "intoleranceDairy": "Sem lactose",
+    "intoleranceEgg": "Sem ovos",
+    "intoleranceNuts": "Sem frutos secos",
+    "intoleranceSoy": "Sem soja",
+    "dietarySaved": "Preferências guardadas ✓",
     "household": "Household",
     "householdCreate": "Criar household",
     "householdCreateHint": "Cria um household para partilhar o plano com outra pessoa.",
