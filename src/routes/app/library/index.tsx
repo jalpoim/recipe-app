@@ -83,6 +83,8 @@ const TAG_SECTIONS: { key: string; tags: string[] }[] = [
 ]
 const TAG_SECTION_LIMIT = 6
 
+type GatewayCategory = 'meat' | 'poultry' | 'fish' | 'vegetarian' | 'quick'
+
 type LibrarySearch = {
   q: string
   proteins: string[]
@@ -92,6 +94,8 @@ type LibrarySearch = {
   ingredients: string[]
   sort: Sort
   modes: LibraryMode[]
+  category: GatewayCategory | undefined
+  categorySort: 'popular' | 'quick'
 }
 
 function CardSkeleton() {
@@ -161,6 +165,10 @@ export const Route = createFileRoute('/app/library/')({
           (['mine', 'saved', 'curated'] as string[]).includes(s),
         )
       : [],
+    category: (['meat', 'poultry', 'fish', 'vegetarian', 'quick'] as GatewayCategory[]).includes(search.category as GatewayCategory)
+      ? (search.category as GatewayCategory)
+      : undefined,
+    categorySort: search.categorySort === 'quick' ? 'quick' : 'popular',
   }),
   component: LibraryPage,
 })
@@ -207,8 +215,6 @@ function RecipeCard({
   const { t } = useTranslation()
   const cal = perServing(recipe, 'calories')
   const pro = perServing(recipe, 'protein')
-  const carb = perServing(recipe, 'carbs')
-  const fat = perServing(recipe, 'fat')
   const ratio = pcalRatio(recipe)
   const hasMacros = recipe.calories != null
   const isUserRecipe = recipe.owner_id != null
@@ -228,12 +234,12 @@ function RecipeCard({
       >
         <div className="flex items-start gap-3">
           {/* Thumbnail */}
-          <div className="w-[72px] h-[72px] shrink-0">
+          <div className="w-[88px] h-[88px] shrink-0">
             {recipe.image_thumb_url ? (
               <img
                 src={recipe.image_thumb_url}
                 alt=""
-                className="w-full h-full rounded-xl object-cover"
+                className="w-full h-full rounded-xl object-cover object-center"
                 loading="lazy"
               />
             ) : (
@@ -286,13 +292,11 @@ function RecipeCard({
         </div>
 
         {hasMacros && (
-          <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
+          <div className="mt-3 grid grid-cols-2 gap-1.5 text-center">
             {(
               [
                 { label: t('recipe.calAbbr'), value: cal },
                 { label: t('recipe.proteinAbbr'), value: pro },
-                { label: t('recipe.carbsAbbr'), value: carb },
-                { label: t('recipe.fatAbbr'), value: fat },
               ] as const
             ).map(({ label, value }) => (
               <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
@@ -343,6 +347,96 @@ function RecipeCard({
 }
 
 
+
+// ---------- Category gateway ----------
+
+const CATEGORY_COLORS: Record<GatewayCategory, string> = {
+  meat:       'linear-gradient(135deg, #fee2e2, #fca5a5)',
+  poultry:    'linear-gradient(135deg, #fef3c7, #fde68a)',
+  fish:       'linear-gradient(135deg, #dbeafe, #93c5fd)',
+  vegetarian: 'linear-gradient(135deg, #d1fae5, #6ee7b7)',
+  quick:      'linear-gradient(135deg, #ede9fe, #c4b5fd)',
+}
+
+const CATEGORY_PROTEINS: Record<GatewayCategory, string[]> = {
+  meat:       ['beef', 'pork', 'lamb'],
+  poultry:    ['chicken', 'turkey'],
+  fish:       ['salmon', 'tuna', 'cod', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'shrimp'],
+  vegetarian: [],
+  quick:      [],
+}
+
+const CATEGORY_EMOJI: Record<GatewayCategory, string> = {
+  meat:       '🥩',
+  poultry:    '🍗',
+  fish:       '🐟',
+  vegetarian: '🥦',
+  quick:      '⏱️',
+}
+
+const CATEGORY_EXCLUDED_FLAGS: Record<GatewayCategory, string[]> = {
+  meat:       [],
+  poultry:    [],
+  fish:       [],
+  vegetarian: ['meat', 'poultry', 'fish', 'shellfish'],
+  quick:      [],
+}
+
+// ---------- GridCard ----------
+
+function GridCard({ recipe, onClick }: { recipe: RecipeWithIngredients; onClick?: () => void }) {
+  const hasMacros = recipe.calories != null
+  const cal = recipe.macros_total ? (recipe.calories ?? 0) / (recipe.servings || 1) : (recipe.calories ?? 0)
+  const pro = recipe.macros_total ? (recipe.protein ?? 0) / (recipe.servings || 1) : (recipe.protein ?? 0)
+  const ratio = hasMacros && cal ? (pro * 10) / cal : 0
+
+  const thumbnailBg = recipe.image_thumb_url
+    ? undefined
+    : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)')
+
+  return (
+    <Link
+      to="/app/library/$recipeId"
+      params={{ recipeId: recipe.id }}
+      search={{ from: undefined, planItemId: undefined }}
+      onClick={onClick}
+      className="block rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform"
+    >
+      {/* Photo */}
+      <div className="relative aspect-[4/3] w-full">
+        {recipe.image_thumb_url ? (
+          <img
+            src={recipe.image_thumb_url}
+            alt=""
+            className="w-full h-full object-cover object-center"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full" style={{ background: thumbnailBg }} aria-hidden="true" />
+        )}
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        {/* Text on image */}
+        <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
+          <p className="text-white text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            {recipe.time_min != null && (
+              <span className="text-white/80 text-xs flex items-center gap-0.5">
+                <Clock size={10} aria-hidden="true" />
+                {recipe.time_min} min
+              </span>
+            )}
+            {hasMacros && (
+              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${badgeClass(ratio)}`}>
+                P/Cal {fmt(ratio)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
 
 // ---------- FilterSheet ----------
 
@@ -740,7 +834,7 @@ function SortSheet({
               <button
                 key={value}
                 onClick={() => { onSelect(value); onOpenChange(false) }}
-                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
+                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/40"
               >
                 <span className={current === value ? 'font-semibold text-[#16A34A]' : ''}>
                   {t(labelKey)}
@@ -767,7 +861,13 @@ function LibraryPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+  const [ignoreDietary, setIgnoreDietary] = useState(false)
+  const [bannerDismissed, setBannerDismissed] = useState(
+    () => typeof window !== 'undefined' && localStorage.getItem('dietary_banner_dismissed') === '1'
+  )
   const parentRef = useRef<HTMLDivElement>(null)
+
+  const activeCat = search.category
 
   function update(patch: Partial<LibrarySearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })
@@ -786,7 +886,6 @@ function LibraryPage() {
       maxTime: undefined,
       tags: [],
       ingredients: [],
-      // mode intentionally not cleared — mode is a dataset switch, not a filter
     })
   }
 
@@ -805,7 +904,6 @@ function LibraryPage() {
     setLocalQ(search.q)
   }, [search.q])
 
-  // Save scroll position on unmount (navigating to a recipe detail)
   useEffect(() => {
     return () => {
       if (parentRef.current) {
@@ -814,7 +912,6 @@ function LibraryPage() {
     }
   }, [])
 
-  // Dietary exclusions from profile
   const { data: profile } = useQuery({
     queryKey: ['my-profile'],
     queryFn: () => fetchMyProfile(),
@@ -827,30 +924,46 @@ function LibraryPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const excludedFlags = useMemo(() => {
+  const userExcludedFlags = useMemo(() => {
+    if (ignoreDietary) return []
     const modeFlags = DIETARY_FLAGS[(profile?.dietary_mode ?? 'none') as DietaryMode] ?? []
     const intoleranceFlags = profile?.intolerances ?? []
     return [...new Set([...modeFlags, ...intoleranceFlags])]
-  }, [profile])
+  }, [profile, ignoreDietary])
 
-  // modes is in filterKey — changes trigger a full re-fetch
-  // sort is excluded from queryKey for pcal/protein/calories/time — applied client-side
-  // popular sort is also handled client-side over the loaded pages
-  const filterKey = useMemo(
-    () => ({
-      proteins: search.proteins,
-      maxCal: search.maxCal,
-      maxTime: search.maxTime,
-      tags: search.tags,
-      ingredients: search.ingredients,
-      q: deferredQ,
+  const hasActiveFilters = Boolean(
+    search.q ||
+      search.proteins.length ||
+      search.maxCal !== undefined ||
+      search.maxTime !== undefined ||
+      search.tags.length ||
+      search.ingredients.length,
+  )
+
+  const showGateway = !activeCat && !hasActiveFilters && search.modes.length === 0 && !search.q
+
+  const effectiveSort: Sort = activeCat
+    ? (search.categorySort === 'quick' ? 'time' : 'popular')
+    : search.sort
+
+  const filterKey = useMemo(() => {
+    const catFlags = activeCat ? CATEGORY_EXCLUDED_FLAGS[activeCat] : []
+    const effectiveExcludedFlags = [...new Set([...userExcludedFlags, ...catFlags])]
+    return {
+      proteins: activeCat ? CATEGORY_PROTEINS[activeCat] : search.proteins,
+      maxCal: activeCat ? undefined : search.maxCal,
+      maxTime: activeCat === 'quick' ? 30 : (activeCat ? undefined : search.maxTime),
+      tags: activeCat ? [] : search.tags,
+      ingredients: activeCat ? [] : search.ingredients,
+      q: activeCat ? '' : deferredQ,
       modes: search.modes,
       lang,
-      excludedFlags,
-      excludedIngredientIds,
-    }),
-    [search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, excludedFlags, excludedIngredientIds],
-  )
+      excludedFlags: effectiveExcludedFlags,
+      excludedIngredientIds: ignoreDietary ? [] : excludedIngredientIds,
+      category: activeCat,
+      categorySort: activeCat ? search.categorySort : undefined,
+    }
+  }, [activeCat, search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, userExcludedFlags, excludedIngredientIds, ignoreDietary, search.categorySort])
 
   const {
     data: infiniteData,
@@ -862,29 +975,32 @@ function LibraryPage() {
     error,
   } = useInfiniteQuery({
     queryKey: ['library', filterKey],
-    queryFn: ({ pageParam }) =>
-      fetchLibrary({
+    queryFn: ({ pageParam }) => {
+      const catFlags = activeCat ? CATEGORY_EXCLUDED_FLAGS[activeCat] : []
+      const effectiveExcludedFlags = [...new Set([...userExcludedFlags, ...catFlags])]
+      return fetchLibrary({
         data: {
           limit: PAGE_SIZE,
           cursor: (pageParam as LibraryCursor | null) ?? null,
-          sort: search.sort,
+          sort: effectiveSort,
           modes: search.modes,
-          proteins: search.proteins,
-          maxCal: search.maxCal,
-          maxTime: search.maxTime,
-          tags: search.tags,
-          ingredients: search.ingredients,
-          q: search.q,
-          excludedFlags,
-          excludedIngredientIds,
+          proteins: activeCat ? CATEGORY_PROTEINS[activeCat] : search.proteins,
+          maxCal: activeCat ? undefined : search.maxCal,
+          maxTime: activeCat === 'quick' ? 30 : (activeCat ? undefined : search.maxTime),
+          tags: activeCat ? [] : search.tags,
+          ingredients: activeCat ? [] : search.ingredients,
+          q: activeCat ? '' : search.q,
+          excludedFlags: effectiveExcludedFlags,
+          excludedIngredientIds: ignoreDietary ? [] : excludedIngredientIds,
         },
-      }),
+      })
+    },
     initialPageParam: null as LibraryCursor | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 5 * 60 * 1000,
+    enabled: !showGateway,
   })
 
-  // Apply sort client-side over all fetched pages
   const allRecipes = useMemo(
     () => infiniteData?.pages.flatMap((p) => p.data) ?? [],
     [infiniteData],
@@ -892,7 +1008,7 @@ function LibraryPage() {
 
   const sortedRecipes = useMemo(() => {
     const copy = [...allRecipes]
-    switch (search.sort) {
+    switch (effectiveSort) {
       case 'protein':
         return copy.sort((a, b) => (b.protein ?? 0) - (a.protein ?? 0))
       case 'calories':
@@ -900,16 +1016,20 @@ function LibraryPage() {
       case 'time':
         return copy.sort((a, b) => (a.time_min ?? 999) - (b.time_min ?? 999))
       case 'popular':
-        return copy.sort((a, b) => (b.like_count ?? 0) - (a.like_count ?? 0))
+        return copy.sort((a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0))
       case 'cooked':
         return copy.sort((a, b) => (b.cook_count ?? 0) - (a.cook_count ?? 0))
       case 'pcal':
       default:
         return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
     }
-  }, [allRecipes, search.sort])
+  }, [allRecipes, effectiveSort])
 
-  // Restore scroll position once recipes are available (after back navigation with cached data)
+  const featuredRecipes = useMemo(
+    () => allRecipes.filter((r) => r.is_featured).slice(0, 6),
+    [allRecipes],
+  )
+
   const hasRecipes = sortedRecipes.length > 0
   useEffect(() => {
     if (!hasRecipes || !parentRef.current) return
@@ -922,14 +1042,12 @@ function LibraryPage() {
     })
   }, [hasRecipes])
 
-  // Library meta — proteins, tags, ingredient names — language-aware
   const { data: meta } = useQuery({
     queryKey: ['libraryMeta', lang],
     queryFn: () => fetchLibraryMeta({ data: { lang } }),
     staleTime: Infinity,
   })
 
-  // Pre-warm libraryMeta cache for current language
   useEffect(() => {
     queryClient.prefetchQuery({
       queryKey: ['libraryMeta', lang],
@@ -937,7 +1055,6 @@ function LibraryPage() {
     })
   }, [queryClient, lang])
 
-  // Saved interactions
   const { data: interactions = [] } = useQuery({
     queryKey: ['interactions'],
     queryFn: fetchInteractions,
@@ -976,7 +1093,6 @@ function LibraryPage() {
     },
   })
 
-  // Cook counts for visible recipes
   const recipeIds = useMemo(() => sortedRecipes.map((r) => r.id), [sortedRecipes])
   const recipeIdsKey = useMemo(() => recipeIds.join(','), [recipeIds])
   const { data: cookCounts } = useQuery({
@@ -993,37 +1109,27 @@ function LibraryPage() {
     return map
   }, [cookCounts])
 
-  // Virtual list — only render cards in the viewport
   const virtualCount = hasNextPage ? sortedRecipes.length + 1 : sortedRecipes.length
   const virtualizer = useVirtualizer({
-    count: virtualCount,
+    count: activeCat ? 0 : virtualCount,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 160,
     overscan: 5,
   })
 
-  // Fetch next page when sentinel item comes into view
   const fetchNextPageStable = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
+    if (activeCat) return
     const items = virtualizer.getVirtualItems()
     const lastItem = items[items.length - 1]
     if (!lastItem) return
     if (lastItem.index >= sortedRecipes.length - 1) {
       fetchNextPageStable()
     }
-  }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const hasActiveFilters = Boolean(
-    search.q ||
-      search.proteins.length ||
-      search.maxCal !== undefined ||
-      search.maxTime !== undefined ||
-      search.tags.length ||
-      search.ingredients.length,
-  )
+  }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable, activeCat]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeFilterCount =
     search.proteins.length +
@@ -1032,7 +1138,7 @@ function LibraryPage() {
     search.tags.length +
     search.ingredients.length
 
-  if (isError) return <LibraryError error={error as Error} />
+  if (isError && !showGateway) return <LibraryError error={error as Error} />
 
   return (
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
@@ -1042,11 +1148,7 @@ function LibraryPage() {
           {/* Row 1: Search bar + settings button */}
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
-              <Search
-                size={15}
-                className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none"
-                aria-hidden="true"
-              />
+              <Search size={15} className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none" aria-hidden="true" />
               <input
                 type="text"
                 value={localQ}
@@ -1064,11 +1166,7 @@ function LibraryPage() {
                   <X size={13} aria-hidden="true" />
                 </button>
               )}
-
-              {/* Divider */}
               <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
-
-              {/* Filter icon */}
               <button
                 onClick={() => openSheet('protein')}
                 aria-label={t('filters.sheetTitle')}
@@ -1084,8 +1182,6 @@ function LibraryPage() {
                 )}
               </button>
             </div>
-
-            {/* Settings button */}
             <Link
               to="/app/settings"
               aria-label={t('settings.title')}
@@ -1095,69 +1191,220 @@ function LibraryPage() {
             </Link>
           </div>
 
-          {/* Row 2: Mode chips + sort */}
-          <div className="flex items-center gap-1.5 mt-2.5">
-            <button
-              onClick={() => update({ modes: [] })}
-              aria-pressed={search.modes.length === 0}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                search.modes.length === 0
-                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-              }`}
-            >
-              {t('library.all')}
-            </button>
-            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
-              const active = search.modes.includes(m)
-              return (
-                <button
-                  key={m}
-                  onClick={() => {
-                    const next = active
-                      ? search.modes.filter((x) => x !== m)
-                      : [...search.modes, m]
-                    update({ modes: next })
-                  }}
-                  aria-pressed={active}
-                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                    active
-                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                  }`}
-                >
-                  {t(`library.${m}`)}
-                </button>
-              )
-            })}
-            <div className="flex-1" />
-            {/* Sort trigger — icon only, dot when non-default */}
-            <button
-              onClick={() => setSortSheetOpen(true)}
-              aria-label={t('sort.label')}
-              className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
-                search.sort !== 'pcal'
-                  ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
-                  : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
-              }`}
-            >
-              <ArrowUpDown size={13} aria-hidden="true" />
-            </button>
-          </div>
+          {/* Row 2: Category back header OR Mode chips + sort */}
+          {activeCat ? (
+            <div className="flex items-center gap-2 mt-2.5">
+              <button
+                onClick={() => update({ category: undefined, categorySort: 'popular' })}
+                className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
+              >
+                ← {t('gateway.title')}
+              </button>
+              <span className="text-[#D1D5DB]" aria-hidden="true">·</span>
+              <span className="text-sm font-semibold text-[#1A1A1A]">
+                {CATEGORY_EMOJI[activeCat]} {t(`gateway.categories.${activeCat}`)}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 mt-2.5">
+              <button
+                onClick={() => update({ modes: [] })}
+                aria-pressed={search.modes.length === 0}
+                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  search.modes.length === 0
+                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                {t('library.all')}
+              </button>
+              {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
+                const active = search.modes.includes(m)
+                return (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      const next = active
+                        ? search.modes.filter((x) => x !== m)
+                        : [...search.modes, m]
+                      update({ modes: next })
+                    }}
+                    aria-pressed={active}
+                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                      active
+                        ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                    }`}
+                  >
+                    {t(`library.${m}`)}
+                  </button>
+                )
+              })}
+              <div className="flex-1" />
+              <button
+                onClick={() => setSortSheetOpen(true)}
+                aria-label={t('sort.label')}
+                className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
+                  search.sort !== 'pcal'
+                    ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
+                    : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                <ArrowUpDown size={13} aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Dietary exclusion banner */}
-        {excludedFlags.length > 0 && (
+        {/* Dietary banner — list mode only, dismissible */}
+        {!showGateway && !activeCat && userExcludedFlags.length > 0 && !bannerDismissed && (
           <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
             <span className="flex-1">{t('library.dietaryBanner')}</span>
+            <button
+              onClick={() => {
+                setBannerDismissed(true)
+                localStorage.setItem('dietary_banner_dismissed', '1')
+              }}
+              aria-label={t('common.close')}
+              className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
           </div>
         )}
 
-        {/* Recipe list — virtualised */}
-        {isLoading ? (
+        {/* ── Gateway ── */}
+        {showGateway ? (
+          <div className="flex-1 overflow-auto pb-24 -mx-4 px-4">
+            <p className="text-xl font-bold text-[#1A1A1A] mb-4">{t('gateway.title')}</p>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              {(['meat', 'poultry', 'fish', 'vegetarian'] as GatewayCategory[]).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => update({ category: cat })}
+                  className="rounded-2xl h-28 flex flex-col justify-end p-3 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+                  style={{ background: CATEGORY_COLORS[cat] }}
+                >
+                  <span className="text-3xl leading-none mb-1">{CATEGORY_EMOJI[cat]}</span>
+                  <span className="text-sm font-semibold text-[#1A1A1A]">
+                    {t(`gateway.categories.${cat}`)}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => update({ category: 'quick' })}
+              className="w-full rounded-2xl h-20 flex items-center gap-4 px-5 mb-5 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+              style={{ background: CATEGORY_COLORS.quick }}
+            >
+              <span className="text-3xl leading-none">{CATEGORY_EMOJI.quick}</span>
+              <span className="text-sm font-semibold text-[#1A1A1A]">
+                {t('gateway.categories.quick')}
+              </span>
+            </button>
+            {userExcludedFlags.length > 0 && (
+              <div className="text-center pb-4">
+                <button
+                  onClick={() => setIgnoreDietary(true)}
+                  className="text-sm text-[#6B7280] underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
+                >
+                  {t('gateway.showAll')}
+                </button>
+              </div>
+            )}
+          </div>
+
+        ) : isLoading ? (
           <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3">
             {[0, 1, 2, 3, 4].map((i) => <CardSkeleton key={i} />)}
           </div>
+
+        ) : activeCat ? (
+          /* ── Category grid view ── */
+          <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
+            {/* Featured strip */}
+            {featuredRecipes.length > 0 && (
+              <div className="mb-4">
+                <p className="text-sm font-semibold text-[#1A1A1A] mb-2">{t('gateway.featured')}</p>
+                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory">
+                  {featuredRecipes.map((r) => (
+                    <div key={r.id} className="flex-none w-44 snap-start">
+                      <GridCard
+                        recipe={r}
+                        onClick={() => capture('recipe_viewed', { recipeId: r.id, source: 'featured_strip' })}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Sort pills */}
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => update({ categorySort: 'popular' })}
+                aria-pressed={search.categorySort !== 'quick'}
+                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                  search.categorySort !== 'quick'
+                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                {t('gateway.sort.popular')}
+              </button>
+              <button
+                onClick={() => update({ categorySort: 'quick' })}
+                aria-pressed={search.categorySort === 'quick'}
+                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                  search.categorySort === 'quick'
+                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                }`}
+              >
+                {t('gateway.sort.quick')}
+              </button>
+            </div>
+
+            {sortedRecipes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <p className="text-[#6B7280] text-sm text-center">{t('gateway.noResults')}</p>
+                {userExcludedFlags.length > 0 && (
+                  <button
+                    onClick={() => setIgnoreDietary(true)}
+                    className="mt-3 text-sm text-[#16A34A] underline focus:outline-none"
+                  >
+                    {t('gateway.showAll')}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {sortedRecipes.map((r) => (
+                    <GridCard
+                      key={r.id}
+                      recipe={r}
+                      onClick={() => capture('recipe_viewed', { recipeId: r.id, source: 'category_grid' })}
+                    />
+                  ))}
+                </div>
+                {hasNextPage && (
+                  <div className="flex justify-center py-6">
+                    <button
+                      onClick={fetchNextPageStable}
+                      disabled={isFetchingNextPage}
+                      className="text-sm text-[#16A34A] px-5 py-2 rounded-xl border border-[#16A34A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {isFetchingNextPage
+                        ? <div className="h-4 w-4 rounded-full border-2 border-[#16A34A] border-t-transparent animate-spin" />
+                        : t('tagSections.verMais')}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
         ) : sortedRecipes.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center pb-20">
             <p className="text-[#6B7280] text-sm">{t('filters.empty')}</p>
@@ -1167,11 +1414,11 @@ function LibraryPage() {
               </button>
             )}
           </div>
+
         ) : (
+          /* ── Virtual list (normal / filtered mode) ── */
           <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
-            <div
-              style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
-            >
+            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((virtualItem) => {
                 const isSentinel = virtualItem.index >= sortedRecipes.length
                 return (

@@ -99,21 +99,27 @@ function CookingDrawer({
 
   return (
     <div
-      className="cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+      className="cooking-drawer-enter fixed left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] shadow-2xl flex flex-col motion-reduce:transition-none motion-reduce:animate-none"
       style={{
         bottom: 'calc(3.25rem + env(safe-area-inset-bottom))',
         height: expanded ? '75vh' : '256px',
+        transition: 'height 300ms cubic-bezier(0.34,1.56,0.64,1)',
       }}
     >
       {/* Drag handle + stop button */}
       <div className="flex items-center px-4 pt-2 pb-1 shrink-0 gap-2">
-        <div className="flex-1 flex justify-center cursor-pointer" onClick={() => setExpanded((e) => !e)}>
+        <button
+          className="flex-1 flex justify-center py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
+          onClick={() => setExpanded((e) => !e)}
+          aria-label={expanded ? t('cooking.collapseDrawer') : t('cooking.expandDrawer')}
+          aria-expanded={expanded}
+        >
           <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
-        </div>
+        </button>
         <button
           onClick={onExit}
           aria-label={t('cooking.stopCooking')}
-          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none"
+          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
         >
           <X size={14} aria-hidden="true" />
         </button>
@@ -198,13 +204,14 @@ function RecipeDetailSkeleton() {
 }
 
 function RecipeDetailError({ error }: { error: Error }) {
+  const { t } = useTranslation()
   return (
     <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-6">
       <div className="text-center space-y-3">
-        <p className="text-[#1A1A1A] font-semibold">Não foi possível carregar a receita</p>
+        <p className="text-[#1A1A1A] font-semibold">{t('recipe.loadError')}</p>
         <p className="text-sm text-[#6B7280]">{error.message}</p>
         <button onClick={() => window.location.reload()} className="mt-2 text-sm text-[#16A34A] underline">
-          Tentar novamente
+          {t('common.retry')}
         </button>
       </div>
     </div>
@@ -387,10 +394,10 @@ function RecipeDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['active-plan'] })
       qc.invalidateQueries({ queryKey: ['plan-items'] })
-      showToast('Adicionado ao plano ✓', 'success')
+      showToast(t('recipe.addedToPlan'), 'success')
       capture('recipe_added_to_plan', { recipeId: recipe.id })
     },
-    onError: () => showToast('Erro ao adicionar ao plano', 'error'),
+    onError: () => showToast(t('recipe.addedToPlanError'), 'error'),
   })
 
   const removeMutation = useMutation({
@@ -600,8 +607,8 @@ function RecipeDetailPage() {
                   <button
                     onClick={() => setMultiplier((m) => Math.max(1, m - 1))}
                     disabled={multiplier <= 1}
-                    aria-label="Diminuir porções"
-                    className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    aria-label={t('recipe.decreaseServings')}
+                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
                     <Minus size={16} aria-hidden="true" />
                   </button>
@@ -610,8 +617,8 @@ function RecipeDetailPage() {
                   </span>
                   <button
                     onClick={() => setMultiplier((m) => m + 1)}
-                    aria-label="Aumentar porções"
-                    className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    aria-label={t('recipe.increaseServings')}
+                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
                     <Plus size={16} aria-hidden="true" />
                   </button>

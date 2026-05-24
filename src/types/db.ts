@@ -583,6 +583,7 @@ export type Database = {
           id: string
           image_thumb_url: string | null
           image_url: string | null
+          is_featured: boolean
           like_count: number
           macros_source: string | null
           macros_total: boolean
@@ -590,8 +591,10 @@ export type Database = {
           name: string
           owner_id: string | null
           pcal_ratio: number | null
+          popularity_score: number
           protein: number | null
           proteins: string[]
+          save_count: number
           servings: number
           source: string | null
           tags: string[]
@@ -610,6 +613,7 @@ export type Database = {
           id?: string
           image_thumb_url?: string | null
           image_url?: string | null
+          is_featured?: boolean
           like_count?: number
           macros_source?: string | null
           macros_total?: boolean
@@ -617,8 +621,10 @@ export type Database = {
           name: string
           owner_id?: string | null
           pcal_ratio?: number | null
+          popularity_score?: number
           protein?: number | null
           proteins?: string[]
+          save_count?: number
           servings?: number
           source?: string | null
           tags?: string[]
@@ -637,6 +643,7 @@ export type Database = {
           id?: string
           image_thumb_url?: string | null
           image_url?: string | null
+          is_featured?: boolean
           like_count?: number
           macros_source?: string | null
           macros_total?: boolean
@@ -644,8 +651,10 @@ export type Database = {
           name?: string
           owner_id?: string | null
           pcal_ratio?: number | null
+          popularity_score?: number
           protein?: number | null
           proteins?: string[]
+          save_count?: number
           servings?: number
           source?: string | null
           tags?: string[]

@@ -158,7 +158,12 @@
     "likeCount_other": "{{count}} likes",
     "by": "by",
     "makePublic": "Make public",
-    "makePrivate": "Make private"
+    "makePrivate": "Make private",
+    "loadError": "Could not load recipe",
+    "addedToPlan": "Added to plan ✓",
+    "addedToPlanError": "Error adding to plan",
+    "decreaseServings": "Decrease servings",
+    "increaseServings": "Increase servings"
   },
   "plan": {
     "title": "My plan",
@@ -209,7 +214,9 @@
     "prev": "Previous",
     "next": "Next",
     "done": "Done",
-    "stopCooking": "Stop cooking"
+    "stopCooking": "Stop cooking",
+    "expandDrawer": "Expand cooking drawer",
+    "collapseDrawer": "Collapse cooking drawer"
   },
   "tagSections": {
     "method": "Method",
@@ -298,6 +305,23 @@
       "sat": "Sat",
       "sun": "Sun"
     }
+  },
+  "gateway": {
+    "title": "Explore",
+    "categories": {
+      "meat": "Meat",
+      "poultry": "Poultry",
+      "fish": "Fish & Sea",
+      "vegetarian": "Vegetarian",
+      "quick": "Quick · ≤30 min"
+    },
+    "featured": "Featured",
+    "sort": {
+      "popular": "Popular",
+      "quick": "Quick"
+    },
+    "noResults": "No recipes match your dietary preferences.",
+    "showAll": "Show all"
   },
   "settings": {
     "title": "Settings",

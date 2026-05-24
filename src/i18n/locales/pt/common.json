@@ -158,7 +158,12 @@
     "likeCount_other": "{{count}} gostos",
     "by": "por",
     "makePublic": "Tornar pública",
-    "makePrivate": "Tornar privada"
+    "makePrivate": "Tornar privada",
+    "loadError": "Não foi possível carregar a receita",
+    "addedToPlan": "Adicionado ao plano ✓",
+    "addedToPlanError": "Erro ao adicionar ao plano",
+    "decreaseServings": "Diminuir porções",
+    "increaseServings": "Aumentar porções"
   },
   "plan": {
     "title": "Meu plano",
@@ -209,7 +214,9 @@
     "prev": "Anterior",
     "next": "Próximo",
     "done": "Concluído",
-    "stopCooking": "Parar de cozinhar"
+    "stopCooking": "Parar de cozinhar",
+    "expandDrawer": "Expandir painel de cozinha",
+    "collapseDrawer": "Colapsar painel de cozinha"
   },
   "tagSections": {
     "method": "Método",
@@ -298,6 +305,23 @@
       "sat": "Sáb",
       "sun": "Dom"
     }
+  },
+  "gateway": {
+    "title": "Explorar",
+    "categories": {
+      "meat": "Carne",
+      "poultry": "Aves",
+      "fish": "Peixe & Mar",
+      "vegetarian": "Vegetariano",
+      "quick": "Rápido · ≤30 min"
+    },
+    "featured": "Em destaque",
+    "sort": {
+      "popular": "Popular",
+      "quick": "Rápido"
+    },
+    "noResults": "Nenhuma receita compatível com as tuas preferências.",
+    "showAll": "Ver todas"
   },
   "settings": {
     "title": "Definições",
