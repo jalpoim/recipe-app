@@ -101,6 +101,8 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
       .from('recipes')
       .select(`${RECIPE_FIELDS}, recipe_ingredients(${INGREDIENT_FIELDS})`)
       .is('deleted_at', null)
+      // Hide user-uploaded images awaiting or failing moderation — system recipes (owner_id IS NULL) are always visible
+      .or('owner_id.is.null,moderation_status.is.null,moderation_status.eq.approved')
 
     // --- Mode filters (OR logic across selected modes) ---
     if (activeModes.length > 0) {
