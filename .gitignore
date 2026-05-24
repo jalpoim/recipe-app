@@ -14,3 +14,6 @@ dist-ssr
 __unconfig*
 todos.json
 .mcp.json
+docs/usda/
+scripts/*.progress.json
+supabase/.temp/
