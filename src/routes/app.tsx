@@ -149,15 +149,20 @@ function AppLayout() {
     if (user) identifyUser(user.id, user.email)
   }, [user.id])
 
-  // Redirect new users to onboarding on first login
+  // Redirect new users to onboarding — reactive so it never fires with a stale isOnboarding value
+  const { data: profileForOnboarding } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: () => fetchMyProfile(),
+    staleTime: 5 * 60 * 1000,
+    enabled: !!user,
+  })
+
   useEffect(() => {
     if (isOnboarding) return
-    fetchMyProfile().then((profile) => {
-      if (profile && !profile.onboarding_completed) {
-        navigate({ to: '/app/onboarding' })
-      }
-    })
-  }, [user.id]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (profileForOnboarding && !profileForOnboarding.onboarding_completed) {
+      navigate({ to: '/app/onboarding' })
+    }
+  }, [profileForOnboarding, isOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // On first visit per browser: detect language + units from Accept-Language and save to profile.
   // Uses a localStorage flag so this runs once and never overrides a deliberate user preference.
