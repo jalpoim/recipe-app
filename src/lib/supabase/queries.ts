@@ -68,6 +68,26 @@ const FLAG_ALIASES: Record<string, string[]> = {
   nuts: ['tree_nut', 'peanut'],
 }
 
+// Ingredient name keywords for flags not covered by protein slugs.
+// Used to catch e.g. dairy in a chicken recipe (yogurt sauce, cheese topping).
+// Patterns are matched case-insensitively against recipe_ingredients.name.
+const FLAG_INGREDIENT_KEYWORDS: Record<string, string[]> = {
+  dairy: [
+    'iogurte', 'yogurt', 'yoghurt', 'skyr', 'kefir',
+    'queijo', 'cheese', 'ricotta', 'mozzarella', 'mozarela',
+    'parmesão', 'parmesan', 'brie', 'camembert', 'gouda', 'cheddar', 'feta',
+    'natas', 'creme de leite', 'leite condensado', 'leite gordo',
+    'leite magro', 'leite meio', 'leite inteiro', 'ghee',
+    'manteiga', 'butter',
+  ],
+  egg:      ['ovo ', 'ovos', 'gema', 'clara de ovo', ' egg', 'eggs'],
+  honey:    ['mel '],
+  gluten:   ['farinha de trigo', 'wheat flour', 'aveia', 'oats', 'sêmola', 'semolina'],
+  tree_nut: ['amêndoa', 'almond', 'noz ', 'walnut', 'caju', 'cashew', 'avelã', 'hazelnut', 'pistácio', 'pistachio'],
+  peanut:   ['amendoim', 'peanut'],
+  soy:      ['soja', 'edamame', 'miso'],
+}
+
 const SORT_COL: Record<Sort, string> = {
   pcal: 'pcal_ratio',
   protein: 'protein',
@@ -131,6 +151,20 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
           .in('ingredient_id', allExcludedIngIds)
         excludedRecipeIds = [...new Set((excludedRis ?? []).map(r => r.recipe_id))]
       }
+    }
+
+    // --- Tertiary exclusion: keyword search on ingredient names ---
+    // Catches dietary-flagged ingredients (dairy, eggs, honey, etc.) in system recipes
+    // where ingredient_id is null and the protein slug doesn't apply.
+    const keywordPatterns = expandedFlags.flatMap(f => FLAG_INGREDIENT_KEYWORDS[f] ?? [])
+    if (keywordPatterns.length > 0) {
+      const orClause = keywordPatterns.map(p => `name.ilike.%${p}%`).join(',')
+      const { data: keywordMatchedRis } = await supabase
+        .from('recipe_ingredients')
+        .select('recipe_id')
+        .or(orClause)
+      const keywordMatchedIds = (keywordMatchedRis ?? []).map(r => r.recipe_id)
+      excludedRecipeIds = [...new Set([...excludedRecipeIds, ...keywordMatchedIds])]
     }
 
     // Get session for mode-specific filters
