@@ -243,20 +243,28 @@ async function canonicalizeBatch(entries: ProcessedEntry[]): Promise<CanonicalRe
 
 type ProgressFile = {
   processedDescriptions: string[]
+  canonicalResults?: Record<string, CanonicalResult>
 }
 
-function loadProgress(): Set<string> {
-  if (!fs.existsSync(PROGRESS_PATH)) return new Set()
+function loadProgress(): { processed: Set<string>; canonicalMap: Map<string, CanonicalResult> } {
+  if (!fs.existsSync(PROGRESS_PATH)) return { processed: new Set(), canonicalMap: new Map() }
   try {
     const p: ProgressFile = JSON.parse(fs.readFileSync(PROGRESS_PATH, 'utf8'))
-    return new Set(p.processedDescriptions)
+    const canonicalMap = new Map<string, CanonicalResult>(
+      Object.entries(p.canonicalResults ?? {})
+    )
+    return { processed: new Set(p.processedDescriptions), canonicalMap }
   } catch {
-    return new Set()
+    return { processed: new Set(), canonicalMap: new Map() }
   }
 }
 
-function saveProgress(processed: Set<string>) {
-  fs.writeFileSync(PROGRESS_PATH, JSON.stringify({ processedDescriptions: [...processed] }, null, 2))
+function saveProgress(processed: Set<string>, canonicalMap: Map<string, CanonicalResult>) {
+  const data: ProgressFile = {
+    processedDescriptions: [...processed],
+    canonicalResults: Object.fromEntries(canonicalMap),
+  }
+  fs.writeFileSync(PROGRESS_PATH, JSON.stringify(data, null, 2))
 }
 
 // ---- DB upsert ----
@@ -348,9 +356,10 @@ async function main() {
   }))
 
   // Load progress
-  const alreadyProcessed = loadProgress()
-  const todo = entries.filter(e => !alreadyProcessed.has(e.description))
-  console.log(`\n${entries.length} entries to canonicalize (${alreadyProcessed.size} already done)`)
+  const { canonicalMap: savedCanonicalMap } = loadProgress()
+  // Only skip an entry if it both appears in processedDescriptions AND has a saved canonical result
+  const todo = entries.filter(e => !savedCanonicalMap.has(e.description))
+  console.log(`\n${entries.length} entries to canonicalize (${savedCanonicalMap.size} results cached, ${todo.length} remaining)`)
 
   if (SKIP_AI) {
     // Insert as-is using preprocessed name
@@ -371,16 +380,18 @@ async function main() {
   }
 
   // Haiku canonicalization in batches
-  const canonicalMap = new Map<string, CanonicalResult>() // description → result
+  const canonicalMap = new Map<string, CanonicalResult>(savedCanonicalMap) // description → result
 
-  // Re-process already-done (load their results from DB if needed — skip for simplicity)
-  // We process the remaining in batches
   const batches: ProcessedEntry[][] = []
   for (let i = 0; i < todo.length; i += BATCH_SIZE) {
     batches.push(todo.slice(i, i + BATCH_SIZE))
   }
 
-  console.log(`Processing ${batches.length} batches of up to ${BATCH_SIZE}...`)
+  if (batches.length > 0) {
+    console.log(`Processing ${batches.length} batches of up to ${BATCH_SIZE}...`)
+  } else {
+    console.log(`All batches already processed (${canonicalMap.size} results in progress file)`)
+  }
 
   for (let b = 0; b < batches.length; b++) {
     const batch = batches[b]
@@ -394,7 +405,6 @@ async function main() {
         const result = results[i]
         if (result?.canonical_full) {
           canonicalMap.set(batch[i].description, result)
-          alreadyProcessed.add(batch[i].description)
         }
       }
 
@@ -403,8 +413,8 @@ async function main() {
       console.error(`✗ batch ${b + 1} failed: ${err}`)
     }
 
-    // Save progress after each batch
-    saveProgress(alreadyProcessed)
+    // Save progress after each batch (canonical results are the source of truth)
+    saveProgress(new Set(canonicalMap.keys()), canonicalMap)
 
     if (b < batches.length - 1) await new Promise(r => setTimeout(r, BATCH_DELAY_MS))
   }
