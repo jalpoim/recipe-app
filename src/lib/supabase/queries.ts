@@ -50,6 +50,24 @@ const RECIPE_FIELDS =
 
 const INGREDIENT_FIELDS = 'id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label'
 
+// Maps dietary exclusion flags → protein slugs on the recipes.proteins column.
+// This is the primary exclusion mechanism because recipe_ingredients.ingredient_id
+// is only populated for user-uploaded recipes, not system recipes.
+const FLAG_TO_PROTEIN_SLUGS: Record<string, string[]> = {
+  meat:      ['beef', 'pork', 'lamb'],
+  poultry:   ['chicken', 'turkey'],
+  fish:      ['tuna', 'cod', 'salmon', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus'],
+  shellfish: ['shrimp'],
+  dairy:     ['whey'],
+  egg:       ['eggs'],
+  honey:     [],
+}
+
+// UI stores 'nuts'; DB dietary_flags uses 'tree_nut' and 'peanut'
+const FLAG_ALIASES: Record<string, string[]> = {
+  nuts: ['tree_nut', 'peanut'],
+}
+
 const SORT_COL: Record<Sort, string> = {
   pcal: 'pcal_ratio',
   protein: 'protein',
@@ -82,15 +100,27 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     // Filter out 'all' token — empty array means show everything
     const activeModes = modes.filter((m) => m !== 'all')
 
-    // Resolve dietary exclusions → recipe IDs to hide
+    // Expand flag aliases (e.g. 'nuts' → ['tree_nut', 'peanut'])
+    const expandedFlags = [...new Set(
+      excludedFlags.flatMap(f => FLAG_ALIASES[f] ? FLAG_ALIASES[f] : [f])
+    )]
+
+    // --- Primary exclusion: proteins array (covers all system recipes) ---
+    const excludedProteinSlugs = [...new Set(
+      expandedFlags.flatMap(f => FLAG_TO_PROTEIN_SLUGS[f] ?? [])
+    )]
+
+    // --- Secondary exclusion: ingredient_id join (covers user-uploaded recipes) ---
+    // recipe_ingredients.ingredient_id is only populated for ~44% of rows (user recipes).
+    // System recipes have ingredient_id = null, so this path only supplements the above.
     let excludedRecipeIds: string[] = []
-    if (excludedFlags.length > 0 || excludedIngredientIds.length > 0) {
+    if (expandedFlags.length > 0 || excludedIngredientIds.length > 0) {
       let flaggedIngIds: string[] = []
-      if (excludedFlags.length > 0) {
+      if (expandedFlags.length > 0) {
         const { data: flaggedIngs } = await supabase
           .from('ingredients')
           .select('id')
-          .overlaps('dietary_flags', excludedFlags)
+          .overlaps('dietary_flags', expandedFlags)
         flaggedIngIds = (flaggedIngs ?? []).map(i => i.id)
       }
       const allExcludedIngIds = [...new Set([...flaggedIngIds, ...excludedIngredientIds])]
@@ -150,6 +180,7 @@ export const fetchLibrary = createServerFn({ method: 'GET' })
     if (maxCal !== undefined) query = query.lte('calories', maxCal)
     if (maxTime !== undefined) query = query.lte('time_min', maxTime)
     if (excludedRecipeIds.length > 0) query = query.not('id', 'in', `(${excludedRecipeIds.join(',')})`)
+    if (excludedProteinSlugs.length > 0) query = query.not('proteins', 'ov', `{${excludedProteinSlugs.join(',')}}`)
 
     // --- Cursor WHERE clause ---
     if (cursor) {
