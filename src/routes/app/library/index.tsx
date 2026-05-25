@@ -82,7 +82,7 @@ const TAG_SECTIONS: { key: string; tags: string[] }[] = [
 ]
 const TAG_SECTION_LIMIT = 6
 
-type StripChipId = 'em-alta' | 'rapido' | 'chicken' | 'salmon' | 'beef' | 'tuna' | 'batido' | 'snack' | 'meal-prep' | 'alto-proteina'
+type StripChipId = 'em-alta' | 'rapido' | 'alto-proteina' | 'chicken' | 'salmon' | 'beef' | 'tuna' | 'batido' | 'snack' | 'meal-prep'
 
 type StripChipDef = {
   id: StripChipId
@@ -95,16 +95,16 @@ type StripChipDef = {
 }
 
 const STRIP_CHIPS: StripChipDef[] = [
-  { id: 'em-alta',       iconSrc: '/icons/chips/em-alta.png',       labelKey: 'strip.emAlta',      sort: 'popular' },
-  { id: 'rapido',        iconSrc: '/icons/chips/rapido.png',         labelKey: 'tags.rápido',        maxTime: 30 },
-  { id: 'chicken',       iconSrc: '/icons/chips/chicken.png',        labelKey: 'proteins.chicken',   proteins: ['chicken'] },
-  { id: 'salmon',        iconSrc: '/icons/chips/salmon.png',         labelKey: 'proteins.salmon',    proteins: ['salmon'] },
-  { id: 'beef',          iconSrc: '/icons/chips/beef.png',           labelKey: 'proteins.beef',      proteins: ['beef'] },
-  { id: 'tuna',          iconSrc: '/icons/chips/tuna.png',           labelKey: 'proteins.tuna',      proteins: ['tuna'] },
-  { id: 'batido',        iconSrc: '/icons/chips/batido.png',         labelKey: 'tags.batido',        tags: ['batido'] },
-  { id: 'snack',         iconSrc: '/icons/chips/snack.png',          labelKey: 'tags.snack',         tags: ['snack'] },
-  { id: 'meal-prep',     iconSrc: '/icons/chips/meal-prep.png',      labelKey: 'tags.meal-prep',     tags: ['meal-prep'] },
-  { id: 'alto-proteina', iconSrc: '/icons/chips/alto-proteina.png',  labelKey: 'tags.alto-proteína', tags: ['alto-proteína'] },
+  { id: 'em-alta',       iconSrc: '/icons/chips/em-alta.png',       labelKey: 'strip.emAlta',        sort: 'popular' },
+  { id: 'rapido',        iconSrc: '/icons/chips/rapido.png',         labelKey: 'tags.rápido',          maxTime: 30 },
+  { id: 'alto-proteina', iconSrc: '/icons/chips/alto-proteina.png',  labelKey: 'strip.proteicas',      tags: ['alto-proteína'] },
+  { id: 'chicken',       iconSrc: '/icons/chips/chicken.png',        labelKey: 'proteins.chicken',     proteins: ['chicken'] },
+  { id: 'salmon',        iconSrc: '/icons/chips/salmon.png',         labelKey: 'proteins.salmon',      proteins: ['salmon'] },
+  { id: 'beef',          iconSrc: '/icons/chips/beef.png',           labelKey: 'proteins.beef',        proteins: ['beef'] },
+  { id: 'tuna',          iconSrc: '/icons/chips/tuna.png',           labelKey: 'proteins.tuna',        proteins: ['tuna'] },
+  { id: 'batido',        iconSrc: '/icons/chips/batido.png',         labelKey: 'tags.batido',          tags: ['batido'] },
+  { id: 'snack',         iconSrc: '/icons/chips/snack.png',          labelKey: 'tags.snack',           tags: ['snack'] },
+  { id: 'meal-prep',     iconSrc: '/icons/chips/meal-prep.png',      labelKey: 'tags.meal-prep',       tags: ['meal-prep'] },
 ]
 
 const DIETARY_MODES: DietaryMode[] = ['none', 'vegetarian', 'vegan', 'pescatarian']
@@ -1171,7 +1171,7 @@ function LibraryPage() {
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
         {/* Sticky header */}
-        <div className="pt-4 pb-2 shrink-0">
+        <div className="pt-4 pb-2 shrink-0 touch-none" onTouchMove={(e) => e.stopPropagation()}>
           {/* Row 1: Search bar + dietary button */}
           <div className="flex items-center gap-2">
             <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#F4623A] focus-within:ring-2 focus-within:ring-[#F4623A]/20 transition-colors">
@@ -1263,7 +1263,7 @@ function LibraryPage() {
 
         ) : (
           /* ── Virtual list — strip and banner scroll with content ── */
-          <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
+          <div ref={parentRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20" style={{ overscrollBehaviorY: 'contain' }}>
             {/* Strip chips — inside scroll so they disappear on scroll */}
             {stripVisible && (
               <div className="flex gap-2.5 overflow-x-auto pt-2 pb-3 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>

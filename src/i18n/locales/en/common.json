@@ -316,7 +316,8 @@
     }
   },
   "strip": {
-    "emAlta": "Trending"
+    "emAlta": "Trending",
+    "proteicas": "High Protein"
   },
   "gateway": {
     "title": "Explore",

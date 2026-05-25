@@ -316,7 +316,8 @@
     }
   },
   "strip": {
-    "emAlta": "Em Alta"
+    "emAlta": "Em Alta",
+    "proteicas": "Proteicas"
   },
   "gateway": {
     "title": "Explorar",
