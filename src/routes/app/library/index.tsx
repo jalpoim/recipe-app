@@ -340,15 +340,8 @@ function StripChipButton({
   const { t } = useTranslation();
   const controls = useAnimationControls();
   const { skip: reducedMotion } = useMotion();
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
   function handleClick() {
     onChipClick(chip.id);
-    buttonRef.current?.scrollIntoView({
-      inline: "start",
-      block: "nearest",
-      behavior: "smooth",
-    });
     if (!reducedMotion) {
       controls.start({
         scale: [1, 1.15, 1],
@@ -359,7 +352,6 @@ function StripChipButton({
 
   return (
     <button
-      ref={buttonRef}
       onClick={handleClick}
       aria-pressed={isActive}
       className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
