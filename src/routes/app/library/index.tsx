@@ -15,6 +15,7 @@ import { capture } from "../../../lib/analytics";
 import {
   ArrowUpDown,
   Check,
+  ClipboardList,
   Clock,
   Plus,
   Search,
@@ -594,10 +595,9 @@ function RecipeCard({
           aria-label={t("plan.addRecipe")}
           className="absolute bottom-0 right-0 w-10 h-10 rounded-tl-2xl bg-white border-t border-l border-[#F0F0EE] flex items-center justify-center transition-colors hover:bg-[#FEF2EF] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus-visible:ring-inset focus:outline-none"
         >
-          <img
-            src="/icons/nav/add-to-plan.png"
-            alt=""
-            className="w-5 h-5 object-cover rounded-md"
+          <ClipboardList
+            size={18}
+            className="text-[#F4623A]"
             aria-hidden="true"
           />
         </button>

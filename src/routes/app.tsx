@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
-import { BookOpen, ChefHat, CalendarDays, ShoppingCart } from "lucide-react";
+import { BookOpen, ChefHat, ClipboardList, ShoppingCart } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { fetchActivePlanWithCount } from "../lib/supabase/plan-queries";
@@ -112,7 +112,7 @@ function BottomNav() {
     },
     {
       label: t("nav.plan"),
-      icon: CalendarDays,
+      icon: ClipboardList,
       to: "/app/plan" as const,
       key: "plan",
       badge: itemCount,

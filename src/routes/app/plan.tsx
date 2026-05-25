@@ -4,7 +4,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../lib/use-reduced-motion";
 import { capture } from "../../lib/analytics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { X, Clock, ChevronRight, ChevronLeft, Minus, Plus } from "lucide-react";
+import {
+  X,
+  Clock,
+  ChevronRight,
+  ChevronLeft,
+  Minus,
+  Plus,
+  CalendarDays,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../components/Toast";
 import { Drawer } from "vaul";
@@ -591,12 +599,7 @@ function PlanPage() {
             aria-label={t("cookHistory.title")}
             className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
           >
-            <img
-              src="/icons/cook-history.svg"
-              alt=""
-              className="w-6 h-6"
-              aria-hidden="true"
-            />
+            <CalendarDays size={20} aria-hidden="true" />
           </button>
         </div>
 

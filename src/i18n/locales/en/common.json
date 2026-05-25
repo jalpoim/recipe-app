@@ -286,6 +286,8 @@
     "verão": "Summer"
   },
   "onboarding": {
+    "langTitle": "What's your language?",
+    "langSubtitle": "You can change this later in Settings.",
     "unitsTitle": "How do you prefer measurements?",
     "unitsSubtitle": "You can change this later in Settings.",
     "dietaryTitle": "Any dietary preferences?",

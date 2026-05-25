@@ -286,6 +286,8 @@
     "verão": "Verão"
   },
   "onboarding": {
+    "langTitle": "Qual é o teu idioma?",
+    "langSubtitle": "Podes alterar isto mais tarde em Definições.",
     "unitsTitle": "Como preferes as medidas?",
     "unitsSubtitle": "Podes alterar isto mais tarde em Definições.",
     "dietaryTitle": "Tens restrições alimentares?",
