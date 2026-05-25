@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
-import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from "lucide-react";
+import { BookOpen, ChefHat, CalendarDays, ShoppingCart } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { fetchActivePlanWithCount } from "../lib/supabase/plan-queries";
@@ -105,7 +105,7 @@ function BottomNav() {
     },
     {
       label: t("nav.myRecipes"),
-      icon: BookMarked,
+      icon: ChefHat,
       to: "/app/my-recipes" as const,
       key: "my-recipes",
       disabled: false,
