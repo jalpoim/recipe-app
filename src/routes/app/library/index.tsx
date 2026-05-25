@@ -1148,9 +1148,20 @@ function LibraryPage() {
     return Number(sessionStorage.getItem("library_scroll") || "0");
   });
 
-  const [stripChip, setStripChip] = useState<StripChipId>(() =>
-    getTimeAwareChip(),
-  );
+  const [stripChip, setStripChip] = useState<StripChipId | null>(() => {
+    if (typeof sessionStorage === "undefined") return getTimeAwareChip();
+    const saved = sessionStorage.getItem("library_strip_chip");
+    if (saved && STRIP_CHIPS.find((c) => c.id === saved))
+      return saved as StripChipId;
+    return getTimeAwareChip();
+  });
+
+  function handleChipClick(chipId: StripChipId) {
+    const next = stripChip === chipId ? null : chipId;
+    setStripChip(next);
+    if (next) sessionStorage.setItem("library_strip_chip", next);
+    else sessionStorage.removeItem("library_strip_chip");
+  }
 
   function update(patch: Partial<LibrarySearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -1262,7 +1273,7 @@ function LibraryPage() {
       lang,
       excludedFlags: userExcludedFlags,
       excludedIngredientIds,
-      stripChip: stripVisible ? stripChip : undefined,
+      stripChip: stripVisible && stripChip ? stripChip : undefined,
     }),
     [
       activeStripChip,
@@ -1362,8 +1373,8 @@ function LibraryPage() {
     mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
     onSuccess: () => {
       showToast(t("recipe.addedToPlan"), "success");
-      queryClient.invalidateQueries({ queryKey: ["plan"] });
       queryClient.invalidateQueries({ queryKey: ["active-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["plan-items"] });
     },
     onError: () => {
       showToast(t("recipe.addedToPlanError"), "error");
@@ -1538,7 +1549,7 @@ function LibraryPage() {
                   return (
                     <button
                       key={chip.id}
-                      onClick={() => setStripChip(chip.id)}
+                      onClick={() => handleChipClick(chip.id)}
                       aria-pressed={isActive}
                       className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
                         isActive

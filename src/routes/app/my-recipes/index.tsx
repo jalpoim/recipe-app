@@ -188,12 +188,6 @@ function MyRecipesPage() {
               </p>
             )}
           </div>
-          <Link
-            to="/app/settings"
-            className="shrink-0 text-xs font-medium text-[#F4623A] hover:underline focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
-          >
-            {t("myRecipes.editProfile")}
-          </Link>
         </div>
 
         {/* Tabs */}
