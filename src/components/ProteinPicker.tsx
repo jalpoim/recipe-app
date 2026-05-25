@@ -23,9 +23,9 @@ export function ProteinPicker({
   const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [customInput, setCustomInput] = useState('')
-  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
-  const chipActive = 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A]'
+  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none'
+  const chipActive = 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
+  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]'
   const visible = expanded ? ALL_PROTEIN_SLUGS : PROTEIN_TIER1
   const canAdd = customInput.trim().length > 0
 
@@ -54,7 +54,7 @@ export function ProteinPicker({
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((e) => !e)}
-        className="text-xs text-[#16A34A] font-medium focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        className="text-xs text-[#F4623A] font-medium focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
       >
         {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
       </button>
@@ -97,13 +97,13 @@ export function ProteinPicker({
           onChange={(e) => setCustomInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
           placeholder={t('create.addProteinPlaceholder', 'Adicionar proteína…')}
-          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
         />
         <button
           type="button"
           onClick={handleAddCustom}
           disabled={!canAdd}
-          className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#16A34A] hover:bg-[#f0fdf4] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shrink-0"
+          className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#F4623A] hover:bg-[#FFF5F2] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none shrink-0"
         >
           <Plus size={16} aria-hidden="true" />
         </button>

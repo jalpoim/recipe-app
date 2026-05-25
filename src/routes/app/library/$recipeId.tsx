@@ -44,7 +44,7 @@ const PROTEIN_COLORS: Record<string, string> = {
   'sea-bass': 'linear-gradient(135deg, #f0fdfa, #99f6e4)',
   mackerel:   'linear-gradient(135deg, #fefce8, #fde047)',
   octopus:    'linear-gradient(135deg, #fdf4ff, #e9d5ff)',
-  tofu:       'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+  tofu:       'linear-gradient(135deg, #FEE9E1, #bbf7d0)',
   legumes:    'linear-gradient(135deg, #d1fae5, #a7f3d0)',
   whey:       'linear-gradient(135deg, #ede9fe, #ddd6fe)',
 }
@@ -79,7 +79,7 @@ function scaleIngredient(
 }
 
 function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#15803d] bg-[#dcfce7]'
+  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
   if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
   return 'text-[#DC2626] bg-[#fee2e2]'
 }
@@ -132,7 +132,7 @@ function CookingDrawer({
       {/* Drag handle + stop button */}
       <div className="flex items-center px-4 pt-2 pb-1 shrink-0 gap-2">
         <button
-          className="flex-1 flex justify-center py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
+          className="flex-1 flex justify-center py-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded"
           onClick={() => setExpanded((e) => !e)}
           aria-label={expanded ? t('cooking.collapseDrawer') : t('cooking.expandDrawer')}
           aria-expanded={expanded}
@@ -142,7 +142,7 @@ function CookingDrawer({
         <button
           onClick={onExit}
           aria-label={t('cooking.stopCooking')}
-          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+          className="shrink-0 w-11 h-11 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
         >
           <X size={14} aria-hidden="true" />
         </button>
@@ -156,7 +156,7 @@ function CookingDrawer({
           </p>
           <div className="h-0.5 bg-[#F3F4F6] rounded-full overflow-hidden mb-2">
             <div
-              className="h-full bg-[#16A34A] rounded-full transition-[width] duration-200 ease-out"
+              className="h-full bg-[#F4623A] rounded-full transition-[width] duration-200 ease-out"
               style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
             />
           </div>
@@ -179,7 +179,7 @@ function CookingDrawer({
           <button
             onClick={goPrev}
             disabled={isFirst}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl border border-[#E5E7EB] bg-white text-sm font-semibold text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl border border-[#E5E7EB] bg-white text-sm font-semibold text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
             <ChevronLeft size={16} aria-hidden="true" />
             {t('cooking.prev')}
@@ -187,14 +187,14 @@ function CookingDrawer({
           {isLast ? (
             <button
               onClick={onExit}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t('cooking.done')}
             </button>
           ) : (
             <button
               onClick={goNext}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t('cooking.next')}
               <ChevronRight size={16} aria-hidden="true" />
@@ -233,7 +233,7 @@ function RecipeDetailError({ error }: { error: Error }) {
       <div className="text-center space-y-3">
         <p className="text-[#1A1A1A] font-semibold">{t('recipe.loadError')}</p>
         <p className="text-sm text-[#6B7280]">{error.message}</p>
-        <button onClick={() => window.location.reload()} className="mt-2 text-sm text-[#16A34A] underline">
+        <button onClick={() => window.location.reload()} className="mt-2 text-sm text-[#F4623A] underline">
           {t('common.retry')}
         </button>
       </div>
@@ -459,7 +459,7 @@ function RecipeDetailPage() {
           <button
             onClick={() => navigate({ to: isFromPlan ? '/app/plan' : '/app/library' })}
             aria-label={t('recipe.back')}
-            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             {t('recipe.back')}
@@ -477,7 +477,7 @@ function RecipeDetailPage() {
               disabled={likeMutation.isPending}
               aria-label={isLiked ? t('recipe.unlike') : t('recipe.like')}
               aria-pressed={isLiked}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60 ${isLiked ? 'bg-[#fee2e2] border-[#fecaca] text-[#DC2626]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#fecaca] hover:text-[#DC2626]'}`}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60 ${isLiked ? 'bg-[#fee2e2] border-[#fecaca] text-[#DC2626]' : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#fecaca] hover:text-[#DC2626]'}`}
             >
               <Heart size={13} className={isLiked ? 'fill-current' : ''} aria-hidden="true" />
               {likeCount > 0 ? likeCount : t('recipe.like')}
@@ -489,7 +489,7 @@ function RecipeDetailPage() {
               disabled={saveMutation.isPending}
               aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
               aria-pressed={isSaved}
-              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60 ${isSaved ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]' : 'bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#16A34A]'}`}
+              className={`w-8 h-8 rounded-full border flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60 ${isSaved ? 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]' : 'bg-white border-[#E5E7EB] text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A]'}`}
             >
               {isSaved ? <BookmarkCheck size={18} aria-hidden="true" /> : <Bookmark size={18} aria-hidden="true" />}
             </button>
@@ -499,7 +499,7 @@ function RecipeDetailPage() {
               to="/app/library/$recipeId/edit"
               params={{ recipeId: recipe.id }}
               aria-label={t('recipe.edit')}
-              className="w-8 h-8 rounded-full border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-8 h-8 rounded-full border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               <Edit size={14} aria-hidden="true" />
             </Link>
@@ -518,7 +518,7 @@ function RecipeDetailPage() {
             ) : (
               <div
                 className="w-full h-full"
-                style={{ background: PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
+                style={{ background: PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #FEE9E1, #bbf7d0)' }}
                 aria-hidden="true"
               />
             )}
@@ -650,7 +650,7 @@ function RecipeDetailPage() {
                     onClick={() => setMultiplier((m) => Math.max(1, m - 1))}
                     disabled={multiplier <= 1}
                     aria-label={t('recipe.decreaseServings')}
-                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                   >
                     <Minus size={16} aria-hidden="true" />
                   </button>
@@ -660,7 +660,7 @@ function RecipeDetailPage() {
                   <button
                     onClick={() => setMultiplier((m) => m + 1)}
                     aria-label={t('recipe.increaseServings')}
-                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    className="w-11 h-11 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] active:bg-[#E5E7EB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                   >
                     <Plus size={16} aria-hidden="true" />
                   </button>
@@ -695,7 +695,7 @@ function RecipeDetailPage() {
                 {recipe.recipe_steps.map((step, i) => (
                   <li key={step.id} className="flex gap-3">
                     <span className={`shrink-0 w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center mt-0.5 transition-colors duration-200 ${
-                      isCooking && i < completedUpToStep ? 'bg-[#16A34A] text-white' : 'bg-[#dcfce7] text-[#15803d]'
+                      isCooking && i < completedUpToStep ? 'bg-[#F4623A] text-white' : 'bg-[#FEE9E1] text-[#D94F2B]'
                     }`}>
                       {i + 1}
                     </span>
@@ -714,7 +714,7 @@ function RecipeDetailPage() {
               <button
                 onClick={() => logCookMutation.mutate()}
                 disabled={logCookMutation.isPending || cookDebounced}
-                className="w-full rounded-2xl bg-[#f0fdf4] border border-[#bbf7d0] py-4 flex items-center justify-center gap-2 text-[#15803d] text-sm font-semibold disabled:opacity-50 hover:bg-[#dcfce7] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                className="w-full rounded-2xl bg-[#FFF5F2] border border-[#FDD9CC] py-4 flex items-center justify-center gap-2 text-[#D94F2B] text-sm font-semibold disabled:opacity-50 hover:bg-[#FEE9E1] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
                 <span
                   className={`inline-block ${cookIconBouncing ? 'cooked-success' : ''}`}
@@ -752,7 +752,7 @@ function RecipeDetailPage() {
                   <>
                     <button
                       onClick={() => setConfirmRemove(false)}
-                      className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white text-[#6B7280] py-3.5 text-sm font-semibold hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                      className="flex-1 rounded-2xl border border-[#E5E7EB] bg-white text-[#6B7280] py-3.5 text-sm font-semibold hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {t('common.cancel')}
                     </button>
@@ -777,7 +777,7 @@ function RecipeDetailPage() {
               <button
                 onClick={() => addMutation.mutate()}
                 disabled={addMutation.isPending}
-                className="w-full rounded-2xl bg-[#16A34A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] active:scale-[0.97] transition-[transform,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                className="w-full rounded-2xl bg-[#F4623A] text-white py-3.5 text-sm font-semibold disabled:opacity-60 hover:bg-[#D94F2B] active:scale-[0.97] transition-[transform,background-color] duration-150 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
                 {addMutation.isPending ? t('recipe.adding') : t('recipe.addToPlan')}
               </button>
@@ -786,7 +786,7 @@ function RecipeDetailPage() {
             {hasSteps && (
               <button
                 onClick={enterCooking}
-                className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none flex items-center justify-center gap-2"
+                className="w-full rounded-2xl border border-[#E5E7EB] bg-white py-3 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none flex items-center justify-center gap-2"
               >
                 <UtensilsCrossed size={15} aria-hidden="true" />
                 {t('recipe.cook')}

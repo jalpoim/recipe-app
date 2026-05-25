@@ -45,18 +45,25 @@ const EXPAND_BATCH = 20
 async function taskPtNames() {
   console.log('\n=== Portuguese Names ===')
 
-  // Fetch ingredients without Portuguese name (stored in name_pt column or aliases)
-  // We'll store Portuguese names in the aliases array for now since schema has no name_pt
-  // Actually we need to check schema — plan says name_pt column, let's add aliases approach
-  const { data: rows, error } = await supabase
-    .from('ingredients')
-    .select('id, name')
-    .eq('classification_source', 'usda')
-    .not('name', 'is', null)
-    .limit(5000)
+  // Fetch all USDA ingredients using range pagination (Supabase JS caps at 1000/page)
+  const rows: { id: string; name: string }[] = []
+  const PAGE = 1000
+  for (let from = 0; ; from += PAGE) {
+    const { data: page, error } = await supabase
+      .from('ingredients')
+      .select('id, name')
+      .eq('classification_source', 'usda')
+      .not('name', 'is', null)
+      // Only fetch those without any aliases yet
+      .filter('aliases', 'eq', '{}')
+      .range(from, from + PAGE - 1)
+    if (error) throw error
+    if (!page?.length) break
+    rows.push(...page)
+    if (page.length < PAGE) break
+  }
 
-  if (error) throw error
-  if (!rows?.length) { console.log('No USDA ingredients found'); return }
+  if (!rows.length) { console.log('No USDA ingredients without aliases found'); return }
 
   console.log(`${rows.length} USDA ingredients to add Portuguese names to`)
 
@@ -74,7 +81,7 @@ async function taskPtNames() {
     try {
       const response = await anthropic.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 4096,
         messages: [{
           role: 'user',
           content: `For each English ingredient name, provide the most common Portuguese (Portugal) name. Return JSON array: [{"id": "...", "name_pt": "..."}]\n\nIngredients:\n${batch.map(r => `{"id":"${r.id}","name":"${r.name}"}`).join('\n')}`,

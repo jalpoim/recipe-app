@@ -28,7 +28,7 @@ function JoinPage() {
         <p className="text-sm text-[#6B7280]">Este convite não é válido ou já foi utilizado.</p>
         <a
           href="/app/library"
-          className="mt-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white"
+          className="mt-2 rounded-lg bg-[#F4623A] px-5 py-2.5 text-sm font-semibold text-white"
         >
           Ir para as receitas
         </a>
@@ -73,7 +73,7 @@ function JoinPage() {
       <button
         onClick={handleAccept}
         disabled={accepting}
-        className="w-full rounded-2xl bg-[#16A34A] px-5 py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
+        className="w-full rounded-2xl bg-[#F4623A] px-5 py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
       >
         {accepting ? 'A aceitar…' : 'Aceitar convite'}
       </button>

@@ -48,7 +48,7 @@ function pcalRatio(r: Recipe) {
 }
 
 function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#15803d] bg-[#dcfce7]'
+  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
   if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
   return 'text-[#DC2626] bg-[#fee2e2]'
 }
@@ -75,7 +75,7 @@ function ProfileRecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
         ) : (
           <div
             className="w-[60px] h-[60px] rounded-xl shrink-0"
-            style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
+            style={{ background: 'linear-gradient(135deg, #FEE9E1, #bbf7d0)' }}
             aria-hidden="true"
           />
         )}
@@ -117,7 +117,7 @@ function ProfilePage() {
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-6">
         <div className="text-center space-y-3">
           <p className="text-[#1A1A1A] font-semibold">Perfil não encontrado</p>
-          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const }} className="text-sm text-[#16A34A] underline">
+          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const }} className="text-sm text-[#F4623A] underline">
             {t('recipe.back')}
           </Link>
         </div>
@@ -134,7 +134,7 @@ function ProfilePage() {
             to="/app/library"
             search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const }}
             aria-label={t('recipe.back')}
-            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             {t('recipe.back')}
@@ -154,7 +154,7 @@ function ProfilePage() {
           ) : (
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white"
-              style={{ background: 'linear-gradient(135deg, #16A34A, #15803d)' }}
+              style={{ background: 'linear-gradient(135deg, #F4623A, #D94F2B)' }}
               aria-hidden="true"
             >
               {profile.display_name.charAt(0).toUpperCase()}

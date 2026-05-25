@@ -102,7 +102,7 @@ function SignInPage() {
                 </p>
                 <button
                   onClick={() => { setStatus('idle'); setEmail('') }}
-                  className="mt-4 text-sm text-[#16A34A] hover:underline"
+                  className="mt-4 text-sm text-[#F4623A] hover:underline"
                 >
                   Usar outro email
                 </button>
@@ -125,7 +125,7 @@ function SignInPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={status === 'loading'}
-                    className="w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] outline-none focus:border-[#16A34A] focus-visible:ring-2 focus-visible:ring-[#16A34A]/30 disabled:opacity-50 transition-colors"
+                    className="w-full rounded-lg border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#1A1A1A] placeholder-[#9CA3AF] outline-none focus:border-[#F4623A] focus-visible:ring-2 focus-visible:ring-[#F4623A]/30 disabled:opacity-50 transition-colors"
                   />
                 </div>
 
@@ -136,7 +136,7 @@ function SignInPage() {
                 <button
                   type="submit"
                   disabled={status === 'loading' || !email.trim()}
-                  className="w-full rounded-lg bg-[#16A34A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="w-full rounded-lg bg-[#F4623A] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#15803D] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {status === 'loading' ? 'A enviar…' : 'Entrar com magic link'}
                 </button>

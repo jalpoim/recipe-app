@@ -45,7 +45,7 @@ function PlanError({ error }: { error: Error }) {
         <p className="text-sm text-[#6B7280]">{error.message}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-2 text-sm text-[#16A34A] underline"
+          className="mt-2 text-sm text-[#F4623A] underline"
         >
           Tentar novamente
         </button>
@@ -91,7 +91,7 @@ function PlanItemCard({
         to="/app/library/$recipeId"
         params={{ recipeId: item.recipe_id }}
         search={{ from: 'plan', planItemId: item.id }}
-        className="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        className="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         aria-label={item.recipe.name}
       />
 
@@ -105,7 +105,7 @@ function PlanItemCard({
 
       <div className="block pr-8">
         <div className="flex items-center gap-1">
-          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#16A34A] transition-colors truncate">
+          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#F4623A] transition-colors truncate">
             {item.recipe.name}
           </h3>
           <ChevronRight size={12} className="text-[#9CA3AF] flex-shrink-0" aria-hidden="true" />
@@ -133,7 +133,7 @@ function PlanItemCard({
             onClick={() => onServingsChange(item.id, item.recipe_id, Math.max(1, item.portion_multiplier - 1))}
             disabled={item.portion_multiplier <= 1}
             aria-label="Diminuir doses"
-            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
             <Minus size={12} aria-hidden="true" />
           </button>
@@ -143,7 +143,7 @@ function PlanItemCard({
           <button
             onClick={() => onServingsChange(item.id, item.recipe_id, item.portion_multiplier + 1)}
             aria-label="Aumentar doses"
-            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
             <Plus size={12} aria-hidden="true" />
           </button>
@@ -283,7 +283,7 @@ function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                 onClick={() => setWeekOffset((o) => o - 1)}
                 disabled={!hasOlderEntries && weekOffset === 0}
                 aria-label={t('cookHistory.prevWeek')}
-                className="flex items-center gap-1 text-xs text-[#6B7280] disabled:opacity-30 hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded-lg px-1 py-0.5"
+                className="flex items-center gap-1 text-xs text-[#6B7280] disabled:opacity-30 hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded-lg px-1 py-0.5"
               >
                 <ChevronLeft size={14} aria-hidden="true" />
                 {t('cookHistory.prevWeek')}
@@ -292,7 +292,7 @@ function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                 <button
                   onClick={() => setWeekOffset((o) => o + 1)}
                   aria-label={t('cookHistory.nextWeek')}
-                  className="flex items-center gap-1 text-xs text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded-lg px-1 py-0.5"
+                  className="flex items-center gap-1 text-xs text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded-lg px-1 py-0.5"
                 >
                   {t('cookHistory.nextWeek')}
                   <ChevronLeft size={14} className="rotate-180" aria-hidden="true" />
@@ -306,15 +306,15 @@ function CookHistorySheet({ open, onOpenChange }: { open: boolean; onOpenChange:
                 const isToday = toLocalDateStr(date.toISOString()) === toLocalDateStr(new Date().toISOString())
                 return (
                   <div key={key} className="flex flex-col items-center gap-1">
-                    <span className={`text-[10px] font-medium ${isToday ? 'text-[#16A34A]' : 'text-[#9CA3AF]'}`}>
+                    <span className={`text-[10px] font-medium ${isToday ? 'text-[#F4623A]' : 'text-[#9CA3AF]'}`}>
                       {t(`cookHistory.days.${key}`)}
                     </span>
                     <div
                       className={`h-5 w-5 rounded-full border-2 ${
                         hasEntry
-                          ? 'bg-[#16A34A] border-[#16A34A]'
+                          ? 'bg-[#F4623A] border-[#F4623A]'
                           : 'bg-white border-[#E5E7EB]'
-                      } ${isToday && !hasEntry ? 'border-[#16A34A]/40' : ''}`}
+                      } ${isToday && !hasEntry ? 'border-[#F4623A]/40' : ''}`}
                       aria-hidden="true"
                     />
                   </div>
@@ -466,7 +466,7 @@ function PlanPage() {
           <button
             onClick={() => setHistoryOpen(true)}
             aria-label={t('cookHistory.title')}
-            className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+            className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
           >
             <CalendarDays size={20} aria-hidden="true" />
           </button>
@@ -481,7 +481,7 @@ function PlanPage() {
             <Link
               to="/app/library"
               search={{} as never}
-              className="inline-block px-5 py-2.5 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="inline-block px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t('plan.addRecipe')}
             </Link>
@@ -510,7 +510,7 @@ function PlanPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirmClear(false)}
-                      className="flex-1 py-2 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                      className="flex-1 py-2 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {t('common.cancel')}
                     </button>

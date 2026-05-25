@@ -50,7 +50,7 @@ function ShoppingError({ error }: { error: Error }) {
         <p className="text-sm text-[#6B7280]">{error.message}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-2 text-sm text-[#16A34A] underline"
+          className="mt-2 text-sm text-[#F4623A] underline"
         >
           Tentar novamente
         </button>
@@ -111,8 +111,8 @@ function ViewToggle({ view, onChange }: { view: 'recipe' | 'global'; onChange: (
         <button
           key={v}
           onClick={() => onChange(v)}
-          className={`flex-1 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-            view === v ? 'bg-[#16A34A] text-white' : 'text-[#6B7280] hover:bg-[#F9FAFB]'
+          className={`flex-1 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+            view === v ? 'bg-[#F4623A] text-white' : 'text-[#6B7280] hover:bg-[#F9FAFB]'
           }`}
         >
           {v === 'recipe' ? t('shopping.perRecipe') : t('shopping.global')}
@@ -148,20 +148,20 @@ function CheckRow({
       onClick={onToggle}
       aria-pressed={checked}
       aria-label={`${checked ? 'Desmarcar' : 'Marcar'} ${label}`}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/40 focus:outline-none active:bg-black/5 transition-colors"
+      className="w-full flex items-center gap-3 px-4 py-2.5 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F4623A]/40 focus:outline-none active:bg-black/5 transition-colors"
     >
       <span
         aria-hidden="true"
         className={`shrink-0 w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
           checked
-            ? 'bg-[#16A34A] border-[#16A34A]'
+            ? 'bg-[#F4623A] border-[#F4623A]'
             : partial
-            ? 'bg-[#dcfce7] border-[#16A34A]'
+            ? 'bg-[#FEE9E1] border-[#F4623A]'
             : 'border-[#D1D5DB]'
         }`}
       >
         {checked && <Check size={11} className="text-white" strokeWidth={3} aria-hidden="true" />}
-        {partial && !checked && <div className="w-2 h-0.5 bg-[#16A34A] rounded-full" />}
+        {partial && !checked && <div className="w-2 h-0.5 bg-[#F4623A] rounded-full" />}
       </span>
       <span
         className={`flex-1 text-sm transition-colors item-text ${
@@ -208,12 +208,12 @@ function CategoryPicker({
           <button
             key={cat}
             onClick={() => onSelect(cat)}
-            className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#F9FAFB] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-              cat === current ? 'font-semibold text-[#16A34A]' : 'text-[#1A1A1A]'
+            className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#F9FAFB] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+              cat === current ? 'font-semibold text-[#F4623A]' : 'text-[#1A1A1A]'
             }`}
           >
             {cat}
-            {cat === current && <span className="ml-2 text-xs text-[#16A34A]">✓</span>}
+            {cat === current && <span className="ml-2 text-xs text-[#F4623A]">✓</span>}
           </button>
         ))}
       </div>
@@ -431,7 +431,7 @@ function ShareButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleShare}
-      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#E5E7EB] bg-white text-xs font-medium text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
     >
       <Share2 size={13} aria-hidden="true" />
       {copied ? 'Copiado!' : 'Partilhar'}
@@ -471,7 +471,7 @@ function GlobalView({
           <div key={category} className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
             <button
               onClick={() => setEditingCategory({ name: category, current: category })}
-              className="w-full text-left px-4 py-2.5 border-b border-[#F3F4F6] flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-full text-left px-4 py-2.5 border-b border-[#F3F4F6] flex items-center justify-between group focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               <span className="text-xs font-semibold text-[#6B7280] uppercase tracking-wide">
                 {category}
@@ -576,12 +576,12 @@ function AddCustomItemForm({
           onChange={(e) => handleLabelChange(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder={t('shopping.itemName')}
-          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+          className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
         />
         <button
           onClick={onClose}
           aria-label="Cancelar"
-          className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+          className="text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
         >
           <X size={18} aria-hidden="true" />
         </button>
@@ -590,14 +590,14 @@ function AddCustomItemForm({
       <div className="flex items-center gap-2">
         <button
           onClick={() => setShowCatPicker(true)}
-          className="flex-1 text-left text-xs px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          className="flex-1 text-left text-xs px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A] hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
           {category ?? t('shopping.categoryPlaceholder')}
         </button>
         <button
           onClick={handleSubmit}
           disabled={!label.trim()}
-          className="px-4 py-1.5 rounded-xl bg-[#16A34A] text-white text-xs font-semibold disabled:opacity-40 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          className="px-4 py-1.5 rounded-xl bg-[#F4623A] text-white text-xs font-semibold disabled:opacity-40 hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
           {t('shopping.add')}
         </button>
@@ -825,7 +825,7 @@ function ShoppingPage() {
               ) : (
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                  className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                 >
                   <Plus size={16} aria-hidden="true" />
                   {t('shopping.addExtra')}
@@ -840,7 +840,7 @@ function ShoppingPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirmClearChecks(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {t('common.cancel')}
                     </button>
@@ -854,7 +854,7 @@ function ShoppingPage() {
                 ) : (
                   <button
                     onClick={() => setConfirmClearChecks(true)}
-                    className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                   >
                     {t('shopping.clearChecks')}
                   </button>
@@ -865,7 +865,7 @@ function ShoppingPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => setConfirmClearCustom(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {t('common.cancel')}
                     </button>

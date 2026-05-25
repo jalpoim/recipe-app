@@ -55,7 +55,7 @@ function OnboardingPage() {
         {([1, 2] as const).map((s) => (
           <div
             key={s}
-            className={`h-1.5 rounded-full transition-all ${s === step ? 'w-8 bg-[#16A34A]' : s < step ? 'w-4 bg-[#86efac]' : 'w-4 bg-[#E5E7EB]'}`}
+            className={`h-1.5 rounded-full transition-all ${s === step ? 'w-8 bg-[#F4623A]' : s < step ? 'w-4 bg-[#86efac]' : 'w-4 bg-[#E5E7EB]'}`}
           />
         ))}
       </div>
@@ -70,9 +70,9 @@ function OnboardingPage() {
               <button
                 key={u}
                 onClick={() => setUnit(u)}
-                className={`w-full flex items-center justify-between rounded-2xl border-2 px-4 py-4 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                className={`w-full flex items-center justify-between rounded-2xl border-2 px-4 py-4 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   unit === u
-                    ? 'border-[#16A34A] bg-[#f0fdf4]'
+                    ? 'border-[#F4623A] bg-[#FFF5F2]'
                     : 'border-[#E5E7EB] bg-white hover:border-[#D1D5DB]'
                 }`}
               >
@@ -82,14 +82,14 @@ function OnboardingPage() {
                     {u === 'metric' ? 'g, ml, kg' : 'oz, lb, cups'}
                   </p>
                 </div>
-                {unit === u && <Check size={20} className="text-[#16A34A] shrink-0" />}
+                {unit === u && <Check size={20} className="text-[#F4623A] shrink-0" />}
               </button>
             ))}
           </div>
 
           <button
             onClick={() => setStep(2)}
-            className="mt-8 w-full rounded-2xl bg-[#16A34A] py-4 text-sm font-semibold text-white hover:bg-[#15803d] active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            className="mt-8 w-full rounded-2xl bg-[#F4623A] py-4 text-sm font-semibold text-white hover:bg-[#D94F2B] active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
             {t('onboarding.continue')}
           </button>
@@ -104,14 +104,14 @@ function OnboardingPage() {
               <button
                 key={value}
                 onClick={() => setDietMode(value)}
-                className={`w-full flex items-center justify-between rounded-2xl border-2 px-4 py-3.5 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                className={`w-full flex items-center justify-between rounded-2xl border-2 px-4 py-3.5 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   dietMode === value
-                    ? 'border-[#16A34A] bg-[#f0fdf4]'
+                    ? 'border-[#F4623A] bg-[#FFF5F2]'
                     : 'border-[#E5E7EB] bg-white hover:border-[#D1D5DB]'
                 }`}
               >
                 <span className="font-medium text-sm text-[#1A1A1A]">{t(labelKey)}</span>
-                {dietMode === value && <Check size={18} className="text-[#16A34A] shrink-0" />}
+                {dietMode === value && <Check size={18} className="text-[#F4623A] shrink-0" />}
               </button>
             ))}
           </div>
@@ -126,9 +126,9 @@ function OnboardingPage() {
                 <button
                   key={flag}
                   onClick={() => toggleIntolerance(flag)}
-                  className={`text-sm px-3.5 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                  className={`text-sm px-3.5 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                     active
-                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                      ? 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
                       : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
                   }`}
                 >
@@ -141,14 +141,14 @@ function OnboardingPage() {
           <div className="flex gap-3">
             <button
               onClick={() => setStep(1)}
-              className="flex-1 rounded-2xl border border-[#E5E7EB] py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="flex-1 rounded-2xl border border-[#E5E7EB] py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t('onboarding.back')}
             </button>
             <button
               onClick={finish}
               disabled={mutation.isPending}
-              className="flex-[2] rounded-2xl bg-[#16A34A] py-4 text-sm font-semibold text-white hover:bg-[#15803d] disabled:opacity-50 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="flex-[2] rounded-2xl bg-[#F4623A] py-4 text-sm font-semibold text-white hover:bg-[#D94F2B] disabled:opacity-50 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {mutation.isPending ? t('common.loading') : t('onboarding.finish')}
             </button>

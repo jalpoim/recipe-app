@@ -2,6 +2,13 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } 
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from 'lucide-react'
+
+const NAV_ICONS: Record<string, { active: string; inactive: string }> = {
+  library:    { active: '/icons/nav/recipes.png',  inactive: '/icons/nav/recipes.png' },
+  'my-recipes': { active: '/icons/nav/mine.png',   inactive: '/icons/nav/mine.png' },
+  plan:       { active: '/icons/nav/plan.png',     inactive: '/icons/nav/plan.png' },
+  shopping:   { active: '/icons/nav/list.png',     inactive: '/icons/nav/list.png' },
+}
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
@@ -73,7 +80,7 @@ function BottomNav() {
         {/* Sliding green indicator */}
         <div
           aria-hidden="true"
-          className="absolute top-0 left-0 h-0.5 bg-[#16A34A] transition-[transform] duration-200 ease-in-out motion-reduce:transition-none"
+          className="absolute top-0 left-0 h-0.5 bg-[#F4623A] transition-[transform] duration-200 ease-in-out motion-reduce:transition-none"
           style={{
             width: `${100 / tabs.length}%`,
             transform: `translateX(${Math.max(0, activeTabIndex) * 100}%)`,
@@ -97,25 +104,35 @@ function BottomNav() {
             )
           }
 
+          const navIcon = NAV_ICONS[tab.key]
           return (
             <Link
               key={tab.to}
               to={tab.to}
               onClick={() => handleTabPress(tab.to, tab.key)}
-              className={`relative flex flex-col items-center justify-center flex-1 py-2 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                isActive ? 'text-[#16A34A]' : 'text-[#9CA3AF] hover:text-[#6B7280]'
+              className={`relative flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                isActive ? 'text-[#F4623A]' : 'text-[#9CA3AF] hover:text-[#6B7280]'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >
               <div className="relative">
-                <Icon size={22} aria-hidden="true" />
+                {navIcon ? (
+                  <img
+                    src={navIcon.active}
+                    alt=""
+                    className={`w-7 h-7 rounded-lg object-cover transition-opacity ${isActive ? 'opacity-100' : 'opacity-40'}`}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Icon size={22} aria-hidden="true" />
+                )}
                 {'badge' in tab && (tab.badge ?? 0) > 0 && (
-                  <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
                     {(tab.badge ?? 0) > 99 ? '99+' : tab.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className={`text-[10px] font-medium ${isActive ? 'text-[#F4623A]' : 'text-[#9CA3AF]'}`}>{tab.label}</span>
             </Link>
           )
         })}
@@ -130,7 +147,7 @@ function TopProgressBar() {
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-0.5">
       <div
-        className={`h-full bg-[#16A34A] transition-all duration-300 ${
+        className={`h-full bg-[#F4623A] transition-all duration-300 ${
           isLoading ? 'opacity-100 animate-progress' : 'opacity-0 w-full'
         }`}
       />

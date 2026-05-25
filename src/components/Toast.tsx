@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastDisplay({ toast }: { toast: ToastState }) {
-  const bg = toast.variant === 'success' ? 'bg-[#16A34A]' : 'bg-[#DC2626]'
+  const bg = toast.variant === 'success' ? 'bg-[#F4623A]' : 'bg-[#DC2626]'
   return (
     <div
       aria-live="polite"

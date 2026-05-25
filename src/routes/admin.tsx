@@ -61,7 +61,7 @@ function RecipeCard({ recipe, onApprove, onReject, onTrust, approving, rejecting
           <button
             onClick={onApprove}
             disabled={approving || rejecting}
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#16A34A] text-white text-sm font-medium active:opacity-80 disabled:opacity-50 transition-opacity"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#F4623A] text-white text-sm font-medium active:opacity-80 disabled:opacity-50 transition-opacity"
           >
             <CheckCircle2 size={14} />
             {approving ? 'Approving…' : 'Approve'}

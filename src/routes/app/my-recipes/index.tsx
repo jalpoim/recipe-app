@@ -25,7 +25,7 @@ function pcalRatio(r: RecipeWithIngredients) {
 }
 
 function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#15803d] bg-[#dcfce7]'
+  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
   if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
   return 'text-[#DC2626] bg-[#fee2e2]'
 }
@@ -55,7 +55,7 @@ function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
         ) : (
           <div
             className="w-[60px] h-[60px] rounded-xl shrink-0"
-            style={{ background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
+            style={{ background: 'linear-gradient(135deg, #FEE9E1, #bbf7d0)' }}
             aria-hidden="true"
           />
         )}
@@ -175,7 +175,7 @@ function MyRecipesPage() {
           <Link
             to="/app/settings"
             aria-label={t('settings.title')}
-            className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
             <Settings size={16} aria-hidden="true" />
           </Link>
@@ -194,7 +194,7 @@ function MyRecipesPage() {
           ) : (
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shrink-0"
-              style={{ background: 'linear-gradient(135deg, #16A34A, #15803d)' }}
+              style={{ background: 'linear-gradient(135deg, #F4623A, #D94F2B)' }}
               aria-hidden="true"
             >
               {displayName.charAt(0).toUpperCase()}
@@ -207,7 +207,7 @@ function MyRecipesPage() {
           </div>
           <Link
             to="/app/settings"
-            className="shrink-0 text-xs font-medium text-[#16A34A] hover:underline focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="shrink-0 text-xs font-medium text-[#F4623A] hover:underline focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             {t('myRecipes.editProfile')}
           </Link>

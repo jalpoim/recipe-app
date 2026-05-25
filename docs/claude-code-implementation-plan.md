@@ -19,6 +19,7 @@ Before any Claude Code session, get these set up manually:
 5. **`pnpm` installed** (`npm install -g pnpm`). Faster than npm, better monorepo support if you ever need it.
 
 Have these values ready before starting Session 1:
+
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (for the seed script only, never ship to client)
@@ -64,6 +65,7 @@ When done, give me:
 ```
 
 **Verify before moving on:**
+
 - `pnpm dev` runs without errors
 - You can sign in with Google locally
 - You can sign in with magic link locally
@@ -184,6 +186,7 @@ When done, give me:
 ```
 
 **Verify before moving on:**
+
 - Migration applied cleanly in Supabase
 - All tables visible in Supabase Table Editor
 - RLS is enabled on every table (red shield icons in dashboard)
@@ -231,6 +234,7 @@ Give me the command to run it.
 ```
 
 **Verify before moving on:**
+
 - Script runs without errors
 - Supabase Table Editor shows 90 rows in `recipes` with `visibility='system'`
 - A spot-check on 2-3 recipes shows ingredients and steps populated with correct counts
@@ -245,17 +249,19 @@ Give me the command to run it.
 **Why now:** The translation tables affect every query. Retrofitting them after Sessions 4–6 are built is significantly more painful than doing it once here.
 
 **Prerequisites:**
+
 - `ANTHROPIC_API_KEY` added to `.env.local` (get from console.anthropic.com)
 - Supabase project accessible (service role key already in `.env.local` from Session 3)
 
 **Install before starting:**
+
 ```bash
 pnpm add i18next react-i18next i18next-browser-languagedetector @anthropic-ai/sdk
 ```
 
 **Prompt:**
 
-```
+````
 Add full i18n infrastructure to the meal prep app. No UI changes in this session — only schema, data migration, translation script, and i18next setup.
 
 ## 1. Schema migration (apply via Supabase SQL editor)
@@ -310,7 +316,7 @@ create policy "step_translations_select" on recipe_step_translations for select 
     where rs.id = step_id
     and (r.visibility = 'system' or r.owner_id = (select auth.uid()))
   ));
-```
+````
 
 ## 2. Migrate existing Portuguese content into translation tables
 
@@ -395,6 +401,7 @@ Make `fetchLibrary` and `fetchRecipeById` language-aware:
 ## 7. Set up i18next
 
 Create `src/i18n/index.ts` — configure i18next with:
+
 - `i18next-browser-languagedetector` for auto-detection (localStorage → browser language → fallback 'pt')
 - Supported languages: `['pt', 'en']`
 - Fallback: `'pt'`
@@ -406,17 +413,32 @@ Create `src/i18n/locales/pt/common.json` and `src/i18n/locales/en/common.json` w
 {
   "nav": { "recipes": "Receitas", "plan": "Plano", "list": "Lista" },
   "proteins": {
-    "chicken": "Frango", "salmon": "Salmão", "tuna": "Atum",
-    "turkey": "Peru", "cod": "Bacalhau", "eggs": "Ovos",
-    "beef": "Carne", "pork": "Porco", "whey": "Whey",
-    "tofu": "Tofu", "shrimp": "Camarão"
+    "chicken": "Frango",
+    "salmon": "Salmão",
+    "tuna": "Atum",
+    "turkey": "Peru",
+    "cod": "Bacalhau",
+    "eggs": "Ovos",
+    "beef": "Carne",
+    "pork": "Porco",
+    "whey": "Whey",
+    "tofu": "Tofu",
+    "shrimp": "Camarão"
   },
   "categories": {
-    "meat": "Talho/Peixaria", "produce": "Frutas/Legumes",
-    "dairy": "Lacticínios", "grains": "Mercearia", "other": "Outros"
+    "meat": "Talho/Peixaria",
+    "produce": "Frutas/Legumes",
+    "dairy": "Lacticínios",
+    "grains": "Mercearia",
+    "other": "Outros"
   },
   "filters": { "protein": "Proteína", "time": "Tempo", "calories": "Calorias" },
-  "actions": { "addToPlan": "Adicionar ao plano", "remove": "Remover", "replace": "Substituir", "clearFilters": "Limpar filtros" }
+  "actions": {
+    "addToPlan": "Adicionar ao plano",
+    "remove": "Remover",
+    "replace": "Substituir",
+    "clearFilters": "Limpar filtros"
+  }
 }
 ```
 
@@ -425,7 +447,8 @@ English version has the English equivalents. Keep keys identical across both fil
 Initialize i18next in `src/main.tsx` (or equivalent app entry point) before the React render.
 
 Do not change any UI components yet — the hook `useTranslation` will be adopted in Session 4 when the library UI is rebuilt.
-```
+
+````
 
 **Verify before moving on:**
 - `recipe_translations` has one `'pt'` row per recipe (90 rows)
@@ -448,7 +471,7 @@ Do not change any UI components yet — the hook `useTranslation` will be adopte
 **Install before starting:**
 ```bash
 pnpm add vaul
-```
+````
 
 **Prompt:**
 
@@ -517,6 +540,7 @@ Do not implement add-to-plan. Do not implement the cooking companion. Just brows
 ```
 
 **Verify before moving on:**
+
 - Library loads all 90 recipes
 - Search bar always visible, filters by name in real time
 - Tapping each category chip opens the bottom sheet
@@ -625,7 +649,8 @@ Do not implement the shopping list tab yet (Session 6). Do not implement the coo
 ```
 
 **Verify before moving on:**
-- Bottom nav visible on all /app/* pages, correct tab highlighted
+
+- Bottom nav visible on all /app/\* pages, correct tab highlighted
 - Plan tab badge updates in real time when recipes are added/removed
 - /app/plan with no plan auto-creates one
 - "Adicionar receita" empty state navigates to library
@@ -696,6 +721,7 @@ The Lista tab in the bottom nav is now active. No back button needed — use the
 ```
 
 **Verify before moving on:**
+
 - Lista tab in bottom nav now active and navigates correctly
 - Por receita view groups ingredients correctly under each recipe
 - Lista global groups by category, quantities summed correctly
@@ -739,6 +765,7 @@ Do not record cooking history or any "made this" state in v1. Just the UX.
 ```
 
 **Verify before moving on:**
+
 - Cooking mode opens from recipe detail
 - Steps navigate forward and back
 - Timers count down and beep at zero
@@ -792,6 +819,7 @@ When done, give me a checklist of things to test manually on a real mobile devic
 ```
 
 **Verify before declaring v1 done:**
+
 - "Add to Home Screen" on iOS Safari installs the app with the right icon
 - Same on Android Chrome
 - App launches in standalone mode (no browser chrome)
@@ -805,13 +833,14 @@ When done, give me a checklist of things to test manually on a real mobile devic
 **Goal:** Google OAuth, cross-device category override persistence, toast feedback on all mutations, and a 404 page. These are the four gaps identified after Session 8 that block confident daily use.
 
 **Prerequisites:**
+
 - Google OAuth credentials set up in Google Cloud Console (OAuth 2.0 client ID + secret)
 - Credentials added to Supabase Auth → Providers → Google
 - `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` already set in Vercel
 
 **Prompt:**
 
-```
+````
 Fix the four remaining gaps in the meal prep app before the 4-week test.
 
 ## 1. Google OAuth
@@ -873,7 +902,7 @@ create policy "user_category_overrides_all" on user_category_overrides
   for all to authenticated
   using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-```
+````
 
 ### Server functions (add to src/lib/supabase/shopping-queries.ts)
 
@@ -896,25 +925,31 @@ upsertCategoryOverride: createServerFn POST → input { ingredientName: string, 
 
 ## 4. 404 page
 
-Add a notFoundComponent to the root route in src/routes/__root.tsx:
+Add a notFoundComponent to the root route in src/routes/\_\_root.tsx:
 
 ```tsx
 function NotFound() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[#FAFAF8] px-4 text-center">
       <p className="text-5xl">🥗</p>
-      <h1 className="text-xl font-semibold text-[#1A1A1A]">Página não encontrada</h1>
+      <h1 className="text-xl font-semibold text-[#1A1A1A]">
+        Página não encontrada
+      </h1>
       <p className="text-sm text-[#6B7280]">Este endereço não existe.</p>
-      <a href="/app/library" className="mt-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white">
+      <a
+        href="/app/library"
+        className="mt-2 rounded-lg bg-[#16A34A] px-5 py-2.5 text-sm font-semibold text-white"
+      >
         Ir para as receitas
       </a>
     </div>
-  )
+  );
 }
 ```
 
 Pass it as `notFoundComponent: NotFound` on the root route options.
-```
+
+````
 
 **Verify before moving on:**
 - "Continuar com Google" button appears on sign-in page, redirects to Google, lands back at /app
@@ -1040,11 +1075,11 @@ create policy "shopping_check_state_all" on shopping_check_state for all to auth
         )
     )
   );
-```
+````
 
 **Prompt:**
 
-```
+````
 Implement the household feature for the meal prep app. All design decisions are locked — do not deviate.
 
 ## Design summary (locked)
@@ -1145,7 +1180,7 @@ if (pendingToken) {
     // Silently ignore — invite may be expired or already used
   }
 }
-```
+````
 
 ## 4. Update src/lib/supabase/plan-queries.ts — ensureActivePlan is household-aware
 
@@ -1154,27 +1189,32 @@ The ensureActivePlan function must return the household plan if the user is in a
 ```ts
 // Check for household membership first
 const { data: membership } = await supabase
-  .from('household_members')
-  .select('household_id')
-  .eq('user_id', user.id)
-  .maybeSingle()
+  .from("household_members")
+  .select("household_id")
+  .eq("user_id", user.id)
+  .maybeSingle();
 
 if (membership) {
   // Return the active household plan
   const { data: householdPlan } = await supabase
-    .from('plans')
-    .select('*')
-    .eq('household_id', membership.household_id)
-    .is('archived_at', null)
-    .maybeSingle()
-  if (householdPlan) return householdPlan as Plan
+    .from("plans")
+    .select("*")
+    .eq("household_id", membership.household_id)
+    .is("archived_at", null)
+    .maybeSingle();
+  if (householdPlan) return householdPlan as Plan;
   // If no active household plan exists, create one
   const { data, error } = await supabase
-    .from('plans')
-    .insert({ owner_id: user.id, household_id: membership.household_id, name: 'Current plan' })
-    .select().single()
-  if (error) throw new Error(error.message)
-  return data as Plan
+    .from("plans")
+    .insert({
+      owner_id: user.id,
+      household_id: membership.household_id,
+      name: "Current plan",
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Plan;
 }
 // Fall through to personal plan logic (existing code)
 ```
@@ -1188,10 +1228,12 @@ Add a "Household" section below the existing Language and Theme sections.
 ### State: no household
 
 Show:
+
 - A "Criar household" button (green, full-width rounded-2xl)
 - Below it, small muted text: "Cria um household para partilhar o plano com outra pessoa."
 
 On tap:
+
 - Call createHousehold()
 - Then call generateInviteToken()
 - Show the invite link in a copyable input: `${window.location.origin}/join/${token}`
@@ -1201,6 +1243,7 @@ On tap:
 ### State: in household, invite pending (no second member yet)
 
 Show:
+
 - Household name as a section title
 - "Aguardando membro..." with a muted subtitle
 - The invite link (same copyable input as above)
@@ -1209,6 +1252,7 @@ Show:
 ### State: in household, 2 members
 
 Show:
+
 - Household name as a section title
 - Both member emails (or name derived from email prefix) listed as small pills or rows
 - A "Sair do household" button (outlined, text-[#DC2626] border-[#DC2626]) with a confirmation dialog: "Ao sair, o plano partilhado será arquivado e ambos voltarão ao plano pessoal."
@@ -1225,7 +1269,8 @@ Add the HouseholdInvite type (Row/Insert/Update). Add household_invites to the D
 - The fetchActivePlanWithCount query used in the bottom nav badge already reads from the plans table via the updated RLS, so the badge will reflect the household plan automatically.
 - Do not implement household name editing — the auto-name is final in v1.
 - fetchInviteInfo must not require auth — it is called from the /join route before the user has signed in. The anon RLS policy on household_invites covers the token lookup. For fetching the inviter's name from auth.users, use the service role key.
-```
+
+````
 
 **Verify before moving on:**
 - Creating a household from Settings works; invite link is displayed and copyable
@@ -1314,7 +1359,7 @@ create index on cook_log(user_id);
 create index on cook_log(recipe_id);
 create index on cook_log(household_id) where household_id is not null;
 create index on cook_log(cooked_at desc);
-```
+````
 
 ### user_recipe_interactions
 
@@ -1376,6 +1421,7 @@ create policy "notif_prefs_all" on notification_preferences for all to authentic
 ## 2. Add types to src/types/db.ts
 
 Add full Row/Insert/Update + `Relationships: []` entries for:
+
 - `cook_log`
 - `user_recipe_interactions`
 - `notification_preferences`
@@ -1383,11 +1429,14 @@ Add full Row/Insert/Update + `Relationships: []` entries for:
 Add `user_tags: string[]` to the `recipes` Row, Insert, and Update types.
 
 Export convenience types:
+
 ```typescript
-export type CookLog = Database['public']['Tables']['cook_log']['Row']
-export type CookLogInsert = Database['public']['Tables']['cook_log']['Insert']
-export type UserRecipeInteraction = Database['public']['Tables']['user_recipe_interactions']['Row']
-export type NotificationPreferences = Database['public']['Tables']['notification_preferences']['Row']
+export type CookLog = Database["public"]["Tables"]["cook_log"]["Row"];
+export type CookLogInsert = Database["public"]["Tables"]["cook_log"]["Insert"];
+export type UserRecipeInteraction =
+  Database["public"]["Tables"]["user_recipe_interactions"]["Row"];
+export type NotificationPreferences =
+  Database["public"]["Tables"]["notification_preferences"]["Row"];
 ```
 
 ---
@@ -1437,21 +1486,21 @@ Update `archiveAndCreatePlan` in `src/lib/supabase/plan-queries.ts`:
 ```typescript
 // Before archiving, fetch all plan items
 const { data: items } = await supabase
-  .from('plan_items')
-  .select('recipe_id')
-  .eq('plan_id', planId)
+  .from("plan_items")
+  .select("recipe_id")
+  .eq("plan_id", planId);
 
 // Insert cook_log rows for each
 if (items && items.length > 0) {
-  await supabase.from('cook_log').insert(
+  await supabase.from("cook_log").insert(
     items.map((item) => ({
       user_id: user.id,
       recipe_id: item.recipe_id,
       household_id: plan.household_id ?? null,
-      source: 'planned',
+      source: "planned",
       cooked_at: new Date().toISOString(),
-    }))
-  )
+    })),
+  );
 }
 ```
 
@@ -1462,6 +1511,7 @@ if (items && items.length > 0) {
 Add a `tags` block to both `src/i18n/locales/pt/common.json` and `src/i18n/locales/en/common.json`:
 
 **pt:**
+
 ```json
 "tags": {
   "air-fryer": "Air Fryer",
@@ -1482,6 +1532,7 @@ Add a `tags` block to both `src/i18n/locales/pt/common.json` and `src/i18n/local
 ```
 
 **en:**
+
 ```json
 "tags": {
   "air-fryer": "Air Fryer",
@@ -1510,9 +1561,11 @@ Then update every place that renders a system tag verbatim — `RecipeCard` in `
 In `fetchLibrary`, add an aggregate subquery or a separate `fetchRecipeCookCounts` call to get total cook counts per recipe. Add a small muted count to `RecipeCard`:
 
 ```tsx
-{cookCount > 0 && (
-  <span className="text-[10px] text-[#9CA3AF]">{cookCount}× cooked</span>
-)}
+{
+  cookCount > 0 && (
+    <span className="text-[10px] text-[#9CA3AF]">{cookCount}× cooked</span>
+  );
+}
 ```
 
 Only show when `cookCount > 0`. This is the first surface of social proof and requires no user interaction — it populates automatically from the auto-log in step 5.
@@ -1534,44 +1587,44 @@ Only show when `cookCount > 0`. This is the first surface of social proof and re
 
 ### What is fully built and deployed
 
-| Area | Status | Notes |
-|------|--------|-------|
-| Auth (magic link + Google OAuth) | ✅ Done | |
-| Recipe library — browse, filter, search, sort | ✅ Done | Cursor-based pagination, 24/page, virtual list |
-| Library filters — Vaul bottom sheet | ✅ Done | Protein chips, time/cal caps, tags, ingredients |
-| Recipe detail — portion scaling, cooking companion | ✅ Done | Timer is global across steps (not per-step) |
-| Meal prep plan — add/replace/remove/clear | ✅ Done | |
-| Shopping list — per-recipe + global, checkboxes, pantry | ✅ Done | |
-| Households — shared plan + shopping, JWT-backed | ✅ Done | JWT refresh on invite accept fixed May 2026 |
-| Performance — JWT session, getSession(), household from app_metadata | ✅ Done | get_active_plan, get_recipe_cook_counts RPCs |
-| i18n — PT + EN, recipe/ingredient/step translations | ✅ Done | |
-| PWA manifest + icons | ✅ Done | |
-| Settings — profile, sign out, household management | ✅ Done | |
-| cook_log table + server functions | ✅ Done | "I Cooked This" button on detail page + cooking companion; personal cook count shown; logRecipeCooked called with source='manual' |
-| user_recipe_interactions table + server functions | ✅ Done | Like/save/hide wired; bookmark on card; Saved mode chip in library |
-| System tag translations (i18n keys) | ✅ Done | tags.* block in both locale files; FilterSheet + RecipeCard use t('tags.*') |
-| Tags section collapse in FilterSheet | ✅ Done | 6 tags shown by default, Ver mais/Ver menos toggle |
-| Filter chip visual feedback | ✅ Done | Section highlight on sheet open via sheetSection state |
-| PostHog analytics | ✅ Done | All events wired: recipe_viewed, filter_applied, search_performed, tab_switched, plan_archived, shopping_view_toggled, recipe_added_to_plan |
-| Cook counts on library cards | ✅ Done | fetchRecipeCookCounts RPC wired to RecipeCard |
-| Language switch cache fix | ✅ Done | lang added to filterKey so switching language triggers refetch (May 2026) |
-| Web interface guideline fixes | ✅ Done | motion-reduce on skeletons, aria-hidden+Escape on CookingMode sheet backdrop, overscroll-contain, variable shadow fix on tags.map, dark mode on sticky bottom bar (May 2026) |
-| CookingMode + StepTimer i18n | ✅ Done | cooking namespace added to both locales; all hardcoded PT strings replaced with t() calls (May 2026) |
-| Recipe creation UI | ✅ Done | create.tsx + edit route; image upload; estimate macros; publish toggle |
-| Recipe card — saves, curated mode, cooked sort | ✅ Done | Session 16 — bookmark on card, protein pastels, curated chip, replace flow removed |
-| Session 17 — recipe creation improvements | ✅ Done | Relaxed validation (steps + proteins optional); 19-slug protein list with Tier 1/2; custom proteins (user_proteins table); custom tags; ProteinPicker extracted to `src/components/ProteinPicker.tsx`; edit form at full parity with create form |
-| Session 17 — library UX simplification | ✅ Done | Header reduced to 2 rows: search+sort+filter icon (row 1), mode chips+Settings (row 2); title row and count row removed; Plan tab header replaced with compact meta row (count + calendar icon); Shopping tab header removed entirely |
-| Session 17 — multi-select mode | ✅ Done | `mode: LibraryMode` → `modes: LibraryMode[]`; "Todas" clears to empty array (show all); Minhas/Guardadas/Oficiais combinable via OR conditions in fetchLibrary; all callers updated |
-| Session 17 — scroll position preservation | ✅ Done | sessionStorage saves scroll on library unmount, `requestAnimationFrame` restore on back navigation once cached recipes render |
-| Session 17 — FilterSheet fixes | ✅ Done | Ingredientes moved back to last position (Proteína→Tempo→Calorias→Tags→Ingredientes); ingredient input auto-scrolls section into view on focus; protein "Ver mais" changed to dashed chip style |
-| Session 17 — React Compiler + React 19 | ✅ Done | `@rolldown/plugin-babel` + `reactCompilerPreset`; `useDeferredValue` on search input; `preconnect` to Supabase in root; scroll preservation via sessionStorage (React `<Activity>` deferred — experimental in TanStack Router) |
-| Session 17 — bug fixes | ✅ Done | "Created by" on own recipes (separate profiles query); P/Cal badge hidden when no macros; optional ingredient double-label; save icon tap target; FAB height; "See More" tag wiring; Mine filter invalidation on create; shopping dark mode |
-| Session 12 — Cook history calendar | ✅ Done | CookHistorySheet in plan.tsx; weekly dot strip; prev/next week navigation; grouped log by day; i18n wired |
-| Session 14 — Micro-animations | ✅ Done | Cooking step slide (step-enter-forward/back); I Cooked This bounce (cooked-success); all motion-safe guarded |
-| Session 15 — Cookbook image extraction | ✅ Done | extract-cookbook-images.ts; Cooking Abs (116 recipes, min_page=20); Joe x Fitness (50 recipes, Haiku vision dish selection); admin moderation UI at /admin |
-| Session 18 — Ingredient form v2 (unit pill) | ✅ Done | UnitSheet Vaul drawer; 19 controlled units in 3 sections; pill button replaces text input |
-| Session 19 — USDA ingredient database | ✅ Done | 3,852 system ingredients; Foundation Foods + SR Legacy; Haiku canonicalization; dietary flags; macros per 100g |
-| Session 20 — Unit conversion | ✅ Done | src/lib/units.ts; convertUnit() + formatQuantity(); metric↔imperial; smart rounding; Unicode fractions; wired to recipe detail scaleIngredient |
+| Area                                                                 | Status  | Notes                                                                                                                                                                                                                                            |
+| -------------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Auth (magic link + Google OAuth)                                     | ✅ Done |                                                                                                                                                                                                                                                  |
+| Recipe library — browse, filter, search, sort                        | ✅ Done | Cursor-based pagination, 24/page, virtual list                                                                                                                                                                                                   |
+| Library filters — Vaul bottom sheet                                  | ✅ Done | Protein chips, time/cal caps, tags, ingredients                                                                                                                                                                                                  |
+| Recipe detail — portion scaling, cooking companion                   | ✅ Done | Timer is global across steps (not per-step)                                                                                                                                                                                                      |
+| Meal prep plan — add/replace/remove/clear                            | ✅ Done |                                                                                                                                                                                                                                                  |
+| Shopping list — per-recipe + global, checkboxes, pantry              | ✅ Done |                                                                                                                                                                                                                                                  |
+| Households — shared plan + shopping, JWT-backed                      | ✅ Done | JWT refresh on invite accept fixed May 2026                                                                                                                                                                                                      |
+| Performance — JWT session, getSession(), household from app_metadata | ✅ Done | get_active_plan, get_recipe_cook_counts RPCs                                                                                                                                                                                                     |
+| i18n — PT + EN, recipe/ingredient/step translations                  | ✅ Done |                                                                                                                                                                                                                                                  |
+| PWA manifest + icons                                                 | ✅ Done |                                                                                                                                                                                                                                                  |
+| Settings — profile, sign out, household management                   | ✅ Done |                                                                                                                                                                                                                                                  |
+| cook_log table + server functions                                    | ✅ Done | "I Cooked This" button on detail page + cooking companion; personal cook count shown; logRecipeCooked called with source='manual'                                                                                                                |
+| user_recipe_interactions table + server functions                    | ✅ Done | Like/save/hide wired; bookmark on card; Saved mode chip in library                                                                                                                                                                               |
+| System tag translations (i18n keys)                                  | ✅ Done | tags._ block in both locale files; FilterSheet + RecipeCard use t('tags._')                                                                                                                                                                      |
+| Tags section collapse in FilterSheet                                 | ✅ Done | 6 tags shown by default, Ver mais/Ver menos toggle                                                                                                                                                                                               |
+| Filter chip visual feedback                                          | ✅ Done | Section highlight on sheet open via sheetSection state                                                                                                                                                                                           |
+| PostHog analytics                                                    | ✅ Done | All events wired: recipe_viewed, filter_applied, search_performed, tab_switched, plan_archived, shopping_view_toggled, recipe_added_to_plan                                                                                                      |
+| Cook counts on library cards                                         | ✅ Done | fetchRecipeCookCounts RPC wired to RecipeCard                                                                                                                                                                                                    |
+| Language switch cache fix                                            | ✅ Done | lang added to filterKey so switching language triggers refetch (May 2026)                                                                                                                                                                        |
+| Web interface guideline fixes                                        | ✅ Done | motion-reduce on skeletons, aria-hidden+Escape on CookingMode sheet backdrop, overscroll-contain, variable shadow fix on tags.map, dark mode on sticky bottom bar (May 2026)                                                                     |
+| CookingMode + StepTimer i18n                                         | ✅ Done | cooking namespace added to both locales; all hardcoded PT strings replaced with t() calls (May 2026)                                                                                                                                             |
+| Recipe creation UI                                                   | ✅ Done | create.tsx + edit route; image upload; estimate macros; publish toggle                                                                                                                                                                           |
+| Recipe card — saves, curated mode, cooked sort                       | ✅ Done | Session 16 — bookmark on card, protein pastels, curated chip, replace flow removed                                                                                                                                                               |
+| Session 17 — recipe creation improvements                            | ✅ Done | Relaxed validation (steps + proteins optional); 19-slug protein list with Tier 1/2; custom proteins (user_proteins table); custom tags; ProteinPicker extracted to `src/components/ProteinPicker.tsx`; edit form at full parity with create form |
+| Session 17 — library UX simplification                               | ✅ Done | Header reduced to 2 rows: search+sort+filter icon (row 1), mode chips+Settings (row 2); title row and count row removed; Plan tab header replaced with compact meta row (count + calendar icon); Shopping tab header removed entirely            |
+| Session 17 — multi-select mode                                       | ✅ Done | `mode: LibraryMode` → `modes: LibraryMode[]`; "Todas" clears to empty array (show all); Minhas/Guardadas/Oficiais combinable via OR conditions in fetchLibrary; all callers updated                                                              |
+| Session 17 — scroll position preservation                            | ✅ Done | sessionStorage saves scroll on library unmount, `requestAnimationFrame` restore on back navigation once cached recipes render                                                                                                                    |
+| Session 17 — FilterSheet fixes                                       | ✅ Done | Ingredientes moved back to last position (Proteína→Tempo→Calorias→Tags→Ingredientes); ingredient input auto-scrolls section into view on focus; protein "Ver mais" changed to dashed chip style                                                  |
+| Session 17 — React Compiler + React 19                               | ✅ Done | `@rolldown/plugin-babel` + `reactCompilerPreset`; `useDeferredValue` on search input; `preconnect` to Supabase in root; scroll preservation via sessionStorage (React `<Activity>` deferred — experimental in TanStack Router)                   |
+| Session 17 — bug fixes                                               | ✅ Done | "Created by" on own recipes (separate profiles query); P/Cal badge hidden when no macros; optional ingredient double-label; save icon tap target; FAB height; "See More" tag wiring; Mine filter invalidation on create; shopping dark mode      |
+| Session 12 — Cook history calendar                                   | ✅ Done | CookHistorySheet in plan.tsx; weekly dot strip; prev/next week navigation; grouped log by day; i18n wired                                                                                                                                        |
+| Session 14 — Micro-animations                                        | ✅ Done | Cooking step slide (step-enter-forward/back); I Cooked This bounce (cooked-success); all motion-safe guarded                                                                                                                                     |
+| Session 15 — Cookbook image extraction                               | ✅ Done | extract-cookbook-images.ts; Cooking Abs (116 recipes, min_page=20); Joe x Fitness (50 recipes, Haiku vision dish selection); admin moderation UI at /admin                                                                                       |
+| Session 18 — Ingredient form v2 (unit pill)                          | ✅ Done | UnitSheet Vaul drawer; 19 controlled units in 3 sections; pill button replaces text input                                                                                                                                                        |
+| Session 19 — USDA ingredient database                                | ✅ Done | 3,852 system ingredients; Foundation Foods + SR Legacy; Haiku canonicalization; dietary flags; macros per 100g                                                                                                                                   |
+| Session 20 — Unit conversion                                         | ✅ Done | src/lib/units.ts; convertUnit() + formatQuantity(); metric↔imperial; smart rounding; Unicode fractions; wired to recipe detail scaleIngredient                                                                                                   |
 
 ### Recipe library — what's in the DB
 
@@ -1616,13 +1669,17 @@ Tags are now clean: `fit`, `alto proteína`, `rápido`, `coreano`, `meal-prep`, 
 `Accept-Language` / `navigator.language` is the industry standard. It reflects the user's OS/browser language preference directly, is available on page load before any auth, and is infrastructure-agnostic (works the same on Vercel, Netlify, or any other host). No IP geolocation needed.
 
 ### Language detection
+
 `navigator.language` is already used by `i18next-browser-languagedetector` for initial language selection. The custom `detectLocaleFromBrowser()` in `src/lib/detect-locale.ts` reads the same value and returns `'en'` or `'pt'` (defaulting to `'pt'`).
 
 ### Measurement unit detection
+
 The country subtag from `Accept-Language` determines units (`en-US` → US → imperial, everything else → metric). Only US, Liberia (LR), and Myanmar (MM) use imperial — everyone else gets metric. This is fully portable and requires no third-party APIs.
 
 ### Bootstrap flow
+
 On first login per browser (`locale_bootstrapped_v1` localStorage key):
+
 1. Detect language + unit from `navigator.language`
 2. Apply language to i18next immediately
 3. Persist measurement unit to `profiles.measurement_unit` (fire-and-forget)
@@ -1631,12 +1688,15 @@ On first login per browser (`locale_bootstrapped_v1` localStorage key):
 This means a user's first experience is in their language with correct units, without any onboarding friction. Deliberate changes in Settings always win because the bootstrap flag prevents re-detection.
 
 ### Settings UI
+
 `/app/settings` now has a "Measurement units" section (Metric / Imperial) that reads from and writes to `profiles.measurement_unit`. Uses the same checkmark row pattern as Language and Theme.
 
 ### Schema change
+
 `profiles.measurement_unit text NOT NULL DEFAULT 'metric' CHECK (measurement_unit IN ('metric', 'imperial'))` — applied via MCP execute_sql (May 2026).
 
 ### Future: using measurement_unit in the app
+
 When displaying recipe ingredient quantities, check `profile.measurement_unit` and convert accordingly. All stored quantities are metric (grams, ml). The conversion layer should live in a utility function in `src/lib/units.ts` — not yet built, implement when the cooking companion or ingredient quantities UI needs it.
 
 ---
@@ -1654,11 +1714,33 @@ When `stepIndex` changes, the current step text slides out left/right and the ne
 ```css
 /* in styles.css */
 @media (prefers-reduced-motion: no-preference) {
-  .step-enter-forward  { animation: slide-in-right 220ms ease both; }
-  .step-enter-back     { animation: slide-in-left  220ms ease both; }
+  .step-enter-forward {
+    animation: slide-in-right 220ms ease both;
+  }
+  .step-enter-back {
+    animation: slide-in-left 220ms ease both;
+  }
 }
-@keyframes slide-in-right { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes slide-in-left  { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 ```
 
 ### 2. "I Cooked This" success bounce (`$recipeId.tsx`)
@@ -1667,12 +1749,20 @@ On successful log, the `CheckCircle2` icon briefly scales up then back: `scale(1
 
 ```css
 @media (prefers-reduced-motion: no-preference) {
-  .cooked-success { animation: cooked-bounce 300ms ease both; }
+  .cooked-success {
+    animation: cooked-bounce 300ms ease both;
+  }
 }
 @keyframes cooked-bounce {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.3); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 ```
 
@@ -1682,13 +1772,17 @@ When an item is checked, a green pseudo-element overlay grows `scaleX` from 0 to
 
 ```css
 @media (prefers-reduced-motion: no-preference) {
-  .item-checked { position: relative; }
+  .item-checked {
+    position: relative;
+  }
   .item-checked::after {
-    content: '';
+    content: "";
     position: absolute;
-    left: 0; top: 50%;
-    width: 100%; height: 1px;
-    background: #9CA3AF;
+    left: 0;
+    top: 50%;
+    width: 100%;
+    height: 1px;
+    background: #9ca3af;
     transform-origin: left;
     transform: scaleX(1);
     transition: transform 250ms ease;
@@ -1710,6 +1804,7 @@ A green pill underline or dot that slides horizontally between tabs rather than 
 ---
 
 ### Notes
+
 - All `transition` declarations must list explicit properties — never `transition: all`
 - Set `transform-origin` explicitly where needed (especially pseudo-elements)
 - Test with iOS "Reduce Motion" enabled — all animations must be absent when set
@@ -1717,6 +1812,7 @@ A green pill underline or dot that slides horizontally between tabs rather than 
 ---
 
 ### Verify before moving on
+
 - Cooking steps slide left/right on Next/Previous
 - "I Cooked This" icon bounces on tap
 - Shopping list items animate a strikethrough on check
@@ -1824,17 +1920,20 @@ alter table ingredients
 ```
 
 ### RLS on recipes (update existing policy)
+
 - System recipes (`owner_id IS NULL`): visible to all authenticated, regardless of `moderation_status`
 - User recipes (`owner_id = user_id`): always visible to owner
 - User public recipes (`visibility = 'public'`): visible only when `moderation_status = 'approved'`
 - Soft-deleted recipes: excluded from all queries (`deleted_at IS NULL`)
 
 ### Storage buckets
+
 - Create `recipe-images` (public)
 - Create `recipe-images-pending` (private)
 - Storage layout: `{bucketName}/{recipeId}/hero.jpg` and `{recipeId}/thumb.jpg`
 
 ### Image pipeline (Edge Function: `moderate-recipe-image`)
+
 ```
 Client uploads hero + thumb to recipe-images-pending
   → Storage webhook triggers Edge Function
@@ -1846,10 +1945,13 @@ Client uploads hero + thumb to recipe-images-pending
 ```
 
 ### PDF image extraction script
+
 ```bash
 pdfimages -j cookbook.pdf output-dir/
 ```
+
 Script: `scripts/extract-cookbook-images.ts`
+
 - Extracts images from Cooking Abs PDF (116 recipes) and Joe x Fitness PDF (~50 recipes)
 - Resizes to hero (1200px, 85%) + thumb (400×400px, 80%) using `@filencloud/browser-image-compression`
 - Uploads both variants to `recipe-images` bucket (bypasses moderation — system images are pre-approved)
@@ -1857,13 +1959,16 @@ Script: `scripts/extract-cookbook-images.ts`
 - Idempotent — skips recipes that already have `image_url` set
 
 ### Nutrition seed script
+
 Script: `scripts/seed-ingredient-nutrition.ts`
+
 - Downloads USDA FoodData Central Foundation Foods + SR Legacy datasets (free CSV)
 - Matches against existing `ingredients` rows by name
 - Populates `calories_per_100g`, `protein_per_100g`, `carbs_per_100g`, `fat_per_100g`
 - Idempotent — skips rows already populated
 
 ### Verify before moving on (13a)
+
 - All schema changes applied without errors
 - `profiles`, `user_recipe_interactions`, `recipe_reports` tables exist with correct RLS
 - Storage buckets `recipe-images` and `recipe-images-pending` created
@@ -1884,20 +1989,24 @@ Script: `scripts/seed-ingredient-nutrition.ts`
 ---
 
 ### Entry point
+
 - FAB: `+` button fixed bottom-right of library tab, above the bottom nav (`z-20`, `right-4 bottom-20`)
 - Tapping navigates to `/app/library/create` (new route, full page — not a modal)
 - FAB hidden on `/app/library/create` itself
 
 ### Form layout (`/app/library/create`)
+
 Single page, collapsible sections. Header: back chevron + "New recipe" title + "Save" button (disabled until required fields filled).
 
 **Required fields (always visible, above the fold):**
+
 - Recipe name (text input)
 - Proteins (multi-select chip row from existing slug list — min 1 required)
 - Ingredients section (always expanded — min 1 required)
 - Steps section (always expanded — min 1 required)
 
 **Optional sections (collapsed by default, tap header to expand):**
+
 - Image (upload picker + preview)
 - Time — "Total time (min)" number input
 - Tags (taxonomy sections: Method, Cuisine, Diet, Meal Type, Context — multi-select chips)
@@ -1907,43 +2016,53 @@ Single page, collapsible sections. Header: back chevron + "New recipe" title + "
 **Servings:** always visible below recipe name. Number input, default 1. Required.
 
 ### Ingredient rows
+
 Each row: `[ingredient combobox] [qty input] [unit selector] [× remove]`
+
 - Combobox searches `ingredients` table; shows top 5 matches as dropdown
 - Selecting a match sets `ingredient_id` and auto-fills default unit
 - No match → free text; `ingredient_id = null`; included in Haiku estimation batch
 - "Add ingredient" button appends a new empty row
 
 ### Step rows
+
 Each row: numbered label + textarea
+
 - "Add step" button appends a new row; steps auto-numbered
 - No drag-to-reorder in v1
 
 ### Macros section
+
 - Shows 4 number inputs: Calories, Protein, Carbs, Fat (all optional)
 - "Estimate macros" button — calls Claude Haiku once for all free-text ingredients; populates inputs with estimates; user can edit before saving
 - Matched USDA ingredients contribute automatically; only unmatched go to Haiku
 - Macro calculation: `macros_total = true` always for user-created recipes (totals / servings for per-serving display)
 
 ### Publish toggle
+
 - "Share with community" toggle (default OFF)
 - When ON: saving submits to moderation queue (`moderation_status = 'pending_review'`)
 - After creation, owner can tap "Make public" on detail page at any time
 - Username confirmation sheet on first publish: "Your recipe will be published as **[username]** — want to change this?" with edit field
 
 ### Save behaviour
+
 - Recipe saved as `visibility = 'private'` first regardless of toggle
 - If toggle ON: also sets `visibility = 'public'` + triggers moderation flow
 - On success: navigate to `/app/library/:recipeId`
 
 ### Edit flow (from detail page)
+
 - "Edit" button visible only to recipe owner on detail page
 - Navigates to `/app/library/:recipeId/edit` — same form, pre-populated
 - Saving a public recipe re-sets `moderation_status = 'pending_review'`; recipe hidden from public library during re-moderation; owner's private copy always accessible
 
 ### i18n
+
 - Recipe name, ingredient names, step text stored in `recipe_translations`, `recipe_ingredient_translations`, `recipe_step_translations` with `language = current i18n language`
 
 ### Verify before moving on (13b)
+
 - FAB visible on library, hidden on create form
 - Required field validation prevents saving with empty name/proteins/ingredients/steps
 - Ingredient combobox shows matches from DB; free text accepted when no match
@@ -1987,41 +2106,49 @@ Each row: numbered label + textarea
 - 3–4 cards visible per screen
 
 ### Likes
+
 - Heart icon on recipe detail page. Toggling calls insert/delete on `user_recipe_interactions` type `'like'`
 - Like count shown on card (hidden when 0 or system recipe)
 - Works on ALL recipes — system and user-created
 - Like count column: materialised via a `like_count` column on `recipes` updated by a Postgres trigger on `user_recipe_interactions` insert/delete (avoids COUNT() on every card render)
 
 ### Saves
+
 - Bookmark icon on recipe detail page. Toggling calls insert/delete type `'save'`
 - Private — no count shown publicly
 - Accessible via "Saved" mode chip in library
 
 ### Hide
+
 - `type = 'hide'` in `user_recipe_interactions` — no UI in v1; feeds future recommendation filtering
 
 ### Library mode chips
+
 - Two chips at the start of the filter chip row: `Saved` and `Mine`
 - Mode toggles — change the dataset, not the filters. Full search + tag filtering applies within each mode
 - `Mine`: `owner_id = current user` (private + public, excludes `deleted_at IS NOT NULL`)
 - `Saved`: joined to `user_recipe_interactions` type `'save'` for current user
 
 ### Moderation status badge (owner-only)
+
 - Shown on recipe card and detail page header for the owner
 - States: "Pending review" (yellow) / "Rejected" (red). No badge when approved
 
 ### Popular sort
+
 - New sort option: "Popular" (by `like_count DESC`)
 - Default sort for the main library when no filters active
 - Added to existing sort sheet alongside P/Cal, Protein, Calories, Time
 
 ### Profile pages (`/app/profile/:username`)
+
 - Route: `/app/profile/$username` — accessible by tapping creator name on any card
 - Public content: display name, avatar, bio, grid of approved public recipes
 - Empty state: "No recipes published yet"
 - Settings → "Change username" links to profile edit sheet
 
 ### Verify before moving on (13c)
+
 - Recipe cards show thumbnails; fallback gradient renders when no image
 - Like button toggles correctly; like count updates in real time
 - Save button toggles; recipe appears/disappears from "Saved" mode
@@ -2074,6 +2201,7 @@ New component (inline or separate file). Fetches cook log via `useQuery({ queryK
 ```
 
 **Weekly strip:**
+
 - 7 columns (Mon–Sun), label + dot
 - Green filled dot (`bg-[#16A34A]`) = at least one entry on that day
 - Empty dot = no entries
@@ -2081,12 +2209,14 @@ New component (inline or separate file). Fetches cook log via `useQuery({ queryK
 - `← week` button decrements offset; hide or disable when no older entries exist
 
 **Scrollable log:**
+
 - Group `cook_log` entries by local date
 - For each group: date heading + recipe name chips/cards
 - Most recent first
 - Only show entries in the currently selected week
 
 **i18n keys to add:**
+
 ```json
 "cookHistory": {
   "title": "Cook History",
@@ -2140,6 +2270,7 @@ Sessions 10.5 is fully done. Schema and server functions for Session 11 are also
 **Proteins not required.** Remove the `validationProteins` check. Change the label from "Proteínas (mín. 1)" to "Proteínas". Recipes with no main protein source (yogurt sauce, chocolate syrup, calda de caramelo) are valid.
 
 Update i18n keys:
+
 - Remove `create.validationProteins` (or change text to "Select at least one protein for better filtering")
 - Update `create.proteinsLabel` to remove the "(mín. 1)" suffix
 
@@ -2149,31 +2280,32 @@ Update i18n keys:
 
 Replace the current 16-slug list with the following 19, based on Portuguese market research and fitness meal-prep usage. Remove `clams`, `squid`, and the generic `fish` catch-all. Add `sardine`, `hake`, `sea-bass`, `mackerel`, `octopus`, `lamb`. Rename the PT label for `beef` from "Carne" (ambiguous) to "Carne de Vaca".
 
-| Slug | PT label | EN label | Tier |
-|---|---|---|---|
-| `chicken` | Frango | Chicken | 1 — default visible |
-| `beef` | Carne de Vaca | Beef | 1 — default visible |
-| `pork` | Porco | Pork | 1 — default visible |
-| `salmon` | Salmão | Salmon | 1 — default visible |
-| `tuna` | Atum | Tuna | 1 — default visible |
-| `cod` | Bacalhau | Cod | 1 — default visible |
-| `eggs` | Ovos | Eggs | 1 — default visible |
-| `shrimp` | Camarão | Shrimp | 1 — default visible |
-| `turkey` | Peru | Turkey | 2 — behind Ver mais |
-| `lamb` | Borrego | Lamb | 2 — behind Ver mais |
-| `sardine` | Sardinha | Sardines | 2 — behind Ver mais |
-| `hake` | Pescada | Hake | 2 — behind Ver mais |
-| `sea-bream` | Dourada | Sea bream | 2 — behind Ver mais |
-| `sea-bass` | Robalo | Sea bass | 2 — behind Ver mais |
-| `mackerel` | Carapau | Mackerel | 2 — behind Ver mais |
-| `octopus` | Polvo | Octopus | 2 — behind Ver mais |
-| `tofu` | Tofu | Tofu | 2 — behind Ver mais |
-| `legumes` | Leguminosas | Legumes | 2 — behind Ver mais |
-| `whey` | Whey | Whey | 2 — behind Ver mais |
+| Slug        | PT label      | EN label  | Tier                |
+| ----------- | ------------- | --------- | ------------------- |
+| `chicken`   | Frango        | Chicken   | 1 — default visible |
+| `beef`      | Carne de Vaca | Beef      | 1 — default visible |
+| `pork`      | Porco         | Pork      | 1 — default visible |
+| `salmon`    | Salmão        | Salmon    | 1 — default visible |
+| `tuna`      | Atum          | Tuna      | 1 — default visible |
+| `cod`       | Bacalhau      | Cod       | 1 — default visible |
+| `eggs`      | Ovos          | Eggs      | 1 — default visible |
+| `shrimp`    | Camarão       | Shrimp    | 1 — default visible |
+| `turkey`    | Peru          | Turkey    | 2 — behind Ver mais |
+| `lamb`      | Borrego       | Lamb      | 2 — behind Ver mais |
+| `sardine`   | Sardinha      | Sardines  | 2 — behind Ver mais |
+| `hake`      | Pescada       | Hake      | 2 — behind Ver mais |
+| `sea-bream` | Dourada       | Sea bream | 2 — behind Ver mais |
+| `sea-bass`  | Robalo        | Sea bass  | 2 — behind Ver mais |
+| `mackerel`  | Carapau       | Mackerel  | 2 — behind Ver mais |
+| `octopus`   | Polvo         | Octopus   | 2 — behind Ver mais |
+| `tofu`      | Tofu          | Tofu      | 2 — behind Ver mais |
+| `legumes`   | Leguminosas   | Legumes   | 2 — behind Ver mais |
+| `whey`      | Whey          | Whey      | 2 — behind Ver mais |
 
 **Remove from locale files and DB:** `clams`, `squid`, `fish` (generic catch-all — replaced by specific slugs above).
 
 **Show more / Show less toggle** (both in `create.tsx` protein picker and in FilterSheet):
+
 - Show Tier 1 (8 chips) by default
 - `aria-expanded` on the toggle button; "Ver mais" / "Ver menos" label
 - State: local `useState(expanded)`, not persisted
@@ -2187,6 +2319,7 @@ Replace the current 16-slug list with the following 19, based on Portuguese mark
 Allow users to add a protein that's not in the system list.
 
 **Schema:**
+
 ```sql
 create table user_proteins (
   id           uuid primary key default gen_random_uuid(),
@@ -2204,6 +2337,7 @@ create policy "user_proteins_all" on user_proteins for all to authenticated
 ```
 
 **UX in the protein picker (create form):**
+
 - Below the protein chip grid, a small text input: "Adicionar proteína…"
 - On submit (Enter or + button): slug = lowercase kebab-case of input, display_name = input as-is
 - Inserted into `user_proteins`; chip immediately appears in the picker as selected
@@ -2220,6 +2354,7 @@ create policy "user_proteins_all" on user_proteins for all to authenticated
 The `create.tsx` tag section only shows system tags. Add free-text entry for custom tags.
 
 **UX:**
+
 - Below the system tag sections, a text input: "Adicionar tag…"
 - On Enter / + button: tag slug = lowercase kebab-case, added to the recipe's `tags[]` array
 - Custom tags rendered as chips with an × to remove, in a "Os meus tags" subsection
@@ -2272,8 +2407,26 @@ The cooking companion is being fully redesigned as a drawer-based mode on the re
 The only change applied in Session 17: **replace the horizontal step slide animation with a vertical one** (next step slides in from below, previous from above — consistent with the vertical sequence of the step list).
 
 ```css
-@keyframes slide-in-up   { from { opacity: 0; transform: translateY(24px); }  to { opacity: 1; transform: translateY(0); } }
-@keyframes slide-in-down { from { opacity: 0; transform: translateY(-24px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 ```
 
 Classes: `.step-enter-forward` → `slide-in-up`, `.step-enter-back` → `slide-in-down`. Wrapped in `@media (prefers-reduced-motion: no-preference)`.
@@ -2293,6 +2446,7 @@ When changing `portion_multiplier` on one plan item card, all other cards re-ren
 Recipe detail page should show `by [username]` below the recipe name for user-created recipes (both own and others'). Currently missing on own recipes.
 
 **Investigation steps:**
+
 1. Check `profiles` table — does a row exist for the current user? The auto-create trigger may not have run for existing users.
 2. Check `fetchRecipeById` — does it join to `profiles`? Add `profiles!recipes_owner_id_fkey(username, display_name)` to the select.
 3. Check the render condition — is `recipe.owner_id` null for own recipes (shouldn't be)?
@@ -2318,7 +2472,7 @@ pnpm add babel-plugin-react-compiler
 
 ```ts
 // vite.config.ts
-viteReact({ babel: { plugins: ['babel-plugin-react-compiler'] } })
+viteReact({ babel: { plugins: ["babel-plugin-react-compiler"] } });
 ```
 
 Run `npx react-compiler-healthcheck` first and fix any Rules of Hooks violations before enabling. Once the compiler is running, remove any existing `useMemo` / `useCallback` / `React.memo` that exist purely for render performance (keep ones at interop boundaries with non-React consumers).
@@ -2330,7 +2484,7 @@ Run `npx react-compiler-healthcheck` first and fix any Rules of Hooks violations
 In `index.tsx`, pipe the search input through `useDeferredValue` before it becomes a query key:
 
 ```tsx
-const deferredQ = useDeferredValue(localQ)
+const deferredQ = useDeferredValue(localQ);
 // use deferredQ in the queryKey instead of localQ
 ```
 
@@ -2341,9 +2495,9 @@ Pair with `placeholderData: keepPreviousData` already on the infinite query. Res
 In `src/routes/__root.tsx`, add to the root `<head>`:
 
 ```tsx
-import { preconnect } from 'react-dom'
+import { preconnect } from "react-dom";
 // inside component, before first render:
-preconnect('https://kgvycfrvxzkfhvuazzle.supabase.co')
+preconnect("https://kgvycfrvxzkfhvuazzle.supabase.co");
 ```
 
 This tells the browser to establish the TCP+TLS connection to Supabase before any JS fetch runs. Free latency reduction on initial load, one line.
@@ -2379,7 +2533,7 @@ Wrap each bottom tab's content in `<Activity mode={activeTab === 'x' ? 'visible'
 
 **Source:** User testing feedback (May 2026) — cooking mode is unused because the recipe detail page is preferred. Goal: make the recipe detail page itself the cooking companion, so users never have to choose between focus and safety.
 
-**Core insight:** Every existing cooking companion forces a choice between *focus* (one step, full screen) and *safety* (see all ingredients and steps at once). The solution is not a better step-by-step mode — it is transforming the recipe detail page in place, so both are available simultaneously.
+**Core insight:** Every existing cooking companion forces a choice between _focus_ (one step, full screen) and _safety_ (see all ingredients and steps at once). The solution is not a better step-by-step mode — it is transforming the recipe detail page in place, so both are available simultaneously.
 
 ---
 
@@ -2400,11 +2554,13 @@ The recipe detail page IS the pre-cook screen. No separate "prepare to cook" flo
 ### 2. What happens to each element when cooking mode activates
 
 **Hidden (collapse animation):**
+
 - Hero image — collapses height to 0, fades out simultaneously
 - Tags, P/Cal badge, macro grid — fade out with slight upward drift, staggered 30ms apart
 - Like / save / edit / "by [username]" buttons — fade out
 
 **Stays visible:**
+
 - Recipe name — scales down slightly and locks as a compact sticky header (View Transitions API shared element)
 - Servings + multiplier control — critical for scaling quantities mid-cook; stays interactive
 - Full ingredient list — fully scrollable; ingredients dim progressively as steps are completed
@@ -2417,6 +2573,7 @@ The recipe detail page IS the pre-cook screen. No separate "prepare to cook" flo
 ### 3. Bottom drawer — states and content
 
 **Peek state (default):**
+
 ```
 ────────────────────────────────
   ▔▔▔▔  (drag handle)
@@ -2427,6 +2584,7 @@ The recipe detail page IS the pre-cook screen. No separate "prepare to cook" flo
 ```
 
 **Expanded state (tap or drag up):**
+
 ```
 ────────────────────────────────
   Passo 4 / 11
@@ -2451,12 +2609,15 @@ Step text is parsed for time references ("2 minutos", "30 segundos", "deixa repo
 
 **Persistent timer badge (cross-step):**
 When a timer is running, a compact badge appears at the top of the drawer in both peek and expanded states:
+
 ```
 ⏱ 2:34 · Passo 3
 ```
+
 This directly solves the "which step is this timer from" problem. Multiple timers stack as multiple badges. Tapping a badge expands its detail (remaining time, which step, pause/reset).
 
 **Timer completion:**
+
 - Web Audio API beep (existing)
 - Concentric ring pulse animation radiates from the badge: `transform: scale(1→2)` + `opacity: 1→0`, 600ms, one cycle only
 
@@ -2477,51 +2638,59 @@ This is best-effort — ingredients that can't be matched to any step stay full 
 All animations use `transform` and `opacity` only (compositor-accelerated), except the hero height collapse which touches layout but runs only once per mode toggle. All wrapped in `@media (prefers-reduced-motion: no-preference)`.
 
 #### Cooking mode toggle (enter)
-| Element | Animation | Duration | Easing |
-|---|---|---|---|
-| Hero image | `opacity: 1→0` + `height: Xpx→0` simultaneously | 300ms | ease-out |
-| Tags / badges / buttons | `opacity: 1→0` + `translateY: 0→-8px`, staggered 30ms apart | 200ms | ease-out |
-| Recipe name | View Transitions shared element — scales down and repositions to compact header | 280ms | ease-in-out |
-| Bottom drawer | `translateY: 100%→0` with spring overshoot | 350ms | spring (cubic-bezier(0.34, 1.56, 0.64, 1)) |
+
+| Element                 | Animation                                                                       | Duration | Easing                                     |
+| ----------------------- | ------------------------------------------------------------------------------- | -------- | ------------------------------------------ |
+| Hero image              | `opacity: 1→0` + `height: Xpx→0` simultaneously                                 | 300ms    | ease-out                                   |
+| Tags / badges / buttons | `opacity: 1→0` + `translateY: 0→-8px`, staggered 30ms apart                     | 200ms    | ease-out                                   |
+| Recipe name             | View Transitions shared element — scales down and repositions to compact header | 280ms    | ease-in-out                                |
+| Bottom drawer           | `translateY: 100%→0` with spring overshoot                                      | 350ms    | spring (cubic-bezier(0.34, 1.56, 0.64, 1)) |
 
 #### Cooking mode toggle (exit) — reverse order
+
 Drawer slides down first (200ms), then metadata fades in (200ms), then hero expands (300ms).
 
 #### Step navigation
-| Element | Animation | Duration |
-|---|---|---|
-| Step text (next) | `translateY: 24px→0` + `opacity: 0→1` | 220ms ease |
-| Step text (previous) | `translateY: -24px→0` + `opacity: 0→1` | 220ms ease |
-| Step counter digits | Odometer roll — digits translate vertically like a mechanical counter | 180ms ease-in-out |
-| Progress bar | `scaleX` grows proportionally | 200ms ease |
-| Ingredient dimming | `opacity: 1→0.4` on matched ingredients | 200ms ease |
+
+| Element              | Animation                                                             | Duration          |
+| -------------------- | --------------------------------------------------------------------- | ----------------- |
+| Step text (next)     | `translateY: 24px→0` + `opacity: 0→1`                                 | 220ms ease        |
+| Step text (previous) | `translateY: -24px→0` + `opacity: 0→1`                                | 220ms ease        |
+| Step counter digits  | Odometer roll — digits translate vertically like a mechanical counter | 180ms ease-in-out |
+| Progress bar         | `scaleX` grows proportionally                                         | 200ms ease        |
+| Ingredient dimming   | `opacity: 1→0.4` on matched ingredients                               | 200ms ease        |
 
 #### Drawer expand / collapse
-| State | Animation |
-|---|---|
+
+| State       | Animation                                                                                                           |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
 | Peek → full | Height spring with slight overshoot; step counter fades out as full step text fades in (cross-fade, not sequential) |
-| Full → peek | Step text fades out first, then height springs down |
-| Drag handle | Subtle width pulse on first appearance to signal draggability |
+| Full → peek | Step text fades out first, then height springs down                                                                 |
+| Drag handle | Subtle width pulse on first appearance to signal draggability                                                       |
 
 #### Timer
-| Event | Animation |
-|---|---|
-| Inline time reference tap | Text flashes green background via `::after` pseudo-element, 300ms |
-| Countdown ring | `stroke-dashoffset` animates continuously — SVG circle, pure CSS |
-| Timer complete | Concentric ring pulse: `scale(1→2)` + `opacity(1→0)`, 600ms, one cycle |
-| Badge appearance | Slides in from right: `translateX(20px→0)` + `opacity: 0→1`, 200ms |
+
+| Event                     | Animation                                                              |
+| ------------------------- | ---------------------------------------------------------------------- |
+| Inline time reference tap | Text flashes green background via `::after` pseudo-element, 300ms      |
+| Countdown ring            | `stroke-dashoffset` animates continuously — SVG circle, pure CSS       |
+| Timer complete            | Concentric ring pulse: `scale(1→2)` + `opacity(1→0)`, 600ms, one cycle |
+| Badge appearance          | Slides in from right: `translateX(20px→0)` + `opacity: 0→1`, 200ms     |
 
 #### View Transitions API (recipe name shared element)
+
 Use `view-transition-name` on the recipe name element. The browser handles the shared element interpolation between the full-size name position and the compact sticky header position. Degrades to instant transition on unsupported browsers (~5% of users).
 
 ```css
-.recipe-title { view-transition-name: recipe-title; }
+.recipe-title {
+  view-transition-name: recipe-title;
+}
 ```
 
 ```ts
 document.startViewTransition(() => {
-  setCookingMode(true)
-})
+  setCookingMode(true);
+});
 ```
 
 ---
@@ -2531,6 +2700,7 @@ document.startViewTransition(() => {
 **Multiplier lock during cooking:** when the user is mid-cook and changes the serving multiplier, should ingredient quantities update live in the list, or should the multiplier be locked once cooking starts to avoid confusion mid-step?
 
 Options:
+
 - **Lock it** — safe, predictable, show a "locked" icon with a tap-to-unlock confirmation
 - **Live update** — flexible, but quantities changing while you're halfway through a step is disorienting
 - **Recommendation:** lock by default with a clear unlock gesture. Cooking is execution, not planning.
@@ -2596,6 +2766,7 @@ In the optional Image section that already exists in both forms:
 ### 3. Storage RLS
 
 Add a policy to `recipe-images` that allows authenticated users to upload to their own recipe paths:
+
 ```sql
 -- In Supabase dashboard → Storage → recipe-images → Policies
 -- INSERT: authenticated users can upload to any path (recipe ownership enforced by app logic)
@@ -2639,6 +2810,7 @@ In `RecipeCard` and the detail page, if `recipe.owner_id === currentUserId` and 
 ### 4. Admin approval workflow
 
 No UI needed. Admin approves a recipe by running in Supabase SQL editor:
+
 ```sql
 UPDATE recipes SET moderation_status = 'approved' WHERE id = '<recipeId>';
 ```
@@ -2663,12 +2835,14 @@ Document this in a `docs/admin.md` file so it's findable.
 ### 1. Ingredient aliases
 
 Check if `aliases text[]` column exists on the `ingredients` table:
+
 ```sql
 SELECT column_name FROM information_schema.columns
 WHERE table_name = 'ingredients' AND column_name = 'aliases';
 ```
 
 If missing, add it:
+
 ```sql
 ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS aliases text[] NOT NULL DEFAULT '{}';
 CREATE INDEX IF NOT EXISTS ingredients_aliases_gin ON ingredients USING gin(aliases);
@@ -2677,6 +2851,7 @@ CREATE INDEX IF NOT EXISTS ingredients_aliases_gin ON ingredients USING gin(alia
 Then run the existing script: `npx tsx scripts/generate-ingredient-aliases.ts`
 
 Update the ingredient autocomplete query in `searchIngredients` (in `src/lib/supabase/recipe-queries.ts`) to also match against aliases:
+
 ```ts
 // current: .ilike('name', `%${q}%`)
 // updated: check name OR any alias
@@ -2710,6 +2885,7 @@ Run with: `npx tsx scripts/seed-ingredient-nutrition.ts`
 ### Bugs — remaining open
 
 #### 15. Ingredient aliases
+
 - Add `aliases text[]` column (GIN indexed) to `ingredients` table
 - Write `scripts/generate-ingredient-aliases.ts`: runs all 184 ingredient names through Claude Haiku with a strict prompt that only accepts true synonyms (same ingredient, different name — no substitutes, no similar-but-different items). Outputs aliases directly to DB with no manual approval step.
 - Update ingredient autocomplete query: check `name ILIKE %term%` first, then `term ILIKE ANY(aliases)` as fallback
@@ -2740,12 +2916,14 @@ Run with: `npx tsx scripts/seed-ingredient-nutrition.ts`
 **Goal:** Populate recipe images for all 211 system recipes from the two cookbook PDFs, deploy the moderation Edge Function, and seed ingredient nutrition data from USDA. No UI changes.
 
 **Prerequisites:**
+
 - `pdfimages` installed locally (`brew install poppler`)
 - PDFs at: `~/Downloads/EBOOK PORTUGUES.pdf` (Cooking Abs, 116 recipes) and `~/Downloads/Joe x Fitness  COOKBOOK (2).pdf` (Joe x Fitness, 50 recipes)
 - `SUPABASE_SERVICE_ROLE_KEY` already in `.env.local`
 - `SIGHTENGINE_API_USER` and `SIGHTENGINE_API_SECRET` added to `.env.local` (get from sightengine.com)
 
 **Install before starting:**
+
 ```bash
 pnpm add @filencloud/browser-image-compression sharp
 ```
@@ -2821,16 +2999,18 @@ Configure the Storage webhook in Supabase dashboard: Storage → Webhooks → `r
 **Goal:** Replace the three-field ingredient row (qty text input + unit text input + name text input) in the recipe creation form with a cleaner layout: a compact `[200 g ▾]` pill on the left that opens a unit-selection bottom sheet, a number input for quantity, and the name field getting the remaining width. No more free-text unit entry — units come from a controlled vocabulary, enabling reliable unit conversion later.
 
 ### Schema / data
+
 No schema changes. This session is UI only.
 
 ### Unit vocabulary
+
 Grouped into three sections for the bottom sheet:
 
-| Section | Units |
-|---|---|
-| Metric | g, kg, ml, L |
-| Imperial | oz, lb, cup, tbsp, tsp, fl oz |
-| Count | unit, slice, clove, pinch, bunch, handful, sheet, can, sachet |
+| Section  | Units                                                         |
+| -------- | ------------------------------------------------------------- |
+| Metric   | g, kg, ml, L                                                  |
+| Imperial | oz, lb, cup, tbsp, tsp, fl oz                                 |
+| Count    | unit, slice, clove, pinch, bunch, handful, sheet, can, sachet |
 
 Default unit when none pre-filled: `g`.
 
@@ -2844,6 +3024,7 @@ Replace the `IngredientCombobox` row layout:
 - **Remove button**: keep as-is
 
 `UnitSheet` component (Vaul drawer, same pattern as `SortSheet`):
+
 - Three labeled sections: Metric · Imperial · Count
 - Each unit is a full-width tappable row, checkmark on the selected one
 - Tapping a unit closes the sheet and updates the field
@@ -2854,6 +3035,7 @@ Replace the `IngredientCombobox` row layout:
 Also fix: the remove button on ingredient rows uses `hover:bg-[#fee2e2]` / `hover:text-[#DC2626]` — replace with `active:` variants (same iOS Safari stuck-hover fix applied to cook history this session).
 
 ### Verify before moving on
+
 - Creating a recipe: tapping the unit pill opens a sheet with three grouped sections
 - Selecting a unit from the sheet closes it and updates the pill label
 - Name field has visible placeholder text on a real device (375px width)
@@ -2881,12 +3063,14 @@ USDA SR Legacy contains 7,793 entries but many are redundant variations, branded
 This produces ~1,200–1,500 USDA-sourced canonical ingredients plus ~8,000–10,000 Haiku-generated global ingredients, totalling ~10,000–12,000 unique, searchable entries.
 
 The JSON files are already downloaded and located at `docs/usda/` (gitignored). The relevant files:
+
 - `FoodData_Central_foundation_food_json_2026-04-30.json` — 395 items, highest quality, April 2026. **Primary source.**
 - `FoodData_Central_sr_legacy_food_json_2018-04.json` — 7,793 items, broader coverage. **Gap-fill source.**
 - `FoodData_Central_branded_food_json_2026-04-30.json` — 3.1GB, branded products. **Do not import** — too large and wrong scope. Keep for future selective lookup if needed.
 - `surveyDownload 2.json` — FNDDS dietary survey data. **Do not import** — wrong scope.
 
 Macro nutrient IDs (per 100g, confirmed from data inspection):
+
 - `1008` = Energy (kcal) = `calories_per_100g`
 - `1003` = Protein (g) = `protein_per_100g`
 - `1005` = Carbohydrate (g) = `carbs_per_100g`
@@ -2912,6 +3096,7 @@ ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS classification_source text   DE
 **Step 1 — Category filter**
 
 Drop all USDA entries whose `foodCategory.description` matches any of these — they contain nothing useful for home cooking recipes:
+
 - "Baby Foods"
 - "Fast Foods"
 - "Restaurant Foods"
@@ -2928,6 +3113,7 @@ After filtering: ~2,500–3,000 USDA entries remain.
 **Step 2 — Deterministic pre-processing (code, no AI)**
 
 Before sending to Haiku, strip the following patterns from each USDA description via regex:
+
 - Quality/grade: `, choice`, `, select`, `, prime`, `, grade A`, `, NFS`
 - Trim level: `separable lean only`, `separable lean and fat`, `trimmed to \d+["/]+ fat`
 - Cooking state (will be handled by keeping raw): `, cooked, [a-z, ]+`, `, raw` (strip suffix — the canonical form is already raw)
@@ -3034,6 +3220,7 @@ Return JSON array: [{ "usda_description": "...", "canonical_name": "...", "varia
 **Step 4 — Deduplicate by `canonical_full`**
 
 Group pre-processed USDA entries by their `canonical_full` value. For each group, select macro values from the most representative entry:
+
 - Prefer `raw` over `cooked`
 - Prefer `plain` / `unflavored` over flavored
 - `canonical_full` values that differ (e.g. "Greek yogurt, nonfat" vs "Greek yogurt, whole milk") are different groups — never merge across them
@@ -3044,18 +3231,18 @@ Discard other entries within each group. Expected output: ~2,000–2,500 canonic
 
 For each canonical ingredient, extract macros using nutrient IDs above, derive `dietary_flags` from USDA food category:
 
-| USDA food category contains | dietary_flags |
-|---|---|
-| "Beef Products", "Pork Products", "Lamb, Veal, and Game" | `['meat']` |
-| "Poultry Products" | `['poultry']` |
-| "Finfish" | `['fish']` |
-| "Shellfish", "Crustacean", "Mollusks" | `['shellfish']` |
-| "Dairy and Egg Products" (non-egg items) | `['dairy']` |
-| "Dairy and Egg Products" (egg items — description contains "egg") | `['egg']` |
-| "Cereal Grains and Pasta", "Baked Products" (wheat-based) | `['gluten']` |
-| "Nut and Seed Products" (non-peanut, non-sesame) | `['tree_nut']` |
-| "Legumes" (peanut items — description contains "peanut") | `['peanut']` |
-| "Legumes" (soy items — description contains "soy" or "tofu" or "edamame") | `['soy']` |
+| USDA food category contains                                               | dietary_flags   |
+| ------------------------------------------------------------------------- | --------------- |
+| "Beef Products", "Pork Products", "Lamb, Veal, and Game"                  | `['meat']`      |
+| "Poultry Products"                                                        | `['poultry']`   |
+| "Finfish"                                                                 | `['fish']`      |
+| "Shellfish", "Crustacean", "Mollusks"                                     | `['shellfish']` |
+| "Dairy and Egg Products" (non-egg items)                                  | `['dairy']`     |
+| "Dairy and Egg Products" (egg items — description contains "egg")         | `['egg']`       |
+| "Cereal Grains and Pasta", "Baked Products" (wheat-based)                 | `['gluten']`    |
+| "Nut and Seed Products" (non-peanut, non-sesame)                          | `['tree_nut']`  |
+| "Legumes" (peanut items — description contains "peanut")                  | `['peanut']`    |
+| "Legumes" (soy items — description contains "soy" or "tofu" or "edamame") | `['soy']`       |
 
 Set `classification_source = 'usda'`.
 
@@ -3072,6 +3259,7 @@ Run after the USDA import. Three tasks:
 3. **Global cuisine and specialty expansion** — generate ingredients not present after the USDA import. Run separate batches per category. Set `classification_source = 'ai'`. Batch 20 new ingredients per Haiku call.
 
 Categories to generate (each a separate batch run):
+
 - Portuguese/Iberian staples (bacalhau, chouriço, presunto, piri piri, berbere)
 - West African produce (egusi, plantain varieties, fufu flours, moringa)
 - Southeast Asian pantry (fish sauce, shrimp paste, galangal, kaffir lime leaves, pandan)
@@ -3086,6 +3274,7 @@ Categories to generate (each a separate batch run):
 - Specialty cooking wines and vinegars (mirin, sake, Shaoxing wine, balsamic vinegar reduction, sherry vinegar)
 
 Haiku prompt for new ingredients:
+
 ```
 Generate a JSON array of real cooking ingredients for [category]. Each entry:
 { name_en, name_pt, dietary_flags (only from: meat/poultry/fish/shellfish/dairy/egg/honey/gluten/tree_nut/peanut/soy/sesame), default_unit, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
@@ -3105,11 +3294,13 @@ Rules:
 When a user saves a recipe and a typed ingredient doesn't fuzzy-match anything in the database (Levenshtein distance > threshold, or no match in `name ILIKE %term%` or `aliases`), call Haiku to classify it and insert as a new row with `classification_source = 'ai'`. Rate limit: max 20 new unrecognized ingredient classifications per user per day.
 
 ### Verify before moving on
+
 - `SELECT COUNT(*) FROM ingredients` → 10,000+
 - `SELECT COUNT(*) FROM ingredients WHERE calories_per_100g IS NOT NULL` → >80% of rows
 - `SELECT COUNT(*) FROM ingredients WHERE 'dairy' = ANY(dietary_flags)` → several hundred rows
 
 **Deduplication checks — confirm the canonical approach worked:**
+
 - `SELECT name FROM ingredients WHERE name ILIKE '%yogurt%' ORDER BY name` → fat variants present (Greek yogurt nonfat, Greek yogurt low-fat, Greek yogurt whole milk, plain yogurt) but no branded or baby food entries
 - `SELECT name FROM ingredients WHERE name ILIKE '%chicken%' ORDER BY name` → cuts only (chicken breast, chicken thigh, chicken drumstick, chicken wing, ground chicken) — no restaurant entries
 - `SELECT name FROM ingredients WHERE name ILIKE '%tuna%' ORDER BY name` → "tuna", "canned tuna in water", "canned tuna in oil" present as distinct entries
@@ -3130,6 +3321,7 @@ When a user saves a recipe and a typed ingredient doesn't fuzzy-match anything i
 - `SELECT * FROM ingredients WHERE name ILIKE '%tamari%'` → present, `soy` flag set, note gluten-free
 
 **Macro spot-checks (verify canonical approach produced accurate values):**
+
 - `chicken breast`: ~165 kcal, ~31g protein, ~0g carbs, ~3.6g fat per 100g
 - `egg white`: ~52 kcal, ~11g protein, ~0.7g carbs, ~0.2g fat per 100g
 - `egg yolk`: ~322 kcal, ~16g protein, ~4g carbs, ~27g fat per 100g
@@ -3150,21 +3342,27 @@ When a user saves a recipe and a typed ingredient doesn't fuzzy-match anything i
 Add a utility `src/lib/units.ts`:
 
 ```ts
-type MetricUnit = 'g' | 'kg' | 'ml' | 'L'
-type ImperialUnit = 'oz' | 'lb' | 'cup' | 'tbsp' | 'tsp' | 'fl oz'
-type UnitKind = 'mass' | 'volume' | 'count' | 'unknown'
+type MetricUnit = "g" | "kg" | "ml" | "L";
+type ImperialUnit = "oz" | "lb" | "cup" | "tbsp" | "tsp" | "fl oz";
+type UnitKind = "mass" | "volume" | "count" | "unknown";
 
 // Returns converted value + display unit, or original if not convertible
-function convertUnit(value: number, unit: string, toSystem: 'metric' | 'imperial'): { value: number; unit: string }
+function convertUnit(
+  value: number,
+  unit: string,
+  toSystem: "metric" | "imperial",
+): { value: number; unit: string };
 ```
 
 Conversion factors (metric → imperial):
+
 - `g` → `oz`: × 0.035274
 - `kg` → `lb`: × 2.20462
 - `ml` → `fl oz`: × 0.033814
 - `L` → `cups`: × 4.22675
 
 **Smart rounding rules (imperial output):**
+
 - `oz`: round to nearest 0.25 if < 4oz, else nearest 0.5
 - `lb`: round to nearest 0.25
 - `fl oz`: round to nearest 0.5
@@ -3186,6 +3384,7 @@ The same function handles both directions. An imperial user creating a recipe wi
 4. **Plan page ingredient display** — if/when ingredient quantities appear in plan summary, apply the same conversion.
 
 ### Verify before moving on
+
 - Recipe with `200g chicken` → imperial user sees `7 oz`
 - Recipe with `500ml stock` → imperial user sees `2 cups` (not `16.9 fl oz`)
 - Recipe with `1 clove garlic` → both users see `1 clove`
@@ -3222,12 +3421,12 @@ Enable RLS on `user_ingredient_exclusions`: users can only read/write their own 
 
 ### Dietary mode → excluded flags mapping
 
-| Mode | Excluded flags |
-|---|---|
-| vegetarian | meat, poultry, fish, shellfish |
-| vegan | meat, poultry, fish, shellfish, dairy, egg, honey |
-| pescatarian | meat, poultry |
-| none | (nothing excluded by mode) |
+| Mode        | Excluded flags                                    |
+| ----------- | ------------------------------------------------- |
+| vegetarian  | meat, poultry, fish, shellfish                    |
+| vegan       | meat, poultry, fish, shellfish, dairy, egg, honey |
+| pescatarian | meat, poultry                                     |
+| none        | (nothing excluded by mode)                        |
 
 At query time: combine mode flags + intolerance flags into a single exclusion set. A recipe is excluded if **any** of its ingredients has **any** flag in the exclusion set.
 
@@ -3236,6 +3435,7 @@ At query time: combine mode flags + intolerance flags into a single exclusion se
 Accept two new optional parameters: `excludedFlags: string[]` and `excludedIngredientIds: string[]`.
 
 Exclusion logic (add to the existing query):
+
 ```sql
 -- Exclude recipes where any ingredient has an excluded flag
 AND NOT EXISTS (
@@ -3258,7 +3458,7 @@ The exclusion is computed in the server function from the user's profile. Not pa
 
 Add a **Diet** section at the top of the filter sheet, above Proteins. Shows the user's active dietary preferences as pre-applied chip selections (same style as protein chips). User can deselect them for this session — store session overrides in URL search params (`dietOverride: string[]`). A "from your preferences" label in small muted text below the chips explains why they're pre-selected.
 
-If the user has dietary preferences and at least one recipe is hidden: show a one-time dismissible banner at the top of the library list: *"Some recipes are hidden based on your dietary preferences."* Store dismissal in `localStorage`. Never show again after dismissed.
+If the user has dietary preferences and at least one recipe is hidden: show a one-time dismissible banner at the top of the library list: _"Some recipes are hidden based on your dietary preferences."_ Store dismissal in `localStorage`. Never show again after dismissed.
 
 ### Recipe creation: auto-detected tags
 
@@ -3271,7 +3471,7 @@ After a recipe is saved, derive dietary suitability from its ingredients:
 
 **In the creation form:** after the user's ingredient list has at least 2 entries, compute the derived tags client-side and display them below the manual tag picker in a distinct row:
 
-> *Auto-detected: Gluten-free · Dairy-free* (each shown as a dismissible chip — tap × to remove)
+> _Auto-detected: Gluten-free · Dairy-free_ (each shown as a dismissible chip — tap × to remove)
 
 Deduplication: if the author already selected `sem-glúten`, don't show it in the auto-detected row. On save, merge author tags + accepted auto-detected tags into `recipes.tags[]`.
 
@@ -3327,6 +3527,7 @@ Text field backed by `ingredients` table search. Selected ingredients appear as 
 ```
 
 ### Verify before moving on
+
 - Vegan user: chicken recipes don't appear in library
 - Gluten-free user: pasta recipes don't appear
 - Filter sheet shows dietary preferences as pre-applied chips
@@ -3354,18 +3555,18 @@ Two-step flow, navigated with Next/Back. Progress dots at the top (2 dots). No b
 
 **Step 1 — Units**
 
-Heading: *"How do you measure ingredients?"*
+Heading: _"How do you measure ingredients?"_
 Two large cards, tap to select:
 
-- 🫙 **Metric** — *grams, millilitres, kilograms* (default selected)
-- 🥛 **Imperial** — *ounces, pounds, cups*
+- 🫙 **Metric** — _grams, millilitres, kilograms_ (default selected)
+- 🥛 **Imperial** — _ounces, pounds, cups_
 
 Next button → Step 2. Skip link bottom-right → completes onboarding with defaults.
 
 **Step 2 — Dietary preferences**
 
-Heading: *"Any dietary preferences?"*
-Subheading: *"We'll hide recipes that don't match."*
+Heading: _"Any dietary preferences?"_
+Subheading: _"We'll hide recipes that don't match."_
 
 Single-select pill row for diet mode: None (default) · Vegetarian · Vegan · Pescatarian
 
@@ -3373,7 +3574,7 @@ Multi-select chip grid for common intolerances (show top 6 only — no "See more
 Gluten · Dairy · Eggs · Nuts · Shellfish · Soy
 
 Below the chips, in small muted text:
-*"More dietary and allergy options available in Settings →"* (tappable, links to Settings after onboarding completes)
+_"More dietary and allergy options available in Settings →"_ (tappable, links to Settings after onboarding completes)
 
 Done button → saves preferences, sets `onboarding_completed = true`, navigates to `/app/library`.
 Skip link → completes with whatever is selected (including nothing), same navigation.
@@ -3397,6 +3598,7 @@ Skip link → completes with whatever is selected (including nothing), same navi
 ```
 
 ### Verify before moving on
+
 - New user (fresh account): after magic link sign-in → redirected to `/app/onboarding`
 - Returning user: `/app/onboarding` immediately redirects to `/app/library`
 - Completing Step 2 → `profiles.measurement_unit` and `profiles.dietary_mode` and `profiles.intolerances` updated
@@ -3408,30 +3610,297 @@ Skip link → completes with whatever is selected (including nothing), same navi
 
 ---
 
+## Session 23 — Category gateway, discovery redesign & popularity scoring
+
+**Goal:** Replace the library's filter-first landing state with a visual category gateway that serves all five user personas. Add aggregate popularity scoring to drive rankings. Redesign recipe cards with two layout variants. Apply dietary preferences silently across the entire gateway. Introduce Ghibli-style illustrated category icons and a Muji/Japandi visual language.
+
+### User personas this session serves
+
+| Persona               | Feature                                                                        |
+| --------------------- | ------------------------------------------------------------------------------ |
+| Macro-Optimiser       | Popularity score weighted by P/Cal; list variant card shows cal + protein      |
+| Casual Meal Prepper   | Grid variant card (photo-first); category gateway as entry point               |
+| Time-Crunched Parent  | "Rápido · ≤30 min" dedicated gateway tile                                      |
+| Dietary-Restricted    | Silent dietary auto-filter across all gateway sections                         |
+| Bored Routine Breaker | "Em destaque" editorial row per category; freshness bonus surfaces new recipes |
+
+---
+
+### Schema changes
+
+#### 1. Popularity score on recipes
+
+Add a `popularity_score` generated column that recomputes automatically:
+
+```sql
+-- Aggregate engagement columns (updated by triggers or direct writes)
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS cook_count integer NOT NULL DEFAULT 0;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS save_count integer NOT NULL DEFAULT 0;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS like_count integer NOT NULL DEFAULT 0;
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS is_featured boolean NOT NULL DEFAULT false;
+
+-- Popularity score: engagement-weighted, editorially boosted, freshness-bonused
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS popularity_score integer GENERATED ALWAYS AS (
+  (cook_count * 3 + save_count * 2 + like_count * 1)
+  + (CASE WHEN is_featured THEN 50 ELSE 0 END)
+  + (CASE WHEN created_at > NOW() - INTERVAL '7 days' THEN 20 ELSE 0 END)
+) STORED;
+```
+
+#### 2. Keep cook_count in sync with cook_log
+
+```sql
+CREATE OR REPLACE FUNCTION sync_recipe_cook_count()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    UPDATE recipes SET cook_count = cook_count + 1 WHERE id = NEW.recipe_id;
+  ELSIF TG_OP = 'DELETE' THEN
+    UPDATE recipes SET cook_count = GREATEST(cook_count - 1, 0) WHERE id = OLD.recipe_id;
+  END IF;
+  RETURN NULL;
+END;
+$$;
+
+CREATE TRIGGER trg_cook_log_count
+AFTER INSERT OR DELETE ON cook_log
+FOR EACH ROW EXECUTE FUNCTION sync_recipe_cook_count();
+```
+
+Backfill existing cook_log data:
+
+```sql
+UPDATE recipes r
+SET cook_count = (SELECT COUNT(*) FROM cook_log cl WHERE cl.recipe_id = r.id);
+```
+
+#### 3. Keep save_count and like_count in sync
+
+Add equivalent triggers on the `saved_recipes` and `liked_recipes` tables (or whichever tables track saves/likes). Same pattern as above.
+
+#### 4. Dismiss state for dietary banner
+
+Already handled in `localStorage` (Session 21 spec says `localStorage`). No schema change needed — confirm the Session 21 implementation uses `localStorage`, not a DB column. The banner should only appear once ever and never again after dismissal.
+
+---
+
+### Gateway route: `/app/library` default state
+
+The library tab's landing state changes from the search + filter list to the gateway when no search query or filter is active. The existing list view is preserved as the "inside" state.
+
+**Gateway layout:**
+
+- Search bar at the top (tapping immediately switches to list/search mode)
+- 2×3 grid of category tiles (5 protein categories + 1 time tile)
+- No bottom padding section needed — the tiles fill the screen cleanly
+
+**Category tiles:**
+
+| Tile        | Filter applied                                                  | Icon                          |
+| ----------- | --------------------------------------------------------------- | ----------------------------- |
+| Carne       | `proteins` contains any of: beef, pork, lamb                    | Illustrated steak             |
+| Aves        | `proteins` contains any of: chicken, turkey                     | Illustrated chicken drumstick |
+| Peixe & Mar | `proteins` contains any of: fish, salmon, tuna, shrimp, seafood | Illustrated fish              |
+| Vegetariano | dietary_flags exclude all meat/fish                             | Illustrated leaf/bowl         |
+| Rápido      | `time_min <= 30` (across all proteins)                          | Illustrated clock/timer       |
+
+The 5th tile (Rápido) spans full width or sits as a 1×1 in the bottom row — designer's choice based on visual balance.
+
+**Tile design (Ghibli + Muji/Japandi):**
+
+- Background: warm off-white `#FAF9F6` (slightly warmer than current `#FAFAF8`)
+- Icon: custom Ghibli-style illustration, line-art food drawing, ~80×80px, centered-left
+- Label: clean sans-serif, left-aligned, 16px medium weight
+- Subtle drop shadow, `rounded-2xl` corners (same as existing cards)
+- Accent green `#16A34A` used only on the active/selected state — not on the tile background
+
+---
+
+### Inside a category: layout and controls
+
+When a tile is tapped, the route gains a `category` search param (e.g. `?category=aves`) and the gateway is replaced by:
+
+1. **"Em destaque" horizontal scroll** — recipes where `is_featured = true` in this category, sorted by `popularity_score` desc. Shows ~4–6 cards in a horizontal `overflow-x-auto` row. If no featured recipes exist for this category, the row is hidden entirely (no empty state).
+
+2. **Sort pills** — a small pill row below the featured scroll: `Popular` (default) · `Rápido`. These sort the main grid only (not the featured row).
+
+3. **Main recipe grid** — `variant="grid"` cards sorted by `popularity_score` desc by default, or `time_min` asc when "Rápido" pill is selected. Full filter sheet remains accessible via the existing filter button.
+
+4. **Back navigation** — tapping the back arrow or the search bar clears `?category=` and returns to the gateway.
+
+---
+
+### Recipe card variants
+
+#### `variant="grid"` (used in gateway, category browse, featured scroll)
+
+```
+┌─────────────────────────┐
+│                         │
+│      [food photo]       │  ← aspect ratio 4:3, full width
+│                         │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │  ← gradient overlay bottom 40%
+│ Recipe Name             │  ← white text, 14px semibold
+│ ⏱ 25 min  P/Cal 2.1    │  ← white text, 12px muted
+└─────────────────────────┘
+```
+
+- No visible macro cells — name, time, P/Cal badge only
+- Tapping opens recipe detail as normal
+- Missing image: solid color block based on protein category (warm orange = aves, teal = peixe, green = vegetariano, terracotta = carne, light purple = rápido) with subtle protein name watermark
+
+#### `variant="list"` (used in search results, filter results — existing behaviour, simplified)
+
+Keep the current horizontal layout but:
+
+- Increase thumbnail from current size to 88×88px
+- Remove the C and G macro cells — show only **Cal** and **P** (the two that matter for all personas)
+- Keep the P/Cal badge
+- Keep time
+
+---
+
+### Dietary auto-filter in the gateway
+
+All category tile queries and the "inside a category" list query must pass the user's dietary exclusion set (same logic already built in Session 21's `fetchLibrary`). The gateway is not a bypass — a vegan user's Carne tile leads to zero results (show empty state: "Nenhuma receita compatível com as tuas preferências"). One-tap "Ver todas" overrides for that session.
+
+---
+
+### Dismissing the dietary banner permanently
+
+Session 21 spec says banner dismissal is stored in `localStorage`. Confirm this is implemented. If it was stored in component state (lost on refresh), move it to `localStorage` key `dietary_banner_dismissed`. After one dismissal the key is set and the banner never renders again.
+
+---
+
+### `fetchLibrary` query changes
+
+Add `orderBy: 'popularity' | 'time'` parameter alongside existing filters. When `orderBy = 'popularity'` (default), append `.order('popularity_score', { ascending: false })`. When `orderBy = 'time'`, append `.order('time_min', { ascending: true })`.
+
+---
+
+### i18n keys to add
+
+```json
+"gateway": {
+  "title": "Explorar",
+  "categories": {
+    "meat": "Carne",
+    "poultry": "Aves",
+    "fish": "Peixe & Mar",
+    "vegetarian": "Vegetariano",
+    "quick": "Rápido · ≤30 min"
+  },
+  "featured": "Em destaque",
+  "sort": {
+    "popular": "Popular",
+    "quick": "Rápido"
+  },
+  "noResults": "Nenhuma receita compatível com as tuas preferências.",
+  "showAll": "Ver todas"
+}
+```
+
+---
+
+### Verify before moving on
+
+- Gateway appears when landing on `/app/library` with no active search or filter
+- All 5 category tiles render with correct icons and labels
+- Tapping a tile navigates to the filtered list with correct `?category=` param
+- "Rápido" tile filters by `time_min <= 30` across all proteins
+- "Em destaque" row only appears when `is_featured` recipes exist in that category
+- "Popular · Rápido" sort pills change the grid order correctly
+- Full filter sheet still accessible inside a category
+- `popularity_score` updates when a recipe is cooked (cook_log insert trigger fires)
+- Backfill: `cook_count` matches actual cook_log row counts
+- Grid card variant shows photo, name, time, P/Cal only (no C or G)
+- List card variant shows 88px thumbnail, cal + protein only (no C or G)
+- Missing-image recipes show correct color-block placeholder per category
+- Vegan user: Carne tile leads to zero-results empty state
+- "Ver todas" override shows non-filtered results for that session
+- Dietary banner: dismissed once → never appears again after reload
+- Dietary banner: fresh account with dietary prefs → banner appears once
+- `is_featured` flag on a recipe → appears in "Em destaque" row for its category
+- Freshness bonus: recipe created within 7 days scores 20 points higher
+- Grid card: `object-fit: cover` + `object-position: center` on photo (center crop handles user-uploaded phone photos well)
+- No TypeScript errors
+
+---
+
+## Session 23.5 — UX polish: web interface guidelines fixes
+
+**Goal:** Fix the accessibility, touch, motion, and i18n violations found during the Session 23 pre-build guidelines audit. All items are small, targeted changes — no new features. When selecting a unit type when adding an ingredient while creating a recipe if user has selected metric system dont show imperial options. The other unit types should have proper translations too.
+
+### `src/routes/app/library/index.tsx`
+
+**`index.tsx:743`** — **Focus ring missing on SortSheet options.** Add `focus-visible:ring-2 focus-visible:ring-[#16A34A]/40` to each `button` inside `SortSheet`. Currently `focus:outline-none` with nothing replacing it.
+
+**`index.tsx:1150–1154`** — **Dietary banner never dismisses.** Already tracked in Session 23 spec (`dietary_banner_dismissed` localStorage key). Confirm Session 23 implementation satisfies this; if not, implement it here:
+
+- Read `localStorage.getItem('dietary_banner_dismissed')` on mount
+- If set, never render the banner
+- Add a dismiss button (×) to the banner; on click, `localStorage.setItem('dietary_banner_dismissed', '1')` and hide
+
+### `src/routes/app/library/$recipeId.tsx`
+
+**`$recipeId.tsx:110`** — **Keyboard-inaccessible drag handle.** Convert the drag-handle `div` (CookingDrawer expand/collapse trigger) from a `div` with `onClick` to a `<button>` with `aria-label`, `aria-expanded`, and `focus-visible:ring-2`. Keep identical visual appearance.
+
+**`$recipeId.tsx:116`** — **Stop button (×) in CookingDrawer missing focus ring.** Add `focus-visible:ring-2 focus-visible:ring-[#16A34A]/40` to the X button class.
+
+**`$recipeId.tsx:116`** — **Stop button too small (28×28px).** Increase to `w-11 h-11` (44px), keep icon at `size={14}` centered inside.
+
+**`$recipeId.tsx:204`, `207`** — **Hardcoded Portuguese in `RecipeDetailError`.** Replace `"Não foi possível carregar a receita"` and `"Tentar novamente"` with `t('recipe.loadError')` and `t('common.retry')`. Add keys to both locale files.
+
+**`$recipeId.tsx:391`, `393`** — **Hardcoded Portuguese in `addMutation`.** Replace toast strings with `t('recipe.addedToPlan')` and `t('common.error')`. The success key can include the checkmark in the translation value.
+
+**`$recipeId.tsx:549–555`** — **`grid-template-rows` transition missing reduced-motion guard.** Add `motion-reduce:transition-none` to the inline `transition` style or refactor to a Tailwind class with the `motion-safe:` prefix.
+
+**`$recipeId.tsx:600`**, **`$recipeId.tsx:613`** — **Stepper buttons too small (36×36px) and aria-labels hardcoded.** Change `w-9 h-9` to `w-11 h-11` (44px). Replace `aria-label="Diminuir porções"` and `aria-label="Aumentar porções"` with `t('recipe.decreaseServings')` and `t('recipe.increaseServings')`. Add keys to locale files.
+
+**`$recipeId.tsx:102`** — **Elastic spring entrance animation not guarded for reduced motion.** Add `motion-reduce:transition-none motion-reduce:animate-none` to the CookingDrawer wrapper class.
+
+### Verify before moving on
+
+- SortSheet options show a visible ring when focused via keyboard
+- Dietary banner: tapping × hides it and it does not reappear after reload
+- CookingDrawer drag handle is reachable and operable via keyboard
+- CookingDrawer stop button focus ring visible; tap target ≥ 44×44px
+- Stepper buttons tap target ≥ 44×44px
+- `RecipeDetailError` strings and stepper aria-labels pass through `t()` — no hardcoded Portuguese
+- CookingDrawer does not animate on devices with `prefers-reduced-motion: reduce`
+- No TypeScript errors
+
+---
+
 ## Pre-launch checklist
 
 Before making the app URL publicly shareable, complete these steps. None require code changes — they are configuration and account-level settings.
 
 ### Anthropic API safeguards
+
 - Set a hard monthly budget cap in the Anthropic console: start at **$50/month**
 - Configure email alerts at 50% ($25) and 80% ($40) of monthly budget
 - Verify the Haiku model ID in all scripts uses `claude-haiku-4-5-20251001` (current pricing: $0.80/MTok input, $4/MTok output)
 
 ### Rate limits to implement (code changes, one PR)
+
 - AI macro estimation (`estimateMacros` server fn): max **10 calls per user per day** — track in a `daily_ai_usage` table or a simple counter in `profiles`
 - New ingredient Haiku classification: max **20 unrecognized ingredients per user per day**
 - Image uploads: max **5MB per file** (Supabase Storage bucket policy), max **20 uploads per user per day**
 
 ### Supabase
+
 - Upgrade to **Pro plan ($25/month)** — eliminates the 1-week inactivity pause that would kill a live app
 - Storage bucket `recipe-images`: verify public access is set correctly, hero images load without authentication
 - Run `supabase db advisors` and fix any flagged issues before launch
 
 ### Vercel
+
 - Vercel Hobby is fine for soft launch (beta, shared-link only)
 - Upgrade to **Pro ($20/month)** when the URL becomes public and you start acquiring real users — Hobby terms prohibit commercial use
 
 ### Monitoring
+
 - Add Supabase usage to your regular check (Dashboard → Usage) — watch Storage and bandwidth
 - Set up a Vercel spend alert if you upgrade to Pro
 - After first 100 users, check `SELECT COUNT(*), classification_source FROM ingredients GROUP BY classification_source` to see how fast user-submitted ingredients are growing

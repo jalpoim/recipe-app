@@ -165,9 +165,9 @@ function EditRecipePage() {
     setCustomTagInput('')
   }
 
-  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none'
-  const chipActive = 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A]'
+  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none'
+  const chipActive = 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
+  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]'
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -177,7 +177,7 @@ function EditRecipePage() {
             type="button"
             onClick={() => navigate({ to: '/app/library/$recipeId', params: { recipeId: recipe.id }, search: { from: undefined, planItemId: undefined } })}
             aria-label={t('recipe.back')}
-            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             {t('recipe.back')}
@@ -187,7 +187,7 @@ function EditRecipePage() {
             type="button"
             onClick={() => { if (validate()) saveMutation.mutate() }}
             disabled={saveMutation.isPending}
-            className="text-sm font-semibold text-[#16A34A] disabled:opacity-50 hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="text-sm font-semibold text-[#F4623A] disabled:opacity-50 hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             {saveMutation.isPending ? t('create.saving') : t('create.save')}
           </button>
@@ -202,7 +202,7 @@ function EditRecipePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t('create.namePlaceholder')}
-            className={`w-full rounded-xl border bg-white px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors ${errors.name ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors ${errors.name ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}
           />
           {errors.name && <p className="mt-1 text-xs text-[#DC2626]">{errors.name}</p>}
         </div>
@@ -213,12 +213,12 @@ function EditRecipePage() {
             <span className="text-sm font-medium text-[#1A1A1A]">{t('create.servingsLabel')}</span>
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setServings((s) => Math.max(1, s - 1))} disabled={servings <= 1}
-                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none">
+                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none">
                 <Minus size={16} aria-hidden="true" />
               </button>
               <span className="w-6 text-center font-bold text-[#1A1A1A]">{servings}</span>
               <button type="button" onClick={() => setServings((s) => s + 1)}
-                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none">
+                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none">
                 <Plus size={16} aria-hidden="true" />
               </button>
             </div>
@@ -248,7 +248,7 @@ function EditRecipePage() {
                 value={ing.rawText}
                 onChange={(e) => updateIngredient(idx, { ...ing, rawText: e.target.value, name: null })}
                 placeholder={t('create.ingredientPlaceholder')}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
               />
               <button type="button" onClick={() => removeIngredient(idx)} aria-label="Remover"
                 className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none">
@@ -257,7 +257,7 @@ function EditRecipePage() {
             </div>
           ))}
           <button type="button" onClick={addIngredient}
-            className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#16A34A] py-2.5 hover:border-[#16A34A] hover:bg-[#f0fdf4] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none">
+            className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#F4623A] py-2.5 hover:border-[#F4623A] hover:bg-[#FFF5F2] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none">
             + {t('create.addIngredient')}
           </button>
           {errors.ingredients && <p className="text-xs text-[#DC2626]">{errors.ingredients}</p>}
@@ -268,13 +268,13 @@ function EditRecipePage() {
           <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.stepsLabel')}</p>
           {steps.map((step, idx) => (
             <div key={idx} className="flex items-start gap-2">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-[#dcfce7] text-[#15803d] text-xs font-bold flex items-center justify-center mt-2.5">{idx + 1}</span>
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#FEE9E1] text-[#D94F2B] text-xs font-bold flex items-center justify-center mt-2.5">{idx + 1}</span>
               <textarea
                 value={step.text}
                 onChange={(e) => updateStep(idx, e.target.value)}
                 placeholder={t('create.stepPlaceholder')}
                 rows={2}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
               />
               {steps.length > 1 && (
                 <button type="button" onClick={() => removeStep(idx)} aria-label="Remover passo"
@@ -285,7 +285,7 @@ function EditRecipePage() {
             </div>
           ))}
           <button type="button" onClick={addStep}
-            className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#16A34A] py-2.5 hover:border-[#16A34A] hover:bg-[#f0fdf4] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none">
+            className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#F4623A] py-2.5 hover:border-[#F4623A] hover:bg-[#FFF5F2] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none">
             + {t('create.addStep')}
           </button>
           {errors.steps && <p className="text-xs text-[#DC2626]">{errors.steps}</p>}
@@ -295,7 +295,7 @@ function EditRecipePage() {
         <CollapsibleSection title={t('create.timeLabel')} defaultOpen={!!recipe.time_min}>
           <input
             type="number" min={1} value={timeMin} onChange={(e) => setTimeMin(e.target.value)} placeholder="30"
-            className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+            className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
           />
         </CollapsibleSection>
 
@@ -345,13 +345,13 @@ function EditRecipePage() {
                 onChange={(e) => setCustomTagInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
                 placeholder={t('create.addCustomTag', 'Adicionar tag…')}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
               />
               <button
                 type="button"
                 onClick={addCustomTag}
                 disabled={!customTagInput.trim()}
-                className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#16A34A] hover:bg-[#f0fdf4] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none shrink-0"
+                className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#F4623A] hover:bg-[#FFF5F2] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none shrink-0"
               >
                 <Plus size={16} aria-hidden="true" />
               </button>
@@ -371,7 +371,7 @@ function EditRecipePage() {
               <div key={label}>
                 <label className="block text-xs text-[#6B7280] mb-1">{label}</label>
                 <input type="number" min={0} value={value} onChange={(e) => setter(e.target.value)}
-                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors" />
+                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors" />
               </div>
             ))}
           </div>
@@ -386,7 +386,7 @@ function EditRecipePage() {
             </div>
             <button
               type="button" role="switch" aria-checked={publish} onClick={() => setPublish((p) => !p)}
-              className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${publish ? 'bg-[#16A34A]' : 'bg-[#D1D5DB]'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${publish ? 'bg-[#F4623A]' : 'bg-[#D1D5DB]'}`}
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${publish ? 'translate-x-5' : 'translate-x-0'}`} />
             </button>
@@ -397,7 +397,7 @@ function EditRecipePage() {
           type="button"
           onClick={() => { if (validate()) saveMutation.mutate() }}
           disabled={saveMutation.isPending}
-          className="w-full rounded-2xl bg-[#16A34A] text-white py-4 text-sm font-semibold disabled:opacity-60 hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+          className="w-full rounded-2xl bg-[#F4623A] text-white py-4 text-sm font-semibold disabled:opacity-60 hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
           {saveMutation.isPending ? t('create.saving') : t('create.save')}
         </button>

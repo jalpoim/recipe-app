@@ -57,6 +57,7 @@ const PDF_FILTER = (() => {
 
 const MIN_DIMENSION = 400
 const MIN_PORTRAIT_RATIO = 1.2
+const MAX_RENDER_PAGES = 6  // max pages to render per recipe range for Vision
 
 type PdfSource = {
   key: string
@@ -74,6 +75,9 @@ type PdfSource = {
   // If set, only process recipes whose names appear in this JSON file (array of {name})
   // Used when multiple cookbooks were seeded in the same time window
   jsonPath?: string
+  // Manual page overrides: recipe EN/PT name → title page number.
+  // Used when PDF titles differ enough from DB names that text matching fails.
+  pageOverrides?: Record<string, number>
 }
 
 const PDF_SOURCES: PdfSource[] = [
@@ -95,6 +99,27 @@ const PDF_SOURCES: PdfSource[] = [
     min_page: 11,
     name_language: 'en',
     jsonPath: path.resolve(process.cwd(), 'scripts/joe-x-fitness-recipes.json'),
+    // Korean recipes whose PDF titles use different English descriptions than the DB.
+    // Page numbers confirmed via pdftotext scan.
+    pageOverrides: {
+      'Dakjuk (Chicken Rice Porridge)': 73,
+      'Korean Egg Bites': 93,
+      'Dakgalbi (Spicy Stir-Fried Chicken)': 99,
+      'Mayak Eggs (Marinated Eggs)': 121,
+      'Eomuk Bokkeum (Fish Cake)': 124,
+      'Ojingeochae Muchim (Spicy Squid)': 127,
+      'Myeolchi Bokkeum (Stir-Fried Anchovies)': 129,
+      'Jangjorim (Soy Braised Beef)': 132,
+      'Sangchu Geotjeori (Spicy Salad)': 138,
+      'Japchae (Glass Noodle Stir Fry)': 140,
+      'Sigeumchi-namul (Marinated Spinach)': 145,
+      'Spicy Soondubu (Tofu Soup)': 149,
+      'Miyeokguk (Seaweed Beef Soup)': 152,
+      'Kimchi Jjigae (Kimchi Beef Stew)': 155,
+      'Ddukguk (Beef Rice Cake Soup)': 158,
+      'Muguk (Beef & Radish Soup)': 161,
+      'Oi-muchim (Spicy Cucumber)': 143,
+    },
   },
 ]
 
@@ -163,38 +188,27 @@ function filterRecipeImages(images: ImageInfo[], minPx = MIN_DIMENSION): ImageIn
   })
 }
 
-function extractAllImages(pdfPath: string, outDir: string): void {
-  fs.mkdirSync(outDir, { recursive: true })
-  execSync(`pdfimages "${pdfPath}" "${path.join(outDir, 'img')}"`, { stdio: 'inherit' })
-}
-
-function findImageFile(outDir: string, index: number): string | null {
-  const padded = String(index).padStart(3, '0')
-  for (const ext of ['jpg', 'jpeg', 'png', 'ppm', 'pbm', 'pgm']) {
-    const p = path.join(outDir, `img-${padded}.${ext}`)
-    if (fs.existsSync(p)) return p
+// Render a single PDF page to a JPEG buffer via pdftoppm.
+// Uses the actual PDF page number in the output filename (zero-padded).
+function renderPageToBuffer(pdfPath: string, page: number, dpi = 150): Buffer | null {
+  const prefix = path.join(os.tmpdir(), `pdfpage-${process.pid}-${Date.now()}`)
+  try {
+    execSync(
+      `pdftoppm -jpeg -r ${dpi} -f ${page} -l ${page} "${pdfPath}" "${prefix}" 2>/dev/null`,
+      { maxBuffer: 30 * 1024 * 1024, timeout: 30000 },
+    )
+    // Find the output file — filename is prefix-<padded-page-num>.jpg
+    const dir = path.dirname(prefix)
+    const base = path.basename(prefix)
+    const found = fs.readdirSync(dir).find(f => f.startsWith(base + '-') && f.endsWith('.jpg'))
+    if (!found) return null
+    const filePath = path.join(dir, found)
+    const buf = fs.readFileSync(filePath)
+    fs.unlinkSync(filePath)
+    return buf
+  } catch {
+    return null
   }
-  return null
-}
-
-async function readImageAsJpeg(filePath: string): Promise<Buffer | null> {
-  const ext = path.extname(filePath).toLowerCase()
-  if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
-    try { return fs.readFileSync(filePath) } catch { return null }
-  }
-  if (['.ppm', '.pbm', '.pgm'].includes(ext)) {
-    const tmp = filePath + '.tmp.jpg'
-    try {
-      execSync(`sips -s format jpeg "${filePath}" --out "${tmp}" 2>/dev/null`, { timeout: 30000 })
-      const buf = fs.readFileSync(tmp)
-      fs.unlinkSync(tmp)
-      return buf
-    } catch {
-      if (fs.existsSync(tmp)) fs.unlinkSync(tmp)
-      return null
-    }
-  }
-  return null
 }
 
 async function makeHero(input: Buffer): Promise<Buffer> {
@@ -245,13 +259,26 @@ function findRecipeTitlePages(
   recipes: DbRecipe[],
   minPage: number,
   portraitImagePages: Set<number>, // pages that contain portrait-sized images
+  pageOverrides: Record<string, number> = {},
   verbose = false,
 ): Map<string, number> {
   const normalizedNames = recipes.map(r => ({ id: r.id, name: r.name, norm: normalize(r.name) }))
   const result = new Map<string, number>()
   const usedPages = new Set<number>()
 
-  console.log(`  Scanning ${totalPages - minPage + 1} pages for recipe titles...`)
+  // Apply manual page overrides first — bypasses text matching for known-problematic names
+  const overriddenIds = new Set<string>()
+  for (const r of normalizedNames) {
+    const overridePage = pageOverrides[r.name]
+    if (overridePage !== undefined) {
+      result.set(r.id, overridePage)
+      usedPages.add(overridePage)
+      overriddenIds.add(r.id)
+      if (verbose) console.log(`  p${overridePage} → "${r.name}" (manual override)`)
+    }
+  }
+
+  console.log(`  Scanning ${totalPages - minPage + 1} pages for recipe titles (${overriddenIds.size} overridden)...`)
 
   // Score each (recipe, page) pair
   type PageScore = { id: string; name: string; page: number; textScore: number; hasNearbyImage: boolean }
@@ -266,6 +293,7 @@ function findRecipeTitlePages(
     let pageMatchCount = 0
 
     for (const r of normalizedNames) {
+      if (overriddenIds.has(r.id)) continue
       let textScore = 0
       if (normPage.includes(r.norm)) {
         textScore = 1.0
@@ -292,6 +320,7 @@ function findRecipeTitlePages(
   // For each recipe, rank candidates: prefer pages with nearby images and low match-count
   // (avoids index/TOC pages that mention many recipes and have no images)
   for (const r of normalizedNames) {
+    if (overriddenIds.has(r.id)) continue
     const candidates = scores
       .filter(s => s.id === r.id)
       .sort((a, b) => {
@@ -346,69 +375,37 @@ function buildPageRanges(
 
 // ─── Vision selection ────────────────────────────────────────────────────────
 
-const VISION_SYSTEM_PROMPT = `You evaluate cookbook photos for a meal prep app hero image.
-
-Respond ONLY with valid JSON: {"usable": true|false, "score": 0.0–1.0, "disqualified": true|false}
-
-DISQUALIFIED (usable=false, score=0, disqualified=true) — hard rules, no exceptions:
-- A face or recognisable person is clearly visible (portrait, selfie, person in background)
-- The dish is not visible or is only a minor element of the image
-- Prep steps where food is being actively worked on: chopping, mixing raw ingredients, food mid-cook in a pan or oven
-
-ALLOWED (not disqualified):
-- Hands holding or presenting a finished dish — acceptable as long as the complete dish is fully in frame
-- A wrist or forearm at the edge of frame while the dish is the clear subject
-
-SCORING for non-disqualified images (higher is better):
-- 0.8–1.0: Complete dish fully in frame, no people, even natural lighting, clean/simple background, appetising presentation
-- 0.6–0.7: Complete dish in frame but hands/arms visible holding or presenting it
-- 0.4–0.5: Dish mostly in frame, acceptable lighting, minor clutter or slight crop
-- 0.2–0.3: Partial dish, harsh shadows, very dark or overexposed, unappealing
-- 0.0–0.1: Not a final dish photo
-
-The image must work as both a 400×400 thumbnail and a full-width hero. Images where the dish is cut off at the edges score low.`
-
-type VisionResult = { index: number; score: number }
-
-// Score images as final plated dish via Haiku vision.
-// Returns them sorted best-first (highest score first).
-async function rankImagesForRecipe(
-  images: ImageInfo[],
-  tmpDir: string,
+// Send full rendered PDF pages to Claude Vision and pick the best food photo page.
+// Returns the buffer of the winning page (original resolution), or null if none qualifies.
+async function selectBestFoodPage(
+  pages: Array<{ page: number; buf: Buffer }>,
   recipeName: string,
-): Promise<VisionResult[]> {
-  if (images.length === 0) return []
-  if (images.length === 1) {
-    // Only one candidate — still classify to verify it's actually a dish
-    const img = images[0]
-    const filePath = findImageFile(tmpDir, img.index)
-    if (!filePath) return []
-    const raw = await readImageAsJpeg(filePath)
-    if (!raw) return []
-    const thumb = await sharp(raw).resize({ width: 400, height: 400, fit: 'inside' }).jpeg({ quality: 70 }).toBuffer()
-    const score = await scoreSingleImage(thumb, recipeName)
-    return score > 0 ? [{ index: img.index, score }] : []
-  }
-
-  // Multiple candidates — send all at once and ask Haiku to rank them
-  const parts: { index: number; b64: string }[] = []
-  for (const img of images) {
-    const filePath = findImageFile(tmpDir, img.index)
-    if (!filePath) continue
-    const raw = await readImageAsJpeg(filePath)
-    if (!raw) continue
-    const thumb = await sharp(raw).resize({ width: 400, height: 400, fit: 'inside' }).jpeg({ quality: 70 }).toBuffer()
-    parts.push({ index: img.index, b64: thumb.toString('base64') })
-  }
-
-  if (parts.length === 0) return []
-
-  return rankImagesWithVision(parts, recipeName)
-}
-
-async function scoreSingleImage(thumb: Buffer, recipeName: string): Promise<number> {
+): Promise<{ buf: Buffer; page: number } | null> {
   const anthropicKey = process.env.ANTHROPIC_API_KEY!
-  const b64 = thumb.toString('base64')
+
+  // Resize pages to 800px wide for Vision (preserves detail, controls token cost)
+  const resized = await Promise.all(
+    pages.map(async (p) => ({
+      page: p.page,
+      buf: p.buf,
+      b64: (await sharp(p.buf).resize({ width: 800 }).jpeg({ quality: 80 }).toBuffer()).toString('base64'),
+    })),
+  )
+
+  const content: object[] = []
+  for (let i = 0; i < resized.length; i++) {
+    content.push({ type: 'text', text: `Page ${i + 1} (PDF page ${resized[i].page}):` })
+    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: resized[i].b64 } })
+  }
+  content.push({
+    type: 'text',
+    text: `These are consecutive pages from a cookbook for the recipe "${recipeName}". ` +
+      `Which page (if any) is the best hero/thumbnail for this recipe in a meal prep app? ` +
+      `Prefer: a full-bleed food photo of the final plated dish, complete in frame, good lighting, no faces. ` +
+      `Hands holding the finished dish are fine. ` +
+      `Skip: mostly-text pages, step-by-step prep shots, mid-cook shots, pages where the dish is cut off at the edges. ` +
+      `Return ONLY JSON: {"best": <1-based index or 0 if none qualify>, "reason": "<brief>"}`,
+  })
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -420,81 +417,23 @@ async function scoreSingleImage(thumb: Buffer, recipeName: string): Promise<numb
     body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 128,
-      system: VISION_SYSTEM_PROMPT,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-          { type: 'text', text: `Evaluate this photo for the recipe: "${recipeName}"` },
-        ],
-      }],
-    }),
-  })
-
-  if (!res.ok) return 0
-  const json = await res.json() as { content?: { text?: string }[] }
-  const text = json?.content?.[0]?.text?.trim() ?? ''
-  try {
-    const r = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? '{}') as {
-      usable: boolean; score: number; disqualified: boolean
-    }
-    if (!r.usable || r.disqualified) return 0
-    return r.score ?? 0
-  } catch { /* */ }
-  return 0
-}
-
-async function rankImagesWithVision(
-  parts: Array<{ index: number; b64: string }>,
-  recipeName: string,
-): Promise<VisionResult[]> {
-  const anthropicKey = process.env.ANTHROPIC_API_KEY!
-
-  const content: object[] = []
-  for (let i = 0; i < parts.length; i++) {
-    content.push({ type: 'text', text: `Image ${i + 1}:` })
-    content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: parts[i].b64 } })
-  }
-  content.push({
-    type: 'text',
-    text: `These are all photos from the recipe "${recipeName}". ` +
-      `Score each image 0.0–1.0 for use as a hero/thumbnail in a meal prep app. ` +
-      `Set score to 0 and disqualified=true only if: a face or recognisable person is visible, OR the dish is not the main subject, OR food is actively being prepared/cooked. ` +
-      `Hands holding or presenting a finished dish are allowed (not disqualified) — score them 0.6–0.7 if the full dish is in frame. ` +
-      `Score highest (0.8–1.0) for: complete dish fully in frame with no people, even lighting, clean background, appetising presentation. ` +
-      `Score lowest for: prep steps, raw ingredients, mid-cook shots, cluttered backgrounds, dark or blown-out lighting, dish cut off at frame edges. ` +
-      `Return ONLY JSON array: [{"img": 1, "score": 0.9, "disqualified": false}, ...]. No explanation.`,
-  })
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': anthropicKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
       messages: [{ role: 'user', content }],
     }),
   })
 
-  if (!res.ok) return parts.map((p, i) => ({ index: p.index, score: 1 - i * 0.1 }))
+  if (!res.ok) return pages[0] ? { buf: pages[0].buf, page: pages[0].page } : null
 
   const json = await res.json() as { content?: { text?: string }[] }
   const text = json?.content?.[0]?.text?.trim() ?? ''
   try {
-    const ranked = JSON.parse(text.match(/\[[\s\S]*\]/)?.[0] ?? '[]') as Array<{
-      img: number; score: number; disqualified?: boolean
-    }>
-    return ranked
-      .filter(r => r.img >= 1 && r.img <= parts.length && !r.disqualified)
-      .map(r => ({ index: parts[r.img - 1].index, score: r.score }))
-      .sort((a, b) => b.score - a.score)
-  } catch {
-    return parts.map((p, i) => ({ index: p.index, score: 1 - i * 0.1 }))
-  }
+    const r = JSON.parse(text.match(/\{[\s\S]*\}/)?.[0] ?? '{}') as { best: number; reason?: string }
+    if (r.best >= 1 && r.best <= pages.length) {
+      const pick = pages[r.best - 1]
+      return { buf: pick.buf, page: pick.page }
+    }
+  } catch { /* */ }
+
+  return pages[0] ? { buf: pages[0].buf, page: pages[0].page } : null
 }
 
 // ─── DB queries ──────────────────────────────────────────────────────────────
@@ -562,58 +501,43 @@ async function processPdfSource(source: PdfSource) {
     return
   }
 
-  // Get all portrait images first — needed to filter index/TOC page matches
+  // Use pdfimages metadata ONLY to build the set of pages that have portrait photos.
+  // This is used by findRecipeTitlePages to reject index/TOC page matches.
   const minPx = source.min_px ?? MIN_DIMENSION
   const allUniqueImages = listUniqueImages(source.pdfPath, minPage)
   const recipeImages = filterRecipeImages(allUniqueImages, minPx)
-  console.log(`  ${recipeImages.length} portrait images found (≥${minPx}px, ratio ≥${MIN_PORTRAIT_RATIO})`)
-
-  // Build set of pages that contain portrait images (used to filter out index/TOC matches)
   const portraitImagePages = new Set(recipeImages.map(img => img.page))
+  console.log(`  ${recipeImages.length} portrait image objects found (for TOC filtering)`)
 
-  // Find which page each recipe title appears on (skips index/TOC pages with no nearby images)
-  const titlePages = findRecipeTitlePages(source.pdfPath, totalPages, recipes, minPage, portraitImagePages)
+  // Find which page each recipe title appears on
+  const titlePages = findRecipeTitlePages(source.pdfPath, totalPages, recipes, minPage, portraitImagePages, source.pageOverrides ?? {})
   console.log(`  Matched ${titlePages.size}/${recipes.length} recipes to pages`)
 
   const unmatched = recipes.filter(r => !titlePages.has(r.id))
   if (unmatched.length > 0) {
-    console.log(`  Unmatched recipes:`)
+    console.log('  Unmatched recipes:')
     unmatched.forEach(r => console.log(`    - ${r.name}`))
   }
 
   // Build page ranges for matched recipes
   const pageRanges = buildPageRanges(titlePages, totalPages)
-
-  // Group images by recipe page range
-  const imagesByRecipe = new Map<string, ImageInfo[]>()
-  for (const [id, range] of pageRanges.entries()) {
-    const imgs = recipeImages.filter(img => img.page >= range.from && img.page <= range.to)
-    imagesByRecipe.set(id, imgs)
-  }
+  const sorted = Array.from(pageRanges.entries()).sort((a, b) => a[1].from - b[1].from)
 
   if (DRY_RUN) {
-    console.log('\n  Proposed matches:')
-    const sorted = Array.from(pageRanges.entries()).sort((a, b) => a[1].from - b[1].from)
+    console.log('\n  Proposed matches (pages to render per recipe):')
     for (const [id, range] of sorted) {
       const recipe = recipes.find(r => r.id === id)!
-      const imgs = imagesByRecipe.get(id) ?? []
-      console.log(`  p${range.from}–${range.to} "${recipe.name}" → ${imgs.length} image(s): ${imgs.map(i => `img-${i.index}(p${i.page})`).join(', ') || 'none'}`)
+      const nPages = Math.min(range.to - range.from + 1, MAX_RENDER_PAGES)
+      console.log(`  p${range.from}–${range.from + nPages - 1} (of p${range.from}–${range.to}) "${recipe.name}"`)
     }
     return
   }
 
-  // Extract all images to temp dir
-  const tmpDir = path.join(os.tmpdir(), `recipe-images-${source.key}-${Date.now()}`)
-  console.log(`\n  Extracting images from PDF...`)
-  extractAllImages(source.pdfPath, tmpDir)
-
-  // Process each recipe
-  let uploaded = 0, skipped = 0, failed = 0, noImage = 0
-  const sorted = Array.from(pageRanges.entries()).sort((a, b) => a[1].from - b[1].from)
+  // Process each recipe: render pages → Vision selects best food photo → upload
+  let uploaded = 0, skipped = 0, failed = 0, noPage = 0
 
   for (const [id, range] of sorted) {
     const recipe = recipes.find(r => r.id === id)!
-    const imgs = imagesByRecipe.get(id) ?? []
 
     if (!FORCE) {
       const { data: existing } = await supabase.from('recipes').select('image_url').eq('id', id).single()
@@ -624,43 +548,40 @@ async function processPdfSource(source: PdfSource) {
       }
     }
 
-    if (imgs.length === 0) {
-      console.log(`  ⚠ No images in range p${range.from}–${range.to} for "${recipe.name}"`)
-      noImage++
+    // Render up to MAX_RENDER_PAGES pages from this recipe's range
+    const pagesToRender: number[] = []
+    for (let p = range.from; p <= range.to && pagesToRender.length < MAX_RENDER_PAGES; p++) {
+      pagesToRender.push(p)
+    }
+
+    const pageBuffers: Array<{ page: number; buf: Buffer }> = []
+    for (const page of pagesToRender) {
+      const buf = renderPageToBuffer(source.pdfPath, page)
+      if (buf) pageBuffers.push({ page, buf })
+    }
+
+    if (pageBuffers.length === 0) {
+      console.log(`  ⚠ No pages rendered for "${recipe.name}" (p${range.from}–${range.to})`)
+      noPage++
       continue
     }
 
-    // Rank images by vision and pick the best
-    let ranked: VisionResult[] = []
+    // Pick the best food-photo page via Vision
+    let best: { buf: Buffer; page: number } | null = null
     try {
-      ranked = await rankImagesForRecipe(imgs, tmpDir, recipe.name)
-      // Small delay between vision calls
-      await new Promise(r => setTimeout(r, 300))
+      best = pageBuffers.length === 1
+        ? pageBuffers[0]
+        : await selectBestFoodPage(pageBuffers, recipe.name)
+      await new Promise(r => setTimeout(r, 250))
     } catch (e) {
-      console.warn(`  ⚠ Vision ranking failed for "${recipe.name}": ${e}`)
-      // Fall back to first image in range
-      ranked = imgs.map((img, i) => ({ index: img.index, score: 1 - i * 0.1 }))
+      console.warn(`  ⚠ Vision failed for "${recipe.name}": ${e}`)
+      best = pageBuffers[0]
     }
 
-    if (ranked.length === 0) {
-      // No image passed vision check — use first in range as fallback
-      ranked = [{ index: imgs[0].index, score: 0 }]
-    }
-
-    const bestIndex = ranked[0].index
-    const imagePath = findImageFile(tmpDir, bestIndex)
-
-    if (!imagePath) {
-      console.warn(`  ⚠ img-${bestIndex} not on disk for "${recipe.name}"`)
-      failed++
-      continue
-    }
+    if (!best) best = pageBuffers[0]
 
     try {
-      const rawBuffer = await readImageAsJpeg(imagePath)
-      if (!rawBuffer) throw new Error('Could not read/convert image')
-
-      const [heroBuffer, thumbBuffer] = await Promise.all([makeHero(rawBuffer), makeThumb(rawBuffer)])
+      const [heroBuffer, thumbBuffer] = await Promise.all([makeHero(best.buf), makeThumb(best.buf)])
       const [heroUrl, thumbUrl] = await Promise.all([
         uploadImage(heroBuffer, `${id}/hero.jpg`),
         uploadImage(thumbBuffer, `${id}/thumb.jpg`),
@@ -672,9 +593,7 @@ async function processPdfSource(source: PdfSource) {
         .eq('id', id)
 
       if (upErr) throw new Error(upErr.message)
-
-      const scoreStr = ranked[0].score > 0 ? ` (score ${ranked[0].score.toFixed(2)}, ${imgs.length} candidates)` : ''
-      console.log(`  ✓ "${recipe.name}"${scoreStr}`)
+      console.log(`  ✓ "${recipe.name}" (p${best.page})`)
       uploaded++
     } catch (err) {
       console.error(`  ✗ "${recipe.name}": ${err}`)
@@ -682,10 +601,8 @@ async function processPdfSource(source: PdfSource) {
     }
   }
 
-  console.log(`\n  Done: ${uploaded} uploaded, ${skipped} skipped, ${failed} failed, ${noImage} with no images`)
+  console.log(`\n  Done: ${uploaded} uploaded, ${skipped} skipped, ${failed} failed, ${noPage} with no pages`)
   console.log(`  ${recipes.length - titlePages.size} recipes unmatched (no title page found)`)
-
-  try { fs.rmSync(tmpDir, { recursive: true }) } catch { /* */ }
 }
 
 async function main() {

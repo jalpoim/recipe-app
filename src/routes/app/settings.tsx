@@ -59,14 +59,14 @@ function InviteLinkBox({
         <span className="flex-1 truncate text-xs text-[#1A1A1A] font-mono">{link}</span>
         <button
           onClick={handleCopy}
-          className="shrink-0 text-[#16A34A] focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+          className="shrink-0 text-[#F4623A] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           aria-label={t('settings.householdCopyLink')}
         >
           {copied ? <Check size={16} /> : <Copy size={16} />}
         </button>
       </div>
       {copied && (
-        <p className="text-xs text-[#16A34A]">{t('settings.householdLinkCopied')}</p>
+        <p className="text-xs text-[#F4623A]">{t('settings.householdLinkCopied')}</p>
       )}
       <button
         onClick={onRevoke}
@@ -137,7 +137,7 @@ function HouseholdSection() {
         <button
           onClick={() => createMutation.mutate()}
           disabled={createMutation.isPending}
-          className="w-full rounded-2xl bg-[#16A34A] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
+          className="w-full rounded-2xl bg-[#F4623A] py-3.5 text-sm font-semibold text-white disabled:opacity-50 transition-opacity"
         >
           {createMutation.isPending ? t('settings.householdCreating') : t('settings.householdCreate')}
         </button>
@@ -171,7 +171,7 @@ function HouseholdSection() {
           <button
             onClick={() => generateTokenMutation.mutate()}
             disabled={generateTokenMutation.isPending}
-            className="text-sm text-[#16A34A] font-medium disabled:opacity-50"
+            className="text-sm text-[#F4623A] font-medium disabled:opacity-50"
           >
             {generateTokenMutation.isPending ? 'A gerar…' : 'Gerar link de convite'}
           </button>
@@ -276,10 +276,10 @@ function DietarySection({ profile }: { profile: { dietary_mode: DietaryMode; int
               key={m}
               onClick={() => setMode(m)}
               disabled={mutation.isPending}
-              className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+              className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60"
             >
               <span className="font-medium">{t(`settings.dietary${m.charAt(0).toUpperCase() + m.slice(1)}`)}</span>
-              {mode === m && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+              {mode === m && <Check size={16} className="text-[#F4623A]" aria-hidden="true" />}
             </button>
           ))}
         </div>
@@ -295,10 +295,10 @@ function DietarySection({ profile }: { profile: { dietary_mode: DietaryMode; int
                 key={flag}
                 onClick={() => toggleIntolerance(flag)}
                 disabled={mutation.isPending}
-                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60"
               >
                 <span className="font-medium">{t(`settings.intolerance${flag.charAt(0).toUpperCase() + flag.slice(1)}`)}</span>
-                {active && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                {active && <Check size={16} className="text-[#F4623A]" aria-hidden="true" />}
               </button>
             )
           })}
@@ -306,7 +306,7 @@ function DietarySection({ profile }: { profile: { dietary_mode: DietaryMode; int
       </div>
 
       {savedMsg && (
-        <p className="text-xs text-[#16A34A] text-center">{t('settings.dietarySaved')}</p>
+        <p className="text-xs text-[#F4623A] text-center">{t('settings.dietarySaved')}</p>
       )}
     </div>
   )
@@ -356,7 +356,7 @@ function SettingsPage() {
             to="/app/library"
             search={{} as never}
             aria-label={t('recipe.back')}
-            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
+            className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
             {t('recipe.back')}
@@ -370,7 +370,7 @@ function SettingsPage() {
           <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm px-4 py-4 flex items-center gap-3">
             <div
               aria-hidden="true"
-              className="w-12 h-12 rounded-full bg-[#16A34A] flex items-center justify-center shrink-0"
+              className="w-12 h-12 rounded-full bg-[#F4623A] flex items-center justify-center shrink-0"
             >
               <span className="text-white text-lg font-bold leading-none">{initial}</span>
             </div>
@@ -390,13 +390,13 @@ function SettingsPage() {
                 <button
                   key={lang}
                   onClick={() => i18n.changeLanguage(lang)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                 >
                   <span className="font-medium">
                     {lang === 'pt' ? 'Português' : 'English'}
                   </span>
                   {currentLang === lang && (
-                    <Check size={16} className="text-[#16A34A]" aria-hidden="true" />
+                    <Check size={16} className="text-[#F4623A]" aria-hidden="true" />
                   )}
                 </button>
               ))}
@@ -413,13 +413,13 @@ function SettingsPage() {
                 <button
                   key={mode}
                   onClick={() => setTheme(mode)}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                 >
                   <span className="font-medium">
                     {mode === 'light' ? t('settings.light') : t('settings.dark')}
                   </span>
                   {theme === mode && (
-                    <Check size={16} className="text-[#16A34A]" aria-hidden="true" />
+                    <Check size={16} className="text-[#F4623A]" aria-hidden="true" />
                   )}
                 </button>
               ))}
@@ -437,11 +437,11 @@ function SettingsPage() {
                   key={unit}
                   onClick={() => unitMutation.mutate(unit)}
                   disabled={unitMutation.isPending}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60"
                 >
                   <span className="font-medium">{t(`settings.${unit}`)}</span>
                   {currentUnit === unit && (
-                    <Check size={16} className="text-[#16A34A]" aria-hidden="true" />
+                    <Check size={16} className="text-[#F4623A]" aria-hidden="true" />
                   )}
                 </button>
               ))}

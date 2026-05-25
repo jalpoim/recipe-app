@@ -48,7 +48,7 @@ const PROTEIN_COLORS: Record<string, string> = {
   'sea-bass': 'linear-gradient(135deg, #f0fdfa, #99f6e4)',
   mackerel:   'linear-gradient(135deg, #fefce8, #fde047)',
   octopus:    'linear-gradient(135deg, #fdf4ff, #e9d5ff)',
-  tofu:       'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+  tofu:       'linear-gradient(135deg, #FEE9E1, #bbf7d0)',
   legumes:    'linear-gradient(135deg, #d1fae5, #a7f3d0)',
   whey:       'linear-gradient(135deg, #ede9fe, #ddd6fe)',
 }
@@ -172,7 +172,7 @@ function LibraryError({ error }: { error: Error }) {
         <p className="text-sm text-[#6B7280]">{error.message}</p>
         <button
           onClick={() => window.location.reload()}
-          className="mt-2 text-sm text-[#16A34A] underline"
+          className="mt-2 text-sm text-[#F4623A] underline"
         >
           Tentar novamente
         </button>
@@ -213,7 +213,7 @@ function pcalRatio(r: Recipe) {
 }
 
 function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#15803d] bg-[#dcfce7]'
+  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
   if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
   return 'text-[#DC2626] bg-[#fee2e2]'
 }
@@ -246,7 +246,7 @@ function RecipeCard({
   const showLikes = isUserRecipe && (recipe.like_count ?? 0) > 0
   const thumbnailBg = recipe.image_thumb_url
     ? undefined
-    : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)')
+    : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #FEE9E1, #bbf7d0)')
 
   return (
     <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-all">
@@ -308,7 +308,7 @@ function RecipeCard({
                 </span>
               )}
               {showOwnerBadge && isUserRecipe && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#dcfce7] text-[#15803d] font-medium">
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FEE9E1] text-[#D94F2B] font-medium">
                   {t('library.ownBadge')}
                 </span>
               )}
@@ -355,10 +355,10 @@ function RecipeCard({
                 onClick={onToggleSave}
                 aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
                 aria-pressed={isSaved}
-                className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   isSaved
-                    ? 'text-[#16A34A]'
-                    : 'text-[#D1D5DB] hover:text-[#16A34A]'
+                    ? 'text-[#F4623A]'
+                    : 'text-[#D1D5DB] hover:text-[#F4623A]'
                 }`}
               >
                 {isSaved ? <BookmarkCheck size={16} aria-hidden="true" /> : <Bookmark size={16} aria-hidden="true" />}
@@ -480,10 +480,10 @@ function FilterSheet({
   const sectionHeader = 'text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3'
 
   function chipCls(active: boolean) {
-    return `text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+    return `text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
       active
-        ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#15803d]'
+        ? 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
+        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A] hover:text-[#D94F2B]'
     }`
   }
 
@@ -506,7 +506,7 @@ function FilterSheet({
             <button
               onClick={() => onOpenChange(false)}
               aria-label={t('common.close')}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -531,7 +531,7 @@ function FilterSheet({
                 <button
                   aria-expanded={proteinsExpanded}
                   onClick={() => setProteinsExpanded((e) => !e)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                  className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                 >
                   {proteinsExpanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
                 </button>
@@ -548,7 +548,7 @@ function FilterSheet({
                     <button
                       key={ing}
                       onClick={() => removeIngredient(ing)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#dcfce7] border border-[#16A34A] text-[#15803d] font-medium"
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#FEE9E1] border border-[#F4623A] text-[#D94F2B] font-medium"
                     >
                       {ing} <X size={10} aria-hidden="true" />
                     </button>
@@ -575,13 +575,13 @@ function FilterSheet({
                     }
                   }}
                   placeholder={t('filters.searchIngredient')}
-                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 pr-9 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:border-[#16A34A] transition-colors"
+                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 pr-9 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
                 />
                 {ingSearch.trim().length > 0 && (
                   <button
                     onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
                     aria-label={t('filters.searchFreeText', { term: ingSearch.trim() })}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#16A34A] text-white flex items-center justify-center hover:bg-[#15803d] transition-colors focus:outline-none"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F4623A] text-white flex items-center justify-center hover:bg-[#D94F2B] transition-colors focus:outline-none"
                   >
                     <Plus size={13} aria-hidden="true" />
                   </button>
@@ -594,7 +594,7 @@ function FilterSheet({
                     <button
                       key={ing}
                       onClick={() => addIngredient(ing)}
-                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                      className="w-full text-left text-sm px-3 py-2.5 text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {ing}
                     </button>
@@ -605,7 +605,7 @@ function FilterSheet({
               {debouncedIngSearch.length > 0 && filteredIngs.length === 0 && (
                 <button
                   onClick={() => { addIngredient(ingSearch.trim()); setIngSearch('') }}
-                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#16A34A] hover:text-[#16A34A] transition-colors"
+                  className="mt-2 w-full text-left text-sm px-3 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors"
                 >
                   + {t('filters.searchFreeText', { term: ingSearch.trim() })}
                 </button>
@@ -687,7 +687,7 @@ function FilterSheet({
                               expanded ? next.delete(key) : next.add(key)
                               return next
                             })}
-                            className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#16A34A] hover:text-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                            className="text-xs px-3 py-1.5 rounded-full border border-dashed border-[#D1D5DB] text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                           >
                             {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
                           </button>
@@ -716,7 +716,7 @@ function FilterSheet({
             ) : (
               <button
                 onClick={() => onOpenChange(false)}
-                className="w-full text-sm font-medium text-[#6B7280] py-2.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                className="w-full text-sm font-medium text-[#6B7280] py-2.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
                 {t('common.close')}
               </button>
@@ -770,12 +770,12 @@ function SortSheet({
               <button
                 key={value}
                 onClick={() => { onSelect(value); onOpenChange(false) }}
-                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#16A34A]/40"
+                className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F4623A]/40"
               >
-                <span className={current === value ? 'font-semibold text-[#16A34A]' : ''}>
+                <span className={current === value ? 'font-semibold text-[#F4623A]' : ''}>
                   {t(labelKey)}
                 </span>
-                {current === value && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                {current === value && <Check size={16} className="text-[#F4623A]" aria-hidden="true" />}
               </button>
             ))}
           </div>
@@ -842,7 +842,7 @@ function DietarySheet({
             <button
               onClick={() => onOpenChange(false)}
               aria-label={t('common.close')}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               <X size={16} aria-hidden="true" />
             </button>
@@ -857,10 +857,10 @@ function DietarySheet({
                     key={m}
                     onClick={() => setMode(m)}
                     disabled={mutation.isPending}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60"
                   >
                     <span className="font-medium">{t(`settings.dietary${m.charAt(0).toUpperCase() + m.slice(1)}`)}</span>
-                    {mode === m && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                    {mode === m && <Check size={16} className="text-[#F4623A]" aria-hidden="true" />}
                   </button>
                 ))}
               </div>
@@ -876,10 +876,10 @@ function DietarySheet({
                       key={flag}
                       onClick={() => toggleIntolerance(flag)}
                       disabled={mutation.isPending}
-                      className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                      className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none disabled:opacity-60"
                     >
                       <span className="font-medium">{t(`settings.intolerance${flag.charAt(0).toUpperCase() + flag.slice(1)}`)}</span>
-                      {active && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                      {active && <Check size={16} className="text-[#F4623A]" aria-hidden="true" />}
                     </button>
                   )
                 })}
@@ -887,7 +887,7 @@ function DietarySheet({
             </div>
 
             {savedMsg && (
-              <p className="text-xs text-[#16A34A] text-center">{t('settings.dietarySaved')}</p>
+              <p className="text-xs text-[#F4623A] text-center">{t('settings.dietarySaved')}</p>
             )}
           </div>
         </Drawer.Content>
@@ -1179,11 +1179,11 @@ function LibraryPage() {
   return (
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
       <div className="mx-auto w-full max-w-md px-4 flex flex-col flex-1 min-h-0">
-        {/* Header */}
-        <div className="pt-4 pb-3">
-          {/* Row 1: Search bar + settings button */}
+        {/* Sticky header */}
+        <div className="pt-4 pb-2 shrink-0">
+          {/* Row 1: Search bar + dietary button */}
           <div className="flex items-center gap-2">
-            <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#16A34A] focus-within:ring-2 focus-within:ring-[#16A34A]/20 transition-colors">
+            <div className="flex-1 flex items-center rounded-xl border border-[#E5E7EB] bg-white shadow-sm overflow-hidden focus-within:border-[#F4623A] focus-within:ring-2 focus-within:ring-[#F4623A]/20 transition-colors">
               <Search size={15} className="shrink-0 ml-3 text-[#9CA3AF] pointer-events-none" aria-hidden="true" />
               <input
                 type="text"
@@ -1197,33 +1197,18 @@ function LibraryPage() {
                 <button
                   onClick={() => { setLocalQ(''); update({ q: '' }) }}
                   aria-label="Limpar pesquisa"
-                  className="shrink-0 mr-1 p-1 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none rounded"
+                  className="shrink-0 mr-2 p-1 text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none rounded"
                 >
                   <X size={13} aria-hidden="true" />
                 </button>
               )}
-              <div className="shrink-0 w-px h-5 bg-[#E5E7EB]" aria-hidden="true" />
-              <button
-                onClick={() => openSheet('protein')}
-                aria-label={t('filters.sheetTitle')}
-                className={`relative shrink-0 flex items-center justify-center w-10 h-10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                  activeFilterCount > 0 ? 'text-[#15803d]' : 'text-[#6B7280] hover:text-[#1A1A1A]'
-                }`}
-              >
-                <SlidersHorizontal size={15} aria-hidden="true" />
-                {activeFilterCount > 0 && (
-                  <span className="absolute top-1.5 right-1 min-w-[14px] h-3.5 px-0.5 rounded-full bg-[#16A34A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
             </div>
             <button
               onClick={() => setDietaryOpen(true)}
               aria-label={t('settings.dietary')}
-              className={`shrink-0 w-10 h-10 rounded-xl border bg-white shadow-sm flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+              className={`shrink-0 w-10 h-10 rounded-xl border bg-white shadow-sm flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                 (profile?.dietary_mode && profile.dietary_mode !== 'none') || (profile?.intolerances && profile.intolerances.length > 0)
-                  ? 'border-[#16A34A] text-[#15803d]'
+                  ? 'border-[#F4623A] text-[#D94F2B]'
                   : 'border-[#E5E7EB] text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB]'
               }`}
             >
@@ -1231,72 +1216,47 @@ function LibraryPage() {
             </button>
           </div>
 
-          {/* Row 2: Sort button */}
-          <div className="flex items-center justify-end mt-2.5">
+          {/* Row 2: Filtros + Ordenar + count */}
+          <div className="flex items-center gap-2 mt-2.5">
+            <button
+              onClick={() => openSheet('protein')}
+              aria-label={t('filters.sheetTitle')}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                activeFilterCount > 0
+                  ? 'border-[#F4623A] bg-[#FEE9E1] text-[#D94F2B]'
+                  : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              <SlidersHorizontal size={12} aria-hidden="true" />
+              {t('filters.sheetTitle')}
+              {activeFilterCount > 0 && (
+                <span className="min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
             <button
               onClick={() => setSortSheetOpen(true)}
               aria-label={t('sort.label')}
-              className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
                 search.sort !== 'pcal' && !activeStripChip?.sort
-                  ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
-                  : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
+                  ? 'border-[#F4623A] bg-[#FEE9E1] text-[#D94F2B]'
+                  : 'border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]'
               }`}
             >
-              <ArrowUpDown size={13} aria-hidden="true" />
+              <ArrowUpDown size={12} aria-hidden="true" />
+              {t('sort.label')}
             </button>
+            {!isLoading && sortedRecipes.length > 0 && (
+              <span className="ml-auto text-xs text-[#9CA3AF]">
+                {sortedRecipes.length}{hasNextPage ? '+' : ''} {sortedRecipes.length === 1 ? t('common.recipes_one') : t('common.recipes_other')}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Strip chips — icon-card style, visible when no filters/query active */}
-        {stripVisible && (
-          <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
-            {orderedChips.map((chip) => {
-              const isActive = stripChip === chip.id
-              return (
-                <button
-                  key={chip.id}
-                  onClick={() => setStripChip(chip.id)}
-                  aria-pressed={isActive}
-                  className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                    isActive
-                      ? 'bg-[#dcfce7]'
-                      : 'bg-white border border-[#F0F0EE]'
-                  }`}
-                >
-                  <img
-                    src={chip.iconSrc}
-                    alt=""
-                    className="w-10 h-10 rounded-xl object-cover"
-                    aria-hidden="true"
-                  />
-                  <span className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? 'text-[#15803d]' : 'text-[#6B7280]'}`}>
-                    {t(chip.labelKey)}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Dietary banner — dismissible */}
-        {userExcludedFlags.length > 0 && !bannerDismissed && (
-          <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
-            <span className="flex-1">{t('library.dietaryBanner')}</span>
-            <button
-              onClick={() => {
-                setBannerDismissed(true)
-                localStorage.setItem('dietary_banner_dismissed', '1')
-              }}
-              aria-label={t('common.close')}
-              className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
-            >
-              <X size={12} aria-hidden="true" />
-            </button>
-          </div>
-        )}
-
         {isLoading ? (
-          <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3">
+          <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3 pt-2">
             {[0, 1, 2, 3, 4].map((i) => <CardSkeleton key={i} />)}
           </div>
 
@@ -1304,15 +1264,63 @@ function LibraryPage() {
           <div className="flex-1 flex flex-col items-center justify-center pb-20">
             <p className="text-[#6B7280] text-sm">{t('filters.empty')}</p>
             {hasActiveFilters && (
-              <button onClick={clearFilters} className="mt-2 text-xs text-[#16A34A] underline">
+              <button onClick={clearFilters} className="mt-2 text-xs text-[#F4623A] underline">
                 {t('filters.clearFilters')}
               </button>
             )}
           </div>
 
         ) : (
-          /* ── Virtual list (normal / filtered mode) ── */
+          /* ── Virtual list — strip and banner scroll with content ── */
           <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
+            {/* Strip chips — inside scroll so they disappear on scroll */}
+            {stripVisible && (
+              <div className="flex gap-2.5 overflow-x-auto pt-2 pb-3 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+                {orderedChips.map((chip) => {
+                  const isActive = stripChip === chip.id
+                  return (
+                    <button
+                      key={chip.id}
+                      onClick={() => setStripChip(chip.id)}
+                      aria-pressed={isActive}
+                      className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                        isActive
+                          ? 'bg-[#F4623A]'
+                          : 'bg-white border border-[#F0F0EE]'
+                      }`}
+                    >
+                      <img
+                        src={chip.iconSrc}
+                        alt=""
+                        className="w-10 h-10 rounded-xl object-cover"
+                        aria-hidden="true"
+                      />
+                      <span className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? 'text-white' : 'text-[#6B7280]'}`}>
+                        {t(chip.labelKey)}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Dietary banner — dismissible */}
+            {userExcludedFlags.length > 0 && !bannerDismissed && (
+              <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
+                <span className="flex-1">{t('library.dietaryBanner')}</span>
+                <button
+                  onClick={() => {
+                    setBannerDismissed(true)
+                    localStorage.setItem('dietary_banner_dismissed', '1')
+                  }}
+                  aria-label={t('common.close')}
+                  className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
+                >
+                  <X size={12} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+
             <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
               {virtualizer.getVirtualItems().map((virtualItem) => {
                 const isSentinel = virtualItem.index >= sortedRecipes.length
@@ -1333,7 +1341,7 @@ function LibraryPage() {
                     {isSentinel ? (
                       <div className="py-4 flex justify-center">
                         {isFetchingNextPage && (
-                          <div className="h-5 w-5 rounded-full border-2 border-[#16A34A] border-t-transparent animate-spin" />
+                          <div className="h-5 w-5 rounded-full border-2 border-[#F4623A] border-t-transparent animate-spin" />
                         )}
                       </div>
                     ) : (
@@ -1385,7 +1393,7 @@ function LibraryPage() {
       <Link
         to="/app/library/create"
         aria-label={t('library.newRecipe')}
-        className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#16A34A] text-white shadow-lg flex items-center justify-center hover:bg-[#15803d] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+        className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#F4623A] text-white shadow-lg flex items-center justify-center hover:bg-[#D94F2B] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         style={{ bottom: 'calc(3.5rem + env(safe-area-inset-bottom) + 1rem)' }}
       >
         <Plus size={24} aria-hidden="true" />

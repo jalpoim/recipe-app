@@ -7,7 +7,7 @@
   --color-app-fg: #1A1A1A;
   --color-app-muted: #6B7280;
   --color-app-border: #E5E7EB;
-  --color-app-accent: #16A34A;
+  --color-app-accent: #F4623A;
   --color-app-accent-yellow: #D97706;
   --color-app-accent-red: #DC2626;
   --color-app-input: #F3F4F6;
@@ -191,12 +191,15 @@ body {
 [data-theme="dark"] .hover\:border-\[\#D1D5DB\]:hover { border-color: #3F3F3C !important; }
 
 /* Status badge colours — inverted to dark-surface variants */
-[data-theme="dark"] .bg-\[\#f0fdf4\] { background-color: #0F2E1A !important; }
-[data-theme="dark"] .hover\:bg-\[\#f0fdf4\]:hover { background-color: #0F2E1A !important; }
-[data-theme="dark"] .border-\[\#bbf7d0\] { border-color: #166534 !important; }
-[data-theme="dark"] .hover\:bg-\[\#dcfce7\]:hover { background-color: #14532D !important; }
-[data-theme="dark"] .bg-\[\#dcfce7\] { background-color: #14532D !important; }
-[data-theme="dark"] .text-\[\#15803d\] { color: #4ADE80 !important; }
+[data-theme="dark"] .bg-\[\#FFF5F2\] { background-color: #3D1A0E !important; }
+[data-theme="dark"] .hover\:bg-\[\#FFF5F2\]:hover { background-color: #3D1A0E !important; }
+[data-theme="dark"] .border-\[\#FDD9CC\] { border-color: #A83520 !important; }
+[data-theme="dark"] .hover\:bg-\[\#FEE9E1\]:hover { background-color: #4A1F14 !important; }
+[data-theme="dark"] .bg-\[\#FEE9E1\] { background-color: #4A1F14 !important; }
+[data-theme="dark"] .text-\[\#D94F2B\] { color: #FB923C !important; }
+/* Semantic P/Cal green badge — kept green */
+[data-theme="dark"] .text-\[\#166534\] { color: #4ADE80 !important; }
+[data-theme="dark"] .bg-\[\#d1fae5\] { background-color: #14532D !important; }
 [data-theme="dark"] .bg-\[\#fee2e2\] { background-color: #450A0A !important; }
 [data-theme="dark"] .text-\[\#DC2626\] { color: #F87171 !important; }
 [data-theme="dark"] .bg-\[\#fef3c7\] { background-color: #451A03 !important; }
