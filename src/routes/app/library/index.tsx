@@ -1142,6 +1142,11 @@ function LibraryPage() {
       localStorage.getItem("dietary_banner_dismissed") === "1",
   );
   const parentRef = useRef<HTMLDivElement>(null);
+  const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [initialScrollOffset] = useState(() => {
+    if (typeof sessionStorage === "undefined") return 0;
+    return Number(sessionStorage.getItem("library_scroll") || "0");
+  });
 
   const [stripChip, setStripChip] = useState<StripChipId>(() =>
     getTimeAwareChip(),
@@ -1182,20 +1187,22 @@ function LibraryPage() {
     setLocalQ(search.q);
   }, [search.q]);
 
-  useEffect(() => {
-    return () => {
+  const handleScroll = useCallback(() => {
+    if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
+    scrollSaveTimer.current = setTimeout(() => {
       if (parentRef.current) {
         sessionStorage.setItem(
           "library_scroll",
           String(parentRef.current.scrollTop),
         );
       }
-    };
+    }, 200);
   }, []);
 
-  // Tap active Recipes tab → scroll to top
+  // Tap active Recipes tab → scroll to top and clear saved position
   useEffect(() => {
     function handler() {
+      sessionStorage.removeItem("library_scroll");
       parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     }
     window.addEventListener("tab:scroll-top:library", handler);
@@ -1338,18 +1345,6 @@ function LibraryPage() {
     }
   }, [allRecipes, effectiveSort]);
 
-  const hasRecipes = sortedRecipes.length > 0;
-  useEffect(() => {
-    if (!hasRecipes || !parentRef.current) return;
-    const saved = sessionStorage.getItem("library_scroll");
-    if (!saved) return;
-    sessionStorage.removeItem("library_scroll");
-    const top = Number(saved);
-    requestAnimationFrame(() => {
-      if (parentRef.current) parentRef.current.scrollTop = top;
-    });
-  }, [hasRecipes]);
-
   const { data: meta } = useQuery({
     queryKey: ["libraryMeta", lang],
     queryFn: () => fetchLibraryMeta({ data: { lang } }),
@@ -1383,6 +1378,7 @@ function LibraryPage() {
     getScrollElement: () => parentRef.current,
     estimateSize: () => 148,
     overscan: 5,
+    initialOffset: initialScrollOffset,
   });
 
   const fetchNextPageStable = useCallback(() => {
@@ -1527,6 +1523,7 @@ function LibraryPage() {
           /* ── Virtual list — strip and banner scroll with content ── */
           <div
             ref={parentRef}
+            onScroll={handleScroll}
             className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20"
             style={{ overscrollBehaviorY: "contain" }}
           >

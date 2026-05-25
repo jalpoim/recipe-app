@@ -1,18 +1,53 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, ChevronDown, ChevronUp, Check, Minus, Plus, Sparkles, X } from 'lucide-react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useTranslation } from 'react-i18next'
-import { Drawer } from 'vaul'
-import { createRecipe, searchIngredients, estimateMacros, fetchUserProteins, createUserProtein, deleteUserProtein, type IngredientRow, type StepRow } from '../../../lib/supabase/recipe-queries'
-import { useToast } from '../../../components/Toast'
-import { ProteinPicker } from '../../../components/ProteinPicker'
+import {
+  createFileRoute,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
+import { useState, useRef, useEffect } from "react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Check,
+  Minus,
+  Plus,
+  Sparkles,
+  X,
+} from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
+import { Drawer } from "vaul";
+import {
+  createRecipe,
+  searchIngredients,
+  estimateMacros,
+  fetchUserProteins,
+  createUserProtein,
+  deleteUserProtein,
+  type IngredientRow,
+  type StepRow,
+} from "../../../lib/supabase/recipe-queries";
+import { useToast } from "../../../components/Toast";
+import { ProteinPicker } from "../../../components/ProteinPicker";
 
 const UNIT_SECTIONS = [
-  { label: 'Métrico',    units: ['g', 'kg', 'ml', 'L'] },
-  { label: 'Imperial',  units: ['oz', 'lb', 'cup', 'tbsp', 'tsp', 'fl oz'] },
-  { label: 'Contagem',  units: ['unit', 'slice', 'clove', 'pinch', 'bunch', 'handful', 'sheet', 'can', 'sachet'] },
-] as const
+  { label: "Métrico", units: ["g", "kg", "ml", "L"] },
+  { label: "Imperial", units: ["oz", "lb", "cup", "tbsp", "tsp", "fl oz"] },
+  {
+    label: "Contagem",
+    units: [
+      "unit",
+      "slice",
+      "clove",
+      "pinch",
+      "bunch",
+      "handful",
+      "sheet",
+      "can",
+      "sachet",
+    ],
+  },
+] as const;
 
 function UnitSheet({
   open,
@@ -20,10 +55,10 @@ function UnitSheet({
   selected,
   onSelect,
 }: {
-  open: boolean
-  onOpenChange: (v: boolean) => void
-  selected: string
-  onSelect: (unit: string) => void
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  selected: string;
+  onSelect: (unit: string) => void;
 }) {
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
@@ -42,11 +77,16 @@ function UnitSheet({
                   <button
                     key={u}
                     type="button"
-                    onClick={() => { onSelect(u); onOpenChange(false) }}
+                    onClick={() => {
+                      onSelect(u);
+                      onOpenChange(false);
+                    }}
                     className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#1A1A1A] active:bg-[#F9FAFB] transition-colors"
                   >
                     {u}
-                    {selected === u && <Check size={16} className="text-[#F4623A]" />}
+                    {selected === u && (
+                      <Check size={16} className="text-[#F4623A]" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -55,28 +95,95 @@ function UnitSheet({
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
-  )
+  );
 }
 
-export const Route = createFileRoute('/app/library/create')({
+export const Route = createFileRoute("/app/library/create")({
   component: CreateRecipePage,
-})
+});
 
 const TAG_SECTIONS_CREATE: { key: string; tags: string[] }[] = [
-  { key: 'method',  tags: ['air-fryer', 'forno', 'fogão', 'micro-ondas', 'sem-cozinha', 'uma-frigideira', 'bimby', 'grelhador'] },
-  { key: 'cuisine', tags: ['português', 'mediterrâneo', 'italiano', 'francês', 'europeu', 'americano', 'mexicano', 'indiano', 'asiático', 'japonês', 'coreano', 'árabe', 'africano', 'latino-americano'] },
-  { key: 'diet',    tags: ['sem-glúten', 'vegetariano', 'vegano', 'sem-lactose', 'alto-proteína', 'low-carb', 'fit'] },
-  { key: 'type',    tags: ['pequeno-almoço', 'almoço', 'jantar', 'snack', 'sobremesa', 'sopa', 'pós-treino', 'batido'] },
-  { key: 'context', tags: ['meal-prep', 'rápido', 'reconfortante', 'leve', 'económico', 'família', 'festivo', '5-ingredientes', 'semana', 'verão'] },
-]
+  {
+    key: "method",
+    tags: [
+      "air-fryer",
+      "forno",
+      "fogão",
+      "micro-ondas",
+      "sem-cozinha",
+      "uma-frigideira",
+      "bimby",
+      "grelhador",
+    ],
+  },
+  {
+    key: "cuisine",
+    tags: [
+      "português",
+      "mediterrâneo",
+      "italiano",
+      "francês",
+      "europeu",
+      "americano",
+      "mexicano",
+      "indiano",
+      "asiático",
+      "japonês",
+      "coreano",
+      "árabe",
+      "africano",
+      "latino-americano",
+    ],
+  },
+  {
+    key: "diet",
+    tags: [
+      "sem-glúten",
+      "vegetariano",
+      "vegano",
+      "sem-lactose",
+      "alto-proteína",
+      "low-carb",
+      "fit",
+    ],
+  },
+  {
+    key: "type",
+    tags: [
+      "pequeno-almoço",
+      "almoço",
+      "jantar",
+      "snack",
+      "sobremesa",
+      "sopa",
+      "pós-treino",
+      "batido",
+    ],
+  },
+  {
+    key: "context",
+    tags: [
+      "meal-prep",
+      "rápido",
+      "reconfortante",
+      "leve",
+      "económico",
+      "família",
+      "festivo",
+      "5-ingredientes",
+      "semana",
+      "verão",
+    ],
+  },
+];
 
 function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
+  const [debounced, setDebounced] = useState(value);
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return debounced
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
 }
 
 function IngredientCombobox({
@@ -85,65 +192,74 @@ function IngredientCombobox({
   onRemove,
   index,
 }: {
-  value: IngredientRow
-  onValueChange: (updated: IngredientRow) => void
-  onRemove: () => void
-  index: number
+  value: IngredientRow;
+  onValueChange: (updated: IngredientRow) => void;
+  onRemove: () => void;
+  index: number;
 }) {
-  useTranslation()
-  const [text, setText] = useState(value.rawText)
-  const [open, setOpen] = useState(false)
-  const [unitSheetOpen, setUnitSheetOpen] = useState(false)
-  const [qty, setQty] = useState(value.quantity != null ? String(value.quantity) : '')
-  const [unit, setUnit] = useState(value.unit ?? 'g')
-  const debouncedText = useDebounce(text, 250)
-  const containerRef = useRef<HTMLDivElement>(null)
+  useTranslation();
+  const [text, setText] = useState(value.rawText);
+  const [open, setOpen] = useState(false);
+  const [unitSheetOpen, setUnitSheetOpen] = useState(false);
+  const [qty, setQty] = useState(
+    value.quantity != null ? String(value.quantity) : "",
+  );
+  const [unit, setUnit] = useState(value.unit ?? "g");
+  const debouncedText = useDebounce(text, 250);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: suggestions = [] } = useQuery({
-    queryKey: ['ingredientSearch', debouncedText],
+    queryKey: ["ingredientSearch", debouncedText],
     queryFn: () => searchIngredients({ data: debouncedText }),
     enabled: debouncedText.length >= 2,
     staleTime: 30_000,
-  })
+  });
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (!containerRef.current?.contains(e.target as Node)) setOpen(false)
+      if (!containerRef.current?.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   function handleSelect(ing: { name: string; default_unit: string | null }) {
-    const selectedUnit = ing.default_unit ?? 'g'
-    setText(ing.name)
-    onValueChange({ ...value, rawText: ing.name, name: ing.name, unit: ing.default_unit })
-    setUnit(selectedUnit)
-    setOpen(false)
+    const selectedUnit = ing.default_unit ?? "g";
+    setText(ing.name);
+    onValueChange({
+      ...value,
+      rawText: ing.name,
+      name: ing.name,
+      unit: ing.default_unit,
+    });
+    setUnit(selectedUnit);
+    setOpen(false);
   }
 
   function handleTextChange(newText: string) {
-    setText(newText)
-    onValueChange({ ...value, rawText: newText, name: null })
-    setOpen(newText.length >= 2)
+    setText(newText);
+    onValueChange({ ...value, rawText: newText, name: null });
+    setOpen(newText.length >= 2);
   }
 
   function handleQtyChange(newQty: string) {
-    setQty(newQty)
-    onValueChange({ ...value, quantity: newQty ? parseFloat(newQty) : null })
+    setQty(newQty);
+    onValueChange({ ...value, quantity: newQty ? parseFloat(newQty) : null });
   }
 
   function handleUnitChange(newUnit: string) {
-    setUnit(newUnit)
-    onValueChange({ ...value, unit: newUnit || null })
+    setUnit(newUnit);
+    onValueChange({ ...value, unit: newUnit || null });
   }
 
-  const isNonDefault = unit !== 'g' && unit !== ''
+  const isNonDefault = unit !== "g" && unit !== "";
 
   return (
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-1.5">
-        <span className="shrink-0 w-5 text-xs text-[#9CA3AF] text-right">{index + 1}.</span>
+        <span className="shrink-0 w-5 text-xs text-[#9CA3AF] text-right">
+          {index + 1}.
+        </span>
         <input
           type="number"
           min={0}
@@ -160,17 +276,19 @@ function IngredientCombobox({
           aria-label="Selecionar unidade"
           className={`shrink-0 rounded-xl border px-2 py-2 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
             isNonDefault
-              ? 'border-[#F4623A] bg-[#FFF5F2] text-[#D94F2B]'
-              : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#1A1A1A]'
+              ? "border-[#F4623A] bg-[#FFF5F2] text-[#D94F2B]"
+              : "border-[#E5E7EB] bg-[#F9FAFB] text-[#1A1A1A]"
           }`}
         >
-          {unit || 'g'}
+          {unit || "g"}
         </button>
         <input
           type="text"
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
-          onFocus={() => { if (text.length >= 2) setOpen(true) }}
+          onFocus={() => {
+            if (text.length >= 2) setOpen(true);
+          }}
           placeholder="Ingrediente…"
           className="flex-1 min-w-0 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
         />
@@ -193,7 +311,9 @@ function IngredientCombobox({
               className="w-full text-left px-3 py-2.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors"
             >
               {s.name}
-              {s.default_unit && <span className="text-[#9CA3AF] ml-1">· {s.default_unit}</span>}
+              {s.default_unit && (
+                <span className="text-[#9CA3AF] ml-1">· {s.default_unit}</span>
+              )}
             </button>
           ))}
         </div>
@@ -205,7 +325,7 @@ function IngredientCombobox({
         onSelect={handleUnitChange}
       />
     </div>
-  )
+  );
 }
 
 function CollapsibleSection({
@@ -213,11 +333,11 @@ function CollapsibleSection({
   children,
   defaultOpen = false,
 }: {
-  title: string
-  children: React.ReactNode
-  defaultOpen?: boolean
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
       <button
@@ -226,78 +346,95 @@ function CollapsibleSection({
         className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
       >
         {title}
-        {open ? <ChevronUp size={16} className="text-[#9CA3AF]" /> : <ChevronDown size={16} className="text-[#9CA3AF]" />}
+        {open ? (
+          <ChevronUp size={16} className="text-[#9CA3AF]" />
+        ) : (
+          <ChevronDown size={16} className="text-[#9CA3AF]" />
+        )}
       </button>
-      {open && <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">{children}</div>}
+      {open && (
+        <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
+          {children}
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
-
-
 function CreateRecipePage() {
-  const { t, i18n } = useTranslation()
-  const navigate = useNavigate()
-  const { showToast } = useToast()
-  const queryClient = useQueryClient()
-  const lang = i18n.language.startsWith('en') ? 'en' : 'pt'
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const router = useRouter();
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const lang = i18n.language.startsWith("en") ? "en" : "pt";
 
-  const [name, setName] = useState('')
-  const [servings, setServings] = useState(1)
-  const [timeMin, setTimeMin] = useState<string>('')
-  const [selectedProteins, setSelectedProteins] = useState<string[]>([])
+  const [name, setName] = useState("");
+  const [servings, setServings] = useState(1);
+  const [timeMin, setTimeMin] = useState<string>("");
+  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
   const [ingredients, setIngredients] = useState<IngredientRow[]>([
-    { position: 0, rawText: '', quantity: null, unit: null, name: null, isOptional: false },
-  ])
+    {
+      position: 0,
+      rawText: "",
+      quantity: null,
+      unit: null,
+      name: null,
+      isOptional: false,
+    },
+  ]);
   const [steps, setSteps] = useState<StepRow[]>([
-    { position: 0, text: '', timerSeconds: null },
-  ])
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
-  const [customTagInput, setCustomTagInput] = useState('')
-  const [calories, setCalories] = useState<string>('')
-  const [protein, setProtein] = useState<string>('')
-  const [carbs, setCarbs] = useState<string>('')
-  const [fat, setFat] = useState<string>('')
-  const [publish, setPublish] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+    { position: 0, text: "", timerSeconds: null },
+  ]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTagInput, setCustomTagInput] = useState("");
+  const [calories, setCalories] = useState<string>("");
+  const [protein, setProtein] = useState<string>("");
+  const [carbs, setCarbs] = useState<string>("");
+  const [fat, setFat] = useState<string>("");
+  const [publish, setPublish] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const { data: userProteins = [], refetch: refetchUserProteins } = useQuery({
-    queryKey: ['user-proteins'],
+    queryKey: ["user-proteins"],
     queryFn: () => fetchUserProteins(),
     staleTime: 5 * 60 * 1000,
-  })
+  });
 
   const addCustomProteinMutation = useMutation({
     mutationFn: (displayName: string) =>
       createUserProtein({ data: { displayName, language: lang } }),
     onSuccess: (protein) => {
-      refetchUserProteins()
-      setSelectedProteins((prev) => [...prev, protein.slug])
+      refetchUserProteins();
+      setSelectedProteins((prev) => [...prev, protein.slug]);
     },
-  })
+  });
 
   const deleteCustomProteinMutation = useMutation({
     mutationFn: (id: string) => deleteUserProtein({ data: id }),
     onSuccess: () => refetchUserProteins(),
-  })
+  });
 
   const estimateMutation = useMutation({
-    mutationFn: () => estimateMacros({
-      data: {
-        name: name.trim(),
-        ingredients: ingredients.filter((i) => i.rawText.trim()).map((i) => i.rawText),
-        servings,
-      },
-    }),
+    mutationFn: () =>
+      estimateMacros({
+        data: {
+          name: name.trim(),
+          ingredients: ingredients
+            .filter((i) => i.rawText.trim())
+            .map((i) => i.rawText),
+          servings,
+        },
+      }),
     onSuccess: (result) => {
-      if (result.calories != null) setCalories(String(result.calories))
-      if (result.protein != null) setProtein(String(result.protein))
-      if (result.carbs != null) setCarbs(String(result.carbs))
-      if (result.fat != null) setFat(String(result.fat))
-      showToast(t('create.macrosEstimated'), 'success')
+      if (result.calories != null) setCalories(String(result.calories));
+      if (result.protein != null) setProtein(String(result.protein));
+      if (result.carbs != null) setCarbs(String(result.carbs));
+      if (result.fat != null) setFat(String(result.fat));
+      showToast(t("create.macrosEstimated"), "success");
     },
-    onError: () => showToast(t('create.macrosEstimateError'), 'error'),
-  })
+    onError: () => showToast(t("create.macrosEstimateError"), "error"),
+  });
 
   const saveMutation = useMutation({
     mutationFn: () =>
@@ -312,83 +449,106 @@ function CreateRecipePage() {
           protein: protein ? parseFloat(protein) : null,
           carbs: carbs ? parseFloat(carbs) : null,
           fat: fat ? parseFloat(fat) : null,
-          visibility: publish ? 'public' : 'private',
-          ingredients: ingredients.filter((i) => i.rawText.trim()).map((ing, idx) => ({ ...ing, position: idx })),
-          steps: steps.filter((s) => s.text.trim()).map((s, idx) => ({ ...s, position: idx })),
+          visibility: publish ? "public" : "private",
+          ingredients: ingredients
+            .filter((i) => i.rawText.trim())
+            .map((ing, idx) => ({ ...ing, position: idx })),
+          steps: steps
+            .filter((s) => s.text.trim())
+            .map((s, idx) => ({ ...s, position: idx })),
           lang,
         },
       }),
     onSuccess: ({ id }) => {
-      queryClient.invalidateQueries({ queryKey: ['library'] })
-      navigate({ to: '/app/library/$recipeId', params: { recipeId: id }, search: { from: undefined, planItemId: undefined } })
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      navigate({
+        to: "/app/library/$recipeId",
+        params: { recipeId: id },
+        search: { from: undefined, planItemId: undefined },
+      });
     },
-    onError: () => showToast(t('common.error'), 'error'),
-  })
+    onError: () => showToast(t("common.error"), "error"),
+  });
 
   function validate(): boolean {
-    const errs: Record<string, string> = {}
-    if (!name.trim()) errs.name = t('create.validationName')
-    if (!ingredients.some((i) => i.rawText.trim())) errs.ingredients = t('create.validationIngredients')
-    setErrors(errs)
-    return Object.keys(errs).length === 0
+    const errs: Record<string, string> = {};
+    if (!name.trim()) errs.name = t("create.validationName");
+    if (!ingredients.some((i) => i.rawText.trim()))
+      errs.ingredients = t("create.validationIngredients");
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
   }
 
   function handleSave() {
-    if (!validate()) return
-    saveMutation.mutate()
+    if (!validate()) return;
+    saveMutation.mutate();
   }
 
   function addIngredient() {
     setIngredients((prev) => [
       ...prev,
-      { position: prev.length, rawText: '', quantity: null, unit: null, name: null, isOptional: false },
-    ])
+      {
+        position: prev.length,
+        rawText: "",
+        quantity: null,
+        unit: null,
+        name: null,
+        isOptional: false,
+      },
+    ]);
   }
 
   function updateIngredient(index: number, updated: IngredientRow) {
-    setIngredients((prev) => prev.map((ing, i) => (i === index ? updated : ing)))
+    setIngredients((prev) =>
+      prev.map((ing, i) => (i === index ? updated : ing)),
+    );
   }
 
   function removeIngredient(index: number) {
-    setIngredients((prev) => prev.filter((_, i) => i !== index))
+    setIngredients((prev) => prev.filter((_, i) => i !== index));
   }
 
   function addStep() {
-    setSteps((prev) => [...prev, { position: prev.length, text: '', timerSeconds: null }])
+    setSteps((prev) => [
+      ...prev,
+      { position: prev.length, text: "", timerSeconds: null },
+    ]);
   }
 
   function updateStep(index: number, text: string) {
-    setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, text } : s)))
+    setSteps((prev) => prev.map((s, i) => (i === index ? { ...s, text } : s)));
   }
 
   function removeStep(index: number) {
-    setSteps((prev) => prev.filter((_, i) => i !== index))
+    setSteps((prev) => prev.filter((_, i) => i !== index));
   }
 
   function toggleProtein(slug: string) {
     setSelectedProteins((prev) =>
-      prev.includes(slug) ? prev.filter((p) => p !== slug) : [...prev, slug]
-    )
+      prev.includes(slug) ? prev.filter((p) => p !== slug) : [...prev, slug],
+    );
   }
 
   function toggleTag(tag: string) {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    )
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
   }
 
-  const systemTagSlugs = TAG_SECTIONS_CREATE.flatMap((s) => s.tags)
+  const systemTagSlugs = TAG_SECTIONS_CREATE.flatMap((s) => s.tags);
 
   function addCustomTag() {
-    const slug = customTagInput.trim().toLowerCase().replace(/\s+/g, '-')
-    if (!slug || selectedTags.includes(slug)) return
-    setSelectedTags((prev) => [...prev, slug])
-    setCustomTagInput('')
+    const slug = customTagInput.trim().toLowerCase().replace(/\s+/g, "-");
+    if (!slug || selectedTags.includes(slug)) return;
+    setSelectedTags((prev) => [...prev, slug]);
+    setCustomTagInput("");
   }
 
-  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none'
-  const chipActive = 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
-  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]'
+  const chipBase =
+    "text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none";
+  const chipActive = "bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]";
+  const chipInactive =
+    "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]";
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -397,21 +557,23 @@ function CreateRecipePage() {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => navigate({ to: '/app/library', search: { q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const } })}
-            aria-label={t('recipe.back')}
+            onClick={() => router.history.back()}
+            aria-label={t("recipe.back")}
             className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
             <ArrowLeft size={16} aria-hidden="true" />
-            {t('recipe.back')}
+            {t("recipe.back")}
           </button>
-          <h1 className="text-base font-semibold text-[#1A1A1A]">{t('create.title')}</h1>
+          <h1 className="text-base font-semibold text-[#1A1A1A]">
+            {t("create.title")}
+          </h1>
           <button
             type="button"
             onClick={handleSave}
             disabled={saveMutation.isPending}
             className="text-sm font-semibold text-[#F4623A] disabled:opacity-50 hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
-            {saveMutation.isPending ? t('create.saving') : t('create.save')}
+            {saveMutation.isPending ? t("create.saving") : t("create.save")}
           </button>
         </div>
       </div>
@@ -423,16 +585,20 @@ function CreateRecipePage() {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder={t('create.namePlaceholder')}
-            className={`w-full rounded-xl border bg-white px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors ${errors.name ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}
+            placeholder={t("create.namePlaceholder")}
+            className={`w-full rounded-xl border bg-white px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors ${errors.name ? "border-[#DC2626]" : "border-[#E5E7EB]"}`}
           />
-          {errors.name && <p className="mt-1 text-xs text-[#DC2626]">{errors.name}</p>}
+          {errors.name && (
+            <p className="mt-1 text-xs text-[#DC2626]">{errors.name}</p>
+          )}
         </div>
 
         {/* Servings */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[#1A1A1A]">{t('create.servingsLabel')}</span>
+            <span className="text-sm font-medium text-[#1A1A1A]">
+              {t("create.servingsLabel")}
+            </span>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -442,7 +608,9 @@ function CreateRecipePage() {
               >
                 <Minus size={16} aria-hidden="true" />
               </button>
-              <span className="w-6 text-center font-bold text-[#1A1A1A]">{servings}</span>
+              <span className="w-6 text-center font-bold text-[#1A1A1A]">
+                {servings}
+              </span>
               <button
                 type="button"
                 onClick={() => setServings((s) => s + 1)}
@@ -456,19 +624,27 @@ function CreateRecipePage() {
 
         {/* Proteins — optional */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
-          <p className="text-sm font-semibold text-[#1A1A1A] mb-3">{t('create.proteinsLabel')}</p>
+          <p className="text-sm font-semibold text-[#1A1A1A] mb-3">
+            {t("create.proteinsLabel")}
+          </p>
           <ProteinPicker
             selected={selectedProteins}
             onToggle={toggleProtein}
             userProteins={userProteins}
-            onAddCustom={(displayName) => addCustomProteinMutation.mutate(displayName)}
+            onAddCustom={(displayName) =>
+              addCustomProteinMutation.mutate(displayName)
+            }
             onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
           />
         </div>
 
         {/* Ingredients — required */}
-        <div className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.ingredients ? 'border-[#DC2626]' : 'border-[#E5E7EB]'}`}>
-          <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.ingredientsLabel')}</p>
+        <div
+          className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.ingredients ? "border-[#DC2626]" : "border-[#E5E7EB]"}`}
+        >
+          <p className="text-sm font-semibold text-[#1A1A1A]">
+            {t("create.ingredientsLabel")}
+          </p>
           {ingredients.map((ing, idx) => (
             <IngredientCombobox
               key={idx}
@@ -483,21 +659,27 @@ function CreateRecipePage() {
             onClick={addIngredient}
             className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#F4623A] py-2.5 hover:border-[#F4623A] hover:bg-[#FFF5F2] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
-            + {t('create.addIngredient')}
+            + {t("create.addIngredient")}
           </button>
-          {errors.ingredients && <p className="text-xs text-[#DC2626]">{errors.ingredients}</p>}
+          {errors.ingredients && (
+            <p className="text-xs text-[#DC2626]">{errors.ingredients}</p>
+          )}
         </div>
 
         {/* Steps — optional */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
-          <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.stepsLabel')}</p>
+          <p className="text-sm font-semibold text-[#1A1A1A]">
+            {t("create.stepsLabel")}
+          </p>
           {steps.map((step, idx) => (
             <div key={idx} className="flex items-start gap-2">
-              <span className="shrink-0 w-5 h-5 rounded-full bg-[#FEE9E1] text-[#D94F2B] text-xs font-bold flex items-center justify-center mt-2.5">{idx + 1}</span>
+              <span className="shrink-0 w-5 h-5 rounded-full bg-[#FEE9E1] text-[#D94F2B] text-xs font-bold flex items-center justify-center mt-2.5">
+                {idx + 1}
+              </span>
               <textarea
                 value={step.text}
                 onChange={(e) => updateStep(idx, e.target.value)}
-                placeholder={t('create.stepPlaceholder')}
+                placeholder={t("create.stepPlaceholder")}
                 rows={2}
                 className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] resize-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
               />
@@ -518,12 +700,12 @@ function CreateRecipePage() {
             onClick={addStep}
             className="w-full rounded-xl border border-dashed border-[#D1D5DB] text-sm text-[#F4623A] py-2.5 hover:border-[#F4623A] hover:bg-[#FFF5F2] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
           >
-            + {t('create.addStep')}
+            + {t("create.addStep")}
           </button>
         </div>
 
         {/* Time — optional collapsible */}
-        <CollapsibleSection title={t('create.timeLabel')}>
+        <CollapsibleSection title={t("create.timeLabel")}>
           <input
             type="number"
             min={1}
@@ -535,7 +717,7 @@ function CreateRecipePage() {
         </CollapsibleSection>
 
         {/* Tags — optional collapsible */}
-        <CollapsibleSection title={t('create.tagsLabel')}>
+        <CollapsibleSection title={t("create.tagsLabel")}>
           <div className="space-y-4">
             {TAG_SECTIONS_CREATE.map(({ key, tags: sectionTags }) => (
               <div key={key}>
@@ -558,28 +740,35 @@ function CreateRecipePage() {
               </div>
             ))}
             {/* Custom tags */}
-            {selectedTags.filter((tag) => !systemTagSlugs.includes(tag)).length > 0 && (
+            {selectedTags.filter((tag) => !systemTagSlugs.includes(tag))
+              .length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-                  {t('create.customTagsSection', 'Os meus tags')}
+                  {t("create.customTagsSection", "Os meus tags")}
                 </p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedTags.filter((tag) => !systemTagSlugs.includes(tag)).map((tag) => (
-                    <span
-                      key={tag}
-                      className={`${chipBase} ${chipActive} flex items-center gap-1`}
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedTags((prev) => prev.filter((t) => t !== tag))}
-                        aria-label={`Remover tag ${tag}`}
-                        className="focus:outline-none"
+                  {selectedTags
+                    .filter((tag) => !systemTagSlugs.includes(tag))
+                    .map((tag) => (
+                      <span
+                        key={tag}
+                        className={`${chipBase} ${chipActive} flex items-center gap-1`}
                       >
-                        <X size={10} aria-hidden="true" />
-                      </button>
-                    </span>
-                  ))}
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedTags((prev) =>
+                              prev.filter((t) => t !== tag),
+                            )
+                          }
+                          aria-label={`Remover tag ${tag}`}
+                          className="focus:outline-none"
+                        >
+                          <X size={10} aria-hidden="true" />
+                        </button>
+                      </span>
+                    ))}
                 </div>
               </div>
             )}
@@ -589,8 +778,13 @@ function CreateRecipePage() {
                 type="text"
                 value={customTagInput}
                 onChange={(e) => setCustomTagInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag() } }}
-                placeholder={t('create.addCustomTag', 'Adicionar tag…')}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addCustomTag();
+                  }
+                }}
+                placeholder={t("create.addCustomTag", "Adicionar tag…")}
                 className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
               />
               <button
@@ -606,12 +800,16 @@ function CreateRecipePage() {
         </CollapsibleSection>
 
         {/* Macros — optional collapsible */}
-        <CollapsibleSection title={t('create.macrosLabel')}>
+        <CollapsibleSection title={t("create.macrosLabel")}>
           <div className="space-y-3">
             <button
               type="button"
               onClick={() => estimateMutation.mutate()}
-              disabled={estimateMutation.isPending || !name.trim() || !ingredients.some((i) => i.rawText.trim())}
+              disabled={
+                estimateMutation.isPending ||
+                !name.trim() ||
+                !ingredients.some((i) => i.rawText.trim())
+              }
               className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#F4623A] font-medium disabled:opacity-40 hover:bg-[#FFF5F2] hover:border-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {estimateMutation.isPending ? (
@@ -619,19 +817,31 @@ function CreateRecipePage() {
               ) : (
                 <Sparkles size={14} aria-hidden="true" />
               )}
-              {t('create.estimateMacros')}
+              {t("create.estimateMacros")}
             </button>
             <div className="grid grid-cols-2 gap-3">
-              {(
-                [
-                  { label: t('create.caloriesLabel'), value: calories, setter: setCalories },
-                  { label: t('create.proteinLabel'), value: protein, setter: setProtein },
-                  { label: t('create.carbsLabel'), value: carbs, setter: setCarbs },
-                  { label: t('create.fatLabel'), value: fat, setter: setFat },
-                ]
-              ).map(({ label, value, setter }) => (
+              {[
+                {
+                  label: t("create.caloriesLabel"),
+                  value: calories,
+                  setter: setCalories,
+                },
+                {
+                  label: t("create.proteinLabel"),
+                  value: protein,
+                  setter: setProtein,
+                },
+                {
+                  label: t("create.carbsLabel"),
+                  value: carbs,
+                  setter: setCarbs,
+                },
+                { label: t("create.fatLabel"), value: fat, setter: setFat },
+              ].map(({ label, value, setter }) => (
                 <div key={label}>
-                  <label className="block text-xs text-[#6B7280] mb-1">{label}</label>
+                  <label className="block text-xs text-[#6B7280] mb-1">
+                    {label}
+                  </label>
                   <input
                     type="number"
                     min={0}
@@ -649,18 +859,22 @@ function CreateRecipePage() {
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div className="flex-1 mr-4">
-              <p className="text-sm font-semibold text-[#1A1A1A]">{t('create.publishLabel')}</p>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">{t('create.publishHint')}</p>
+              <p className="text-sm font-semibold text-[#1A1A1A]">
+                {t("create.publishLabel")}
+              </p>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                {t("create.publishHint")}
+              </p>
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={publish}
               onClick={() => setPublish((p) => !p)}
-              className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${publish ? 'bg-[#F4623A]' : 'bg-[#D1D5DB]'}`}
+              className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${publish ? "bg-[#F4623A]" : "bg-[#D1D5DB]"}`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${publish ? 'translate-x-5' : 'translate-x-0'}`}
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${publish ? "translate-x-5" : "translate-x-0"}`}
               />
             </button>
           </div>
@@ -673,9 +887,9 @@ function CreateRecipePage() {
           disabled={saveMutation.isPending}
           className="w-full rounded-2xl bg-[#F4623A] text-white py-4 text-sm font-semibold disabled:opacity-60 hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
-          {saveMutation.isPending ? t('create.saving') : t('create.save')}
+          {saveMutation.isPending ? t("create.saving") : t("create.save")}
         </button>
       </div>
     </div>
-  )
+  );
 }
