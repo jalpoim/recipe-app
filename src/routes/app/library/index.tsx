@@ -1371,12 +1371,7 @@ function LibraryPage() {
     ? STRIP_CHIPS.find((c) => c.id === stripChip)
     : undefined;
 
-  const orderedChips = useMemo(() => {
-    if (!stripVisible) return STRIP_CHIPS;
-    const idx = STRIP_CHIPS.findIndex((c) => c.id === stripChip);
-    if (idx <= 0) return STRIP_CHIPS;
-    return [STRIP_CHIPS[idx], ...STRIP_CHIPS.filter((_, i) => i !== idx)];
-  }, [stripChip, stripVisible]);
+  const orderedChips = STRIP_CHIPS;
 
   const effectiveSort: Sort = activeStripChip?.sort ?? search.sort;
 
