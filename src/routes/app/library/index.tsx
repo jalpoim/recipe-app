@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, SlidersHorizontal, SlidersVertical, Utensils, X } from 'lucide-react'
+import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, SlidersHorizontal, SlidersVertical, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -13,7 +13,6 @@ import {
   type Sort,
   type LibraryCursor,
 } from '../../../lib/supabase/queries'
-import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
 import {
   fetchInteractions,
   upsertInteraction,
@@ -135,15 +134,15 @@ type LibrarySearch = {
 function CardSkeleton() {
   return (
     <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden animate-pulse">
-      <div className="flex min-h-[110px]">
+      <div className="flex h-[136px]">
         <div className="w-[96px] shrink-0 bg-[#F3F4F6]" />
-        <div className="flex-1 p-3 flex flex-col gap-2">
-          <div className="h-4 bg-[#F3F4F6] rounded-full w-3/4" />
+        <div className="flex-1 p-3 flex flex-col gap-2.5">
+          <div className="h-3.5 bg-[#F3F4F6] rounded-full w-4/5" />
+          <div className="h-3 bg-[#F3F4F6] rounded-full w-3/5" />
           <div className="h-3 bg-[#F3F4F6] rounded-full w-1/2" />
-          <div className="h-3 bg-[#F3F4F6] rounded-full w-1/3" />
           <div className="flex gap-1.5 mt-1">
-            <div className="flex-1 h-10 bg-[#F3F4F6] rounded-xl" />
-            <div className="flex-1 h-10 bg-[#F3F4F6] rounded-xl" />
+            <div className="h-5 w-16 bg-[#F3F4F6] rounded-full" />
+            <div className="h-5 w-16 bg-[#F3F4F6] rounded-full" />
           </div>
         </div>
       </div>
@@ -211,14 +210,12 @@ function perServing(r: Recipe, field: 'calories' | 'protein' | 'carbs' | 'fat') 
 
 function RecipeCard({
   recipe,
-  cookCount = 0,
   isSaved = false,
   isLiked = false,
   onToggleSave,
   onToggleLike,
 }: {
   recipe: RecipeWithIngredients
-  cookCount?: number
   isSaved?: boolean
   isLiked?: boolean
   onToggleSave?: (e: React.MouseEvent) => void
@@ -234,20 +231,22 @@ function RecipeCard({
   const ingredientCount = recipe.recipe_ingredients?.length ?? 0
 
   return (
-    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-all overflow-hidden">
+    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden">
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: recipe.id }}
         search={{ from: undefined, planItemId: undefined }}
         onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: 'library' })}
-        className="flex items-stretch min-h-[110px]"
+        className="flex h-[136px]"
       >
-        {/* Left: image fills full card height */}
+        {/* Left: image fixed height */}
         <div className="w-[96px] shrink-0">
           {recipe.image_thumb_url ? (
             <img
               src={recipe.image_thumb_url}
               alt=""
+              width={96}
+              height={136}
               className="w-full h-full object-cover object-center"
               loading="lazy"
             />
@@ -261,67 +260,60 @@ function RecipeCard({
         </div>
 
         {/* Right: content */}
-        <div className="flex-1 min-w-0 flex flex-col p-3">
-          <div className="flex-1">
-            <h2 className="text-[#1A1A1A] font-semibold text-sm leading-snug line-clamp-3">{recipe.name}</h2>
-            <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280]">
-              {recipe.time_min != null && (
-                <span className="flex items-center gap-0.5">
-                  <Clock size={10} aria-hidden="true" />
-                  {recipe.time_min} min
-                </span>
-              )}
-              {ingredientCount > 0 && (
-                <span>{ingredientCount} {t('recipe.ingredients').toLowerCase()}</span>
-              )}
-            </div>
-            {hasMacros && (
-              <div className="mt-2 flex gap-1.5">
-                <div className="flex-1 bg-[#F9FAFB] rounded-xl py-1.5 text-center">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide leading-none font-medium">{t('recipe.calAbbr')}</div>
-                  <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(cal)}</div>
-                </div>
-                <div className="flex-1 bg-[#F9FAFB] rounded-xl py-1.5 text-center">
-                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide leading-none font-medium">{t('recipe.proteinAbbr')}</div>
-                  <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(pro)}</div>
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="flex-1 min-w-0 flex flex-col p-3 overflow-hidden">
+          {/* Title */}
+          <h2 className="text-[#1A1A1A] font-semibold text-sm leading-snug line-clamp-2">{recipe.name}</h2>
 
-          {/* Action row */}
-          <div className="flex items-center justify-end mt-1.5">
-            {cookCount > 0 && (
-              <span className="mr-auto flex items-center gap-0.5 text-[10px] text-[#9CA3AF]">
-                <Utensils size={10} aria-hidden="true" />
-                {cookCount}
+          {/* Meta + action buttons on same line */}
+          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#9CA3AF]">
+            {recipe.time_min != null && (
+              <span className="flex items-center gap-0.5 shrink-0">
+                <Clock size={10} aria-hidden="true" />
+                {recipe.time_min} min
               </span>
             )}
-            {onToggleLike && (
-              <button
-                onClick={onToggleLike}
-                aria-label={isLiked ? t('recipe.unlike') : t('recipe.like')}
-                aria-pressed={isLiked}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
-                  isLiked ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
-                }`}
-              >
-                <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} aria-hidden="true" />
-              </button>
+            {ingredientCount > 0 && (
+              <span className="truncate">{ingredientCount} {t('recipe.ingredients').toLowerCase()}</span>
             )}
-            {onToggleSave && (
-              <button
-                onClick={onToggleSave}
-                aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
-                aria-pressed={isSaved}
-                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
-                  isSaved ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
-                }`}
-              >
-                {isSaved ? <BookmarkCheck size={16} aria-hidden="true" /> : <Bookmark size={16} aria-hidden="true" />}
-              </button>
-            )}
+            <div className="ml-auto flex items-center shrink-0">
+              {onToggleLike && (
+                <button
+                  onClick={onToggleLike}
+                  aria-label={isLiked ? t('recipe.unlike') : t('recipe.like')}
+                  aria-pressed={isLiked}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                    isLiked ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
+                  }`}
+                >
+                  <Heart size={14} fill={isLiked ? 'currentColor' : 'none'} aria-hidden="true" />
+                </button>
+              )}
+              {onToggleSave && (
+                <button
+                  onClick={onToggleSave}
+                  aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
+                  aria-pressed={isSaved}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                    isSaved ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
+                  }`}
+                >
+                  {isSaved ? <BookmarkCheck size={14} aria-hidden="true" /> : <Bookmark size={14} aria-hidden="true" />}
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Macro pills */}
+          {hasMacros && (
+            <div className="mt-2 flex gap-1.5">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
+                {Math.round(cal)} Cal
+              </span>
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FEF2EF] text-[#C07860] font-medium">
+                {Math.round(pro)}g {t('recipe.proteinAbbr')}
+              </span>
+            </div>
+          )}
         </div>
       </Link>
     </div>
@@ -1121,27 +1113,12 @@ function LibraryPage() {
     },
   })
 
-  const recipeIds = useMemo(() => sortedRecipes.map((r) => r.id), [sortedRecipes])
-  const recipeIdsKey = useMemo(() => recipeIds.join(','), [recipeIds])
-  const { data: cookCounts } = useQuery({
-    queryKey: ['cookCounts', recipeIdsKey],
-    queryFn: () => fetchRecipeCookCounts({ data: recipeIds }),
-    staleTime: 5 * 60 * 1000,
-    enabled: recipeIds.length > 0,
-  })
-  const cookCountMap = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const { recipe_id, count } of cookCounts ?? []) {
-      map[recipe_id] = count
-    }
-    return map
-  }, [cookCounts])
 
   const virtualCount = hasNextPage ? sortedRecipes.length + 1 : sortedRecipes.length
   const virtualizer = useVirtualizer({
     count: virtualCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 135,
+    estimateSize: () => 148,
     overscan: 5,
   })
 
@@ -1338,7 +1315,6 @@ function LibraryPage() {
                     ) : (
                       <RecipeCard
                         recipe={sortedRecipes[virtualItem.index]}
-                        cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
                         isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
                         isLiked={likedIds.has(sortedRecipes[virtualItem.index].id)}
                         onToggleSave={(e) => {
