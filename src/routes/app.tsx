@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { motion, useAnimationControls } from "framer-motion";
+import { useMotion } from "../lib/use-reduced-motion";
 import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from "lucide-react";
 
 const NAV_ICONS: Record<string, { active: string; inactive: string }> = {
@@ -76,6 +78,28 @@ function BottomNav() {
   });
 
   const itemCount = plan?.item_count ?? 0;
+  const badgeControls = useAnimationControls();
+  const { skip: reducedMotion } = useMotion();
+  const prevCountRef = useRef(itemCount);
+
+  useEffect(() => {
+    if (itemCount !== prevCountRef.current) {
+      prevCountRef.current = itemCount;
+      if (!reducedMotion && itemCount > 0) {
+        badgeControls.start({ scale: [1, 1.5, 1] });
+      }
+    }
+  }, [itemCount, badgeControls, reducedMotion]);
+
+  useEffect(() => {
+    function handleBounce() {
+      if (!reducedMotion && itemCount > 0) {
+        badgeControls.start({ scale: [1, 1.5, 1] });
+      }
+    }
+    window.addEventListener("badge:bounce:plan", handleBounce);
+    return () => window.removeEventListener("badge:bounce:plan", handleBounce);
+  }, [badgeControls, reducedMotion, itemCount]);
 
   const tabs = [
     {
@@ -159,6 +183,7 @@ function BottomNav() {
                 key={tab.to}
                 to={tab.to}
                 onClick={() => handleTabPress(tab.to, tab.key)}
+                {...(tab.key === "plan" ? { "data-tab": "plan" } : {})}
                 className={`relative flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   isActive
                     ? "text-[#F4623A]"
@@ -178,9 +203,17 @@ function BottomNav() {
                     <Icon size={22} aria-hidden="true" />
                   )}
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
-                    <span className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                    <motion.span
+                      animate={tab.key === "plan" ? badgeControls : undefined}
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 12,
+                      }}
+                      className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none"
+                    >
                       {(tab.badge ?? 0) > 99 ? "99+" : tab.badge}
-                    </span>
+                    </motion.span>
                   )}
                 </div>
                 <span

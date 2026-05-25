@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMotion } from "../../../lib/use-reduced-motion";
 import { Clock, Plus, Settings } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -83,6 +85,7 @@ function MyRecipesPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language.startsWith("en") ? "en" : "pt";
   const [tab, setTab] = useState<Tab>("created");
+  const { skip: reducedMotion } = useMotion();
 
   const { data: profile } = useQuery({
     queryKey: ["my-profile"],
@@ -215,41 +218,55 @@ function MyRecipesPage() {
         </div>
 
         {/* Recipe list */}
-        {tab === "created" && (
-          <div>
-            {createdLoading ? (
-              <RecipeListSkeleton />
-            ) : createdRecipes.length === 0 ? (
-              <p className="text-sm text-[#9CA3AF] text-center py-8">
-                {t("myRecipes.noCreated")}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {createdRecipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} />
-                ))}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={tab}
+            initial={
+              reducedMotion ? {} : { opacity: 0, x: tab === "created" ? -8 : 8 }
+            }
+            animate={{ opacity: 1, x: 0 }}
+            exit={
+              reducedMotion ? {} : { opacity: 0, x: tab === "created" ? 8 : -8 }
+            }
+            transition={{ duration: 0.18, ease: "easeOut" }}
+          >
+            {tab === "created" && (
+              <div>
+                {createdLoading ? (
+                  <RecipeListSkeleton />
+                ) : createdRecipes.length === 0 ? (
+                  <p className="text-sm text-[#9CA3AF] text-center py-8">
+                    {t("myRecipes.noCreated")}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {createdRecipes.map((recipe) => (
+                      <RecipeCard key={recipe.id} recipe={recipe} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
 
-        {tab === "saved" && (
-          <div>
-            {savedLoading ? (
-              <RecipeListSkeleton />
-            ) : savedRecipes.length === 0 ? (
-              <p className="text-sm text-[#9CA3AF] text-center py-8">
-                {t("myRecipes.noSaved")}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {savedRecipes.map((recipe) => (
-                  <RecipeCard key={recipe.id} recipe={recipe} />
-                ))}
+            {tab === "saved" && (
+              <div>
+                {savedLoading ? (
+                  <RecipeListSkeleton />
+                ) : savedRecipes.length === 0 ? (
+                  <p className="text-sm text-[#9CA3AF] text-center py-8">
+                    {t("myRecipes.noSaved")}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {savedRecipes.map((recipe) => (
+                      <RecipeCard key={recipe.id} recipe={recipe} />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* FAB — create new recipe */}

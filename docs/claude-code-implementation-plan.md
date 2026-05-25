@@ -3872,6 +3872,227 @@ Add `orderBy: 'popularity' | 'time'` parameter alongside existing filters. When 
 
 ---
 
+## Session 24 — Motion & animation layer
+
+**Goal:** Make every key interaction feel alive with spring-physics animations. No new features — only motion layered on top of what already exists. Every animation must respect `prefers-reduced-motion`.
+
+**Install before starting:**
+```bash
+pnpm add framer-motion
+```
+
+---
+
+### 1. Add-to-plan flying thumbnail (`src/routes/app/library/index.tsx`)
+
+The highest-ROI animation. When the user taps the `CalendarPlus` button on a recipe card, the recipe's thumbnail image launches from the card and flies along a parabolic arc to the plan tab icon in the bottom nav, shrinking as it lands.
+
+**Implementation:**
+
+- Add a `FlyingThumb` component that renders a single `motion.img` absolutely positioned over the viewport (via a React portal into `document.body`).
+- On `CalendarPlus` tap, before calling `addToPlanMutation.mutate()`:
+  1. Get the thumbnail's bounding rect: `thumbEl.getBoundingClientRect()`.
+  2. Get the plan tab icon's bounding rect: `document.querySelector('[data-tab="plan"]')?.getBoundingClientRect()`.
+  3. Mount `FlyingThumb` with `from` (thumbnail position) and `to` (plan tab position).
+- `FlyingThumb` animates with `motion.img`:
+  - `initial`: position and size of the source thumbnail (60×60, rounded-xl)
+  - `animate`: position of the plan tab icon, scale shrinks to 0.3, borderRadius → 50%
+  - `transition`: `{ type: 'spring', stiffness: 180, damping: 20, duration: 0.55 }`
+  - Uses `onAnimationComplete` to unmount itself and trigger the badge spring (see §2)
+- Use a cubic bezier path for the arc by animating `y` with a `keyframes` array (`[from.y, midY, to.y]`) where `midY = Math.min(from.y, to.y) - 80`.
+- Add `data-tab="plan"` to the plan tab `<Link>` in `BottomNav` so the selector works.
+
+```tsx
+// Rough structure of FlyingThumb
+function FlyingThumb({ src, from, to, onDone }: FlyingThumbProps) {
+  return (
+    <motion.img
+      src={src}
+      className="fixed z-[999] object-cover pointer-events-none"
+      style={{ borderRadius: 12 }}
+      initial={{ x: from.x, y: from.y, width: from.w, height: from.h, opacity: 1 }}
+      animate={{
+        x: to.x, y: [from.y, Math.min(from.y, to.y) - 80, to.y],
+        width: 20, height: 20, opacity: [1, 1, 0], borderRadius: '50%',
+      }}
+      transition={{ duration: 0.55, ease: [0.32, 0, 0.67, 0] }}
+      onAnimationComplete={onDone}
+    />
+  )
+}
+```
+
+---
+
+### 2. Plan badge spring bounce (`src/routes/app.tsx`)
+
+When the plan item count changes, the badge animates: scale `1 → 1.5 → 1` with spring physics.
+
+- Wrap the badge `<span>` in a `motion.span`.
+- Use `useEffect` watching `itemCount` to trigger `controls.start({ scale: [1, 1.5, 1] })` via `useAnimationControls`.
+- Transition: `{ type: 'spring', stiffness: 400, damping: 12 }`.
+- The `FlyingThumb.onDone` callback dispatches a custom event `badge:bounce:plan` that the BottomNav listens to, keeping them decoupled.
+
+---
+
+### 3. Recipe detail page entrance (`src/routes/app/library/$recipeId.tsx`)
+
+The detail page slides up from the bottom like a native sheet rather than a hard cut.
+
+- Wrap the entire page content in:
+```tsx
+<motion.div
+  initial={{ y: 40, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+>
+```
+- On back navigation, no exit animation needed (the browser handles the transition).
+
+---
+
+### 4. Recipe list stagger on initial load (`src/routes/app/library/index.tsx`)
+
+When the recipe list first appears (data loaded, skeleton removed), cards cascade in with a stagger rather than all appearing at once.
+
+- Wrap `RecipeCard` render calls in `motion.div` with:
+  ```tsx
+  initial={{ opacity: 0, y: 16 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: Math.min(index * 0.04, 0.3), duration: 0.25, ease: 'easeOut' }}
+  ```
+- Cap the delay at 0.3s so cards beyond index 7 don't wait too long.
+- Only animate on the **first** data load — track a `hasAnimated` ref and skip on subsequent renders (e.g. after filter changes).
+- Since this uses `useVirtualizer`, apply the animation to each virtual item's wrapper div, not the card itself.
+
+---
+
+### 5. Chip strip selection pop (`src/routes/app/library/index.tsx`)
+
+When a strip chip is selected, it springs to its active state rather than hard-switching colors.
+
+- The chip `<button>` already has conditional `className`. Wrap its inner content in a `motion.span` that scales `1 → 1.12 → 1` on activation:
+  ```tsx
+  <motion.span
+    animate={{ scale: isActive ? [1, 1.12, 1] : 1 }}
+    transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+  >
+    <img ... />
+    <span>{label}</span>
+  </motion.span>
+  ```
+- Background color transition is already handled by Tailwind transition classes — keep those.
+
+---
+
+### 6. Filter/sort chip selection spring
+
+Same pattern as §5, applied to:
+- Protein chips inside the filter sheet
+- Time and calories chips inside the filter sheet
+- Sort options in the sort sheet
+
+Each chip scales `1 → 1.08 → 1` when selected. Use `AnimatePresence` on the active indicator dot/underline if one exists.
+
+---
+
+### 7. "Cozinhei isto" completion burst (`src/routes/app/library/$recipeId.tsx`)
+
+When the user logs a recipe as cooked, show a brief particle burst or checkmark pop instead of just a toast.
+
+- On success of `logCookedMutation`, show a `motion.div` overlay on the button:
+  ```tsx
+  <AnimatePresence>
+    {justCooked && (
+      <motion.span
+        className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#16A34A] text-white text-lg"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 1.2, opacity: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+      >
+        ✓
+      </motion.span>
+    )}
+  </AnimatePresence>
+  ```
+- `justCooked` resets to false after 1.5s.
+- Also animate the cook count increment: the count number slides up and in using `AnimatePresence` with a `key={cookCount}` so changing the key triggers the exit/enter cycle.
+
+---
+
+### 8. Plan item removal (`src/routes/app/plan/index.tsx`)
+
+When a plan item is removed via the `×` button, it collapses out rather than vanishing.
+
+- Wrap each plan item in `motion.div` with `layout` prop (Framer Motion's auto-layout animation).
+- Use `AnimatePresence` around the list.
+- Remove animation:
+  ```tsx
+  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+  transition={{ duration: 0.2, ease: 'easeInOut' }}
+  ```
+- The remaining items slide up smoothly to fill the gap because of the `layout` prop.
+
+---
+
+### 9. Tab content cross-fade (`src/routes/app/my-recipes/index.tsx`)
+
+Switching between "Criadas" and "Guardadas" tabs cross-fades the content rather than cutting.
+
+- Wrap the tab content in `AnimatePresence mode="wait"` with a `key={tab}` on the inner `motion.div`:
+  ```tsx
+  <AnimatePresence mode="wait">
+    <motion.div
+      key={tab}
+      initial={{ opacity: 0, x: tab === 'created' ? -8 : 8 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: tab === 'created' ? 8 : -8 }}
+      transition={{ duration: 0.18, ease: 'easeOut' }}
+    >
+      {/* tab content */}
+    </motion.div>
+  </AnimatePresence>
+  ```
+
+---
+
+### 10. Reduced-motion safety
+
+Every animation above must be gated. Use Framer Motion's `useReducedMotion()` hook in a single shared utility:
+
+```tsx
+// src/lib/use-reduced-motion.ts
+import { useReducedMotion } from 'framer-motion'
+
+export function useMotion() {
+  const reduced = useReducedMotion()
+  return {
+    transition: (t: object) => reduced ? { duration: 0 } : t,
+    skip: reduced,
+  }
+}
+```
+
+Where animations are conditional (stagger, flying thumb, badge bounce), check `skip` and no-op instead of running the animation.
+
+---
+
+### Verify before moving on
+
+- Tapping `CalendarPlus` on a card launches the thumbnail; it arcs to the plan tab and lands
+- Plan badge springs on arrival of the flying thumb and also when navigating directly to the detail page and adding from there
+- Recipe detail entrance slides up on first navigation to it
+- Library cards stagger in on first load; filter changes do NOT re-trigger the stagger
+- Strip chip selection spring pop is visible
+- "Cozinhei isto" shows the ✓ burst and the count animates up
+- Removing a plan item collapses smoothly; surrounding items slide up
+- Kitchen tab switching cross-fades
+- On a device/browser with `prefers-reduced-motion: reduce`, all of the above are instant (no animation)
+- No TypeScript errors; bundle size increase is under 50kB gzipped (Framer Motion tree-shakes well)
+
+---
+
 ## Pre-launch checklist
 
 Before making the app URL publicly shareable, complete these steps. None require code changes — they are configuration and account-level settings.

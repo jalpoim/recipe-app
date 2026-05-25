@@ -8,10 +8,12 @@ import {
   useDeferredValue,
   memo,
 } from "react";
+import { motion } from "framer-motion";
+import { useMotion } from "../../../lib/use-reduced-motion";
+import { FlyingThumb } from "../../../components/FlyingThumb";
 import { capture } from "../../../lib/analytics";
 import {
   ArrowUpDown,
-  CalendarPlus,
   Check,
   Clock,
   Plus,
@@ -352,17 +354,23 @@ const ChipStrip = memo(function ChipStrip({
               isActive ? "bg-[#F4623A]" : "bg-white border border-[#F0F0EE]"
             }`}
           >
-            <img
-              src={chip.iconSrc}
-              alt=""
-              className="w-10 h-10 rounded-xl object-cover"
-              aria-hidden="true"
-            />
-            <span
-              className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
+            <motion.span
+              animate={{ scale: isActive ? [1, 1.12, 1] : 1 }}
+              transition={{ type: "spring", stiffness: 500, damping: 15 }}
+              className="flex flex-col items-center gap-1.5"
             >
-              {t(chip.labelKey)}
-            </span>
+              <img
+                src={chip.iconSrc}
+                alt=""
+                className="w-10 h-10 rounded-xl object-cover"
+                aria-hidden="true"
+              />
+              <span
+                className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
+              >
+                {t(chip.labelKey)}
+              </span>
+            </motion.span>
           </button>
         );
       })}
@@ -446,12 +454,18 @@ function perServing(
 
 // ---------- RecipeCard ----------
 
+export type ThumbInfo = {
+  src: string | null;
+  background: string | null;
+  rect: DOMRect;
+};
+
 function RecipeCard({
   recipe,
   onAddToPlan,
 }: {
   recipe: RecipeWithIngredients;
-  onAddToPlan?: (e: React.MouseEvent) => void;
+  onAddToPlan?: (thumb: ThumbInfo) => void;
 }) {
   const { t } = useTranslation();
   const cal = perServing(recipe, "calories");
@@ -462,6 +476,7 @@ function RecipeCard({
     : (PROTEIN_COLORS[recipe.proteins[0]] ??
       "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
   const ingredientCount = recipe.recipe_ingredients?.length ?? 0;
+  const thumbRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden">
@@ -475,7 +490,7 @@ function RecipeCard({
         className="flex h-[136px]"
       >
         {/* Left: image */}
-        <div className="w-[96px] shrink-0 relative">
+        <div ref={thumbRef} className="w-[96px] shrink-0 relative">
           {recipe.image_thumb_url ? (
             <img
               src={recipe.image_thumb_url}
@@ -528,13 +543,23 @@ function RecipeCard({
       {/* Add-to-plan tab — bottom-right corner, outside the Link */}
       {onAddToPlan && (
         <button
-          onClick={onAddToPlan}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!onAddToPlan) return;
+            const rect = thumbRef.current?.getBoundingClientRect();
+            onAddToPlan({
+              src: recipe.image_thumb_url ?? null,
+              background: thumbnailBg ?? null,
+              rect: rect ?? new DOMRect(0, 0, 96, 136),
+            });
+          }}
           aria-label={t("plan.addRecipe")}
           className="absolute bottom-0 right-0 w-10 h-10 rounded-tl-2xl bg-white border-t border-l border-[#F0F0EE] flex items-center justify-center transition-colors hover:bg-[#FEF2EF] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus-visible:ring-inset focus:outline-none"
         >
-          <CalendarPlus
-            size={18}
-            className="text-[#F4623A]"
+          <img
+            src="/icons/nav/add-to-plan.png"
+            alt=""
+            className="w-5 h-5 object-cover rounded-md"
             aria-hidden="true"
           />
         </button>
@@ -1188,6 +1213,14 @@ function LibraryPage() {
   );
   const parentRef = useRef<HTMLDivElement>(null);
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasAnimatedRef = useRef(false);
+  const [flyingThumb, setFlyingThumb] = useState<{
+    src: string | null;
+    background: string | null;
+    from: { x: number; y: number; w: number; h: number };
+    to: { x: number; y: number };
+  } | null>(null);
+  const { skip: reducedMotion } = useMotion();
   const [initialScrollOffset] = useState(() => {
     if (typeof sessionStorage === "undefined") return 0;
     return Number(sessionStorage.getItem("library_scroll") || "0");
@@ -1621,11 +1654,29 @@ function LibraryPage() {
             >
               {virtualizer.getVirtualItems().map((virtualItem) => {
                 const isSentinel = virtualItem.index >= sortedRecipes.length;
+                const shouldAnimate =
+                  !reducedMotion &&
+                  !hasAnimatedRef.current &&
+                  virtualItem.index < sortedRecipes.length;
                 return (
-                  <div
+                  <motion.div
                     key={virtualItem.key}
                     data-index={virtualItem.index}
                     ref={virtualizer.measureElement}
+                    initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
+                    animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
+                    transition={
+                      shouldAnimate
+                        ? {
+                            delay: Math.min(virtualItem.index * 0.04, 0.3),
+                            duration: 0.25,
+                            ease: "easeOut",
+                          }
+                        : undefined
+                    }
+                    onAnimationComplete={() => {
+                      if (shouldAnimate) hasAnimatedRef.current = true;
+                    }}
                     style={{
                       position: "absolute",
                       top: 0,
@@ -1644,14 +1695,32 @@ function LibraryPage() {
                     ) : (
                       <RecipeCard
                         recipe={sortedRecipes[virtualItem.index]}
-                        onAddToPlan={(e) => {
-                          e.stopPropagation();
+                        onAddToPlan={(thumb) => {
                           const r = sortedRecipes[virtualItem.index];
+                          const planTabEl =
+                            document.querySelector('[data-tab="plan"]');
+                          const toRect = planTabEl?.getBoundingClientRect();
+                          if (!reducedMotion && toRect) {
+                            setFlyingThumb({
+                              src: thumb.src,
+                              background: thumb.background,
+                              from: {
+                                x: thumb.rect.left,
+                                y: thumb.rect.top,
+                                w: thumb.rect.width,
+                                h: thumb.rect.height,
+                              },
+                              to: {
+                                x: toRect.left + toRect.width / 2 - 10,
+                                y: toRect.top + toRect.height / 2 - 10,
+                              },
+                            });
+                          }
                           addToPlanMutation.mutate(r.id);
                         }}
                       />
                     )}
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1689,6 +1758,16 @@ function LibraryPage() {
             : null
         }
       />
+
+      {flyingThumb && (
+        <FlyingThumb
+          src={flyingThumb.src}
+          background={flyingThumb.background}
+          from={flyingThumb.from}
+          to={flyingThumb.to}
+          onDone={() => setFlyingThumb(null)}
+        />
+      )}
     </div>
   );
 }
