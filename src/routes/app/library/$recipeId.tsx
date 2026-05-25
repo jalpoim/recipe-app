@@ -895,10 +895,35 @@ function RecipeDetailPage() {
 
             {/* I Cooked This */}
             {!isCooking && (
-              <div className="pt-2 pb-2">
-                <button
+              <div className="relative pt-2 pb-2">
+                <AnimatePresence>
+                  {justCooked && (
+                    <motion.span
+                      key="cook-plus1"
+                      className="absolute left-1/2 -top-1 -translate-x-1/2 text-sm font-bold text-[#F4623A] pointer-events-none select-none"
+                      initial={{ y: 0, opacity: 1 }}
+                      animate={{ y: -20, opacity: 0 }}
+                      exit={{}}
+                      transition={{ duration: 0.55, ease: "easeOut" }}
+                    >
+                      +1
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+                <motion.button
                   onClick={() => logCookMutation.mutate()}
                   disabled={logCookMutation.isPending || cookDebounced}
+                  animate={
+                    justCooked && !reducedMotion
+                      ? {
+                          scale: [1, 1.04, 1],
+                          transition: {
+                            duration: 0.35,
+                            ease: [0.34, 1.56, 0.64, 1],
+                          },
+                        }
+                      : undefined
+                  }
                   className="relative w-full rounded-2xl bg-[#FFF5F2] border border-[#FDD9CC] py-4 flex items-center justify-center gap-2 text-[#D94F2B] text-sm font-semibold disabled:opacity-50 hover:bg-[#FEE9E1] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none overflow-hidden"
                 >
                   <span
@@ -914,21 +939,16 @@ function RecipeDetailPage() {
                   <AnimatePresence>
                     {justCooked && (
                       <motion.span
-                        className="absolute inset-0 flex items-center justify-center rounded-2xl bg-[#16A34A] text-white text-lg"
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 1.2, opacity: 0 }}
-                        transition={{
-                          type: "spring",
-                          stiffness: 400,
-                          damping: 20,
-                        }}
-                      >
-                        ✓
-                      </motion.span>
+                        key="cook-ripple"
+                        className="absolute inset-0 rounded-2xl border-2 border-[#F4623A] pointer-events-none"
+                        initial={{ scale: 1, opacity: 0.7 }}
+                        animate={{ scale: 1.12, opacity: 0 }}
+                        exit={{}}
+                        transition={{ duration: 0.5, ease: "easeOut" }}
+                      />
                     )}
                   </AnimatePresence>
-                </button>
+                </motion.button>
               </div>
             )}
           </div>

@@ -344,7 +344,10 @@ function StripChipButton({
   function handleClick() {
     onChipClick(chip.id);
     if (!reducedMotion) {
-      controls.start({ scale: [1, 1.12, 1] });
+      controls.start({
+        scale: [1, 1.15, 1],
+        transition: { duration: 0.3, ease: [0.34, 1.56, 0.64, 1] },
+      });
     }
   }
 
@@ -358,7 +361,6 @@ function StripChipButton({
     >
       <motion.span
         animate={controls}
-        transition={{ type: "spring", stiffness: 500, damping: 15 }}
         className="flex flex-col items-center gap-1.5"
       >
         <img

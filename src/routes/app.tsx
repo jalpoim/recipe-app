@@ -86,7 +86,10 @@ function BottomNav() {
     if (itemCount !== prevCountRef.current) {
       prevCountRef.current = itemCount;
       if (!reducedMotion && itemCount > 0) {
-        badgeControls.start({ scale: [1, 1.5, 1] });
+        badgeControls.start({
+          scale: [1, 1.5, 1],
+          transition: { duration: 0.35, ease: [0.34, 1.56, 0.64, 1] },
+        });
       }
     }
   }, [itemCount, badgeControls, reducedMotion]);
@@ -94,7 +97,10 @@ function BottomNav() {
   useEffect(() => {
     function handleBounce() {
       if (!reducedMotion && itemCount > 0) {
-        badgeControls.start({ scale: [1, 1.5, 1] });
+        badgeControls.start({
+          scale: [1, 1.5, 1],
+          transition: { duration: 0.35, ease: [0.34, 1.56, 0.64, 1] },
+        });
       }
     }
     window.addEventListener("badge:bounce:plan", handleBounce);
@@ -206,11 +212,6 @@ function BottomNav() {
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <motion.span
                       animate={tab.key === "plan" ? badgeControls : undefined}
-                      transition={{
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 12,
-                      }}
                       className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none"
                     >
                       {(tab.badge ?? 0) > 99 ? "99+" : tab.badge}

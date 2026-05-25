@@ -16,34 +16,36 @@ export function FlyingThumb({
   to,
   onDone,
 }: FlyingThumbProps) {
-  const midY = Math.min(from.y, to.y) - 80;
+  // Arc peak: 100px above the midpoint between start and end
+  const midX = (from.x + to.x) / 2;
+  const midY = Math.min(from.y, to.y) - 100;
 
   return createPortal(
     <motion.div
       className="fixed z-[999] pointer-events-none overflow-hidden"
-      style={{
-        width: from.w,
-        height: from.h,
-        borderRadius: 12,
-        background: background ?? "linear-gradient(135deg, #FEE9E1, #bbf7d0)",
-      }}
+      style={{ borderRadius: 12 }}
       initial={{
-        x: from.x,
-        y: from.y,
+        left: from.x,
+        top: from.y,
         width: from.w,
         height: from.h,
         opacity: 1,
         borderRadius: 12,
+        background: background ?? "linear-gradient(135deg, #FEE9E1, #bbf7d0)",
       }}
       animate={{
-        x: to.x,
-        y: [from.y, midY, to.y],
-        width: 20,
-        height: 20,
+        left: [from.x, midX, to.x],
+        top: [from.y, midY, to.y],
+        width: [from.w, from.w * 0.6, 22],
+        height: [from.h, from.h * 0.6, 22],
         opacity: [1, 1, 0],
-        borderRadius: "50%",
+        borderRadius: ["12px", "12px", "50%"],
       }}
-      transition={{ duration: 0.55, ease: [0.32, 0, 0.67, 0] }}
+      transition={{
+        duration: 0.6,
+        ease: "easeInOut",
+        times: [0, 0.5, 1],
+      }}
       onAnimationComplete={() => {
         onDone();
         window.dispatchEvent(new CustomEvent("badge:bounce:plan"));
