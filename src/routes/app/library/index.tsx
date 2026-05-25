@@ -222,8 +222,8 @@ function RecipeCard({
   onToggleLike?: (e: React.MouseEvent) => void
 }) {
   const { t } = useTranslation()
-  const cal = perServing(recipe, 'calories')
-  const pro = perServing(recipe, 'protein')
+  const totalCal = recipe.macros_total ? (recipe.calories ?? 0) : (recipe.calories ?? 0) * (recipe.servings || 1)
+  const totalPro = recipe.macros_total ? (recipe.protein ?? 0) : (recipe.protein ?? 0) * (recipe.servings || 1)
   const hasMacros = recipe.calories != null
   const thumbnailBg = recipe.image_thumb_url
     ? undefined
@@ -307,10 +307,10 @@ function RecipeCard({
           {hasMacros && (
             <div className="mt-2 flex gap-1.5">
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
-                {Math.round(cal)} Cal
+                {Math.round(totalCal)} Cal
               </span>
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FEF2EF] text-[#C07860] font-medium">
-                {Math.round(pro)}g {t('recipe.proteinAbbr')}
+                {Math.round(totalPro)}g {t('recipe.proteinAbbr')}
               </span>
             </div>
           )}

@@ -273,7 +273,7 @@ function RecipeDetailPage() {
   const isFromPlan = search.from === 'plan' && !!search.planItemId
   const isOwner = !!user && recipe.owner_id === user.id
 
-  const [multiplier, setMultiplier] = useState(planItem?.portion_multiplier ?? 1)
+  const [multiplier, setMultiplier] = useState(planItem?.portion_multiplier ?? recipe.servings)
   const [isCooking, setIsCooking] = useState(false)
   const [completedUpToStep, setCompletedUpToStep] = useState(-1)
   const [confirmRemove, setConfirmRemove] = useState(false)
