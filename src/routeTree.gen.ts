@@ -19,6 +19,7 @@ import { Route as AppShoppingRouteImport } from './routes/app/shopping'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppPlanRouteImport } from './routes/app/plan'
 import { Route as AppOnboardingRouteImport } from './routes/app/onboarding'
+import { Route as AppMyRecipesIndexRouteImport } from './routes/app/my-recipes/index'
 import { Route as AppLibraryIndexRouteImport } from './routes/app/library/index'
 import { Route as AppProfileUsernameRouteImport } from './routes/app/profile/$username'
 import { Route as AppLibraryCreateRouteImport } from './routes/app/library/create'
@@ -75,6 +76,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMyRecipesIndexRoute = AppMyRecipesIndexRouteImport.update({
+  id: '/my-recipes/',
+  path: '/my-recipes/',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLibraryIndexRoute = AppLibraryIndexRouteImport.update({
   id: '/library/',
   path: '/library/',
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/app/library/create': typeof AppLibraryCreateRoute
   '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library/': typeof AppLibraryIndexRoute
+  '/app/my-recipes/': typeof AppMyRecipesIndexRoute
   '/app/library/$recipeId/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/app/library/create': typeof AppLibraryCreateRoute
   '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library': typeof AppLibraryIndexRoute
+  '/app/my-recipes': typeof AppMyRecipesIndexRoute
   '/app/library/$recipeId/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRoutesById {
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/app/library/create': typeof AppLibraryCreateRoute
   '/app/profile/$username': typeof AppProfileUsernameRoute
   '/app/library/': typeof AppLibraryIndexRoute
+  '/app/my-recipes/': typeof AppMyRecipesIndexRoute
   '/app/library/$recipeId_/edit': typeof AppLibraryRecipeIdEditRoute
 }
 export interface FileRouteTypes {
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/app/library/create'
     | '/app/profile/$username'
     | '/app/library/'
+    | '/app/my-recipes/'
     | '/app/library/$recipeId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -185,6 +195,7 @@ export interface FileRouteTypes {
     | '/app/library/create'
     | '/app/profile/$username'
     | '/app/library'
+    | '/app/my-recipes'
     | '/app/library/$recipeId/edit'
   id:
     | '__root__'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/app/library/create'
     | '/app/profile/$username'
     | '/app/library/'
+    | '/app/my-recipes/'
     | '/app/library/$recipeId_/edit'
   fileRoutesById: FileRoutesById
 }
@@ -285,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/my-recipes/': {
+      id: '/app/my-recipes/'
+      path: '/my-recipes'
+      fullPath: '/app/my-recipes/'
+      preLoaderRoute: typeof AppMyRecipesIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/library/': {
       id: '/app/library/'
       path: '/library'
@@ -333,6 +352,7 @@ interface AppRouteChildren {
   AppLibraryCreateRoute: typeof AppLibraryCreateRoute
   AppProfileUsernameRoute: typeof AppProfileUsernameRoute
   AppLibraryIndexRoute: typeof AppLibraryIndexRoute
+  AppMyRecipesIndexRoute: typeof AppMyRecipesIndexRoute
   AppLibraryRecipeIdEditRoute: typeof AppLibraryRecipeIdEditRoute
 }
 
@@ -346,6 +366,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppLibraryCreateRoute: AppLibraryCreateRoute,
   AppProfileUsernameRoute: AppProfileUsernameRoute,
   AppLibraryIndexRoute: AppLibraryIndexRoute,
+  AppMyRecipesIndexRoute: AppMyRecipesIndexRoute,
   AppLibraryRecipeIdEditRoute: AppLibraryRecipeIdEditRoute,
 }
 

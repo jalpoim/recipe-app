@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
-import { BookOpen, CalendarDays, ShoppingCart } from 'lucide-react'
+import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { fetchActivePlanWithCount } from '../lib/supabase/plan-queries'
 import { acceptInvite } from '../lib/supabase/household-queries'
@@ -54,6 +54,7 @@ function BottomNav() {
 
   const tabs = [
     { label: t('nav.recipes'), icon: BookOpen, to: '/app/library' as const, key: 'library', disabled: false },
+    { label: t('nav.myRecipes'), icon: BookMarked, to: '/app/my-recipes' as const, key: 'my-recipes', disabled: false },
     { label: t('nav.plan'), icon: CalendarDays, to: '/app/plan' as const, key: 'plan', badge: itemCount, disabled: false },
     { label: t('nav.list'), icon: ShoppingCart, to: '/app/shopping' as const, key: 'shopping', disabled: false },
   ]

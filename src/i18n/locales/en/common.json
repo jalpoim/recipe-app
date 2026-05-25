@@ -1,8 +1,17 @@
 {
   "nav": {
     "recipes": "Recipes",
+    "myRecipes": "Mine",
     "plan": "Plan",
     "list": "List"
+  },
+  "myRecipes": {
+    "title": "My Recipes",
+    "created": "Created",
+    "saved": "Saved",
+    "noCreated": "No recipes created yet",
+    "noSaved": "No recipes saved yet",
+    "editProfile": "Edit profile"
   },
   "proteins": {
     "chicken": "Chicken",

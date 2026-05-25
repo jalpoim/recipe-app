@@ -1,8 +1,17 @@
 {
   "nav": {
     "recipes": "Receitas",
+    "myRecipes": "Minhas",
     "plan": "Plano",
     "list": "Lista"
+  },
+  "myRecipes": {
+    "title": "Minhas Receitas",
+    "created": "Criadas",
+    "saved": "Guardadas",
+    "noCreated": "Ainda não criaste nenhuma receita",
+    "noSaved": "Ainda não guardaste nenhuma receita",
+    "editProfile": "Editar perfil"
   },
   "proteins": {
     "chicken": "Frango",

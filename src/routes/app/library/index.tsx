@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, Settings, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, SlidersHorizontal, SlidersVertical, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,7 +11,6 @@ import {
   fetchLibraryMeta,
   type RecipeWithIngredients,
   type Sort,
-  type LibraryMode,
   type LibraryCursor,
 } from '../../../lib/supabase/queries'
 import { fetchRecipeCookCounts } from '../../../lib/supabase/cook-log-queries'
@@ -20,7 +19,7 @@ import {
   upsertInteraction,
   removeInteraction,
 } from '../../../lib/supabase/interaction-queries'
-import { fetchMyProfile, fetchIngredientExclusions } from '../../../lib/supabase/profile-queries'
+import { fetchMyProfile, fetchIngredientExclusions, saveDietaryPreferences } from '../../../lib/supabase/profile-queries'
 import { useToast } from '../../../components/Toast'
 import type { Recipe, DietaryMode } from '../../../types/db'
 
@@ -87,6 +86,7 @@ type StripChipId = 'em-alta' | 'rapido' | 'chicken' | 'salmon' | 'beef' | 'tuna'
 
 type StripChipDef = {
   id: StripChipId
+  iconSrc: string
   labelKey: string
   proteins?: string[]
   tags?: string[]
@@ -95,17 +95,20 @@ type StripChipDef = {
 }
 
 const STRIP_CHIPS: StripChipDef[] = [
-  { id: 'em-alta',       labelKey: 'strip.emAlta',       sort: 'popular' },
-  { id: 'rapido',        labelKey: 'tags.rápido',         maxTime: 30 },
-  { id: 'chicken',       labelKey: 'proteins.chicken',    proteins: ['chicken'] },
-  { id: 'salmon',        labelKey: 'proteins.salmon',     proteins: ['salmon'] },
-  { id: 'beef',          labelKey: 'proteins.beef',       proteins: ['beef'] },
-  { id: 'tuna',          labelKey: 'proteins.tuna',       proteins: ['tuna'] },
-  { id: 'batido',        labelKey: 'tags.batido',         tags: ['batido'] },
-  { id: 'snack',         labelKey: 'tags.snack',          tags: ['snack'] },
-  { id: 'meal-prep',     labelKey: 'tags.meal-prep',      tags: ['meal-prep'] },
-  { id: 'alto-proteina', labelKey: 'tags.alto-proteína',  tags: ['alto-proteína'] },
+  { id: 'em-alta',       iconSrc: '/icons/chips/em-alta.png',       labelKey: 'strip.emAlta',      sort: 'popular' },
+  { id: 'rapido',        iconSrc: '/icons/chips/rapido.png',         labelKey: 'tags.rápido',        maxTime: 30 },
+  { id: 'chicken',       iconSrc: '/icons/chips/chicken.png',        labelKey: 'proteins.chicken',   proteins: ['chicken'] },
+  { id: 'salmon',        iconSrc: '/icons/chips/salmon.png',         labelKey: 'proteins.salmon',    proteins: ['salmon'] },
+  { id: 'beef',          iconSrc: '/icons/chips/beef.png',           labelKey: 'proteins.beef',      proteins: ['beef'] },
+  { id: 'tuna',          iconSrc: '/icons/chips/tuna.png',           labelKey: 'proteins.tuna',      proteins: ['tuna'] },
+  { id: 'batido',        iconSrc: '/icons/chips/batido.png',         labelKey: 'tags.batido',        tags: ['batido'] },
+  { id: 'snack',         iconSrc: '/icons/chips/snack.png',          labelKey: 'tags.snack',         tags: ['snack'] },
+  { id: 'meal-prep',     iconSrc: '/icons/chips/meal-prep.png',      labelKey: 'tags.meal-prep',     tags: ['meal-prep'] },
+  { id: 'alto-proteina', iconSrc: '/icons/chips/alto-proteina.png',  labelKey: 'tags.alto-proteína', tags: ['alto-proteína'] },
 ]
+
+const DIETARY_MODES: DietaryMode[] = ['none', 'vegetarian', 'vegan', 'pescatarian']
+const DIETARY_INTOLERANCES = ['gluten', 'dairy', 'egg', 'nuts', 'soy'] as const
 
 function getTimeAwareChip(): StripChipId {
   const now = new Date()
@@ -113,7 +116,7 @@ function getTimeAwareChip(): StripChipId {
   const day = now.getDay() // 0=Sun, 6=Sat
   const isWeekend = day === 0 || day === 6
   if (isWeekend) return 'meal-prep'
-  if (hour >= 6 && hour < 10) return 'batido'
+  if (hour >= 6 && hour < 10) return 'em-alta'
   if (hour >= 14 && hour < 17) return 'snack'
   if (hour >= 17 && hour < 22) return 'rapido'
   return 'em-alta'
@@ -127,7 +130,6 @@ type LibrarySearch = {
   tags: string[]
   ingredients: string[]
   sort: Sort
-  modes: LibraryMode[]
 }
 
 function CardSkeleton() {
@@ -192,11 +194,6 @@ export const Route = createFileRoute('/app/library/')({
     sort: (['pcal', 'protein', 'calories', 'time', 'popular', 'cooked'] as Sort[]).includes(search.sort as Sort)
       ? (search.sort as Sort)
       : 'pcal',
-    modes: Array.isArray(search.modes)
-      ? (search.modes as string[]).filter((s): s is LibraryMode =>
-          (['mine', 'saved', 'curated'] as string[]).includes(s),
-        )
-      : [],
   }),
   component: LibraryPage,
 })
@@ -788,6 +785,117 @@ function SortSheet({
   )
 }
 
+// ---------- DietarySheet ----------
+
+function DietarySheet({
+  open,
+  onOpenChange,
+  profile,
+}: {
+  open: boolean
+  onOpenChange: (v: boolean) => void
+  profile: { dietary_mode: DietaryMode; intolerances: string[] } | null | undefined
+}) {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const [savedMsg, setSavedMsg] = useState(false)
+
+  const mode: DietaryMode = profile?.dietary_mode ?? 'none'
+  const intolerances: string[] = profile?.intolerances ?? []
+
+  const mutation = useMutation({
+    mutationFn: (vars: { dietaryMode: DietaryMode; intolerances: string[] }) =>
+      saveDietaryPreferences({ data: vars }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] })
+      queryClient.invalidateQueries({ queryKey: ['library'] })
+      queryClient.invalidateQueries({ queryKey: ['ingredient-exclusions'] })
+      setSavedMsg(true)
+      setTimeout(() => setSavedMsg(false), 2000)
+    },
+  })
+
+  function setMode(m: DietaryMode) {
+    mutation.mutate({ dietaryMode: m, intolerances })
+  }
+
+  function toggleIntolerance(flag: string) {
+    const next = intolerances.includes(flag)
+      ? intolerances.filter((f) => f !== flag)
+      : [...intolerances, flag]
+    mutation.mutate({ dietaryMode: mode, intolerances: next })
+  }
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-white rounded-t-2xl outline-none"
+          aria-label={t('settings.dietary')}
+        >
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+          </div>
+          <div className="flex items-center justify-between px-4 pt-1 pb-3">
+            <span className="text-base font-semibold text-[#1A1A1A]">{t('settings.dietary')}</span>
+            <button
+              onClick={() => onOpenChange(false)}
+              aria-label={t('common.close')}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+
+          <div className="px-4 pb-8 space-y-4">
+            <div>
+              <p className="text-xs font-medium text-[#6B7280] mb-2">{t('settings.dietaryModeLabel')}</p>
+              <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden divide-y divide-[#F3F4F6]">
+                {DIETARY_MODES.map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMode(m)}
+                    disabled={mutation.isPending}
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                  >
+                    <span className="font-medium">{t(`settings.dietary${m.charAt(0).toUpperCase() + m.slice(1)}`)}</span>
+                    {mode === m && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-[#6B7280] mb-2">{t('settings.intolerancesLabel')}</p>
+              <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden divide-y divide-[#F3F4F6]">
+                {DIETARY_INTOLERANCES.map((flag) => {
+                  const active = intolerances.includes(flag)
+                  return (
+                    <button
+                      key={flag}
+                      onClick={() => toggleIntolerance(flag)}
+                      disabled={mutation.isPending}
+                      className="w-full flex items-center justify-between px-4 py-3.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none disabled:opacity-60"
+                    >
+                      <span className="font-medium">{t(`settings.intolerance${flag.charAt(0).toUpperCase() + flag.slice(1)}`)}</span>
+                      {active && <Check size={16} className="text-[#16A34A]" aria-hidden="true" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {savedMsg && (
+              <p className="text-xs text-[#16A34A] text-center">{t('settings.dietarySaved')}</p>
+            )}
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  )
+}
+
 // ---------- LibraryPage ----------
 
 function LibraryPage() {
@@ -800,6 +908,7 @@ function LibraryPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+  const [dietaryOpen, setDietaryOpen] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem('dietary_banner_dismissed') === '1'
   )
@@ -877,8 +986,15 @@ function LibraryPage() {
       search.ingredients.length,
   )
 
-  const stripVisible = !hasActiveFilters && search.modes.length === 0 && !search.q
+  const stripVisible = !hasActiveFilters && !search.q
   const activeStripChip = stripVisible ? STRIP_CHIPS.find((c) => c.id === stripChip) : undefined
+
+  const orderedChips = useMemo(() => {
+    if (!stripVisible) return STRIP_CHIPS
+    const idx = STRIP_CHIPS.findIndex((c) => c.id === stripChip)
+    if (idx <= 0) return STRIP_CHIPS
+    return [STRIP_CHIPS[idx], ...STRIP_CHIPS.filter((_, i) => i !== idx)]
+  }, [stripChip, stripVisible])
 
   const effectiveSort: Sort = activeStripChip?.sort ?? search.sort
 
@@ -889,12 +1005,11 @@ function LibraryPage() {
     tags: activeStripChip?.tags ?? search.tags,
     ingredients: search.ingredients,
     q: deferredQ,
-    modes: search.modes,
     lang,
     excludedFlags: userExcludedFlags,
     excludedIngredientIds,
     stripChip: stripVisible ? stripChip : undefined,
-  }), [activeStripChip, search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, userExcludedFlags, excludedIngredientIds, stripVisible, stripChip])
+  }), [activeStripChip, search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, lang, userExcludedFlags, excludedIngredientIds, stripVisible, stripChip])
 
   const {
     data: infiniteData,
@@ -912,7 +1027,7 @@ function LibraryPage() {
           limit: PAGE_SIZE,
           cursor: (pageParam as LibraryCursor | null) ?? null,
           sort: effectiveSort,
-          modes: search.modes,
+          modes: [],
           proteins: activeStripChip?.proteins ?? search.proteins,
           maxCal: search.maxCal,
           maxTime: activeStripChip?.maxTime ?? search.maxTime,
@@ -1103,51 +1218,21 @@ function LibraryPage() {
                 )}
               </button>
             </div>
-            <Link
-              to="/app/settings"
-              aria-label={t('settings.title')}
-              className="shrink-0 w-10 h-10 rounded-xl border border-[#E5E7EB] bg-white shadow-sm flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-            >
-              <Settings size={16} aria-hidden="true" />
-            </Link>
-          </div>
-
-          {/* Row 2: Mode chips + sort */}
-          <div className="flex items-center gap-1.5 mt-2.5">
             <button
-              onClick={() => update({ modes: [] })}
-              aria-pressed={search.modes.length === 0}
-              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                search.modes.length === 0
-                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+              onClick={() => setDietaryOpen(true)}
+              aria-label={t('settings.dietary')}
+              className={`shrink-0 w-10 h-10 rounded-xl border bg-white shadow-sm flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                (profile?.dietary_mode && profile.dietary_mode !== 'none') || (profile?.intolerances && profile.intolerances.length > 0)
+                  ? 'border-[#16A34A] text-[#15803d]'
+                  : 'border-[#E5E7EB] text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB]'
               }`}
             >
-              {t('library.all')}
+              <SlidersVertical size={16} aria-hidden="true" />
             </button>
-            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
-              const active = search.modes.includes(m)
-              return (
-                <button
-                  key={m}
-                  onClick={() => {
-                    const next = active
-                      ? search.modes.filter((x) => x !== m)
-                      : [...search.modes, m]
-                    update({ modes: next })
-                  }}
-                  aria-pressed={active}
-                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                    active
-                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                  }`}
-                >
-                  {t(`library.${m}`)}
-                </button>
-              )
-            })}
-            <div className="flex-1" />
+          </div>
+
+          {/* Row 2: Sort button */}
+          <div className="flex items-center justify-end mt-2.5">
             <button
               onClick={() => setSortSheetOpen(true)}
               aria-label={t('sort.label')}
@@ -1162,23 +1247,34 @@ function LibraryPage() {
           </div>
         </div>
 
-        {/* Strip chips — visible when no filters/modes/query active */}
+        {/* Strip chips — icon-card style, visible when no filters/query active */}
         {stripVisible && (
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
-            {STRIP_CHIPS.map((chip) => (
-              <button
-                key={chip.id}
-                onClick={() => setStripChip(chip.id)}
-                aria-pressed={stripChip === chip.id}
-                className={`flex-none text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                  stripChip === chip.id
-                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                {t(chip.labelKey)}
-              </button>
-            ))}
+          <div className="flex gap-2.5 overflow-x-auto pb-2 -mx-4 px-4" style={{ scrollbarWidth: 'none' }}>
+            {orderedChips.map((chip) => {
+              const isActive = stripChip === chip.id
+              return (
+                <button
+                  key={chip.id}
+                  onClick={() => setStripChip(chip.id)}
+                  aria-pressed={isActive}
+                  className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                    isActive
+                      ? 'bg-[#dcfce7]'
+                      : 'bg-white border border-[#F0F0EE]'
+                  }`}
+                >
+                  <img
+                    src={chip.iconSrc}
+                    alt=""
+                    className="w-10 h-10 rounded-xl object-cover"
+                    aria-hidden="true"
+                  />
+                  <span className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? 'text-[#15803d]' : 'text-[#6B7280]'}`}>
+                    {t(chip.labelKey)}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         )}
 
@@ -1245,7 +1341,7 @@ function LibraryPage() {
                         recipe={sortedRecipes[virtualItem.index]}
                         cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
                         isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
-                        showOwnerBadge={search.modes.length === 0 || search.modes.includes('saved')}
+                        showOwnerBadge={true}
                         onToggleSave={(e) => {
                           e.preventDefault()
                           const r = sortedRecipes[virtualItem.index]
@@ -1277,6 +1373,12 @@ function LibraryPage() {
         onOpenChange={setSortSheetOpen}
         current={search.sort}
         onSelect={(s) => update({ sort: s })}
+      />
+
+      <DietarySheet
+        open={dietaryOpen}
+        onOpenChange={setDietaryOpen}
+        profile={profile ? { dietary_mode: profile.dietary_mode as DietaryMode, intolerances: profile.intolerances } : null}
       />
 
       {/* FAB */}

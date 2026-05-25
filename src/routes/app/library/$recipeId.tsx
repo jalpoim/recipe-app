@@ -26,6 +26,29 @@ import {
 } from '../../../lib/supabase/interaction-queries'
 import type { RecipeIngredient, RecipeStep } from '../../../types/db'
 
+// Muted pastel thumbnail gradients per protein
+const PROTEIN_COLORS: Record<string, string> = {
+  chicken:    'linear-gradient(135deg, #fef3c7, #fde68a)',
+  beef:       'linear-gradient(135deg, #fee2e2, #fecaca)',
+  pork:       'linear-gradient(135deg, #fce7f3, #fbcfe8)',
+  salmon:     'linear-gradient(135deg, #ffe4e6, #fecdd3)',
+  tuna:       'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+  cod:        'linear-gradient(135deg, #e0f2fe, #bae6fd)',
+  eggs:       'linear-gradient(135deg, #fefce8, #fef9c3)',
+  shrimp:     'linear-gradient(135deg, #fff7ed, #fed7aa)',
+  turkey:     'linear-gradient(135deg, #fef9c3, #fef08a)',
+  lamb:       'linear-gradient(135deg, #fdf4ff, #f5d0fe)',
+  sardine:    'linear-gradient(135deg, #e0f2fe, #7dd3fc)',
+  hake:       'linear-gradient(135deg, #f0fdf4, #bbf7d0)',
+  'sea-bream': 'linear-gradient(135deg, #eff6ff, #bfdbfe)',
+  'sea-bass': 'linear-gradient(135deg, #f0fdfa, #99f6e4)',
+  mackerel:   'linear-gradient(135deg, #fefce8, #fde047)',
+  octopus:    'linear-gradient(135deg, #fdf4ff, #e9d5ff)',
+  tofu:       'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+  legumes:    'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+  whey:       'linear-gradient(135deg, #ede9fe, #ddd6fe)',
+}
+
 // ---------- helpers ----------
 
 function fmt(n: number, decimals = 1) {
@@ -432,7 +455,7 @@ function RecipeDetailPage() {
       <div className="mx-auto w-full max-w-md">
 
         {/* Sticky header */}
-        <div className="sticky top-0 z-10 bg-[#FAFAF8] px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
+        <div className="sticky top-0 z-10 bg-[#FAFAF8]/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
           <button
             onClick={() => navigate({ to: isFromPlan ? '/app/plan' : '/app/library' })}
             aria-label={t('recipe.back')}
@@ -482,6 +505,25 @@ function RecipeDetailPage() {
             </Link>
           )}
         </div>
+
+        {/* Hero image */}
+        {!isCooking && (
+          <div className="w-full aspect-[16/9] overflow-hidden">
+            {recipe.image_thumb_url ? (
+              <img
+                src={recipe.image_thumb_url}
+                alt={recipe.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-full h-full"
+                style={{ background: PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)' }}
+                aria-hidden="true"
+              />
+            )}
+          </div>
+        )}
 
         <div className="px-4 pt-5 space-y-5">
 
