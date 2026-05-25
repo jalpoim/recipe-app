@@ -8,7 +8,7 @@ import {
   useDeferredValue,
   memo,
 } from "react";
-import { motion } from "framer-motion";
+import { motion, useAnimationControls } from "framer-motion";
 import { useMotion } from "../../../lib/use-reduced-motion";
 import { FlyingThumb } from "../../../components/FlyingThumb";
 import { capture } from "../../../lib/analytics";
@@ -328,6 +328,55 @@ function CardSkeleton() {
   );
 }
 
+function StripChipButton({
+  chip,
+  isActive,
+  onChipClick,
+}: {
+  chip: StripChipDef;
+  isActive: boolean;
+  onChipClick: (id: StripChipId) => void;
+}) {
+  const { t } = useTranslation();
+  const controls = useAnimationControls();
+  const { skip: reducedMotion } = useMotion();
+
+  function handleClick() {
+    onChipClick(chip.id);
+    if (!reducedMotion) {
+      controls.start({ scale: [1, 1.12, 1] });
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      aria-pressed={isActive}
+      className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+        isActive ? "bg-[#F4623A]" : "bg-white border border-[#F0F0EE]"
+      }`}
+    >
+      <motion.span
+        animate={controls}
+        transition={{ type: "spring", stiffness: 500, damping: 15 }}
+        className="flex flex-col items-center gap-1.5"
+      >
+        <img
+          src={chip.iconSrc}
+          alt=""
+          className="w-10 h-10 rounded-xl object-cover"
+          aria-hidden="true"
+        />
+        <span
+          className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
+        >
+          {t(chip.labelKey)}
+        </span>
+      </motion.span>
+    </button>
+  );
+}
+
 const ChipStrip = memo(function ChipStrip({
   chips,
   activeChipId,
@@ -337,43 +386,19 @@ const ChipStrip = memo(function ChipStrip({
   activeChipId: StripChipId | null;
   onChipClick: (id: StripChipId) => void;
 }) {
-  const { t } = useTranslation();
   return (
     <div
       className="flex gap-2.5 overflow-x-auto pt-2 pb-3 -mx-4 px-4"
       style={{ scrollbarWidth: "none" }}
     >
-      {chips.map((chip) => {
-        const isActive = activeChipId === chip.id;
-        return (
-          <button
-            key={chip.id}
-            onClick={() => onChipClick(chip.id)}
-            aria-pressed={isActive}
-            className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-              isActive ? "bg-[#F4623A]" : "bg-white border border-[#F0F0EE]"
-            }`}
-          >
-            <motion.span
-              animate={{ scale: isActive ? [1, 1.12, 1] : 1 }}
-              transition={{ type: "spring", stiffness: 500, damping: 15 }}
-              className="flex flex-col items-center gap-1.5"
-            >
-              <img
-                src={chip.iconSrc}
-                alt=""
-                className="w-10 h-10 rounded-xl object-cover"
-                aria-hidden="true"
-              />
-              <span
-                className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
-              >
-                {t(chip.labelKey)}
-              </span>
-            </motion.span>
-          </button>
-        );
-      })}
+      {chips.map((chip) => (
+        <StripChipButton
+          key={chip.id}
+          chip={chip}
+          isActive={activeChipId === chip.id}
+          onChipClick={onChipClick}
+        />
+      ))}
     </div>
   );
 });
@@ -1659,24 +1684,10 @@ function LibraryPage() {
                   !hasAnimatedRef.current &&
                   virtualItem.index < sortedRecipes.length;
                 return (
-                  <motion.div
+                  <div
                     key={virtualItem.key}
                     data-index={virtualItem.index}
                     ref={virtualizer.measureElement}
-                    initial={shouldAnimate ? { opacity: 0, y: 16 } : false}
-                    animate={shouldAnimate ? { opacity: 1, y: 0 } : undefined}
-                    transition={
-                      shouldAnimate
-                        ? {
-                            delay: Math.min(virtualItem.index * 0.04, 0.3),
-                            duration: 0.25,
-                            ease: "easeOut",
-                          }
-                        : undefined
-                    }
-                    onAnimationComplete={() => {
-                      if (shouldAnimate) hasAnimatedRef.current = true;
-                    }}
                     style={{
                       position: "absolute",
                       top: 0,
@@ -1693,34 +1704,57 @@ function LibraryPage() {
                         )}
                       </div>
                     ) : (
-                      <RecipeCard
-                        recipe={sortedRecipes[virtualItem.index]}
-                        onAddToPlan={(thumb) => {
-                          const r = sortedRecipes[virtualItem.index];
-                          const planTabEl =
-                            document.querySelector('[data-tab="plan"]');
-                          const toRect = planTabEl?.getBoundingClientRect();
-                          if (!reducedMotion && toRect) {
-                            setFlyingThumb({
-                              src: thumb.src,
-                              background: thumb.background,
-                              from: {
-                                x: thumb.rect.left,
-                                y: thumb.rect.top,
-                                w: thumb.rect.width,
-                                h: thumb.rect.height,
-                              },
-                              to: {
-                                x: toRect.left + toRect.width / 2 - 10,
-                                y: toRect.top + toRect.height / 2 - 10,
-                              },
-                            });
-                          }
-                          addToPlanMutation.mutate(r.id);
+                      <motion.div
+                        initial={shouldAnimate ? { opacity: 0 } : false}
+                        animate={shouldAnimate ? { opacity: 1 } : undefined}
+                        transition={
+                          shouldAnimate
+                            ? {
+                                delay: Math.min(virtualItem.index * 0.04, 0.3),
+                                duration: 0.25,
+                                ease: "easeOut",
+                              }
+                            : undefined
+                        }
+                        onAnimationComplete={() => {
+                          if (shouldAnimate) hasAnimatedRef.current = true;
                         }}
-                      />
+                      >
+                        <RecipeCard
+                          recipe={sortedRecipes[virtualItem.index]}
+                          onAddToPlan={(thumb) => {
+                            const r = sortedRecipes[virtualItem.index];
+                            if (!reducedMotion) {
+                              const planTabEl =
+                                document.getElementById("nav-plan-tab") ??
+                                document.querySelector('[data-tab="plan"]');
+                              const toRect = planTabEl?.getBoundingClientRect();
+                              const vw = window.innerWidth;
+                              const vh = window.innerHeight;
+                              const to = toRect
+                                ? {
+                                    x: toRect.left + toRect.width / 2 - 10,
+                                    y: toRect.top + toRect.height / 2 - 10,
+                                  }
+                                : { x: vw * 0.625 - 10, y: vh - 36 };
+                              setFlyingThumb({
+                                src: thumb.src,
+                                background: thumb.background,
+                                from: {
+                                  x: thumb.rect.left,
+                                  y: thumb.rect.top,
+                                  w: thumb.rect.width,
+                                  h: thumb.rect.height,
+                                },
+                                to,
+                              });
+                            }
+                            addToPlanMutation.mutate(r.id);
+                          }}
+                        />
+                      </motion.div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>

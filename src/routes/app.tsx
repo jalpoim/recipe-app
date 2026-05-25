@@ -183,6 +183,7 @@ function BottomNav() {
                 key={tab.to}
                 to={tab.to}
                 onClick={() => handleTabPress(tab.to, tab.key)}
+                id={tab.key === "plan" ? "nav-plan-tab" : undefined}
                 {...(tab.key === "plan" ? { "data-tab": "plan" } : {})}
                 className={`relative flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   isActive
