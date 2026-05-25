@@ -564,7 +564,10 @@ function RecipeDetailPage() {
       transition={
         reducedMotion
           ? { duration: 0 }
-          : { type: "spring", stiffness: 300, damping: 30 }
+          : {
+              y: { type: "spring", stiffness: 300, damping: 30 },
+              opacity: { duration: 0.25, ease: "easeOut" },
+            }
       }
     >
       <div

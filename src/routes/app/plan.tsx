@@ -595,17 +595,16 @@ function PlanPage() {
         ) : (
           <>
             {/* Plan items */}
-            <AnimatePresence initial={false}>
-              <div className="space-y-3 mb-4">
+            <div className="mb-4">
+              <AnimatePresence initial={false}>
                 {items.map((item) => (
                   <motion.div
                     key={item.id}
                     layout
                     exit={
-                      reducedMotion
-                        ? {}
-                        : { opacity: 0, height: 0, marginBottom: 0 }
+                      reducedMotion ? {} : { opacity: 0, scaleY: 0, height: 0 }
                     }
+                    style={{ originY: 0, marginBottom: 12 }}
                     transition={{ duration: 0.2, ease: "easeInOut" }}
                   >
                     <PlanItemCard
@@ -617,8 +616,8 @@ function PlanPage() {
                     />
                   </motion.div>
                 ))}
-              </div>
-            </AnimatePresence>
+              </AnimatePresence>
+            </div>
 
             {/* Clear plan */}
             <div className="mb-4">
