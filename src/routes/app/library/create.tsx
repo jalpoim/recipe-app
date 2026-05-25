@@ -29,24 +29,20 @@ import {
 } from "../../../lib/supabase/recipe-queries";
 import { useToast } from "../../../components/Toast";
 import { ProteinPicker } from "../../../components/ProteinPicker";
+import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 
-const UNIT_SECTIONS = [
-  { label: "Métrico", units: ["g", "kg", "ml", "L"] },
-  { label: "Imperial", units: ["oz", "lb", "cup", "tbsp", "tsp", "fl oz"] },
-  {
-    label: "Contagem",
-    units: [
-      "unit",
-      "slice",
-      "clove",
-      "pinch",
-      "bunch",
-      "handful",
-      "sheet",
-      "can",
-      "sachet",
-    ],
-  },
+const METRIC_UNITS = ["g", "kg", "ml", "L"] as const;
+const IMPERIAL_UNITS = ["oz", "lb", "cup", "tbsp", "tsp", "fl oz"] as const;
+const COUNT_UNIT_KEYS = [
+  "unit",
+  "slice",
+  "clove",
+  "pinch",
+  "bunch",
+  "handful",
+  "sheet",
+  "can",
+  "sachet",
 ] as const;
 
 function UnitSheet({
@@ -54,24 +50,50 @@ function UnitSheet({
   onOpenChange,
   selected,
   onSelect,
+  measurementSystem,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   selected: string;
   onSelect: (unit: string) => void;
+  measurementSystem: "metric" | "imperial";
 }) {
+  const { t } = useTranslation();
+
+  const sections = [
+    ...(measurementSystem === "metric"
+      ? [
+          {
+            labelKey: "create.unitMetric",
+            units: METRIC_UNITS as readonly string[],
+          },
+        ]
+      : [
+          {
+            labelKey: "create.unitImperial",
+            units: IMPERIAL_UNITS as readonly string[],
+          },
+        ]),
+    {
+      labelKey: "create.unitCount",
+      units: COUNT_UNIT_KEYS as readonly string[],
+    },
+  ];
+
   return (
     <Drawer.Root open={open} onOpenChange={onOpenChange}>
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
         <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl flex flex-col max-h-[70vh]">
           <div className="mx-auto w-10 h-1 rounded-full bg-[#E5E7EB] mt-3 mb-1 shrink-0" />
-          <Drawer.Title className="sr-only">Selecionar unidade</Drawer.Title>
+          <Drawer.Title className="sr-only">
+            {t("create.selectUnit")}
+          </Drawer.Title>
           <div className="overflow-y-auto pb-8">
-            {UNIT_SECTIONS.map((section) => (
-              <div key={section.label}>
+            {sections.map((section) => (
+              <div key={section.labelKey}>
                 <p className="px-4 pt-4 pb-1 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wide">
-                  {section.label}
+                  {t(section.labelKey)}
                 </p>
                 {section.units.map((u) => (
                   <button
@@ -83,7 +105,7 @@ function UnitSheet({
                     }}
                     className="w-full flex items-center justify-between px-4 py-3 text-sm text-[#1A1A1A] active:bg-[#F9FAFB] transition-colors"
                   >
-                    {u}
+                    {t(`units.${u}`, { defaultValue: u })}
                     {selected === u && (
                       <Check size={16} className="text-[#F4623A]" />
                     )}
@@ -191,11 +213,13 @@ function IngredientCombobox({
   onValueChange,
   onRemove,
   index,
+  measurementSystem,
 }: {
   value: IngredientRow;
   onValueChange: (updated: IngredientRow) => void;
   onRemove: () => void;
   index: number;
+  measurementSystem: "metric" | "imperial";
 }) {
   useTranslation();
   const [text, setText] = useState(value.rawText);
@@ -323,6 +347,7 @@ function IngredientCombobox({
         onOpenChange={setUnitSheetOpen}
         selected={unit}
         onSelect={handleUnitChange}
+        measurementSystem={measurementSystem}
       />
     </div>
   );
@@ -394,6 +419,14 @@ function CreateRecipePage() {
   const [fat, setFat] = useState<string>("");
   const [publish, setPublish] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: () => fetchMyProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const measurementSystem: "metric" | "imperial" =
+    profile?.measurement_unit === "imperial" ? "imperial" : "metric";
 
   const { data: userProteins = [], refetch: refetchUserProteins } = useQuery({
     queryKey: ["user-proteins"],
@@ -652,6 +685,7 @@ function CreateRecipePage() {
               index={idx}
               onValueChange={(updated) => updateIngredient(idx, updated)}
               onRemove={() => removeIngredient(idx)}
+              measurementSystem={measurementSystem}
             />
           ))}
           <button

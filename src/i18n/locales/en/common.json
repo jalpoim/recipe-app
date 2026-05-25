@@ -117,7 +117,22 @@
     "validationName": "Name is required",
     "validationProteins": "Select at least one protein",
     "validationIngredients": "Add at least one ingredient",
-    "validationSteps": "Add at least one step"
+    "validationSteps": "Add at least one step",
+    "selectUnit": "Select unit",
+    "unitMetric": "Metric",
+    "unitImperial": "Imperial",
+    "unitCount": "Count"
+  },
+  "units": {
+    "unit": "Unit",
+    "slice": "Slice",
+    "clove": "Clove",
+    "pinch": "Pinch",
+    "bunch": "Bunch",
+    "handful": "Handful",
+    "sheet": "Sheet",
+    "can": "Can",
+    "sachet": "Sachet"
   },
   "profile": {
     "recipes": "Recipes",

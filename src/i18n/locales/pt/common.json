@@ -117,7 +117,22 @@
     "validationName": "O nome é obrigatório",
     "validationProteins": "Seleciona pelo menos uma proteína",
     "validationIngredients": "Adiciona pelo menos um ingrediente",
-    "validationSteps": "Adiciona pelo menos um passo"
+    "validationSteps": "Adiciona pelo menos um passo",
+    "selectUnit": "Selecionar unidade",
+    "unitMetric": "Métrico",
+    "unitImperial": "Imperial",
+    "unitCount": "Contagem"
+  },
+  "units": {
+    "unit": "Unidade",
+    "slice": "Fatia",
+    "clove": "Dente",
+    "pinch": "Pitada",
+    "bunch": "Ramo",
+    "handful": "Punhado",
+    "sheet": "Folha",
+    "can": "Lata",
+    "sachet": "Saqueta"
   },
   "profile": {
     "recipes": "Receitas",
