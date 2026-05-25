@@ -239,24 +239,34 @@ function CookingDrawer({
 // ---------- Skeleton / Error ----------
 
 function RecipeDetailSkeleton() {
+  const { skip: reducedMotion } = useMotion();
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-56">
-      <div className="mx-auto w-full max-w-md px-4 py-5 space-y-4 animate-pulse motion-reduce:animate-none">
-        <div className="h-4 w-16 bg-[#F3F4F6] rounded-full" />
-        <div className="h-7 w-3/4 bg-[#F3F4F6] rounded-full" />
-        <div className="h-4 w-1/3 bg-[#F3F4F6] rounded-full" />
-        <div className="h-20 bg-[#F3F4F6] rounded-2xl" />
-        <div className="grid grid-cols-4 gap-2">
+    <motion.div
+      initial={reducedMotion ? {} : { y: 40, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{
+        y: { type: "spring", stiffness: 300, damping: 30 },
+        opacity: { duration: 0.25, ease: "easeOut" },
+      }}
+    >
+      <div className="min-h-screen bg-[#FAFAF8] pb-56">
+        <div className="mx-auto w-full max-w-md px-4 py-5 space-y-4 animate-pulse motion-reduce:animate-none">
+          <div className="h-4 w-16 bg-[#F3F4F6] rounded-full" />
+          <div className="h-7 w-3/4 bg-[#F3F4F6] rounded-full" />
+          <div className="h-4 w-1/3 bg-[#F3F4F6] rounded-full" />
+          <div className="h-20 bg-[#F3F4F6] rounded-2xl" />
+          <div className="grid grid-cols-4 gap-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-[#F3F4F6] rounded-2xl" />
+            ))}
+          </div>
+          <div className="h-4 w-24 bg-[#F3F4F6] rounded-full" />
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-[#F3F4F6] rounded-2xl" />
+            <div key={i} className="h-10 bg-[#F3F4F6] rounded-xl" />
           ))}
         </div>
-        <div className="h-4 w-24 bg-[#F3F4F6] rounded-full" />
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-10 bg-[#F3F4F6] rounded-xl" />
-        ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -281,6 +291,7 @@ function RecipeDetailError({ error }: { error: Error }) {
 // ---------- Route ----------
 
 export const Route = createFileRoute("/app/library/$recipeId")({
+  pendingMs: 0,
   pendingComponent: RecipeDetailSkeleton,
   errorComponent: ({ error }) => <RecipeDetailError error={error as Error} />,
   validateSearch: (search) => ({
@@ -558,18 +569,7 @@ function RecipeDetailPage() {
   }
 
   return (
-    <motion.div
-      initial={{ y: 40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={
-        reducedMotion
-          ? { duration: 0 }
-          : {
-              y: { type: "spring", stiffness: 300, damping: 30 },
-              opacity: { duration: 0.25, ease: "easeOut" },
-            }
-      }
-    >
+    <>
       <div
         className="min-h-screen bg-[#FAFAF8]"
         style={{
@@ -1025,6 +1025,6 @@ function RecipeDetailPage() {
           </div>
         )}
       </div>
-    </motion.div>
+    </>
   );
 }

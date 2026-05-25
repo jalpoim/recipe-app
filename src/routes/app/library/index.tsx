@@ -1490,13 +1490,30 @@ function LibraryPage() {
 
   const addToPlanMutation = useMutation({
     mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["active-plan"] });
+      const previous = queryClient.getQueryData(["active-plan"]);
+      queryClient.setQueryData(
+        ["active-plan"],
+        (old: Record<string, unknown> | undefined) => {
+          if (!old) return old;
+          return { ...old, item_count: ((old.item_count as number) ?? 0) + 1 };
+        },
+      );
+      return { previous };
+    },
     onSuccess: () => {
       showToast(t("recipe.addedToPlan"), "success");
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(["active-plan"], context.previous);
+      }
+      showToast(t("recipe.addedToPlanError"), "error");
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["active-plan"] });
       queryClient.invalidateQueries({ queryKey: ["plan-items"] });
-    },
-    onError: () => {
-      showToast(t("recipe.addedToPlanError"), "error");
     },
   });
 

@@ -47,7 +47,7 @@ export function FlyingThumb({
         opacity: [1, 1, 0],
       }}
       transition={{
-        duration: 0.65,
+        duration: 0.85,
         times: [0, 0.35, 1],
         left: { ease: ["easeInOut", "easeOut"] },
         top: { ease: ["easeOut", "easeIn"] },
