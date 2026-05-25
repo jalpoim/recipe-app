@@ -273,7 +273,7 @@ function RecipeDetailPage() {
   const isFromPlan = search.from === 'plan' && !!search.planItemId
   const isOwner = !!user && recipe.owner_id === user.id
 
-  const [multiplier, setMultiplier] = useState(planItem?.portion_multiplier ?? recipe.servings)
+  const [multiplier, setMultiplier] = useState(planItem?.portion_multiplier ?? 1)
   const [isCooking, setIsCooking] = useState(false)
   const [completedUpToStep, setCompletedUpToStep] = useState(-1)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -541,18 +541,12 @@ function RecipeDetailPage() {
             </div>
           )}
 
-          {/* Time + servings — hidden during cooking to save space */}
-          {!isCooking && (
+          {/* Time — hidden during cooking to save space */}
+          {!isCooking && recipe.time_min != null && (
             <div className="flex items-center gap-4 text-sm text-[#6B7280]">
-              {recipe.time_min != null && (
-                <span className="flex items-center gap-1.5">
-                  <Clock size={14} aria-hidden="true" />
-                  {recipe.time_min} {t('common.min')}
-                </span>
-              )}
-              <span>
-                {recipe.servings}{' '}
-                {recipe.servings !== 1 ? t('recipe.bases') : t('recipe.base')}
+              <span className="flex items-center gap-1.5">
+                <Clock size={14} aria-hidden="true" />
+                {recipe.time_min} {t('common.min')}
               </span>
             </div>
           )}
