@@ -87,6 +87,28 @@ function perServing(
 
 // ---------- PlanItemCard ----------
 
+const PROTEIN_COLORS: Record<string, string> = {
+  chicken: "linear-gradient(135deg, #fef3c7, #fde68a)",
+  beef: "linear-gradient(135deg, #fee2e2, #fecaca)",
+  pork: "linear-gradient(135deg, #fce7f3, #fbcfe8)",
+  salmon: "linear-gradient(135deg, #ffe4e6, #fecdd3)",
+  tuna: "linear-gradient(135deg, #dbeafe, #bfdbfe)",
+  cod: "linear-gradient(135deg, #e0f2fe, #bae6fd)",
+  eggs: "linear-gradient(135deg, #fefce8, #fef9c3)",
+  shrimp: "linear-gradient(135deg, #fff7ed, #fed7aa)",
+  turkey: "linear-gradient(135deg, #fef9c3, #fef08a)",
+  lamb: "linear-gradient(135deg, #fdf4ff, #f5d0fe)",
+  sardine: "linear-gradient(135deg, #e0f2fe, #7dd3fc)",
+  hake: "linear-gradient(135deg, #f0fdf4, #bbf7d0)",
+  "sea-bream": "linear-gradient(135deg, #eff6ff, #bfdbfe)",
+  "sea-bass": "linear-gradient(135deg, #f0fdfa, #99f6e4)",
+  mackerel: "linear-gradient(135deg, #fefce8, #fde047)",
+  octopus: "linear-gradient(135deg, #fdf4ff, #e9d5ff)",
+  tofu: "linear-gradient(135deg, #FEE9E1, #bbf7d0)",
+  legumes: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
+  whey: "linear-gradient(135deg, #ede9fe, #ddd6fe)",
+};
+
 function PlanItemCard({
   item,
   onRemove,
@@ -100,112 +122,112 @@ function PlanItemCard({
   const scale = item.portion_multiplier;
   const cal = Math.round(perServing(item.recipe, "calories") * scale);
   const pro = Math.round(perServing(item.recipe, "protein") * scale);
-  const carbs = Math.round(perServing(item.recipe, "carbs") * scale);
-  const fat = Math.round(perServing(item.recipe, "fat") * scale);
+  const hasMacros = item.recipe.calories != null;
+  const thumbnailBg = item.recipe.image_thumb_url
+    ? undefined
+    : (PROTEIN_COLORS[item.recipe.proteins[0]] ??
+      "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
 
   return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 relative group">
-      {/* Full-card navigation layer */}
+    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden">
+      {/* Full-card navigation link */}
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: item.recipe_id }}
         search={{ from: "plan", planItemId: item.id }}
-        className="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+        className="flex h-[136px] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         aria-label={item.recipe.name}
-      />
+      >
+        {/* Left: thumbnail */}
+        <div className="w-[96px] shrink-0 relative">
+          {item.recipe.image_thumb_url ? (
+            <img
+              src={item.recipe.image_thumb_url}
+              alt=""
+              width={96}
+              height={136}
+              className="w-full h-full object-cover object-top"
+              loading="lazy"
+            />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{ background: thumbnailBg }}
+              aria-hidden="true"
+            />
+          )}
+        </div>
 
+        {/* Right: content */}
+        <div className="flex-1 min-w-0 flex flex-col p-3 pb-2 overflow-hidden pr-10">
+          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug line-clamp-2">
+            {item.recipe.name}
+          </h3>
+          <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#9CA3AF]">
+            {item.recipe.time_min != null && (
+              <span className="flex items-center gap-0.5 shrink-0">
+                <Clock size={10} aria-hidden="true" />
+                {item.recipe.time_min} {t("common.min")}
+              </span>
+            )}
+          </div>
+          {hasMacros && (
+            <div className="mt-2 flex gap-1.5">
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
+                {cal} Cal
+              </span>
+              <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
+                {pro}g {t("recipe.proteinAbbr")}
+              </span>
+            </div>
+          )}
+        </div>
+      </Link>
+
+      {/* Remove button — top-right, above the link */}
       <button
         onClick={() => onRemove(item.id)}
         aria-label={`Remover ${item.recipe.name} do plano`}
-        className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
       >
         <X size={14} aria-hidden="true" />
       </button>
 
-      <div className="block pr-8">
-        <div className="flex items-center gap-1">
-          <h3 className="text-[#1A1A1A] font-semibold text-sm leading-snug group-hover:text-[#F4623A] transition-colors truncate">
-            {item.recipe.name}
-          </h3>
-          <ChevronRight
-            size={12}
-            className="text-[#9CA3AF] flex-shrink-0"
-            aria-hidden="true"
-          />
-        </div>
-
-        <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280]">
-          {item.recipe.proteins.length > 0 && (
-            <span className="font-medium text-[#6B7280]">
-              {t(`proteins.${item.recipe.proteins[0]}`)}
-            </span>
-          )}
-          {item.recipe.time_min != null && (
-            <span className="flex items-center gap-0.5">
-              <Clock size={10} aria-hidden="true" />
-              {item.recipe.time_min} {t("common.min")}
-            </span>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-center justify-between relative z-10">
-        <span className="text-[11px] text-[#9CA3AF] font-medium">
-          {t("plan.multiplier")}
+      {/* Servings stepper — bottom-right, above the link */}
+      <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5">
+        <button
+          onClick={() =>
+            onServingsChange(
+              item.id,
+              item.recipe_id,
+              Math.max(1, item.portion_multiplier - 1),
+            )
+          }
+          disabled={item.portion_multiplier <= 1}
+          aria-label="Diminuir doses"
+          className="w-6 h-6 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+        >
+          <Minus size={10} aria-hidden="true" />
+        </button>
+        <span
+          className="w-4 text-center text-xs font-bold text-[#1A1A1A]"
+          aria-live="polite"
+        >
+          {item.portion_multiplier}
         </span>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() =>
-              onServingsChange(
-                item.id,
-                item.recipe_id,
-                Math.max(1, item.portion_multiplier - 1),
-              )
-            }
-            disabled={item.portion_multiplier <= 1}
-            aria-label="Diminuir doses"
-            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-          >
-            <Minus size={12} aria-hidden="true" />
-          </button>
-          <span
-            className="w-5 text-center text-sm font-bold text-[#1A1A1A]"
-            aria-live="polite"
-          >
-            {item.portion_multiplier}
-          </span>
-          <button
-            onClick={() =>
-              onServingsChange(
-                item.id,
-                item.recipe_id,
-                item.portion_multiplier + 1,
-              )
-            }
-            aria-label="Aumentar doses"
-            className="w-7 h-7 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-          >
-            <Plus size={12} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-2 grid grid-cols-4 gap-1.5 text-center">
-        {(
-          [
-            { label: t("recipe.calAbbr"), value: cal },
-            { label: t("recipe.proteinAbbr"), value: pro },
-            { label: t("recipe.carbsAbbr"), value: carbs },
-            { label: t("recipe.fatAbbr"), value: fat },
-          ] as const
-        ).map(({ label, value }) => (
-          <div key={label} className="bg-[#F9FAFB] rounded-xl py-1.5">
-            <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">
-              {label}
-            </div>
-            <div className="text-sm font-bold text-[#1A1A1A]">{value}</div>
-          </div>
-        ))}
+        <button
+          onClick={() =>
+            onServingsChange(
+              item.id,
+              item.recipe_id,
+              item.portion_multiplier + 1,
+            )
+          }
+          aria-label="Aumentar doses"
+          className="w-6 h-6 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+        >
+          <Plus size={10} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
