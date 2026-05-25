@@ -12,18 +12,6 @@ import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
 import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from "lucide-react";
 
-const NAV_ICONS: Record<string, { active: string; inactive: string }> = {
-  library: {
-    active: "/icons/nav/recipes.png",
-    inactive: "/icons/nav/recipes.png",
-  },
-  "my-recipes": {
-    active: "/icons/nav/kitchen.png",
-    inactive: "/icons/nav/kitchen.png",
-  },
-  plan: { active: "/icons/nav/plan.png", inactive: "/icons/nav/plan.png" },
-  shopping: { active: "/icons/nav/list.png", inactive: "/icons/nav/list.png" },
-};
 import { useTranslation } from "react-i18next";
 import { fetchActivePlanWithCount } from "../lib/supabase/plan-queries";
 import { acceptInvite } from "../lib/supabase/household-queries";
@@ -183,7 +171,6 @@ function BottomNav() {
               );
             }
 
-            const navIcon = NAV_ICONS[tab.key];
             return (
               <Link
                 key={tab.to}
@@ -199,16 +186,7 @@ function BottomNav() {
                 aria-current={isActive ? "page" : undefined}
               >
                 <div className="relative">
-                  {navIcon ? (
-                    <img
-                      src={navIcon.active}
-                      alt=""
-                      className={`w-7 h-7 rounded-lg object-cover transition-opacity ${isActive ? "opacity-100" : "opacity-40"}`}
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Icon size={22} aria-hidden="true" />
-                  )}
+                  <Icon size={22} aria-hidden="true" />
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <motion.span
                       animate={tab.key === "plan" ? badgeControls : undefined}
