@@ -6,6 +6,7 @@ import {
   useEffect,
   useCallback,
   useDeferredValue,
+  memo,
 } from "react";
 import { capture } from "../../../lib/analytics";
 import {
@@ -324,6 +325,50 @@ function CardSkeleton() {
     </div>
   );
 }
+
+const ChipStrip = memo(function ChipStrip({
+  chips,
+  activeChipId,
+  onChipClick,
+}: {
+  chips: StripChipDef[];
+  activeChipId: StripChipId | null;
+  onChipClick: (id: StripChipId) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div
+      className="flex gap-2.5 overflow-x-auto pt-2 pb-3 -mx-4 px-4"
+      style={{ scrollbarWidth: "none" }}
+    >
+      {chips.map((chip) => {
+        const isActive = activeChipId === chip.id;
+        return (
+          <button
+            key={chip.id}
+            onClick={() => onChipClick(chip.id)}
+            aria-pressed={isActive}
+            className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+              isActive ? "bg-[#F4623A]" : "bg-white border border-[#F0F0EE]"
+            }`}
+          >
+            <img
+              src={chip.iconSrc}
+              alt=""
+              className="w-10 h-10 rounded-xl object-cover"
+              aria-hidden="true"
+            />
+            <span
+              className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
+            >
+              {t(chip.labelKey)}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+});
 
 function LibrarySkeleton() {
   return (
@@ -1156,12 +1201,14 @@ function LibraryPage() {
     return getTimeAwareChip();
   });
 
-  function handleChipClick(chipId: StripChipId) {
-    const next = stripChip === chipId ? null : chipId;
-    setStripChip(next);
-    if (next) sessionStorage.setItem("library_strip_chip", next);
-    else sessionStorage.removeItem("library_strip_chip");
-  }
+  const handleChipClick = useCallback((chipId: StripChipId) => {
+    setStripChip((prev) => {
+      const next = prev === chipId ? null : chipId;
+      if (next) sessionStorage.setItem("library_strip_chip", next);
+      else sessionStorage.removeItem("library_strip_chip");
+      return next;
+    });
+  }, []);
 
   function update(patch: Partial<LibrarySearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
@@ -1512,85 +1559,60 @@ function LibraryPage() {
           </div>
         </div>
 
-        {isLoading ? (
-          <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3 pt-2">
-            {[0, 1, 2, 3, 4].map((i) => (
-              <CardSkeleton key={i} />
-            ))}
-          </div>
-        ) : sortedRecipes.length === 0 ? (
-          <div className="flex-1 flex flex-col items-center justify-center pb-20">
-            <p className="text-[#6B7280] text-sm">{t("filters.empty")}</p>
-            {hasActiveFilters && (
+        {/* Always-rendered scroll container — chips live here so they
+            scroll away naturally without being affected by list load state */}
+        <div
+          ref={parentRef}
+          onScroll={handleScroll}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20"
+          style={{ overscrollBehaviorY: "contain" }}
+        >
+          {/* Strip chips — memoized, unaffected by list re-renders */}
+          {stripVisible && (
+            <ChipStrip
+              chips={orderedChips}
+              activeChipId={stripChip}
+              onChipClick={handleChipClick}
+            />
+          )}
+
+          {/* Dietary banner — dismissible */}
+          {userExcludedFlags.length > 0 && !bannerDismissed && (
+            <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
+              <span className="flex-1">{t("library.dietaryBanner")}</span>
               <button
-                onClick={clearFilters}
-                className="mt-2 text-xs text-[#F4623A] underline"
+                onClick={() => {
+                  setBannerDismissed(true);
+                  localStorage.setItem("dietary_banner_dismissed", "1");
+                }}
+                aria-label={t("common.close")}
+                className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
               >
-                {t("filters.clearFilters")}
+                <X size={12} aria-hidden="true" />
               </button>
-            )}
-          </div>
-        ) : (
-          /* ── Virtual list — strip and banner scroll with content ── */
-          <div
-            ref={parentRef}
-            onScroll={handleScroll}
-            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20"
-            style={{ overscrollBehaviorY: "contain" }}
-          >
-            {/* Strip chips — inside scroll so they disappear on scroll */}
-            {stripVisible && (
-              <div
-                className="flex gap-2.5 overflow-x-auto pt-2 pb-3 -mx-4 px-4"
-                style={{ scrollbarWidth: "none" }}
-              >
-                {orderedChips.map((chip) => {
-                  const isActive = stripChip === chip.id;
-                  return (
-                    <button
-                      key={chip.id}
-                      onClick={() => handleChipClick(chip.id)}
-                      aria-pressed={isActive}
-                      className={`flex-none flex flex-col items-center gap-1.5 px-3 pt-2.5 pb-2 rounded-2xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-                        isActive
-                          ? "bg-[#F4623A]"
-                          : "bg-white border border-[#F0F0EE]"
-                      }`}
-                    >
-                      <img
-                        src={chip.iconSrc}
-                        alt=""
-                        className="w-10 h-10 rounded-xl object-cover"
-                        aria-hidden="true"
-                      />
-                      <span
-                        className={`text-[10px] font-semibold whitespace-nowrap ${isActive ? "text-white" : "text-[#6B7280]"}`}
-                      >
-                        {t(chip.labelKey)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            </div>
+          )}
 
-            {/* Dietary banner — dismissible */}
-            {userExcludedFlags.length > 0 && !bannerDismissed && (
-              <div className="mb-3 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
-                <span className="flex-1">{t("library.dietaryBanner")}</span>
+          {/* List content — only this section transitions between states */}
+          {isLoading ? (
+            <div className="space-y-3 pt-2">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <CardSkeleton key={i} />
+              ))}
+            </div>
+          ) : sortedRecipes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24">
+              <p className="text-[#6B7280] text-sm">{t("filters.empty")}</p>
+              {hasActiveFilters && (
                 <button
-                  onClick={() => {
-                    setBannerDismissed(true);
-                    localStorage.setItem("dietary_banner_dismissed", "1");
-                  }}
-                  aria-label={t("common.close")}
-                  className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
+                  onClick={clearFilters}
+                  className="mt-2 text-xs text-[#F4623A] underline"
                 >
-                  <X size={12} aria-hidden="true" />
+                  {t("filters.clearFilters")}
                 </button>
-              </div>
-            )}
-
+              )}
+            </div>
+          ) : (
             <div
               style={{
                 height: virtualizer.getTotalSize(),
@@ -1633,8 +1655,8 @@ function LibraryPage() {
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <FilterSheet
