@@ -10,9 +10,9 @@ import {
 import { capture } from "../../../lib/analytics";
 import {
   ArrowUpDown,
+  CalendarPlus,
   Check,
   Clock,
-  Heart,
   Plus,
   Search,
   SlidersHorizontal,
@@ -35,11 +35,6 @@ import {
   type Sort,
   type LibraryCursor,
 } from "../../../lib/supabase/queries";
-import {
-  fetchInteractions,
-  upsertInteraction,
-  removeInteraction,
-} from "../../../lib/supabase/interaction-queries";
 import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
 import {
   fetchMyProfile,
@@ -408,13 +403,9 @@ function perServing(
 
 function RecipeCard({
   recipe,
-  isLiked = false,
-  onToggleLike,
   onAddToPlan,
 }: {
   recipe: RecipeWithIngredients;
-  isLiked?: boolean;
-  onToggleLike?: (e: React.MouseEvent) => void;
   onAddToPlan?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation();
@@ -438,7 +429,7 @@ function RecipeCard({
         }
         className="flex h-[136px]"
       >
-        {/* Left: image + heart overlay */}
+        {/* Left: image */}
         <div className="w-[96px] shrink-0 relative">
           {recipe.image_thumb_url ? (
             <img
@@ -455,24 +446,6 @@ function RecipeCard({
               style={{ background: thumbnailBg }}
               aria-hidden="true"
             />
-          )}
-          {onToggleLike && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                onToggleLike(e);
-              }}
-              aria-label={isLiked ? t("recipe.unlike") : t("recipe.like")}
-              aria-pressed={isLiked}
-              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none transition-colors"
-            >
-              <Heart
-                size={12}
-                fill={isLiked ? "#F4623A" : "none"}
-                className={isLiked ? "text-[#F4623A]" : "text-[#9CA3AF]"}
-                aria-hidden="true"
-              />
-            </button>
           )}
         </div>
 
@@ -512,12 +485,11 @@ function RecipeCard({
         <button
           onClick={onAddToPlan}
           aria-label={t("plan.addRecipe")}
-          className="absolute bottom-0 right-0 w-10 h-10 rounded-tl-2xl bg-[#F4623A] hover:bg-[#D94F2B] flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus-visible:ring-inset focus:outline-none"
+          className="absolute bottom-0 right-0 w-10 h-10 rounded-tl-2xl bg-white border-t border-l border-[#F0F0EE] flex items-center justify-center transition-colors hover:bg-[#FEF2EF] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus-visible:ring-inset focus:outline-none"
         >
-          <img
-            src="/icons/nav/add-to-plan.png"
-            alt=""
-            className="w-6 h-6 rounded-lg"
+          <CalendarPlus
+            size={18}
+            className="text-[#F4623A]"
             aria-hidden="true"
           />
         </button>
@@ -1382,58 +1354,6 @@ function LibraryPage() {
     });
   }, [queryClient, lang]);
 
-  const { data: interactions = [] } = useQuery({
-    queryKey: ["interactions"],
-    queryFn: fetchInteractions,
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const likedIds = useMemo(
-    () =>
-      new Set(
-        interactions.filter((i) => i.type === "like").map((i) => i.recipe_id),
-      ),
-    [interactions],
-  );
-
-  const likeMutation = useMutation({
-    mutationFn: (vars: { recipeId: string; wasLiked: boolean }) =>
-      vars.wasLiked
-        ? removeInteraction({ data: { recipeId: vars.recipeId, type: "like" } })
-        : upsertInteraction({
-            data: { recipeId: vars.recipeId, type: "like" },
-          }),
-    onMutate: (vars) => {
-      queryClient.setQueryData(
-        ["interactions"],
-        (prev: typeof interactions) => {
-          if (!prev) return prev;
-          if (vars.wasLiked) {
-            return prev.filter(
-              (i) => !(i.recipe_id === vars.recipeId && i.type === "like"),
-            );
-          }
-          return [
-            ...prev,
-            {
-              id: "tmp-like",
-              user_id: "",
-              recipe_id: vars.recipeId,
-              type: "like" as const,
-              created_at: "",
-            },
-          ];
-        },
-      );
-    },
-    onError: () => {
-      queryClient.invalidateQueries({ queryKey: ["interactions"] });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["interactions"] });
-    },
-  });
-
   const addToPlanMutation = useMutation({
     mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
     onSuccess: () => {
@@ -1684,17 +1604,6 @@ function LibraryPage() {
                     ) : (
                       <RecipeCard
                         recipe={sortedRecipes[virtualItem.index]}
-                        isLiked={likedIds.has(
-                          sortedRecipes[virtualItem.index].id,
-                        )}
-                        onToggleLike={(e) => {
-                          e.preventDefault();
-                          const r = sortedRecipes[virtualItem.index];
-                          likeMutation.mutate({
-                            recipeId: r.id,
-                            wasLiked: likedIds.has(r.id),
-                          });
-                        }}
                         onAddToPlan={(e) => {
                           e.stopPropagation();
                           const r = sortedRecipes[virtualItem.index];
@@ -1740,16 +1649,6 @@ function LibraryPage() {
             : null
         }
       />
-
-      {/* FAB */}
-      <Link
-        to="/app/library/create"
-        aria-label={t("library.newRecipe")}
-        className="fixed z-20 right-4 w-14 h-14 rounded-full bg-[#F4623A] text-white shadow-lg flex items-center justify-center hover:bg-[#D94F2B] active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-        style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom) + 1rem)" }}
-      >
-        <Plus size={24} aria-hidden="true" />
-      </Link>
     </div>
   );
 }
