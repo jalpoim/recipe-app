@@ -315,6 +315,13 @@
       "vegetarian": "Vegetariano",
       "quick": "Rápido · ≤30 min"
     },
+    "desc": {
+      "meat": "Vaca · Porco · Borrego",
+      "poultry": "Frango · Peru",
+      "fish": "Peixe & Marisco",
+      "vegetarian": "Sem carne ou peixe",
+      "quick": "Pronto em 30 minutos"
+    },
     "featured": "Em destaque",
     "sort": {
       "popular": "Popular",

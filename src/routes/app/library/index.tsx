@@ -350,12 +350,12 @@ function RecipeCard({
 
 // ---------- Category gateway ----------
 
-const CATEGORY_COLORS: Record<GatewayCategory, string> = {
-  meat:       'linear-gradient(135deg, #fee2e2, #fca5a5)',
-  poultry:    'linear-gradient(135deg, #fef3c7, #fde68a)',
-  fish:       'linear-gradient(135deg, #dbeafe, #93c5fd)',
-  vegetarian: 'linear-gradient(135deg, #d1fae5, #6ee7b7)',
-  quick:      'linear-gradient(135deg, #ede9fe, #c4b5fd)',
+// Very muted tints — barely-there warmth, no gradients
+const CATEGORY_TINTS: Record<Exclude<GatewayCategory, 'quick'>, string> = {
+  meat:       '#F9EDE8',
+  poultry:    '#FAF3E3',
+  fish:       '#E8EFF7',
+  vegetarian: '#EAF2EA',
 }
 
 const CATEGORY_PROTEINS: Record<GatewayCategory, string[]> = {
@@ -1275,33 +1275,47 @@ function LibraryPage() {
 
         {/* ── Gateway ── */}
         {showGateway ? (
-          <div className="flex-1 overflow-auto pb-24 -mx-4 px-4">
+          <div className="flex-1 overflow-auto pb-24">
             <p className="text-xl font-bold text-[#1A1A1A] mb-4">{t('gateway.title')}</p>
+
+            {/* 2-col tiles */}
             <div className="grid grid-cols-2 gap-3 mb-3">
-              {(['meat', 'poultry', 'fish', 'vegetarian'] as GatewayCategory[]).map((cat) => (
+              {(['meat', 'poultry', 'fish', 'vegetarian'] as Exclude<GatewayCategory, 'quick'>[]).map((cat) => (
                 <button
                   key={cat}
                   onClick={() => update({ category: cat })}
-                  className="rounded-2xl h-28 flex flex-col justify-end p-3 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
-                  style={{ background: CATEGORY_COLORS[cat] }}
+                  style={{ backgroundColor: CATEGORY_TINTS[cat] }}
+                  className="rounded-2xl h-36 flex flex-col justify-between p-4 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
                 >
-                  <span className="text-3xl leading-none mb-1">{CATEGORY_EMOJI[cat]}</span>
-                  <span className="text-sm font-semibold text-[#1A1A1A]">
-                    {t(`gateway.categories.${cat}`)}
-                  </span>
+                  <div className="w-2 h-2 rounded-full bg-[#16A34A] opacity-60" aria-hidden="true" />
+                  <div>
+                    <p className="text-lg font-bold text-[#1A1A1A] leading-tight">
+                      {t(`gateway.categories.${cat}`)}
+                    </p>
+                    <p className="text-xs text-[#6B7280] mt-0.5">
+                      {t(`gateway.desc.${cat}`)}
+                    </p>
+                  </div>
                 </button>
               ))}
             </div>
+
+            {/* Quick tile — dark, full-width */}
             <button
               onClick={() => update({ category: 'quick' })}
-              className="w-full rounded-2xl h-20 flex items-center gap-4 px-5 mb-5 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
-              style={{ background: CATEGORY_COLORS.quick }}
+              className="w-full rounded-2xl bg-[#1A1A1A] h-20 flex items-center justify-between px-5 mb-5 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
             >
-              <span className="text-3xl leading-none">{CATEGORY_EMOJI.quick}</span>
-              <span className="text-sm font-semibold text-[#1A1A1A]">
-                {t('gateway.categories.quick')}
-              </span>
+              <div>
+                <p className="text-lg font-bold text-white leading-tight">
+                  {t('gateway.categories.quick')}
+                </p>
+                <p className="text-xs text-white/50 mt-0.5">
+                  {t('gateway.desc.quick')}
+                </p>
+              </div>
+              <span className="text-5xl font-black text-white/10 select-none" aria-hidden="true">30</span>
             </button>
+
             {userExcludedFlags.length > 0 && (
               <div className="text-center pb-4">
                 <button

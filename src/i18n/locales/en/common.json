@@ -315,6 +315,13 @@
       "vegetarian": "Vegetarian",
       "quick": "Quick · ≤30 min"
     },
+    "desc": {
+      "meat": "Beef · Pork · Lamb",
+      "poultry": "Chicken · Turkey",
+      "fish": "Fish & Seafood",
+      "vegetarian": "No meat or fish",
+      "quick": "Ready in 30 minutes"
+    },
     "featured": "Featured",
     "sort": {
       "popular": "Popular",
