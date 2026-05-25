@@ -10,8 +10,6 @@ import {
 import { capture } from "../../../lib/analytics";
 import {
   ArrowUpDown,
-  Bookmark,
-  BookmarkCheck,
   Check,
   Clock,
   Heart,
@@ -42,6 +40,7 @@ import {
   upsertInteraction,
   removeInteraction,
 } from "../../../lib/supabase/interaction-queries";
+import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
 import {
   fetchMyProfile,
   fetchIngredientExclusions,
@@ -409,16 +408,14 @@ function perServing(
 
 function RecipeCard({
   recipe,
-  isSaved = false,
   isLiked = false,
-  onToggleSave,
   onToggleLike,
+  onAddToPlan,
 }: {
   recipe: RecipeWithIngredients;
-  isSaved?: boolean;
   isLiked?: boolean;
-  onToggleSave?: (e: React.MouseEvent) => void;
   onToggleLike?: (e: React.MouseEvent) => void;
+  onAddToPlan?: (e: React.MouseEvent) => void;
 }) {
   const { t } = useTranslation();
   const cal = perServing(recipe, "calories");
@@ -441,8 +438,8 @@ function RecipeCard({
         }
         className="flex h-[136px]"
       >
-        {/* Left: image fixed height */}
-        <div className="w-[96px] shrink-0">
+        {/* Left: image + heart overlay */}
+        <div className="w-[96px] shrink-0 relative">
           {recipe.image_thumb_url ? (
             <img
               src={recipe.image_thumb_url}
@@ -459,16 +456,31 @@ function RecipeCard({
               aria-hidden="true"
             />
           )}
+          {onToggleLike && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                onToggleLike(e);
+              }}
+              aria-label={isLiked ? t("recipe.unlike") : t("recipe.like")}
+              aria-pressed={isLiked}
+              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-sm focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none transition-colors"
+            >
+              <Heart
+                size={12}
+                fill={isLiked ? "#F4623A" : "none"}
+                className={isLiked ? "text-[#F4623A]" : "text-[#9CA3AF]"}
+                aria-hidden="true"
+              />
+            </button>
+          )}
         </div>
 
         {/* Right: content */}
-        <div className="flex-1 min-w-0 flex flex-col p-3 overflow-hidden">
-          {/* Title */}
+        <div className="flex-1 min-w-0 flex flex-col p-3 pb-2 overflow-hidden">
           <h2 className="text-[#1A1A1A] font-semibold text-sm leading-snug line-clamp-2">
             {recipe.name}
           </h2>
-
-          {/* Meta + action buttons on same line */}
           <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[#9CA3AF]">
             {recipe.time_min != null && (
               <span className="flex items-center gap-0.5 shrink-0">
@@ -481,47 +493,7 @@ function RecipeCard({
                 {ingredientCount} {t("recipe.ingredients").toLowerCase()}
               </span>
             )}
-            <div className="ml-auto flex items-center shrink-0">
-              {onToggleLike && (
-                <button
-                  onClick={onToggleLike}
-                  aria-label={isLiked ? t("recipe.unlike") : t("recipe.like")}
-                  aria-pressed={isLiked}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
-                    isLiked
-                      ? "text-[#F4623A]"
-                      : "text-[#D1D5DB] hover:text-[#F4623A]"
-                  }`}
-                >
-                  <Heart
-                    size={14}
-                    fill={isLiked ? "currentColor" : "none"}
-                    aria-hidden="true"
-                  />
-                </button>
-              )}
-              {onToggleSave && (
-                <button
-                  onClick={onToggleSave}
-                  aria-label={isSaved ? t("recipe.unsave") : t("recipe.save")}
-                  aria-pressed={isSaved}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
-                    isSaved
-                      ? "text-[#F4623A]"
-                      : "text-[#D1D5DB] hover:text-[#F4623A]"
-                  }`}
-                >
-                  {isSaved ? (
-                    <BookmarkCheck size={14} aria-hidden="true" />
-                  ) : (
-                    <Bookmark size={14} aria-hidden="true" />
-                  )}
-                </button>
-              )}
-            </div>
           </div>
-
-          {/* Macro pills */}
           {hasMacros && (
             <div className="mt-2 flex gap-1.5">
               <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#9CA3AF] font-medium">
@@ -534,6 +506,22 @@ function RecipeCard({
           )}
         </div>
       </Link>
+
+      {/* Add-to-plan tab — bottom-right corner, outside the Link */}
+      {onAddToPlan && (
+        <button
+          onClick={onAddToPlan}
+          aria-label={t("plan.addRecipe")}
+          className="absolute bottom-0 right-0 w-10 h-10 rounded-tl-2xl bg-[#F4623A] hover:bg-[#D94F2B] flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus-visible:ring-inset focus:outline-none"
+        >
+          <img
+            src="/icons/nav/add-to-plan.png"
+            alt=""
+            className="w-6 h-6 rounded-lg"
+            aria-hidden="true"
+          />
+        </button>
+      )}
     </div>
   );
 }
@@ -1400,14 +1388,6 @@ function LibraryPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const savedIds = useMemo(
-    () =>
-      new Set(
-        interactions.filter((i) => i.type === "save").map((i) => i.recipe_id),
-      ),
-    [interactions],
-  );
-
   const likedIds = useMemo(
     () =>
       new Set(
@@ -1454,46 +1434,14 @@ function LibraryPage() {
     },
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (vars: { recipeId: string; wasSaved: boolean }) =>
-      vars.wasSaved
-        ? removeInteraction({ data: { recipeId: vars.recipeId, type: "save" } })
-        : upsertInteraction({
-            data: { recipeId: vars.recipeId, type: "save" },
-          }),
-    onMutate: (vars) => {
-      queryClient.setQueryData(
-        ["interactions"],
-        (prev: typeof interactions) => {
-          if (!prev) return prev;
-          if (vars.wasSaved) {
-            return prev.filter(
-              (i) => !(i.recipe_id === vars.recipeId && i.type === "save"),
-            );
-          }
-          return [
-            ...prev,
-            {
-              id: "tmp",
-              user_id: "",
-              recipe_id: vars.recipeId,
-              type: "save" as const,
-              created_at: "",
-            },
-          ];
-        },
-      );
+  const addToPlanMutation = useMutation({
+    mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
+    onSuccess: () => {
+      showToast(t("recipe.addedToPlan"), "success");
+      queryClient.invalidateQueries({ queryKey: ["plan"] });
     },
     onError: () => {
-      queryClient.invalidateQueries({ queryKey: ["interactions"] });
-      showToast("Erro ao guardar receita", "error");
-    },
-    onSuccess: (_, vars) => {
-      if (!vars.wasSaved) {
-        showToast("Receita guardada ✓", "success");
-        capture("recipe_saved", { recipeId: vars.recipeId });
-      }
-      queryClient.invalidateQueries({ queryKey: ["library"] });
+      showToast(t("recipe.addedToPlanError"), "error");
     },
   });
 
@@ -1736,20 +1684,9 @@ function LibraryPage() {
                     ) : (
                       <RecipeCard
                         recipe={sortedRecipes[virtualItem.index]}
-                        isSaved={savedIds.has(
-                          sortedRecipes[virtualItem.index].id,
-                        )}
                         isLiked={likedIds.has(
                           sortedRecipes[virtualItem.index].id,
                         )}
-                        onToggleSave={(e) => {
-                          e.preventDefault();
-                          const r = sortedRecipes[virtualItem.index];
-                          saveMutation.mutate({
-                            recipeId: r.id,
-                            wasSaved: savedIds.has(r.id),
-                          });
-                        }}
                         onToggleLike={(e) => {
                           e.preventDefault();
                           const r = sortedRecipes[virtualItem.index];
@@ -1757,6 +1694,11 @@ function LibraryPage() {
                             recipeId: r.id,
                             wasLiked: likedIds.has(r.id),
                           });
+                        }}
+                        onAddToPlan={(e) => {
+                          e.stopPropagation();
+                          const r = sortedRecipes[virtualItem.index];
+                          addToPlanMutation.mutate(r.id);
                         }}
                       />
                     )}
