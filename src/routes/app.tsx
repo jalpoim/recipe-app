@@ -8,7 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { motion, useAnimationControls } from "framer-motion";
+import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
 import { BookOpen, BookMarked, CalendarDays, ShoppingCart } from "lucide-react";
 
@@ -212,9 +212,22 @@ function BottomNav() {
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <motion.span
                       animate={tab.key === "plan" ? badgeControls : undefined}
-                      className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none"
+                      className="absolute -top-1 -right-1.5 min-w-[16px] h-4 px-0.5 rounded-full bg-[#F4623A] text-white text-[9px] font-bold flex items-center justify-center leading-none overflow-hidden"
                     >
-                      {(tab.badge ?? 0) > 99 ? "99+" : tab.badge}
+                      <AnimatePresence mode="sync" initial={false}>
+                        <motion.span
+                          key={
+                            (tab.badge ?? 0) > 99 ? "max" : String(tab.badge)
+                          }
+                          initial={{ y: -10, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          exit={{ y: 10, opacity: 0 }}
+                          transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="absolute inset-0 flex items-center justify-center leading-none"
+                        >
+                          {(tab.badge ?? 0) > 99 ? "99+" : tab.badge}
+                        </motion.span>
+                      </AnimatePresence>
                     </motion.span>
                   )}
                 </div>

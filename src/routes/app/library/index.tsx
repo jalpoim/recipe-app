@@ -504,6 +504,8 @@ function RecipeCard({
       "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
   const ingredientCount = recipe.recipe_ingredients?.length ?? 0;
   const thumbRef = useRef<HTMLDivElement>(null);
+  const thumbControls = useAnimationControls();
+  const { skip: reducedMotion } = useMotion();
 
   return (
     <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden">
@@ -517,7 +519,11 @@ function RecipeCard({
         className="flex h-[136px]"
       >
         {/* Left: image */}
-        <div ref={thumbRef} className="w-[96px] shrink-0 relative">
+        <motion.div
+          ref={thumbRef}
+          animate={thumbControls}
+          className="w-[96px] shrink-0 relative"
+        >
           {recipe.image_thumb_url ? (
             <img
               src={recipe.image_thumb_url}
@@ -534,7 +540,7 @@ function RecipeCard({
               aria-hidden="true"
             />
           )}
-        </div>
+        </motion.div>
 
         {/* Right: content */}
         <div className="flex-1 min-w-0 flex flex-col p-3 pb-2 overflow-hidden">
@@ -573,6 +579,12 @@ function RecipeCard({
           onClick={(e) => {
             e.stopPropagation();
             if (!onAddToPlan) return;
+            if (!reducedMotion) {
+              thumbControls.start({
+                scale: [1, 0.85, 1.06, 1],
+                transition: { duration: 0.4, ease: [0.34, 1.56, 0.64, 1] },
+              });
+            }
             const rect = thumbRef.current?.getBoundingClientRect();
             onAddToPlan({
               src: recipe.image_thumb_url ?? null,

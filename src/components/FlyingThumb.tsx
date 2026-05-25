@@ -16,8 +16,11 @@ export function FlyingThumb({
   to,
   onDone,
 }: FlyingThumbProps) {
-  const midX = (from.x + to.x) / 2;
-  const midY = Math.min(from.y, to.y) - 100;
+  // Arc peak: 160px above the start, reached at 35% of the animation.
+  // X barely moves in the first 35% (perpendicular launch feel),
+  // then curves toward the target.
+  const midX = from.x + (to.x - from.x) * 0.2;
+  const midY = from.y - 160;
 
   return createPortal(
     <motion.div
@@ -34,15 +37,25 @@ export function FlyingThumb({
         opacity: 1,
       }}
       animate={{
+        // X: smooth ease-out — moves steadily toward target, decelerates at end
         left: [from.x, midX, to.x],
+        // Y: fast upward launch (easeOut), then gravity-pull into target (easeIn)
         top: [from.y, midY, to.y],
-        width: [from.w, from.w * 0.6, 22],
-        height: [from.h, from.h * 0.6, 22],
-        // 100px >> half of 22px final size, so CSS caps it at a circle
+        width: [from.w, from.w * 0.55, 22],
+        height: [from.h, from.h * 0.55, 22],
         borderRadius: [12, 12, 100],
         opacity: [1, 1, 0],
       }}
-      transition={{ duration: 0.6, ease: "easeInOut", times: [0, 0.5, 1] }}
+      transition={{
+        duration: 0.65,
+        times: [0, 0.35, 1],
+        left: { ease: ["easeInOut", "easeOut"] },
+        top: { ease: ["easeOut", "easeIn"] },
+        width: { ease: ["linear", "easeIn"] },
+        height: { ease: ["linear", "easeIn"] },
+        borderRadius: { ease: "linear" },
+        opacity: { ease: "linear" },
+      }}
       onAnimationComplete={() => {
         onDone();
         window.dispatchEvent(new CustomEvent("badge:bounce:plan"));
