@@ -83,7 +83,41 @@ const TAG_SECTIONS: { key: string; tags: string[] }[] = [
 ]
 const TAG_SECTION_LIMIT = 6
 
-type GatewayCategory = 'meat' | 'poultry' | 'fish' | 'vegetarian' | 'quick'
+type StripChipId = 'em-alta' | 'rapido' | 'chicken' | 'salmon' | 'beef' | 'tuna' | 'batido' | 'snack' | 'meal-prep' | 'alto-proteina'
+
+type StripChipDef = {
+  id: StripChipId
+  labelKey: string
+  proteins?: string[]
+  tags?: string[]
+  maxTime?: number
+  sort?: Sort
+}
+
+const STRIP_CHIPS: StripChipDef[] = [
+  { id: 'em-alta',       labelKey: 'strip.emAlta',       sort: 'popular' },
+  { id: 'rapido',        labelKey: 'tags.rápido',         maxTime: 30 },
+  { id: 'chicken',       labelKey: 'proteins.chicken',    proteins: ['chicken'] },
+  { id: 'salmon',        labelKey: 'proteins.salmon',     proteins: ['salmon'] },
+  { id: 'beef',          labelKey: 'proteins.beef',       proteins: ['beef'] },
+  { id: 'tuna',          labelKey: 'proteins.tuna',       proteins: ['tuna'] },
+  { id: 'batido',        labelKey: 'tags.batido',         tags: ['batido'] },
+  { id: 'snack',         labelKey: 'tags.snack',          tags: ['snack'] },
+  { id: 'meal-prep',     labelKey: 'tags.meal-prep',      tags: ['meal-prep'] },
+  { id: 'alto-proteina', labelKey: 'tags.alto-proteína',  tags: ['alto-proteína'] },
+]
+
+function getTimeAwareChip(): StripChipId {
+  const now = new Date()
+  const hour = now.getHours()
+  const day = now.getDay() // 0=Sun, 6=Sat
+  const isWeekend = day === 0 || day === 6
+  if (isWeekend) return 'meal-prep'
+  if (hour >= 6 && hour < 10) return 'batido'
+  if (hour >= 14 && hour < 17) return 'snack'
+  if (hour >= 17 && hour < 22) return 'rapido'
+  return 'em-alta'
+}
 
 type LibrarySearch = {
   q: string
@@ -94,8 +128,6 @@ type LibrarySearch = {
   ingredients: string[]
   sort: Sort
   modes: LibraryMode[]
-  category: GatewayCategory | undefined
-  categorySort: 'popular' | 'quick'
 }
 
 function CardSkeleton() {
@@ -165,10 +197,6 @@ export const Route = createFileRoute('/app/library/')({
           (['mine', 'saved', 'curated'] as string[]).includes(s),
         )
       : [],
-    category: (['meat', 'poultry', 'fish', 'vegetarian', 'quick'] as GatewayCategory[]).includes(search.category as GatewayCategory)
-      ? (search.category as GatewayCategory)
-      : undefined,
-    categorySort: search.categorySort === 'quick' ? 'quick' : 'popular',
   }),
   component: LibraryPage,
 })
@@ -348,95 +376,6 @@ function RecipeCard({
 
 
 
-// ---------- Category gateway ----------
-
-// Very muted tints — barely-there warmth, no gradients
-const CATEGORY_TINTS: Record<Exclude<GatewayCategory, 'quick'>, string> = {
-  meat:       '#F9EDE8',
-  poultry:    '#FAF3E3',
-  fish:       '#E8EFF7',
-  vegetarian: '#EAF2EA',
-}
-
-const CATEGORY_PROTEINS: Record<GatewayCategory, string[]> = {
-  meat:       ['beef', 'pork', 'lamb'],
-  poultry:    ['chicken', 'turkey'],
-  fish:       ['salmon', 'tuna', 'cod', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'shrimp'],
-  vegetarian: [],
-  quick:      [],
-}
-
-const CATEGORY_EMOJI: Record<GatewayCategory, string> = {
-  meat:       '🥩',
-  poultry:    '🍗',
-  fish:       '🐟',
-  vegetarian: '🥦',
-  quick:      '⏱️',
-}
-
-const CATEGORY_EXCLUDED_FLAGS: Record<GatewayCategory, string[]> = {
-  meat:       [],
-  poultry:    [],
-  fish:       [],
-  vegetarian: ['meat', 'poultry', 'fish', 'shellfish'],
-  quick:      [],
-}
-
-// ---------- GridCard ----------
-
-function GridCard({ recipe, onClick }: { recipe: RecipeWithIngredients; onClick?: () => void }) {
-  const hasMacros = recipe.calories != null
-  const cal = recipe.macros_total ? (recipe.calories ?? 0) / (recipe.servings || 1) : (recipe.calories ?? 0)
-  const pro = recipe.macros_total ? (recipe.protein ?? 0) / (recipe.servings || 1) : (recipe.protein ?? 0)
-  const ratio = hasMacros && cal ? (pro * 10) / cal : 0
-
-  const thumbnailBg = recipe.image_thumb_url
-    ? undefined
-    : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #dcfce7, #bbf7d0)')
-
-  return (
-    <Link
-      to="/app/library/$recipeId"
-      params={{ recipeId: recipe.id }}
-      search={{ from: undefined, planItemId: undefined }}
-      onClick={onClick}
-      className="block rounded-2xl overflow-hidden shadow-sm active:scale-[0.98] transition-transform"
-    >
-      {/* Photo */}
-      <div className="relative aspect-[4/3] w-full">
-        {recipe.image_thumb_url ? (
-          <img
-            src={recipe.image_thumb_url}
-            alt=""
-            className="w-full h-full object-cover object-center"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full" style={{ background: thumbnailBg }} aria-hidden="true" />
-        )}
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        {/* Text on image */}
-        <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
-          <p className="text-white text-sm font-semibold leading-snug line-clamp-2">{recipe.name}</p>
-          <div className="flex items-center gap-2 mt-1">
-            {recipe.time_min != null && (
-              <span className="text-white/80 text-xs flex items-center gap-0.5">
-                <Clock size={10} aria-hidden="true" />
-                {recipe.time_min} min
-              </span>
-            )}
-            {hasMacros && (
-              <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${badgeClass(ratio)}`}>
-                P/Cal {fmt(ratio)}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    </Link>
-  )
-}
 
 // ---------- FilterSheet ----------
 
@@ -861,13 +800,12 @@ function LibraryPage() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [sheetSection, setSheetSection] = useState<SheetSection>('protein')
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
-  const [ignoreDietary, setIgnoreDietary] = useState(false)
   const [bannerDismissed, setBannerDismissed] = useState(
     () => typeof window !== 'undefined' && localStorage.getItem('dietary_banner_dismissed') === '1'
   )
   const parentRef = useRef<HTMLDivElement>(null)
 
-  const activeCat = search.category
+  const [stripChip, setStripChip] = useState<StripChipId>(() => getTimeAwareChip())
 
   function update(patch: Partial<LibrarySearch>) {
     navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true })
@@ -925,11 +863,10 @@ function LibraryPage() {
   })
 
   const userExcludedFlags = useMemo(() => {
-    if (ignoreDietary) return []
     const modeFlags = DIETARY_FLAGS[(profile?.dietary_mode ?? 'none') as DietaryMode] ?? []
     const intoleranceFlags = profile?.intolerances ?? []
     return [...new Set([...modeFlags, ...intoleranceFlags])]
-  }, [profile, ignoreDietary])
+  }, [profile])
 
   const hasActiveFilters = Boolean(
     search.q ||
@@ -940,30 +877,24 @@ function LibraryPage() {
       search.ingredients.length,
   )
 
-  const showGateway = !activeCat && !hasActiveFilters && search.modes.length === 0 && !search.q
+  const stripVisible = !hasActiveFilters && search.modes.length === 0 && !search.q
+  const activeStripChip = stripVisible ? STRIP_CHIPS.find((c) => c.id === stripChip) : undefined
 
-  const effectiveSort: Sort = activeCat
-    ? (search.categorySort === 'quick' ? 'time' : 'popular')
-    : search.sort
+  const effectiveSort: Sort = activeStripChip?.sort ?? search.sort
 
-  const filterKey = useMemo(() => {
-    const catFlags = activeCat ? CATEGORY_EXCLUDED_FLAGS[activeCat] : []
-    const effectiveExcludedFlags = [...new Set([...userExcludedFlags, ...catFlags])]
-    return {
-      proteins: activeCat ? CATEGORY_PROTEINS[activeCat] : search.proteins,
-      maxCal: activeCat ? undefined : search.maxCal,
-      maxTime: activeCat === 'quick' ? 30 : (activeCat ? undefined : search.maxTime),
-      tags: activeCat ? [] : search.tags,
-      ingredients: activeCat ? [] : search.ingredients,
-      q: activeCat ? '' : deferredQ,
-      modes: search.modes,
-      lang,
-      excludedFlags: effectiveExcludedFlags,
-      excludedIngredientIds: ignoreDietary ? [] : excludedIngredientIds,
-      category: activeCat,
-      categorySort: activeCat ? search.categorySort : undefined,
-    }
-  }, [activeCat, search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, userExcludedFlags, excludedIngredientIds, ignoreDietary, search.categorySort])
+  const filterKey = useMemo(() => ({
+    proteins: activeStripChip?.proteins ?? search.proteins,
+    maxCal: search.maxCal,
+    maxTime: activeStripChip?.maxTime ?? search.maxTime,
+    tags: activeStripChip?.tags ?? search.tags,
+    ingredients: search.ingredients,
+    q: deferredQ,
+    modes: search.modes,
+    lang,
+    excludedFlags: userExcludedFlags,
+    excludedIngredientIds,
+    stripChip: stripVisible ? stripChip : undefined,
+  }), [activeStripChip, search.proteins, search.maxCal, search.maxTime, search.tags, search.ingredients, deferredQ, search.modes, lang, userExcludedFlags, excludedIngredientIds, stripVisible, stripChip])
 
   const {
     data: infiniteData,
@@ -975,30 +906,26 @@ function LibraryPage() {
     error,
   } = useInfiniteQuery({
     queryKey: ['library', filterKey],
-    queryFn: ({ pageParam }) => {
-      const catFlags = activeCat ? CATEGORY_EXCLUDED_FLAGS[activeCat] : []
-      const effectiveExcludedFlags = [...new Set([...userExcludedFlags, ...catFlags])]
-      return fetchLibrary({
+    queryFn: ({ pageParam }) =>
+      fetchLibrary({
         data: {
           limit: PAGE_SIZE,
           cursor: (pageParam as LibraryCursor | null) ?? null,
           sort: effectiveSort,
           modes: search.modes,
-          proteins: activeCat ? CATEGORY_PROTEINS[activeCat] : search.proteins,
-          maxCal: activeCat ? undefined : search.maxCal,
-          maxTime: activeCat === 'quick' ? 30 : (activeCat ? undefined : search.maxTime),
-          tags: activeCat ? [] : search.tags,
-          ingredients: activeCat ? [] : search.ingredients,
-          q: activeCat ? '' : search.q,
-          excludedFlags: effectiveExcludedFlags,
-          excludedIngredientIds: ignoreDietary ? [] : excludedIngredientIds,
+          proteins: activeStripChip?.proteins ?? search.proteins,
+          maxCal: search.maxCal,
+          maxTime: activeStripChip?.maxTime ?? search.maxTime,
+          tags: activeStripChip?.tags ?? search.tags,
+          ingredients: search.ingredients,
+          q: search.q,
+          excludedFlags: userExcludedFlags,
+          excludedIngredientIds,
         },
-      })
-    },
+      }),
     initialPageParam: null as LibraryCursor | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     staleTime: 5 * 60 * 1000,
-    enabled: !showGateway,
   })
 
   const allRecipes = useMemo(
@@ -1024,11 +951,6 @@ function LibraryPage() {
         return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
     }
   }, [allRecipes, effectiveSort])
-
-  const featuredRecipes = useMemo(
-    () => allRecipes.filter((r) => r.is_featured).slice(0, 6),
-    [allRecipes],
-  )
 
   const hasRecipes = sortedRecipes.length > 0
   useEffect(() => {
@@ -1111,7 +1033,7 @@ function LibraryPage() {
 
   const virtualCount = hasNextPage ? sortedRecipes.length + 1 : sortedRecipes.length
   const virtualizer = useVirtualizer({
-    count: activeCat ? 0 : virtualCount,
+    count: virtualCount,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 160,
     overscan: 5,
@@ -1122,14 +1044,13 @@ function LibraryPage() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
-    if (activeCat) return
     const items = virtualizer.getVirtualItems()
     const lastItem = items[items.length - 1]
     if (!lastItem) return
     if (lastItem.index >= sortedRecipes.length - 1) {
       fetchNextPageStable()
     }
-  }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable, activeCat]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [virtualizer.getVirtualItems(), sortedRecipes.length, fetchNextPageStable]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeFilterCount =
     search.proteins.length +
@@ -1138,7 +1059,7 @@ function LibraryPage() {
     search.tags.length +
     search.ingredients.length
 
-  if (isError && !showGateway) return <LibraryError error={error as Error} />
+  if (isError) return <LibraryError error={error as Error} />
 
   return (
     <div className="h-dvh bg-[#FAFAF8] flex flex-col overflow-hidden">
@@ -1191,73 +1112,78 @@ function LibraryPage() {
             </Link>
           </div>
 
-          {/* Row 2: Category back header OR Mode chips + sort */}
-          {activeCat ? (
-            <div className="flex items-center gap-2 mt-2.5">
+          {/* Row 2: Mode chips + sort */}
+          <div className="flex items-center gap-1.5 mt-2.5">
+            <button
+              onClick={() => update({ modes: [] })}
+              aria-pressed={search.modes.length === 0}
+              className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                search.modes.length === 0
+                  ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                  : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              {t('library.all')}
+            </button>
+            {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
+              const active = search.modes.includes(m)
+              return (
+                <button
+                  key={m}
+                  onClick={() => {
+                    const next = active
+                      ? search.modes.filter((x) => x !== m)
+                      : [...search.modes, m]
+                    update({ modes: next })
+                  }}
+                  aria-pressed={active}
+                  className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
+                    active
+                      ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
+                      : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
+                  }`}
+                >
+                  {t(`library.${m}`)}
+                </button>
+              )
+            })}
+            <div className="flex-1" />
+            <button
+              onClick={() => setSortSheetOpen(true)}
+              aria-label={t('sort.label')}
+              className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
+                search.sort !== 'pcal' && !activeStripChip?.sort
+                  ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
+                  : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
+              }`}
+            >
+              <ArrowUpDown size={13} aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        {/* Strip chips — visible when no filters/modes/query active */}
+        {stripVisible && (
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+            {STRIP_CHIPS.map((chip) => (
               <button
-                onClick={() => update({ category: undefined, categorySort: 'popular' })}
-                className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
-              >
-                ← {t('gateway.title')}
-              </button>
-              <span className="text-[#D1D5DB]" aria-hidden="true">·</span>
-              <span className="text-sm font-semibold text-[#1A1A1A]">
-                {CATEGORY_EMOJI[activeCat]} {t(`gateway.categories.${activeCat}`)}
-              </span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1.5 mt-2.5">
-              <button
-                onClick={() => update({ modes: [] })}
-                aria-pressed={search.modes.length === 0}
-                className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                  search.modes.length === 0
+                key={chip.id}
+                onClick={() => setStripChip(chip.id)}
+                aria-pressed={stripChip === chip.id}
+                className={`flex-none text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                  stripChip === chip.id
                     ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
                     : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
                 }`}
               >
-                {t('library.all')}
+                {t(chip.labelKey)}
               </button>
-              {(['mine', 'saved', 'curated'] as LibraryMode[]).map((m) => {
-                const active = search.modes.includes(m)
-                return (
-                  <button
-                    key={m}
-                    onClick={() => {
-                      const next = active
-                        ? search.modes.filter((x) => x !== m)
-                        : [...search.modes, m]
-                      update({ modes: next })
-                    }}
-                    aria-pressed={active}
-                    className={`text-xs px-2.5 py-1 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none ${
-                      active
-                        ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                        : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                    }`}
-                  >
-                    {t(`library.${m}`)}
-                  </button>
-                )
-              })}
-              <div className="flex-1" />
-              <button
-                onClick={() => setSortSheetOpen(true)}
-                aria-label={t('sort.label')}
-                className={`relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors focus:outline-none ${
-                  search.sort !== 'pcal'
-                    ? 'border-[#16A34A] bg-[#dcfce7] text-[#15803d]'
-                    : 'border-[#E5E7EB] bg-[#F9FAFB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                <ArrowUpDown size={13} aria-hidden="true" />
-              </button>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Dietary banner — list mode only, dismissible */}
-        {!showGateway && !activeCat && userExcludedFlags.length > 0 && !bannerDismissed && (
+        {/* Dietary banner — dismissible */}
+        {userExcludedFlags.length > 0 && !bannerDismissed && (
           <div className="mb-2 flex items-center gap-2 rounded-xl bg-[#fef3c7] border border-[#fde68a] px-3 py-2 text-xs text-[#B45309]">
             <span className="flex-1">{t('library.dietaryBanner')}</span>
             <button
@@ -1273,150 +1199,9 @@ function LibraryPage() {
           </div>
         )}
 
-        {/* ── Gateway ── */}
-        {showGateway ? (
-          <div className="flex-1 overflow-auto pb-24">
-            <p className="text-xl font-bold text-[#1A1A1A] mb-4">{t('gateway.title')}</p>
-
-            {/* 2-col tiles */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              {(['meat', 'poultry', 'fish', 'vegetarian'] as Exclude<GatewayCategory, 'quick'>[]).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => update({ category: cat })}
-                  style={{ backgroundColor: CATEGORY_TINTS[cat] }}
-                  className="rounded-2xl h-36 flex flex-col justify-between p-4 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
-                >
-                  <div className="w-2 h-2 rounded-full bg-[#16A34A] opacity-60" aria-hidden="true" />
-                  <div>
-                    <p className="text-lg font-bold text-[#1A1A1A] leading-tight">
-                      {t(`gateway.categories.${cat}`)}
-                    </p>
-                    <p className="text-xs text-[#6B7280] mt-0.5">
-                      {t(`gateway.desc.${cat}`)}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-
-            {/* Quick tile — dark, full-width */}
-            <button
-              onClick={() => update({ category: 'quick' })}
-              className="w-full rounded-2xl bg-[#1A1A1A] h-20 flex items-center justify-between px-5 mb-5 text-left active:scale-[0.97] transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
-            >
-              <div>
-                <p className="text-lg font-bold text-white leading-tight">
-                  {t('gateway.categories.quick')}
-                </p>
-                <p className="text-xs text-white/50 mt-0.5">
-                  {t('gateway.desc.quick')}
-                </p>
-              </div>
-              <span className="text-5xl font-black text-white/10 select-none" aria-hidden="true">30</span>
-            </button>
-
-            {userExcludedFlags.length > 0 && (
-              <div className="text-center pb-4">
-                <button
-                  onClick={() => setIgnoreDietary(true)}
-                  className="text-sm text-[#6B7280] underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 rounded"
-                >
-                  {t('gateway.showAll')}
-                </button>
-              </div>
-            )}
-          </div>
-
-        ) : isLoading ? (
+        {isLoading ? (
           <div className="flex-1 min-h-0 overflow-auto pb-20 space-y-3">
             {[0, 1, 2, 3, 4].map((i) => <CardSkeleton key={i} />)}
-          </div>
-
-        ) : activeCat ? (
-          /* ── Category grid view ── */
-          <div ref={parentRef} className="flex-1 min-h-0 overflow-auto pb-20">
-            {/* Featured strip */}
-            {featuredRecipes.length > 0 && (
-              <div className="mb-4">
-                <p className="text-sm font-semibold text-[#1A1A1A] mb-2">{t('gateway.featured')}</p>
-                <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory">
-                  {featuredRecipes.map((r) => (
-                    <div key={r.id} className="flex-none w-44 snap-start">
-                      <GridCard
-                        recipe={r}
-                        onClick={() => capture('recipe_viewed', { recipeId: r.id, source: 'featured_strip' })}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Sort pills */}
-            <div className="flex gap-2 mb-4">
-              <button
-                onClick={() => update({ categorySort: 'popular' })}
-                aria-pressed={search.categorySort !== 'quick'}
-                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                  search.categorySort !== 'quick'
-                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                {t('gateway.sort.popular')}
-              </button>
-              <button
-                onClick={() => update({ categorySort: 'quick' })}
-                aria-pressed={search.categorySort === 'quick'}
-                className={`text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
-                  search.categorySort === 'quick'
-                    ? 'bg-[#dcfce7] border-[#16A34A] text-[#15803d]'
-                    : 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#D1D5DB]'
-                }`}
-              >
-                {t('gateway.sort.quick')}
-              </button>
-            </div>
-
-            {sortedRecipes.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16">
-                <p className="text-[#6B7280] text-sm text-center">{t('gateway.noResults')}</p>
-                {userExcludedFlags.length > 0 && (
-                  <button
-                    onClick={() => setIgnoreDietary(true)}
-                    className="mt-3 text-sm text-[#16A34A] underline focus:outline-none"
-                  >
-                    {t('gateway.showAll')}
-                  </button>
-                )}
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  {sortedRecipes.map((r) => (
-                    <GridCard
-                      key={r.id}
-                      recipe={r}
-                      onClick={() => capture('recipe_viewed', { recipeId: r.id, source: 'category_grid' })}
-                    />
-                  ))}
-                </div>
-                {hasNextPage && (
-                  <div className="flex justify-center py-6">
-                    <button
-                      onClick={fetchNextPageStable}
-                      disabled={isFetchingNextPage}
-                      className="text-sm text-[#16A34A] px-5 py-2 rounded-xl border border-[#16A34A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 disabled:opacity-50 flex items-center gap-2"
-                    >
-                      {isFetchingNextPage
-                        ? <div className="h-4 w-4 rounded-full border-2 border-[#16A34A] border-t-transparent animate-spin" />
-                        : t('tagSections.verMais')}
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
           </div>
 
         ) : sortedRecipes.length === 0 ? (

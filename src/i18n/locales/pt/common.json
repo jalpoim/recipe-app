@@ -306,6 +306,9 @@
       "sun": "Dom"
     }
   },
+  "strip": {
+    "emAlta": "Em Alta"
+  },
   "gateway": {
     "title": "Explorar",
     "categories": {

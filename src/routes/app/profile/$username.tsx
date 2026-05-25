@@ -117,7 +117,7 @@ function ProfilePage() {
       <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center px-6">
         <div className="text-center space-y-3">
           <p className="text-[#1A1A1A] font-semibold">Perfil não encontrado</p>
-          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, modes: [], category: undefined, categorySort: 'popular' as const }} className="text-sm text-[#16A34A] underline">
+          <Link to="/app/library" search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, modes: [] }} className="text-sm text-[#16A34A] underline">
             {t('recipe.back')}
           </Link>
         </div>
@@ -132,7 +132,7 @@ function ProfilePage() {
         <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-3">
           <Link
             to="/app/library"
-            search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, modes: [], category: undefined, categorySort: 'popular' as const }}
+            search={{ q: '', proteins: [], maxCal: undefined, maxTime: undefined, tags: [], ingredients: [], sort: 'pcal' as const, modes: [] }}
             aria-label={t('recipe.back')}
             className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none rounded"
           >

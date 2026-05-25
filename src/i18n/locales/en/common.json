@@ -306,6 +306,9 @@
       "sun": "Sun"
     }
   },
+  "strip": {
+    "emAlta": "Trending"
+  },
   "gateway": {
     "title": "Explore",
     "categories": {
