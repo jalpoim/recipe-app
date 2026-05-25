@@ -15,7 +15,7 @@
   },
   "proteins": {
     "chicken": "Frango",
-    "beef": "Carne de Vaca",
+    "beef": "Vaca",
     "pork": "Porco",
     "salmon": "Salmão",
     "tuna": "Atum",
@@ -152,7 +152,7 @@
     "carbs": "Hidratos",
     "fat": "Gordura",
     "calAbbr": "Cal",
-    "proteinAbbr": "P",
+    "proteinAbbr": "Proteína",
     "carbsAbbr": "C",
     "fatAbbr": "G",
     "optional": "opcional",

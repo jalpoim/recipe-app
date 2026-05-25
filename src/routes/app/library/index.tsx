@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react'
 import { capture } from '../../../lib/analytics'
-import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, SlidersHorizontal, SlidersVertical, X } from 'lucide-react'
+import { ArrowUpDown, Bookmark, BookmarkCheck, Check, Clock, Heart, Plus, Search, SlidersHorizontal, SlidersVertical, Utensils, X } from 'lucide-react'
 import { Drawer } from 'vaul'
 import { useTranslation } from 'react-i18next'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -134,16 +134,18 @@ type LibrarySearch = {
 
 function CardSkeleton() {
   return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 animate-pulse">
-      <div className="flex justify-between gap-2 mb-3">
-        <div className="h-4 bg-[#F3F4F6] rounded-full flex-1" />
-        <div className="h-4 w-14 bg-[#F3F4F6] rounded-full shrink-0" />
-      </div>
-      <div className="h-3 w-24 bg-[#F3F4F6] rounded-full mb-3" />
-      <div className="grid grid-cols-4 gap-1.5">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-12 bg-[#F3F4F6] rounded-xl" />
-        ))}
+    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden animate-pulse">
+      <div className="flex min-h-[110px]">
+        <div className="w-[96px] shrink-0 bg-[#F3F4F6]" />
+        <div className="flex-1 p-3 flex flex-col gap-2">
+          <div className="h-4 bg-[#F3F4F6] rounded-full w-3/4" />
+          <div className="h-3 bg-[#F3F4F6] rounded-full w-1/2" />
+          <div className="h-3 bg-[#F3F4F6] rounded-full w-1/3" />
+          <div className="flex gap-1.5 mt-1">
+            <div className="flex-1 h-10 bg-[#F3F4F6] rounded-xl" />
+            <div className="flex-1 h-10 bg-[#F3F4F6] rounded-xl" />
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -205,167 +207,122 @@ function perServing(r: Recipe, field: 'calories' | 'protein' | 'carbs' | 'fat') 
   return r.macros_total ? raw / (r.servings || 1) : raw
 }
 
-function pcalRatio(r: Recipe) {
-  const cal = perServing(r, 'calories')
-  const pro = perServing(r, 'protein')
-  if (!cal) return 0
-  return (pro * 10) / cal
-}
-
-function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
-  if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
-  return 'text-[#DC2626] bg-[#fee2e2]'
-}
-
-function fmt(n: number) {
-  return n % 1 === 0 ? n.toFixed(0) : n.toFixed(1)
-}
-
 // ---------- RecipeCard ----------
 
 function RecipeCard({
   recipe,
   cookCount = 0,
   isSaved = false,
-  showOwnerBadge = false,
+  isLiked = false,
   onToggleSave,
+  onToggleLike,
 }: {
   recipe: RecipeWithIngredients
   cookCount?: number
   isSaved?: boolean
-  showOwnerBadge?: boolean
+  isLiked?: boolean
   onToggleSave?: (e: React.MouseEvent) => void
+  onToggleLike?: (e: React.MouseEvent) => void
 }) {
   const { t } = useTranslation()
   const cal = perServing(recipe, 'calories')
   const pro = perServing(recipe, 'protein')
-  const ratio = pcalRatio(recipe)
   const hasMacros = recipe.calories != null
-  const isUserRecipe = recipe.owner_id != null
-  const showLikes = isUserRecipe && (recipe.like_count ?? 0) > 0
   const thumbnailBg = recipe.image_thumb_url
     ? undefined
     : (PROTEIN_COLORS[recipe.proteins[0]] ?? 'linear-gradient(135deg, #FEE9E1, #bbf7d0)')
+  const ingredientCount = recipe.recipe_ingredients?.length ?? 0
 
   return (
-    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-all">
+    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-all overflow-hidden">
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: recipe.id }}
         search={{ from: undefined, planItemId: undefined }}
         onClick={() => capture('recipe_viewed', { recipeId: recipe.id, source: 'library' })}
-        className="block px-4 pt-4 pb-2"
+        className="flex items-stretch min-h-[110px]"
       >
-        <div className="flex items-start gap-3">
-          {/* Thumbnail */}
-          <div className="w-[88px] h-[88px] shrink-0">
-            {recipe.image_thumb_url ? (
-              <img
-                src={recipe.image_thumb_url}
-                alt=""
-                className="w-full h-full rounded-xl object-cover object-center"
-                loading="lazy"
-              />
-            ) : (
-              <div
-                className="w-full h-full rounded-xl"
-                style={{ background: thumbnailBg }}
-                aria-hidden="true"
-              />
-            )}
-          </div>
+        {/* Left: image fills full card height */}
+        <div className="w-[96px] shrink-0">
+          {recipe.image_thumb_url ? (
+            <img
+              src={recipe.image_thumb_url}
+              alt=""
+              className="w-full h-full object-cover object-center"
+              loading="lazy"
+            />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{ background: thumbnailBg }}
+              aria-hidden="true"
+            />
+          )}
+        </div>
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h2 className="text-[#1A1A1A] font-semibold text-base leading-snug flex-1 line-clamp-2">{recipe.name}</h2>
-              {hasMacros && (
-                <span
-                  className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${badgeClass(ratio)}`}
-                  title="Rácio proteína/calorias (×10). Verde ≥ 1.0 · Amarelo ≥ 0.7 · Vermelho < 0.7"
-                >
-                  P/Cal {fmt(ratio)}
-                </span>
-              )}
-            </div>
-
-            <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280] flex-wrap">
-              {recipe.proteins.length > 0 && (
-                <span className="font-medium text-[#1A1A1A]">
-                  {t(`proteins.${recipe.proteins[0]}`)}
-                </span>
-              )}
+        {/* Right: content */}
+        <div className="flex-1 min-w-0 flex flex-col p-3">
+          <div className="flex-1">
+            <h2 className="text-[#1A1A1A] font-semibold text-sm leading-snug line-clamp-3">{recipe.name}</h2>
+            <div className="mt-1 flex items-center gap-2 text-xs text-[#6B7280]">
               {recipe.time_min != null && (
-                <span className="flex items-center gap-1">
-                  <Clock size={11} aria-hidden="true" />
+                <span className="flex items-center gap-0.5">
+                  <Clock size={10} aria-hidden="true" />
                   {recipe.time_min} min
                 </span>
               )}
-              {showLikes && (
-                <span className="flex items-center gap-1 text-[#9CA3AF]">
-                  <Heart size={10} aria-hidden="true" />
-                  {recipe.like_count}
-                </span>
-              )}
-              {showOwnerBadge && isUserRecipe && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#FEE9E1] text-[#D94F2B] font-medium">
-                  {t('library.ownBadge')}
-                </span>
+              {ingredientCount > 0 && (
+                <span>{ingredientCount} {t('recipe.ingredients').toLowerCase()}</span>
               )}
             </div>
-          </div>
-        </div>
-
-        {hasMacros && (
-          <div className="mt-3 grid grid-cols-2 gap-1.5 text-center">
-            {(
-              [
-                { label: t('recipe.calAbbr'), value: cal },
-                { label: t('recipe.proteinAbbr'), value: pro },
-              ] as const
-            ).map(({ label, value }) => (
-              <div key={label} className="bg-[#F9FAFB] rounded-xl py-2">
-                <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide font-medium">{label}</div>
-                <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(value)}</div>
+            {hasMacros && (
+              <div className="mt-2 flex gap-1.5">
+                <div className="flex-1 bg-[#F9FAFB] rounded-xl py-1.5 text-center">
+                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide leading-none font-medium">{t('recipe.calAbbr')}</div>
+                  <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(cal)}</div>
+                </div>
+                <div className="flex-1 bg-[#F9FAFB] rounded-xl py-1.5 text-center">
+                  <div className="text-[9px] text-[#9CA3AF] uppercase tracking-wide leading-none font-medium">{t('recipe.proteinAbbr')}</div>
+                  <div className="text-sm font-bold text-[#1A1A1A] mt-0.5">{Math.round(pro)}</div>
+                </div>
               </div>
-            ))}
+            )}
           </div>
-        )}
 
-        {!hasMacros && recipe.tags.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-1">
-            {recipe.tags.slice(0, 4).map((tag) => (
-              <span
-                key={tag}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium"
-              >
-                {t(`tags.${tag}`, { defaultValue: tag })}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {(cookCount > 0 || onToggleSave) && (
-          <div className="mt-1 flex items-center gap-2">
+          {/* Action row */}
+          <div className="flex items-center justify-end mt-1.5">
             {cookCount > 0 && (
-              <p className="text-[10px] text-[#9CA3AF] flex-1">{t('recipe.cookedCount', { count: cookCount })}</p>
+              <span className="mr-auto flex items-center gap-0.5 text-[10px] text-[#9CA3AF]">
+                <Utensils size={10} aria-hidden="true" />
+                {cookCount}
+              </span>
+            )}
+            {onToggleLike && (
+              <button
+                onClick={onToggleLike}
+                aria-label={isLiked ? t('recipe.unlike') : t('recipe.like')}
+                aria-pressed={isLiked}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                  isLiked ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
+                }`}
+              >
+                <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} aria-hidden="true" />
+              </button>
             )}
             {onToggleSave && (
               <button
                 onClick={onToggleSave}
                 aria-label={isSaved ? t('recipe.unsave') : t('recipe.save')}
                 aria-pressed={isSaved}
-                className={`ml-auto w-8 h-8 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
-                  isSaved
-                    ? 'text-[#F4623A]'
-                    : 'text-[#D1D5DB] hover:text-[#F4623A]'
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                  isSaved ? 'text-[#F4623A]' : 'text-[#D1D5DB] hover:text-[#F4623A]'
                 }`}
               >
                 {isSaved ? <BookmarkCheck size={16} aria-hidden="true" /> : <Bookmark size={16} aria-hidden="true" />}
               </button>
             )}
           </div>
-        )}
+        </div>
       </Link>
     </div>
   )
@@ -1062,8 +1019,15 @@ function LibraryPage() {
       case 'cooked':
         return copy.sort((a, b) => (b.cook_count ?? 0) - (a.cook_count ?? 0))
       case 'pcal':
-      default:
-        return copy.sort((a, b) => pcalRatio(b) - pcalRatio(a))
+      default: {
+        const ratio = (r: Recipe) => {
+          const cal = perServing(r, 'calories')
+          const pro = perServing(r, 'protein')
+          if (!cal) return 0
+          return (pro * 10) / cal
+        }
+        return copy.sort((a, b) => ratio(b) - ratio(a))
+      }
     }
   }, [allRecipes, effectiveSort])
 
@@ -1102,6 +1066,33 @@ function LibraryPage() {
     () => new Set(interactions.filter((i) => i.type === 'save').map((i) => i.recipe_id)),
     [interactions],
   )
+
+  const likedIds = useMemo(
+    () => new Set(interactions.filter((i) => i.type === 'like').map((i) => i.recipe_id)),
+    [interactions],
+  )
+
+  const likeMutation = useMutation({
+    mutationFn: (vars: { recipeId: string; wasLiked: boolean }) =>
+      vars.wasLiked
+        ? removeInteraction({ data: { recipeId: vars.recipeId, type: 'like' } })
+        : upsertInteraction({ data: { recipeId: vars.recipeId, type: 'like' } }),
+    onMutate: (vars) => {
+      queryClient.setQueryData(['interactions'], (prev: typeof interactions) => {
+        if (!prev) return prev
+        if (vars.wasLiked) {
+          return prev.filter((i) => !(i.recipe_id === vars.recipeId && i.type === 'like'))
+        }
+        return [...prev, { id: 'tmp-like', user_id: '', recipe_id: vars.recipeId, type: 'like' as const, created_at: '' }]
+      })
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ['interactions'] })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['interactions'] })
+    },
+  })
 
   const saveMutation = useMutation({
     mutationFn: (vars: { recipeId: string; wasSaved: boolean }) =>
@@ -1150,7 +1141,7 @@ function LibraryPage() {
   const virtualizer = useVirtualizer({
     count: virtualCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 160,
+    estimateSize: () => 135,
     overscan: 5,
   })
 
@@ -1349,11 +1340,16 @@ function LibraryPage() {
                         recipe={sortedRecipes[virtualItem.index]}
                         cookCount={cookCountMap[sortedRecipes[virtualItem.index].id] ?? 0}
                         isSaved={savedIds.has(sortedRecipes[virtualItem.index].id)}
-                        showOwnerBadge={true}
+                        isLiked={likedIds.has(sortedRecipes[virtualItem.index].id)}
                         onToggleSave={(e) => {
                           e.preventDefault()
                           const r = sortedRecipes[virtualItem.index]
                           saveMutation.mutate({ recipeId: r.id, wasSaved: savedIds.has(r.id) })
+                        }}
+                        onToggleLike={(e) => {
+                          e.preventDefault()
+                          const r = sortedRecipes[virtualItem.index]
+                          likeMutation.mutate({ recipeId: r.id, wasLiked: likedIds.has(r.id) })
                         }}
                       />
                     )}

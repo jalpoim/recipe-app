@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
-import { Clock, Heart, Settings } from 'lucide-react'
+import { Clock, Settings } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { fetchMyProfile } from '../../../lib/supabase/profile-queries'
@@ -12,30 +12,8 @@ export const Route = createFileRoute('/app/my-recipes/')({
 
 type Tab = 'created' | 'saved'
 
-function perServing(r: RecipeWithIngredients, field: 'calories' | 'protein') {
-  const raw = r[field] ?? 0
-  return r.macros_total ? raw / (r.servings || 1) : raw
-}
-
-function pcalRatio(r: RecipeWithIngredients) {
-  const cal = perServing(r, 'calories')
-  const pro = perServing(r, 'protein')
-  if (!cal) return 0
-  return (pro * 10) / cal
-}
-
-function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return 'text-[#166534] bg-[#d1fae5]'
-  if (ratio >= 0.7) return 'text-[#B45309] bg-[#fef3c7]'
-  return 'text-[#DC2626] bg-[#fee2e2]'
-}
-
 function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
   const { t } = useTranslation()
-  const ratio = pcalRatio(recipe)
-  const hasMacros = recipe.calories != null
-  const isUserRecipe = recipe.owner_id != null
-  const showLikes = isUserRecipe && (recipe.like_count ?? 0) > 0
 
   return (
     <Link
@@ -60,25 +38,12 @@ function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
           />
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold text-[#1A1A1A] leading-snug line-clamp-2 flex-1">{recipe.name}</h3>
-            {hasMacros && (
-              <span className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeClass(ratio)}`}>
-                P/Cal {ratio.toFixed(1)}
-              </span>
-            )}
-          </div>
+          <h3 className="text-sm font-semibold text-[#1A1A1A] leading-snug line-clamp-2">{recipe.name}</h3>
           <div className="mt-1 flex items-center gap-2 text-xs text-[#9CA3AF]">
             {recipe.time_min != null && (
               <span className="flex items-center gap-0.5">
                 <Clock size={10} aria-hidden="true" />
                 {recipe.time_min} {t('common.min')}
-              </span>
-            )}
-            {showLikes && (
-              <span className="flex items-center gap-0.5">
-                <Heart size={10} aria-hidden="true" />
-                {recipe.like_count}
               </span>
             )}
           </div>
