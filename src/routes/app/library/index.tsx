@@ -1193,6 +1193,15 @@ function LibraryPage() {
     };
   }, []);
 
+  // Tap active Recipes tab → scroll to top
+  useEffect(() => {
+    function handler() {
+      parentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.addEventListener("tab:scroll-top:library", handler);
+    return () => window.removeEventListener("tab:scroll-top:library", handler);
+  }, []);
+
   const { data: profile } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => fetchMyProfile(),
@@ -1359,6 +1368,7 @@ function LibraryPage() {
     onSuccess: () => {
       showToast(t("recipe.addedToPlan"), "success");
       queryClient.invalidateQueries({ queryKey: ["plan"] });
+      queryClient.invalidateQueries({ queryKey: ["active-plan"] });
     },
     onError: () => {
       showToast(t("recipe.addedToPlanError"), "error");

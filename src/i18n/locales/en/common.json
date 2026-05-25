@@ -1,12 +1,12 @@
 {
   "nav": {
     "recipes": "Recipes",
-    "myRecipes": "Mine",
+    "myRecipes": "Kitchen",
     "plan": "Plan",
     "list": "List"
   },
   "myRecipes": {
-    "title": "My Recipes",
+    "title": "Kitchen",
     "created": "Created",
     "saved": "Saved",
     "noCreated": "No recipes created yet",

@@ -1,12 +1,12 @@
 {
   "nav": {
     "recipes": "Receitas",
-    "myRecipes": "Minhas",
+    "myRecipes": "Cozinha",
     "plan": "Plano",
     "list": "Lista"
   },
   "myRecipes": {
-    "title": "Minhas Receitas",
+    "title": "Cozinha",
     "created": "Criadas",
     "saved": "Guardadas",
     "noCreated": "Ainda não criaste nenhuma receita",
