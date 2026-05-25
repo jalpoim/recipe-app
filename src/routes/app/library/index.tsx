@@ -512,7 +512,7 @@ function RecipeCard({
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: recipe.id }}
-        search={{ from: undefined, planItemId: undefined }}
+        search={(prev) => ({ ...prev, from: undefined, planItemId: undefined })}
         onClick={() =>
           capture("recipe_viewed", { recipeId: recipe.id, source: "library" })
         }

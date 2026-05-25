@@ -103,12 +103,6 @@ function scaleIngredient(
   return parts.length > 1 ? parts.join(" ") : rawDisplay;
 }
 
-function badgeClass(ratio: number) {
-  if (ratio >= 1.0) return "text-[#166534] bg-[#d1fae5]";
-  if (ratio >= 0.7) return "text-[#B45309] bg-[#fef3c7]";
-  return "text-[#DC2626] bg-[#fee2e2]";
-}
-
 // ---------- CookingDrawer ----------
 
 function CookingDrawer({
@@ -519,14 +513,6 @@ function RecipeDetailPage() {
     multiplier,
   );
 
-  const perServingCal = recipe.macros_total
-    ? (recipe.calories ?? 0) / (recipe.servings || 1)
-    : (recipe.calories ?? 0);
-  const perServingPro = recipe.macros_total
-    ? (recipe.protein ?? 0) / (recipe.servings || 1)
-    : (recipe.protein ?? 0);
-  const ratio = perServingCal ? (perServingPro * 10) / perServingCal : 0;
-
   const addMutation = useMutation({
     mutationFn: () => addRecipeToPlan({ data: recipe.id }),
     onSuccess: () => {
@@ -671,13 +657,6 @@ function RecipeDetailPage() {
                 <h1 className="text-2xl font-bold text-[#1A1A1A] leading-snug flex-1 recipe-title-vt">
                   {recipe.name}
                 </h1>
-                {recipe.calories != null && recipe.protein != null && (
-                  <span
-                    className={`shrink-0 text-sm font-bold px-2.5 py-1 rounded-full ${badgeClass(ratio)}`}
-                  >
-                    {fmt(ratio)}
-                  </span>
-                )}
               </div>
             )}
 
