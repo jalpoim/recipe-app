@@ -849,7 +849,7 @@ function FilterSheet({
                     <button
                       key={ing}
                       onClick={() => removeIngredient(ing)}
-                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#FEE9E1] border border-[#F4623A] text-[#D94F2B] font-medium"
+                      className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-[#FEE9E1] border border-[#F4623A] text-[#D94F2B] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
                     >
                       {ing} <X size={10} aria-hidden="true" />
                     </button>
@@ -881,6 +881,7 @@ function FilterSheet({
                       setIngSearch("");
                     }
                   }}
+                  aria-label={t("filters.searchIngredient")}
                   placeholder={t("filters.searchIngredient")}
                   className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 pr-9 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
                 />
@@ -893,7 +894,7 @@ function FilterSheet({
                     aria-label={t("filters.searchFreeText", {
                       term: ingSearch.trim(),
                     })}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F4623A] text-white flex items-center justify-center hover:bg-[#D94F2B] transition-colors focus:outline-none"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[#F4623A] text-white flex items-center justify-center hover:bg-[#D94F2B] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
                   >
                     <Plus size={13} aria-hidden="true" />
                   </button>
@@ -1693,7 +1694,6 @@ function LibraryPage() {
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20"
           style={{ overscrollBehaviorY: "contain" }}
         >
-          <PullIndicator pullY={pullY} isRefreshing={isPtrRefreshing} />
           {/* Strip chips — memoized, unaffected by list re-renders */}
           {stripVisible && (
             <ChipStrip
@@ -1713,13 +1713,14 @@ function LibraryPage() {
                   localStorage.setItem("dietary_banner_dismissed", "1");
                 }}
                 aria-label={t("common.close")}
-                className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none"
+                className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center hover:bg-[#fde68a] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B45309]/40"
               >
                 <X size={12} aria-hidden="true" />
               </button>
             </div>
           )}
 
+          <PullIndicator pullY={pullY} isRefreshing={isPtrRefreshing} />
           {/* List content — only this section transitions between states */}
           {isLoading ? (
             <div className="space-y-3 pt-2">

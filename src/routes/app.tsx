@@ -168,14 +168,14 @@ function BottomNav() {
 
             if (tab.disabled) {
               return (
-                <div
+                <button
                   key={tab.to}
+                  disabled
                   className="flex flex-col items-center justify-center flex-1 py-2 gap-0.5 opacity-35 cursor-not-allowed"
-                  aria-disabled="true"
                 >
                   <Icon size={22} aria-hidden="true" />
                   <span className="text-[10px] font-medium">{tab.label}</span>
-                </div>
+                </button>
               );
             }
 

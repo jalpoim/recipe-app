@@ -108,6 +108,22 @@ body {
     animation: none;
     mix-blend-mode: normal;
   }
+  /* Hero morph: use cover so the image fills correctly during aspect-ratio change */
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    object-fit: cover;
+    animation-duration: 300ms;
+    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+}
+
+/* Reduced-motion: kill all view transition animations */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 
 /* "I Cooked This" bounce */

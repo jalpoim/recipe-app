@@ -552,10 +552,18 @@ function RecipeDetailPage() {
     sectionMap.get(key)!.items.push(ing);
   }
 
+  // Skip framer entrance when the browser supports View Transitions — the hero
+  // morph provides the visual transition. Without this, both animations compete:
+  // VT captures the new page at opacity:0 and fades it in while framer also
+  // animates opacity:0→1, creating a double-fade and misaligned hero position.
+  const canViewTransition =
+    typeof document !== "undefined" && "startViewTransition" in document;
+  const skipEntrance = reducedMotion || canViewTransition;
+
   return (
     <motion.div
-      initial={reducedMotion ? {} : { y: 20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
+      initial={skipEntrance ? false : { y: 20, opacity: 0 }}
+      animate={skipEntrance ? {} : { y: 0, opacity: 1 }}
       transition={{
         y: { type: "spring", stiffness: 200, damping: 24 },
         opacity: { duration: 0.2, ease: "easeOut" },
@@ -641,6 +649,8 @@ function RecipeDetailPage() {
                 <img
                   src={recipe.image_thumb_url}
                   alt={recipe.name}
+                  width={640}
+                  height={360}
                   className="w-full h-full object-cover"
                   style={{ viewTransitionName: `recipe-thumb-${recipe.id}` }}
                 />
