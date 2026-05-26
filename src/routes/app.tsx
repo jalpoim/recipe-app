@@ -234,7 +234,14 @@ function BottomNav() {
 }
 
 function TopProgressBar() {
-  const isLoading = useRouterState({ select: (s) => s.status === "pending" });
+  // Only show for actual navigations (resolvedLocation differs from target),
+  // not for background server function calls or preloads.
+  const isLoading = useRouterState({
+    select: (s) =>
+      s.status === "pending" &&
+      s.resolvedLocation != null &&
+      s.resolvedLocation.href !== s.location.href,
+  });
   return (
     <div className="fixed top-0 left-0 right-0 z-50 h-0.5">
       <div

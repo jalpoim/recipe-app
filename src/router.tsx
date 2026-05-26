@@ -64,7 +64,7 @@ export function getRouter() {
     routeTree,
     scrollRestoration: true,
     defaultPreload: "intent",
-    defaultPreloadStaleTime: 0,
+    defaultPreloadStaleTime: 30_000,
     defaultPendingMs: 300,
     defaultErrorComponent: ({ error }) => (
       <DefaultErrorFallback error={error as Error} />
