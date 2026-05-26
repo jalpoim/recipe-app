@@ -61,7 +61,8 @@
     "empty": "No recipes with these filters",
     "sheetTitle": "Filters",
     "choosingReplacement": "Choosing replacement — tap a recipe",
-    "cancelReplacement": "Cancel replacement"
+    "cancelReplacement": "Cancel replacement",
+    "apply": "Apply"
   },
   "sort": {
     "label": "Sort",

@@ -991,25 +991,23 @@ function FilterSheet({
           </div>
 
           {/* bottom action */}
-          <div className="flex-shrink-0 px-4 py-4 border-t border-[#F0F0EE]">
-            {hasActive ? (
-              <button
-                onClick={() => {
-                  onClear();
-                  onOpenChange(false);
-                }}
-                className="w-full text-sm font-medium text-[#DC2626] py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-              >
-                {t("filters.clearFilters")}
-              </button>
-            ) : (
-              <button
-                onClick={() => onOpenChange(false)}
-                className="w-full text-sm font-medium text-[#6B7280] py-2.5 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-              >
-                {t("common.close")}
-              </button>
-            )}
+          <div className="flex-shrink-0 px-4 py-4 border-t border-[#F0F0EE] flex gap-3">
+            <button
+              onClick={() => {
+                onClear();
+                onOpenChange(false);
+              }}
+              disabled={!hasActive}
+              className="flex-1 text-sm font-medium py-2.5 rounded-xl border transition-colors focus-visible:ring-2 focus:outline-none disabled:opacity-40 disabled:cursor-default border-[#fecaca] bg-[#fee2e2] text-[#DC2626] hover:bg-[#fecaca] focus-visible:ring-[#DC2626]/30"
+            >
+              {t("filters.clearFilters")}
+            </button>
+            <button
+              onClick={() => onOpenChange(false)}
+              className="flex-1 text-sm font-semibold py-2.5 rounded-xl border border-transparent bg-[#F4623A] text-white hover:bg-[#D94F2B] active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {t("filters.apply")}
+            </button>
           </div>
         </Drawer.Content>
       </Drawer.Portal>

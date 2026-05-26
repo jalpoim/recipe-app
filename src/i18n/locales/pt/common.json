@@ -61,7 +61,8 @@
     "empty": "Sem receitas com estes filtros",
     "sheetTitle": "Filtros",
     "choosingReplacement": "A escolher substituto — toca numa receita",
-    "cancelReplacement": "Cancelar substituição"
+    "cancelReplacement": "Cancelar substituição",
+    "apply": "Aplicar"
   },
   "sort": {
     "label": "Ordenar",
