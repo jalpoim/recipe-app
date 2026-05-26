@@ -1416,14 +1416,16 @@ function LibraryPage() {
     : undefined;
 
   const orderedChips = useMemo(() => {
-    const idx = STRIP_CHIPS.findIndex((c) => c.id === stripChip);
+    const timeChipId = getTimeAwareChip();
+    const idx = STRIP_CHIPS.findIndex((c) => c.id === timeChipId);
     if (idx <= 0) return STRIP_CHIPS;
     return [
       STRIP_CHIPS[idx],
       ...STRIP_CHIPS.slice(0, idx),
       ...STRIP_CHIPS.slice(idx + 1),
     ];
-  }, [stripChip]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const effectiveSort: Sort = activeStripChip?.sort ?? search.sort;
 
