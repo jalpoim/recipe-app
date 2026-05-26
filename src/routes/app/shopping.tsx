@@ -516,7 +516,10 @@ function buildGlobalList(
         item.recipe.servings,
       );
       const category =
-        categoryOverrides[name.toLowerCase()] ?? ing.category ?? "Outros";
+        categoryOverrides[name.toLowerCase()] ??
+        ing.category ??
+        autoCategory(name) ??
+        "Outros";
 
       const existing = aggMap.get(aggKey);
       if (existing) {
