@@ -113,7 +113,7 @@
     "macrosEstimateError": "Could not estimate macros",
     "macrosAutoLabel": "(calculated automatically)",
     "macrosManualLabel": "(manually edited)",
-    "estimateMacrosRemaining": "✨ Estimate remaining macros",
+    "estimateMacrosRemaining": "Estimate remaining macros",
     "validationName": "Name is required",
     "validationProteins": "Select at least one protein",
     "autoDetected": "Auto-detected from ingredients",

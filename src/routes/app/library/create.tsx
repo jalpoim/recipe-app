@@ -11,7 +11,6 @@ import {
   ChevronUp,
   Minus,
   Plus,
-  Sparkles,
   X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -132,8 +131,9 @@ function estimateMacrosFromIngredients(
     covered = 0;
   for (const ing of active) {
     if (ing.caloriesPer100g == null) continue;
-    const g = convertToGrams(ing.quantity ?? 0, ing.unit ?? "g");
-    if (g == null) continue;
+    if (!ing.quantity) continue;
+    const g = convertToGrams(ing.quantity, ing.unit ?? "g");
+    if (g == null || g === 0) continue;
     const f = g / 100;
     calories += (ing.caloriesPer100g ?? 0) * f;
     protein += (ing.proteinPer100g ?? 0) * f;
@@ -845,14 +845,12 @@ function CreateRecipePage() {
                 disabled={estimateMutation.isPending}
                 className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#F4623A] font-medium disabled:opacity-40 hover:bg-[#FFF5F2] hover:border-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
-                {estimateMutation.isPending ? (
+                {estimateMutation.isPending && (
                   <div className="w-4 h-4 rounded-full border-2 border-[#F4623A] border-t-transparent animate-spin" />
-                ) : (
-                  <Sparkles size={14} aria-hidden="true" />
                 )}
                 {t(
                   "create.estimateMacrosRemaining",
-                  "✨ Estimar macros restantes",
+                  "Estimar macros restantes",
                 )}
               </button>
             )}
