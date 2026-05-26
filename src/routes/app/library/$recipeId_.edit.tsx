@@ -545,7 +545,7 @@ function EditRecipePage() {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) throw new Error("not authenticated");
-      const path = `user/${session.user.id}/${Date.now()}.${ext}`;
+      const path = `${session.user.id}/${Date.now()}.${ext}`;
       const { error } = await supabase.storage
         .from("recipe-images")
         .upload(path, file, { upsert: true });
