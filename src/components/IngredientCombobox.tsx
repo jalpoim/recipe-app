@@ -127,12 +127,14 @@ export function IngredientCombobox({
   onRemove,
   index,
   measurementSystem,
+  isDuplicate,
 }: {
   value: IngredientRow;
   onValueChange: (updated: IngredientRow) => void;
   onRemove: () => void;
   index: number;
   measurementSystem: "metric" | "imperial";
+  isDuplicate?: boolean;
 }) {
   useTranslation();
   const [text, setText] = useState(value.rawText);
@@ -174,6 +176,10 @@ export function IngredientCombobox({
     default_unit: string | null;
     category: string | null;
     dietary_flags?: string[] | null;
+    calories_per_100g?: number | null;
+    protein_per_100g?: number | null;
+    carbs_per_100g?: number | null;
+    fat_per_100g?: number | null;
   }) {
     const selectedUnit = ing.default_unit ?? "g";
     setText(ing.name);
@@ -185,6 +191,10 @@ export function IngredientCombobox({
       ingredientId: ing.id,
       category: ing.category ? (SLUG_TO_PT[ing.category] ?? null) : null,
       dietaryFlags: ing.dietary_flags ?? null,
+      caloriesPer100g: ing.calories_per_100g ?? null,
+      proteinPer100g: ing.protein_per_100g ?? null,
+      carbsPer100g: ing.carbs_per_100g ?? null,
+      fatPer100g: ing.fat_per_100g ?? null,
     });
     setUnit(selectedUnit);
     setOpen(false);
@@ -209,7 +219,7 @@ export function IngredientCombobox({
   const isNonDefault = unit !== "g" && unit !== "";
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative space-y-1">
       <div className="flex items-center gap-1.5">
         <span className="shrink-0 w-5 text-xs text-[#9CA3AF] text-right">
           {index + 1}.
@@ -255,6 +265,11 @@ export function IngredientCombobox({
           <X size={13} aria-hidden="true" />
         </button>
       </div>
+      {isDuplicate && (value.name ?? value.rawText).trim() && (
+        <p className="text-[11px] text-[#F59E0B] pl-7">
+          ⚠ &quot;{value.name ?? value.rawText}&quot; já foi adicionado
+        </p>
+      )}
       {open && suggestions.length > 0 && (
         <div className="absolute bottom-full left-6 right-8 mb-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-y-auto max-h-48">
           {suggestions.map((s) => (

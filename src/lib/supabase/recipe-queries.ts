@@ -16,6 +16,10 @@ export type IngredientRow = {
   ingredientId?: string | null;
   category?: string | null;
   dietaryFlags?: string[] | null;
+  caloriesPer100g?: number | null;
+  proteinPer100g?: number | null;
+  carbsPer100g?: number | null;
+  fatPer100g?: number | null;
 };
 
 export type StepRow = {
@@ -38,6 +42,7 @@ export type CreateRecipeInput = {
   ingredients: IngredientRow[];
   steps: StepRow[];
   lang: string;
+  imageUrl?: string | null;
 };
 
 export type UpdateRecipeInput = CreateRecipeInput & { recipeId: string };
@@ -72,6 +77,7 @@ export const createRecipe = createServerFn({ method: "POST" })
         visibility: data.visibility,
         moderation_status: modStatus,
         owner_id: session.user.id,
+        image_url: data.imageUrl ?? null,
       })
       .select("id")
       .single();
@@ -151,6 +157,7 @@ export const updateRecipe = createServerFn({ method: "POST" })
         macros_source: hasMacros ? "manual" : null,
         visibility: data.visibility,
         moderation_status: modStatus,
+        image_url: data.imageUrl ?? null,
       })
       .eq("id", data.recipeId)
       .eq("owner_id", session.user.id);
@@ -229,7 +236,9 @@ export const searchIngredients = createServerFn({ method: "GET" })
     const [metaResult, translationsResult] = await Promise.all([
       supabase
         .from("ingredients")
-        .select("id, default_unit, category, dietary_flags")
+        .select(
+          "id, default_unit, category, dietary_flags, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g",
+        )
         .in("id", ids),
       supabase
         .from("ingredient_translations")
@@ -251,6 +260,10 @@ export const searchIngredients = createServerFn({ method: "GET" })
         default_unit: meta?.default_unit ?? null,
         category: meta?.category ?? null,
         dietary_flags: meta?.dietary_flags ?? null,
+        calories_per_100g: meta?.calories_per_100g ?? null,
+        protein_per_100g: meta?.protein_per_100g ?? null,
+        carbs_per_100g: meta?.carbs_per_100g ?? null,
+        fat_per_100g: meta?.fat_per_100g ?? null,
       };
     });
   });

@@ -3,9 +3,10 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import {
   ArrowLeft,
+  Camera,
   ChevronDown,
   ChevronUp,
   Minus,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   createRecipe,
   estimateMacros,
@@ -24,17 +26,21 @@ import {
   type IngredientRow,
   type StepRow,
 } from "../../../lib/supabase/recipe-queries";
+import { supabase } from "../../../lib/supabase/browser";
+import { convertToGrams } from "../../../lib/units";
+import { deriveProteinsFromIngredients } from "../../../lib/proteins";
 import { useToast } from "../../../components/Toast";
 import { ProteinPicker } from "../../../components/ProteinPicker";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
-import { deriveProteinsFromIngredients } from "../../../lib/proteins";
 
 export const Route = createFileRoute("/app/library/create")({
   component: CreateRecipePage,
 });
 
-const TAG_SECTIONS_CREATE: { key: string; tags: string[] }[] = [
+// ─── tag sections ────────────────────────────────────────────────────────────
+
+const TAG_SECTIONS: { key: string; tags: string[] }[] = [
   {
     key: "method",
     tags: [
@@ -109,38 +115,79 @@ const TAG_SECTIONS_CREATE: { key: string; tags: string[] }[] = [
   },
 ];
 
-function CollapsibleSection({
-  title,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
-      >
-        {title}
-        {open ? (
-          <ChevronUp size={16} className="text-[#9CA3AF]" />
-        ) : (
-          <ChevronDown size={16} className="text-[#9CA3AF]" />
-        )}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6]">
-          {children}
-        </div>
-      )}
-    </div>
-  );
+const SYSTEM_TAG_SLUGS = TAG_SECTIONS.flatMap((s) => s.tags);
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function estimateMacrosFromIngredients(
+  ingredients: IngredientRow[],
+  servings: number,
+): { calories: number; protein: number; carbs: number; fat: number } | null {
+  const active = ingredients.filter((i) => i.rawText.trim());
+  if (active.length === 0) return null;
+  let calories = 0,
+    protein = 0,
+    carbs = 0,
+    fat = 0,
+    covered = 0;
+  for (const ing of active) {
+    if (ing.caloriesPer100g == null) continue;
+    const g = convertToGrams(ing.quantity ?? 0, ing.unit ?? "g");
+    if (g == null) continue;
+    const f = g / 100;
+    calories += (ing.caloriesPer100g ?? 0) * f;
+    protein += (ing.proteinPer100g ?? 0) * f;
+    carbs += (ing.carbsPer100g ?? 0) * f;
+    fat += (ing.fatPer100g ?? 0) * f;
+    covered++;
+  }
+  if (covered < active.length * 0.5) return null;
+  const s = Math.max(1, servings);
+  return {
+    calories: Math.round(calories / s),
+    protein: Math.round((protein / s) * 10) / 10,
+    carbs: Math.round((carbs / s) * 10) / 10,
+    fat: Math.round((fat / s) * 10) / 10,
+  };
 }
+
+const PROTEIN_PATTERNS: Record<string, RegExp> = {
+  chicken: /frango|chicken|peito|coxa/i,
+  beef: /vaca|beef|bife|novilho/i,
+  pork: /porco|pork|leitão|lombo/i,
+  salmon: /salmão|salmon/i,
+  tuna: /atum|tuna/i,
+  fish: /peixe|fish|bacalhau|robalo|dourada|pescada|sardinha/i,
+  eggs: /ovos?|ovo|egg/i,
+  seafood: /camarão|marisco|seafood|gambas|lula|mexilhão/i,
+  turkey: /peru|turkey/i,
+  duck: /pato|duck/i,
+  veal: /vitela|veal/i,
+  lamb: /borrego|lamb/i,
+  tofu: /tofu/i,
+  whey: /whey/i,
+  legumes: /feijão|lentilha|grão-de-bico|leguminosas/i,
+};
+
+function isProteinIngredient(name: string, proteins: string[]): boolean {
+  return proteins.some((slug) => PROTEIN_PATTERNS[slug]?.test(name));
+}
+
+function suggestRecipeName(
+  proteins: string[],
+  names: string[],
+  t: TFunction,
+): string {
+  const proteinLabel = proteins[0] ? t(`proteins.${proteins[0]}`) : null;
+  const others = names
+    .filter((n) => n.length > 2 && !isProteinIngredient(n, proteins))
+    .slice(0, 2);
+  if (!proteinLabel) return names.slice(0, 3).join(", ");
+  if (others.length === 0) return proteinLabel;
+  return `${proteinLabel} com ${others.join(" e ")}`;
+}
+
+// ─── component ───────────────────────────────────────────────────────────────
 
 function CreateRecipePage() {
   const { t, i18n } = useTranslation();
@@ -152,12 +199,15 @@ function CreateRecipePage() {
 
   const keyCounter = useRef(0);
   const [ingredientKeys, setIngredientKeys] = useState<number[]>([0]);
+  const prevServingsRef = useRef(2);
+  const scaleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ── core state ──────────────────────────────────────────────────────────────
   const [name, setName] = useState("");
-  const [servings, setServings] = useState(1);
-  const [timeMin, setTimeMin] = useState<string>("");
-  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
-  const [proteinsManuallyEdited, setProteinsManuallyEdited] = useState(false);
+  const [servings, setServings] = useState(2);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageExpanded, setImageExpanded] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientRow[]>([
     {
       position: 0,
@@ -171,15 +221,28 @@ function CreateRecipePage() {
   const [steps, setSteps] = useState<StepRow[]>([
     { position: 0, text: "", timerSeconds: null },
   ]);
+  const [calories, setCalories] = useState("");
+  const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [macrosManuallyEdited, setMacrosManuallyEdited] = useState(false);
+  const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
+  const [proteinsManuallyEdited, setProteinsManuallyEdited] = useState(false);
+  const [timeMin, setTimeMin] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTagInput, setCustomTagInput] = useState("");
-  const [calories, setCalories] = useState<string>("");
-  const [protein, setProtein] = useState<string>("");
-  const [carbs, setCarbs] = useState<string>("");
-  const [fat, setFat] = useState<string>("");
   const [publish, setPublish] = useState(false);
+  const [optionalOpen, setOptionalOpen] = useState(false);
+  const [scaleConfirm, setScaleConfirm] = useState<{
+    factor: number;
+    newServings: number;
+  } | null>(null);
+  const [dismissedSuggestion, setDismissedSuggestion] = useState<string | null>(
+    null,
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ── queries ─────────────────────────────────────────────────────────────────
   const { data: profile } = useQuery({
     queryKey: ["my-profile"],
     queryFn: () => fetchMyProfile(),
@@ -194,12 +257,97 @@ function CreateRecipePage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // ── derived ─────────────────────────────────────────────────────────────────
+  const derivedProteins = useMemo(
+    () => deriveProteinsFromIngredients(ingredients),
+    [ingredients],
+  );
+  const effectiveProteins = proteinsManuallyEdited
+    ? selectedProteins
+    : derivedProteins;
+
+  const estimatedMacros = useMemo(
+    () => estimateMacrosFromIngredients(ingredients, servings),
+    [ingredients, servings],
+  );
+
+  const hasIngredients = ingredients.some((i) => i.rawText.trim());
+  const uncoveredCount = useMemo(
+    () =>
+      ingredients.filter((i) => i.rawText.trim() && i.caloriesPer100g == null)
+        .length,
+    [ingredients],
+  );
+  const allCovered = hasIngredients && uncoveredCount === 0;
+
+  // Effective macro display values (auto or manual)
+  const effCalories =
+    !macrosManuallyEdited && estimatedMacros != null
+      ? String(estimatedMacros.calories)
+      : calories;
+  const effProtein =
+    !macrosManuallyEdited && estimatedMacros != null
+      ? String(estimatedMacros.protein)
+      : protein;
+  const effCarbs =
+    !macrosManuallyEdited && estimatedMacros != null
+      ? String(estimatedMacros.carbs)
+      : carbs;
+  const effFat =
+    !macrosManuallyEdited && estimatedMacros != null
+      ? String(estimatedMacros.fat)
+      : fat;
+
+  const macroSource = macrosManuallyEdited
+    ? "manual"
+    : estimatedMacros != null
+      ? "auto"
+      : null;
+
+  // Duplicate indices
+  const duplicateIndices = useMemo(() => {
+    const seen = new Map<string, number>();
+    const dups = new Set<number>();
+    ingredients.forEach((ing, idx) => {
+      const key = ing.ingredientId
+        ? `id:${ing.ingredientId}`
+        : `text:${ing.rawText.toLowerCase().trim()}`;
+      if (key === "text:") return;
+      if (seen.has(key)) {
+        dups.add(idx);
+        dups.add(seen.get(key)!);
+      } else {
+        seen.set(key, idx);
+      }
+    });
+    return dups;
+  }, [ingredients]);
+
+  // Auto-name suggestion
+  const rawSuggestion = useMemo(() => {
+    if (name.trim()) return null;
+    const active = ingredients.filter((i) => i.rawText.trim());
+    if (active.length < 2) return null;
+    return suggestRecipeName(
+      effectiveProteins,
+      active.map((i) => i.name ?? i.rawText),
+      t,
+    );
+  }, [name, ingredients, effectiveProteins, t]);
+
+  const autoNameSuggestion =
+    rawSuggestion !== null && rawSuggestion !== dismissedSuggestion
+      ? rawSuggestion
+      : null;
+
+  // ── mutations ────────────────────────────────────────────────────────────────
   const addCustomProteinMutation = useMutation({
     mutationFn: (displayName: string) =>
       createUserProtein({ data: { displayName, language: lang } }),
-    onSuccess: (protein) => {
+    onSuccess: (p) => {
       refetchUserProteins();
-      setSelectedProteins((prev) => [...prev, protein.slug]);
+      setSelectedProteins((prev) => [...prev, p.slug]);
+      setProteinsManuallyEdited(true);
     },
   });
 
@@ -214,7 +362,7 @@ function CreateRecipePage() {
         data: {
           name: name.trim(),
           ingredients: ingredients
-            .filter((i) => i.rawText.trim())
+            .filter((i) => i.rawText.trim() && i.caloriesPer100g == null)
             .map((i) => i.rawText),
           servings,
         },
@@ -224,25 +372,28 @@ function CreateRecipePage() {
       if (result.protein != null) setProtein(String(result.protein));
       if (result.carbs != null) setCarbs(String(result.carbs));
       if (result.fat != null) setFat(String(result.fat));
+      setMacrosManuallyEdited(true);
       showToast(t("create.macrosEstimated"), "success");
     },
     onError: () => showToast(t("create.macrosEstimateError"), "error"),
   });
 
   const saveMutation = useMutation({
-    mutationFn: () =>
-      createRecipe({
+    mutationFn: () => {
+      const effectiveName = name.trim() || autoNameSuggestion || name.trim();
+      return createRecipe({
         data: {
-          name: name.trim(),
+          name: effectiveName,
           servings,
           timeMin: timeMin ? parseInt(timeMin, 10) : null,
           proteins: effectiveProteins,
           tags: selectedTags,
-          calories: calories ? parseFloat(calories) : null,
-          protein: protein ? parseFloat(protein) : null,
-          carbs: carbs ? parseFloat(carbs) : null,
-          fat: fat ? parseFloat(fat) : null,
+          calories: effCalories ? parseFloat(effCalories) : null,
+          protein: effProtein ? parseFloat(effProtein) : null,
+          carbs: effCarbs ? parseFloat(effCarbs) : null,
+          fat: effFat ? parseFloat(effFat) : null,
           visibility: publish ? "public" : "private",
+          imageUrl,
           ingredients: ingredients
             .filter((i) => i.rawText.trim())
             .map((ing, idx) => ({ ...ing, position: idx })),
@@ -251,7 +402,8 @@ function CreateRecipePage() {
             .map((s, idx) => ({ ...s, position: idx })),
           lang,
         },
-      }),
+      });
+    },
     onSuccess: ({ id }) => {
       queryClient.invalidateQueries({ queryKey: ["library"] });
       navigate({
@@ -263,18 +415,39 @@ function CreateRecipePage() {
     onError: () => showToast(t("common.error"), "error"),
   });
 
+  // ── handlers ─────────────────────────────────────────────────────────────────
   function validate(): boolean {
     const errs: Record<string, string> = {};
-    if (!name.trim()) errs.name = t("create.validationName");
+    const effectiveName = name.trim() || autoNameSuggestion || "";
+    if (!effectiveName) errs.name = t("create.validationName");
     if (!ingredients.some((i) => i.rawText.trim()))
       errs.ingredients = t("create.validationIngredients");
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
-  function handleSave() {
-    if (!validate()) return;
-    saveMutation.mutate();
+  function handleServingsChange(newVal: number) {
+    const prev = prevServingsRef.current;
+    if (newVal !== prev && ingredients.some((i) => i.quantity != null)) {
+      if (scaleTimerRef.current) clearTimeout(scaleTimerRef.current);
+      setScaleConfirm({ factor: newVal / prev, newServings: newVal });
+      scaleTimerRef.current = setTimeout(() => setScaleConfirm(null), 3000);
+    }
+    prevServingsRef.current = newVal;
+    setServings(newVal);
+  }
+
+  function applyScale(factor: number) {
+    setIngredients((prev) =>
+      prev.map((ing) =>
+        ing.quantity != null
+          ? { ...ing, quantity: Math.round(ing.quantity * factor * 10) / 10 }
+          : ing,
+      ),
+    );
+    setIngredientKeys((prev) => prev.map((k) => k + 10000));
+    setScaleConfirm(null);
+    if (scaleTimerRef.current) clearTimeout(scaleTimerRef.current);
   }
 
   function addIngredient() {
@@ -334,16 +507,6 @@ function CreateRecipePage() {
     );
   }
 
-  const derivedProteins = useMemo(
-    () => deriveProteinsFromIngredients(ingredients),
-    [ingredients],
-  );
-  const effectiveProteins = proteinsManuallyEdited
-    ? selectedProteins
-    : derivedProteins;
-
-  const systemTagSlugs = TAG_SECTIONS_CREATE.flatMap((s) => s.tags);
-
   function addCustomTag() {
     const slug = customTagInput.trim().toLowerCase().replace(/\s+/g, "-");
     if (!slug || selectedTags.includes(slug)) return;
@@ -351,12 +514,44 @@ function CreateRecipePage() {
     setCustomTagInput("");
   }
 
+  async function handleImageFile(file: File) {
+    setImageUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("not authenticated");
+      const path = `user/${session.user.id}/${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("recipe-images")
+        .upload(path, file, { upsert: true });
+      if (error) throw error;
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("recipe-images").getPublicUrl(path);
+      setImageUrl(publicUrl);
+    } catch {
+      showToast(t("common.error"), "error");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (scaleTimerRef.current) clearTimeout(scaleTimerRef.current);
+    };
+  }, []);
+
+  // ── style tokens ─────────────────────────────────────────────────────────────
   const chipBase =
     "text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none";
   const chipActive = "bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]";
   const chipInactive =
     "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]";
 
+  // ── render ───────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       {/* Header */}
@@ -376,7 +571,9 @@ function CreateRecipePage() {
           </h1>
           <button
             type="button"
-            onClick={handleSave}
+            onClick={() => {
+              if (validate()) saveMutation.mutate();
+            }}
             disabled={saveMutation.isPending}
             className="text-sm font-semibold text-[#F4623A] disabled:opacity-50 hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
           >
@@ -386,68 +583,177 @@ function CreateRecipePage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-4">
-        {/* Recipe name */}
-        <div>
+        {/* 1. Name + servings row */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t("create.namePlaceholder")}
-            className={`w-full rounded-xl border bg-white px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors ${errors.name ? "border-[#DC2626]" : "border-[#E5E7EB]"}`}
+            className={`w-full rounded-xl border bg-[#F9FAFB] px-4 py-3 text-[16px] font-semibold text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors ${errors.name ? "border-[#DC2626]" : "border-[#E5E7EB]"}`}
           />
           {errors.name && (
-            <p className="mt-1 text-xs text-[#DC2626]">{errors.name}</p>
+            <p className="text-xs text-[#DC2626]">{errors.name}</p>
           )}
-        </div>
 
-        {/* Servings */}
-        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
+          {/* Auto-name suggestion chip */}
+          {autoNameSuggestion && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-[#9CA3AF]">Sugestão:</span>
+              <button
+                type="button"
+                onClick={() => setName(autoNameSuggestion)}
+                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-[#F9FAFB] border border-[#E5E7EB] text-[#1A1A1A] hover:border-[#F4623A] transition-colors"
+              >
+                {autoNameSuggestion}
+                <span
+                  role="button"
+                  aria-label="Dispensar sugestão"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDismissedSuggestion(autoNameSuggestion);
+                  }}
+                  className="ml-0.5 text-[#9CA3AF] hover:text-[#DC2626]"
+                >
+                  <X size={10} aria-hidden="true" />
+                </span>
+              </button>
+            </div>
+          )}
+
+          {/* Servings stepper */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[#1A1A1A]">
+            <span className="text-sm text-[#6B7280]">
               {t("create.servingsLabel")}
             </span>
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setServings((s) => Math.max(1, s - 1))}
+                onClick={() => handleServingsChange(Math.max(1, servings - 1))}
                 disabled={servings <= 1}
-                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                aria-label={t("recipe.decreaseServings")}
+                className="w-8 h-8 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] disabled:opacity-30 hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
-                <Minus size={16} aria-hidden="true" />
+                <Minus size={14} aria-hidden="true" />
               </button>
               <span className="w-6 text-center font-bold text-[#1A1A1A]">
                 {servings}
               </span>
               <button
                 type="button"
-                onClick={() => setServings((s) => s + 1)}
-                className="w-9 h-9 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                onClick={() => handleServingsChange(servings + 1)}
+                aria-label={t("recipe.increaseServings")}
+                className="w-8 h-8 rounded-full border border-[#E5E7EB] flex items-center justify-center text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
-                <Plus size={16} aria-hidden="true" />
+                <Plus size={14} aria-hidden="true" />
               </button>
             </div>
           </div>
+
+          {/* Scale confirm row */}
+          {scaleConfirm && (
+            <div className="flex items-center justify-between rounded-xl bg-[#FFF5F2] border border-[#F4623A]/30 px-3 py-2 text-sm">
+              <span className="text-[#6B7280]">
+                Ajustar quantidades para {scaleConfirm.newServings} porções?
+              </span>
+              <div className="flex gap-2 ml-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => applyScale(scaleConfirm.factor)}
+                  className="text-xs font-semibold text-[#F4623A] hover:text-[#D94F2B]"
+                >
+                  Sim
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScaleConfirm(null);
+                    if (scaleTimerRef.current)
+                      clearTimeout(scaleTimerRef.current);
+                  }}
+                  className="text-xs font-semibold text-[#9CA3AF] hover:text-[#6B7280]"
+                >
+                  Não
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Proteins — optional */}
-        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
-          <p className="text-sm font-semibold text-[#1A1A1A] mb-3">
-            {t("create.proteinsLabel")}
-          </p>
-          <ProteinPicker
-            selected={effectiveProteins}
-            onToggle={toggleProtein}
-            userProteins={userProteins}
-            onAddCustom={(displayName) => {
-              addCustomProteinMutation.mutate(displayName);
-              setProteinsManuallyEdited(true);
-            }}
-            onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
-            autoDetected={!proteinsManuallyEdited ? derivedProteins : undefined}
-          />
+        {/* 2. Image (collapsed by default) */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
+          {!imageExpanded && !imageUrl ? (
+            <button
+              type="button"
+              onClick={() => setImageExpanded(true)}
+              className="w-full flex items-center gap-2 px-4 py-3.5 text-sm text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
+            >
+              <Camera size={16} aria-hidden="true" />+ {t("create.imageLabel")}
+            </button>
+          ) : (
+            <div className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[#1A1A1A]">
+                  {t("create.imageLabel")}
+                </span>
+                {!imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageExpanded(false)}
+                    className="text-[#9CA3AF] hover:text-[#6B7280]"
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                )}
+              </div>
+              {imageUrl ? (
+                <div className="relative">
+                  <img
+                    src={imageUrl}
+                    alt="Imagem da receita"
+                    className="w-full h-40 object-cover rounded-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                    aria-label="Remover imagem"
+                  >
+                    <X size={12} aria-hidden="true" />
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center h-32 rounded-xl border-2 border-dashed border-[#E5E7EB] cursor-pointer hover:border-[#F4623A] hover:bg-[#FFF5F2] transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImageFile(file);
+                    }}
+                  />
+                  {imageUploading ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-[#F4623A] border-t-transparent animate-spin" />
+                  ) : (
+                    <>
+                      <Camera
+                        size={20}
+                        className="text-[#9CA3AF] mb-1"
+                        aria-hidden="true"
+                      />
+                      <span className="text-xs text-[#9CA3AF]">
+                        Toca para adicionar foto
+                      </span>
+                    </>
+                  )}
+                </label>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Ingredients — required */}
+        {/* 3. Ingredients */}
         <div
           className={`rounded-2xl bg-white border shadow-sm p-4 space-y-3 ${errors.ingredients ? "border-[#DC2626]" : "border-[#E5E7EB]"}`}
         >
@@ -462,6 +768,7 @@ function CreateRecipePage() {
               onValueChange={(updated) => updateIngredient(idx, updated)}
               onRemove={() => removeIngredient(idx)}
               measurementSystem={measurementSystem}
+              isDuplicate={duplicateIndices.has(idx)}
             />
           ))}
           <button
@@ -476,7 +783,7 @@ function CreateRecipePage() {
           )}
         </div>
 
-        {/* Steps — optional */}
+        {/* 4. Steps */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
           <p className="text-sm font-semibold text-[#1A1A1A]">
             {t("create.stepsLabel")}
@@ -514,139 +821,60 @@ function CreateRecipePage() {
           </button>
         </div>
 
-        {/* Time — optional collapsible */}
-        <CollapsibleSection title={t("create.timeLabel")}>
-          <input
-            type="number"
-            min={1}
-            value={timeMin}
-            onChange={(e) => setTimeMin(e.target.value)}
-            placeholder="30"
-            className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
-          />
-        </CollapsibleSection>
+        {/* 5. Macros — shown once ≥1 ingredient exists */}
+        {hasIngredients && (
+          <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[#1A1A1A]">
+                {t("create.macrosLabel")}
+              </p>
+              {macroSource && (
+                <span className="text-[11px] text-[#9CA3AF]">
+                  {macroSource === "auto"
+                    ? t("create.macrosAutoLabel", "(calculado automaticamente)")
+                    : t("create.macrosManualLabel", "(editado manualmente)")}
+                </span>
+              )}
+            </div>
 
-        {/* Tags — optional collapsible */}
-        <CollapsibleSection title={t("create.tagsLabel")}>
-          <div className="space-y-4">
-            {TAG_SECTIONS_CREATE.map(({ key, tags: sectionTags }) => (
-              <div key={key}>
-                <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-                  {t(`tagSections.${key}`)}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {sectionTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => toggleTag(tag)}
-                      aria-pressed={selectedTags.includes(tag)}
-                      className={`${chipBase} ${selectedTags.includes(tag) ? chipActive : chipInactive}`}
-                    >
-                      {t(`tags.${tag}`, { defaultValue: tag })}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {/* Custom tags */}
-            {selectedTags.filter((tag) => !systemTagSlugs.includes(tag))
-              .length > 0 && (
-              <div>
-                <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-                  {t("create.customTagsSection", "Os meus tags")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedTags
-                    .filter((tag) => !systemTagSlugs.includes(tag))
-                    .map((tag) => (
-                      <span
-                        key={tag}
-                        className={`${chipBase} ${chipActive} flex items-center gap-1`}
-                      >
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedTags((prev) =>
-                              prev.filter((t) => t !== tag),
-                            )
-                          }
-                          aria-label={`Remover tag ${tag}`}
-                          className="focus:outline-none"
-                        >
-                          <X size={10} aria-hidden="true" />
-                        </button>
-                      </span>
-                    ))}
-                </div>
-              </div>
-            )}
-            {/* Add custom tag */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={customTagInput}
-                onChange={(e) => setCustomTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addCustomTag();
-                  }
-                }}
-                placeholder={t("create.addCustomTag", "Adicionar tag…")}
-                className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
-              />
+            {/* Haiku estimate button — only when some ingredients lack DB data */}
+            {!allCovered && (
               <button
                 type="button"
-                onClick={addCustomTag}
-                disabled={!customTagInput.trim()}
-                className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#F4623A] hover:bg-[#FFF5F2] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none shrink-0"
+                onClick={() => estimateMutation.mutate()}
+                disabled={estimateMutation.isPending}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#F4623A] font-medium disabled:opacity-40 hover:bg-[#FFF5F2] hover:border-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
-                <Plus size={16} aria-hidden="true" />
+                {estimateMutation.isPending ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-[#F4623A] border-t-transparent animate-spin" />
+                ) : (
+                  <Sparkles size={14} aria-hidden="true" />
+                )}
+                {t(
+                  "create.estimateMacrosRemaining",
+                  "✨ Estimar macros restantes",
+                )}
               </button>
-            </div>
-          </div>
-        </CollapsibleSection>
+            )}
 
-        {/* Macros — optional collapsible */}
-        <CollapsibleSection title={t("create.macrosLabel")}>
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => estimateMutation.mutate()}
-              disabled={
-                estimateMutation.isPending ||
-                !name.trim() ||
-                !ingredients.some((i) => i.rawText.trim())
-              }
-              className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-sm text-[#F4623A] font-medium disabled:opacity-40 hover:bg-[#FFF5F2] hover:border-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-            >
-              {estimateMutation.isPending ? (
-                <div className="w-4 h-4 rounded-full border-2 border-[#F4623A] border-t-transparent animate-spin" />
-              ) : (
-                <Sparkles size={14} aria-hidden="true" />
-              )}
-              {t("create.estimateMacros")}
-            </button>
             <div className="grid grid-cols-2 gap-3">
               {[
                 {
                   label: t("create.caloriesLabel"),
-                  value: calories,
+                  value: effCalories,
                   setter: setCalories,
                 },
                 {
                   label: t("create.proteinLabel"),
-                  value: protein,
+                  value: effProtein,
                   setter: setProtein,
                 },
                 {
                   label: t("create.carbsLabel"),
-                  value: carbs,
+                  value: effCarbs,
                   setter: setCarbs,
                 },
-                { label: t("create.fatLabel"), value: fat, setter: setFat },
+                { label: t("create.fatLabel"), value: effFat, setter: setFat },
               ].map(({ label, value, setter }) => (
                 <div key={label}>
                   <label className="block text-xs text-[#6B7280] mb-1">
@@ -656,44 +884,197 @@ function CreateRecipePage() {
                     type="number"
                     min={0}
                     value={value}
-                    onChange={(e) => setter(e.target.value)}
+                    onChange={(e) => {
+                      setter(e.target.value);
+                      setMacrosManuallyEdited(true);
+                    }}
                     className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
                   />
                 </div>
               ))}
             </div>
           </div>
-        </CollapsibleSection>
+        )}
 
-        {/* Publish toggle */}
-        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1 mr-4">
-              <p className="text-sm font-semibold text-[#1A1A1A]">
-                {t("create.publishLabel")}
-              </p>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
-                {t("create.publishHint")}
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={publish}
-              onClick={() => setPublish((p) => !p)}
-              className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${publish ? "bg-[#F4623A]" : "bg-[#D1D5DB]"}`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${publish ? "translate-x-5" : "translate-x-0"}`}
+        {/* 6. Optional details (proteins, time, tags, publish) */}
+        <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setOptionalOpen((o) => !o)}
+            aria-expanded={optionalOpen}
+            className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors focus:outline-none"
+          >
+            Mais detalhes
+            {optionalOpen ? (
+              <ChevronUp
+                size={16}
+                className="text-[#9CA3AF]"
+                aria-hidden="true"
               />
-            </button>
-          </div>
+            ) : (
+              <ChevronDown
+                size={16}
+                className="text-[#9CA3AF]"
+                aria-hidden="true"
+              />
+            )}
+          </button>
+
+          {optionalOpen && (
+            <div className="px-4 pb-4 pt-1 border-t border-[#F3F4F6] space-y-5">
+              {/* Proteins */}
+              <div>
+                <p className="text-sm font-semibold text-[#1A1A1A] mb-3">
+                  {t("create.proteinsLabel")}
+                </p>
+                <ProteinPicker
+                  selected={effectiveProteins}
+                  onToggle={toggleProtein}
+                  userProteins={userProteins}
+                  onAddCustom={(displayName) =>
+                    addCustomProteinMutation.mutate(displayName)
+                  }
+                  onDeleteUserProtein={(id) =>
+                    deleteCustomProteinMutation.mutate(id)
+                  }
+                  autoDetected={
+                    !proteinsManuallyEdited ? derivedProteins : undefined
+                  }
+                />
+              </div>
+
+              {/* Time */}
+              <div>
+                <label className="block text-sm font-semibold text-[#1A1A1A] mb-2">
+                  {t("create.timeLabel")}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={timeMin}
+                  onChange={(e) => setTimeMin(e.target.value)}
+                  placeholder="30"
+                  className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2.5 text-[16px] text-[#1A1A1A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
+                />
+              </div>
+
+              {/* Tags */}
+              <div>
+                <p className="text-sm font-semibold text-[#1A1A1A] mb-3">
+                  {t("create.tagsLabel")}
+                </p>
+                <div className="space-y-4">
+                  {TAG_SECTIONS.map(({ key, tags: sectionTags }) => (
+                    <div key={key}>
+                      <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                        {t(`tagSections.${key}`)}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {sectionTags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => toggleTag(tag)}
+                            aria-pressed={selectedTags.includes(tag)}
+                            className={`${chipBase} ${selectedTags.includes(tag) ? chipActive : chipInactive}`}
+                          >
+                            {t(`tags.${tag}`, { defaultValue: tag })}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {/* Custom tags */}
+                  {selectedTags.filter((tag) => !SYSTEM_TAG_SLUGS.includes(tag))
+                    .length > 0 && (
+                    <div>
+                      <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                        {t("create.customTagsSection", "Os meus tags")}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedTags
+                          .filter((tag) => !SYSTEM_TAG_SLUGS.includes(tag))
+                          .map((tag) => (
+                            <span
+                              key={tag}
+                              className={`${chipBase} ${chipActive} flex items-center gap-1`}
+                            >
+                              {tag}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedTags((prev) =>
+                                    prev.filter((t) => t !== tag),
+                                  )
+                                }
+                                aria-label={`Remover tag ${tag}`}
+                                className="focus:outline-none"
+                              >
+                                <X size={10} aria-hidden="true" />
+                              </button>
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={customTagInput}
+                      onChange={(e) => setCustomTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addCustomTag();
+                        }
+                      }}
+                      placeholder={t("create.addCustomTag", "Adicionar tag…")}
+                      className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomTag}
+                      disabled={!customTagInput.trim()}
+                      className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#F4623A] hover:bg-[#FFF5F2] disabled:opacity-40 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none shrink-0"
+                    >
+                      <Plus size={16} aria-hidden="true" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Publish toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-sm font-semibold text-[#1A1A1A]">
+                    {t("create.publishLabel")}
+                  </p>
+                  <p className="text-xs text-[#9CA3AF] mt-0.5">
+                    {t("create.publishHint")}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={publish}
+                  onClick={() => setPublish((p) => !p)}
+                  className={`relative w-11 h-6 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${publish ? "bg-[#F4623A]" : "bg-[#D1D5DB]"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${publish ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Save button */}
         <button
           type="button"
-          onClick={handleSave}
+          onClick={() => {
+            if (validate()) saveMutation.mutate();
+          }}
           disabled={saveMutation.isPending}
           className="w-full rounded-2xl bg-[#F4623A] text-white py-4 text-sm font-semibold disabled:opacity-60 hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
