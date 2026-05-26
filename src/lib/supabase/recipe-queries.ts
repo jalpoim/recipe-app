@@ -219,20 +219,21 @@ export const deleteRecipe = createServerFn({ method: "POST" })
   });
 
 export const searchIngredients = createServerFn({ method: "GET" })
-  .inputValidator((q: string) => q)
-  .handler(async ({ data: q }) => {
+  .inputValidator((input: { q: string; lang: string }) => input)
+  .handler(async ({ data: { q, lang } }) => {
     const supabase = makeClient();
 
-    // Fuzzy search via pg_trgm (also searches ingredient_translations)
+    // Fuzzy search via pg_trgm — scoped to user's language + English canonical
     const { data: fuzzy } = await supabase.rpc("search_ingredients_fuzzy", {
       search_term: q,
       result_limit: 10,
+      lang,
     });
 
     const ids = (fuzzy ?? []).map((r) => r.id);
     if (ids.length === 0) return [];
 
-    // Fetch ingredient metadata + PT translation (display name)
+    // Fetch ingredient metadata + display name in user's language
     const [metaResult, translationsResult] = await Promise.all([
       supabase
         .from("ingredients")
@@ -244,11 +245,11 @@ export const searchIngredients = createServerFn({ method: "GET" })
         .from("ingredient_translations")
         .select("ingredient_id, name")
         .in("ingredient_id", ids)
-        .eq("language", "pt"),
+        .eq("language", lang),
     ]);
 
     const metaById = new Map((metaResult.data ?? []).map((r) => [r.id, r]));
-    const ptNameById = new Map(
+    const displayNameById = new Map(
       (translationsResult.data ?? []).map((r) => [r.ingredient_id, r.name]),
     );
 
@@ -256,7 +257,7 @@ export const searchIngredients = createServerFn({ method: "GET" })
       const meta = metaById.get(r.id);
       return {
         id: r.id,
-        name: ptNameById.get(r.id) ?? r.name,
+        name: displayNameById.get(r.id) ?? r.name,
         default_unit: meta?.default_unit ?? null,
         category: meta?.category ?? null,
         dietary_flags: meta?.dietary_flags ?? null,

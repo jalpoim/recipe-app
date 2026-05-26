@@ -796,6 +796,7 @@ function EditRecipePage() {
               onRemove={() => removeIngredient(idx)}
               measurementSystem={measurementSystem}
               isDuplicate={duplicateIndices.has(idx)}
+              lang={lang}
             />
           ))}
           <button

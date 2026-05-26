@@ -136,6 +136,7 @@ export function IngredientCombobox({
   index,
   measurementSystem,
   isDuplicate,
+  lang = "pt",
 }: {
   value: IngredientRow;
   onValueChange: (updated: IngredientRow) => void;
@@ -143,6 +144,7 @@ export function IngredientCombobox({
   index: number;
   measurementSystem: "metric" | "imperial";
   isDuplicate?: boolean;
+  lang?: string;
 }) {
   useTranslation();
   const [text, setText] = useState(value.rawText);
@@ -165,8 +167,8 @@ export function IngredientCombobox({
   const lastAutoMatchIdRef = useRef<string | null>(null);
 
   const { data: suggestions = [] } = useQuery({
-    queryKey: ["ingredientSearch", debouncedText],
-    queryFn: () => searchIngredients({ data: debouncedText }),
+    queryKey: ["ingredientSearch", debouncedText, lang],
+    queryFn: () => searchIngredients({ data: { q: debouncedText, lang } }),
     enabled: debouncedText.length >= 2,
     staleTime: 30_000,
   });
