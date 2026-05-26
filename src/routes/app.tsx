@@ -56,7 +56,15 @@ export const Route = createFileRoute("/app")({
 
 function BottomNav() {
   const { t } = useTranslation();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // resolvedLocation = last fully committed route; location = optimistic (updates on nav start)
+  // Active tab follows resolved; pending tab follows location when a navigation is in flight
+  const pathname = useRouterState({
+    select: (s) => (s.resolvedLocation ?? s.location).pathname,
+  });
+  const pendingPathname = useRouterState({
+    select: (s) =>
+      s.status === "pending" && s.resolvedLocation ? s.location.pathname : null,
+  });
   const prevTabRef = useRef(pathname);
 
   const { data: plan } = useQuery({
@@ -181,12 +189,20 @@ function BottomNav() {
                 className={`relative flex flex-col items-center justify-center flex-1 py-1.5 gap-0.5 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
                   isActive
                     ? "text-[#F4623A]"
-                    : "text-[#9CA3AF] hover:text-[#6B7280]"
+                    : pendingPathname?.startsWith(tab.to)
+                      ? "text-[#F4623A]/50"
+                      : "text-[#9CA3AF] hover:text-[#6B7280]"
                 }`}
                 aria-current={isActive ? "page" : undefined}
               >
                 <div className="relative">
                   <Icon size={22} aria-hidden="true" />
+                  {pendingPathname?.startsWith(tab.to) && !isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F4623A]/60 animate-pulse motion-reduce:animate-none"
+                    />
+                  )}
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <motion.span
                       animate={tab.key === "plan" ? badgeControls : undefined}

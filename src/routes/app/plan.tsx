@@ -79,6 +79,7 @@ function PlanError({ error }: { error: Error }) {
 }
 
 export const Route = createFileRoute("/app/plan")({
+  pendingComponent: PlanSkeleton,
   errorComponent: ({ error }) => <PlanError error={error as Error} />,
   component: PlanPage,
 });

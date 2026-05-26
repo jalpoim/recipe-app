@@ -68,6 +68,7 @@ function ShoppingError({ error }: { error: Error }) {
 }
 
 export const Route = createFileRoute("/app/shopping")({
+  pendingComponent: ShoppingSkeleton,
   errorComponent: ({ error }) => <ShoppingError error={error as Error} />,
   validateSearch: (search) => ({
     view: search.view === "global" ? ("global" as const) : ("recipe" as const),
