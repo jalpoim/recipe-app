@@ -379,6 +379,43 @@ function StripChipButton({
   );
 }
 
+function SpringChip({
+  onClick,
+  className,
+  "aria-pressed": ariaPressed,
+  children,
+}: {
+  onClick: () => void;
+  className: string;
+  "aria-pressed"?: boolean;
+  children: React.ReactNode;
+}) {
+  const controls = useAnimationControls();
+  const { skip: reducedMotion } = useMotion();
+
+  function handleClick() {
+    onClick();
+    if (!reducedMotion) {
+      controls.start({
+        scale: [1, 1.1, 1],
+        transition: { duration: 0.25, ease: [0.34, 1.56, 0.64, 1] },
+      });
+    }
+  }
+
+  return (
+    <button
+      onClick={handleClick}
+      className={className}
+      aria-pressed={ariaPressed}
+    >
+      <motion.span animate={controls} className="block">
+        {children}
+      </motion.span>
+    </button>
+  );
+}
+
 const ChipStrip = memo(function ChipStrip({
   chips,
   activeChipId,
@@ -777,14 +814,14 @@ function FilterSheet({
                   ? [...PROTEIN_TIER1, ...PROTEIN_TIER2]
                   : PROTEIN_TIER1
                 ).map((slug) => (
-                  <button
+                  <SpringChip
                     key={slug}
                     onClick={() => toggleProtein(slug)}
                     aria-pressed={search.proteins.includes(slug)}
                     className={chipCls(search.proteins.includes(slug))}
                   >
                     {t(`proteins.${slug}`, slug)}
-                  </button>
+                  </SpringChip>
                 ))}
                 <button
                   aria-expanded={proteinsExpanded}
@@ -891,7 +928,7 @@ function FilterSheet({
               <p className={sectionHeader}>{t("filters.time")}</p>
               <div className="flex flex-wrap gap-2">
                 {([15, 30, 60] as const).map((mins) => (
-                  <button
+                  <SpringChip
                     key={mins}
                     onClick={() => {
                       const next = search.maxTime === mins ? undefined : mins;
@@ -906,7 +943,7 @@ function FilterSheet({
                   >
                     {"< "}
                     {mins} min
-                  </button>
+                  </SpringChip>
                 ))}
               </div>
             </div>
@@ -916,7 +953,7 @@ function FilterSheet({
               <p className={sectionHeader}>{t("filters.calories")}</p>
               <div className="flex flex-wrap gap-2">
                 {([300, 500, 700] as const).map((cal) => (
-                  <button
+                  <SpringChip
                     key={cal}
                     onClick={() => {
                       const next = search.maxCal === cal ? undefined : cal;
@@ -931,7 +968,7 @@ function FilterSheet({
                   >
                     {"< "}
                     {cal} cal
-                  </button>
+                  </SpringChip>
                 ))}
               </div>
             </div>
@@ -957,14 +994,14 @@ function FilterSheet({
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {visible.map((tag) => (
-                          <button
+                          <SpringChip
                             key={tag}
                             onClick={() => toggleTag(tag)}
                             aria-pressed={search.tags.includes(tag)}
                             className={chipCls(search.tags.includes(tag))}
                           >
                             {t(`tags.${tag}`, { defaultValue: tag })}
-                          </button>
+                          </SpringChip>
                         ))}
                         {hasMore && (
                           <button

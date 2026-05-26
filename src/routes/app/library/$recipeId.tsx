@@ -238,16 +238,8 @@ function CookingDrawer({
 // ---------- Skeleton / Error ----------
 
 function RecipeDetailSkeleton() {
-  const { skip: reducedMotion } = useMotion();
   return (
-    <motion.div
-      initial={reducedMotion ? {} : { y: 40, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{
-        y: { type: "spring", stiffness: 300, damping: 30 },
-        opacity: { duration: 0.25, ease: "easeOut" },
-      }}
-    >
+    <div>
       <div className="min-h-screen bg-[#FAFAF8] pb-56">
         <div className="mx-auto w-full max-w-md px-4 py-5 space-y-4 animate-pulse motion-reduce:animate-none">
           <div className="h-4 w-16 bg-[#F3F4F6] rounded-full" />
@@ -265,7 +257,7 @@ function RecipeDetailSkeleton() {
           ))}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -561,7 +553,14 @@ function RecipeDetailPage() {
   }
 
   return (
-    <>
+    <motion.div
+      initial={reducedMotion ? {} : { y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{
+        y: { type: "spring", stiffness: 200, damping: 24 },
+        opacity: { duration: 0.2, ease: "easeOut" },
+      }}
+    >
       <div
         className="min-h-screen bg-[#FAFAF8]"
         style={{
@@ -1012,6 +1011,6 @@ function RecipeDetailPage() {
           </div>
         )}
       </div>
-    </>
+    </motion.div>
   );
 }

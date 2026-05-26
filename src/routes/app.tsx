@@ -197,12 +197,6 @@ function BottomNav() {
               >
                 <div className="relative">
                   <Icon size={22} aria-hidden="true" />
-                  {pendingPathname?.startsWith(tab.to) && !isActive && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F4623A]/60 animate-pulse motion-reduce:animate-none"
-                    />
-                  )}
                   {"badge" in tab && (tab.badge ?? 0) > 0 && (
                     <motion.span
                       animate={tab.key === "plan" ? badgeControls : undefined}
