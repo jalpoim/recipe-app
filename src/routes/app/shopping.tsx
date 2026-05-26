@@ -173,8 +173,11 @@ const CATEGORY_KEYWORDS: [Category, string[]][] = [
   ],
 ];
 
+const PANTRY_MODIFIERS = ["enlatad", "desidratad", "em lata", "em conserva"];
+
 function autoCategory(label: string): Category | null {
   const lower = label.toLowerCase();
+  if (PANTRY_MODIFIERS.some((m) => lower.includes(m))) return "Mercearia";
   for (const [cat, keywords] of CATEGORY_KEYWORDS) {
     if (keywords.some((k) => lower.includes(k))) return cat;
   }
