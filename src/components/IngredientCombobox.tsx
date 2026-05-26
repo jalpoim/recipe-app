@@ -29,6 +29,7 @@ export const COUNT_UNIT_KEYS = [
   "sheet",
   "can",
   "sachet",
+  "scoop",
 ] as const;
 
 const SLUG_TO_PT: Record<string, string> = {
