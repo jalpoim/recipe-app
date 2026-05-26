@@ -1,4 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../../lib/use-reduced-motion";
@@ -313,6 +318,7 @@ function RecipeDetailPage() {
   const user = routeCtx?.user ?? null;
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const router = useRouter();
   const qc = useQueryClient();
   const { showToast } = useToast();
   const isFromPlan = search.from === "plan" && !!search.planItemId;
@@ -569,7 +575,9 @@ function RecipeDetailPage() {
           <div className="sticky top-0 z-10 bg-[#FAFAF8]/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3 border-b border-[#F0F0EE]">
             <button
               onClick={() =>
-                navigate({ to: isFromPlan ? "/app/plan" : "/app/library" })
+                isFromPlan
+                  ? navigate({ to: "/app/plan" })
+                  : router.history.back()
               }
               aria-label={t("recipe.back")}
               className="flex items-center gap-1 text-sm text-[#6B7280] hover:text-[#1A1A1A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
