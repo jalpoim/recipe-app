@@ -254,13 +254,13 @@ export function IngredientCombobox({
         </button>
       </div>
       {open && suggestions.length > 0 && (
-        <div className="absolute top-full left-6 right-8 mt-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-hidden">
+        <div className="absolute bottom-full left-6 right-8 mb-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-y-auto max-h-48">
           {suggestions.map((s) => (
             <button
               key={s.id}
               type="button"
               onMouseDown={() => handleSelect(s)}
-              className="w-full text-left px-3 py-2.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] transition-colors"
+              className="w-full text-left px-3 py-2.5 text-sm text-[#1A1A1A] hover:bg-[#F9FAFB] active:bg-[#F0F0EE] transition-colors"
             >
               {s.name}
               {s.default_unit && (
