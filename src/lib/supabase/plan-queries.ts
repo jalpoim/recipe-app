@@ -129,7 +129,8 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
     if (recipeErr) throw new Error(recipeErr.message);
     if (ingErr) throw new Error(ingErr.message);
 
-    // For ingredients with no category, look up by name in ingredient_translations
+    // For ingredients with no category, resolve via existing recipe_ingredients
+    // (system recipes already carry correct PT category values).
     const uncategorised = (ingredients ?? []).filter((i) => !i.category);
     const lookupNames = [
       ...new Set(
@@ -141,16 +142,86 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
 
     const categoryByName = new Map<string, string>();
     if (lookupNames.length > 0) {
-      const orFilter = lookupNames.map((n) => `name.ilike.${n}`).join(",");
-      const { data: translations } = await supabase
-        .from("ingredient_translations")
-        .select("name, ingredient_id, ingredients(category)")
-        .eq("language", "pt")
-        .or(orFilter);
-      for (const row of translations ?? []) {
-        const cat = (row.ingredients as { category: string | null } | null)
-          ?.category;
-        if (cat) categoryByName.set(row.name.toLowerCase(), cat);
+      // Pass 1 — exact name match
+      const exactFilter = lookupNames.map((n) => `name.ilike.${n}`).join(",");
+      const { data: exactRows } = await supabase
+        .from("recipe_ingredients")
+        .select("name, category")
+        .or(exactFilter)
+        .not("category", "is", null);
+      for (const row of exactRows ?? []) {
+        if (row.name && row.category)
+          categoryByName.set(row.name.toLowerCase(), row.category);
+      }
+
+      // Pass 2 — token fallback for compound names not resolved above
+      const PT_STOP = new Set([
+        "com",
+        "sem",
+        "para",
+        "uma",
+        "uns",
+        "umas",
+        "dos",
+        "das",
+        "pelo",
+        "pela",
+        "que",
+        "não",
+        "por",
+        "ao",
+        "de",
+        "do",
+        "da",
+        "em",
+        "ou",
+        "num",
+        "numa",
+        "tipo",
+        "sabor",
+      ]);
+      const unresolved = lookupNames.filter(
+        (n) => !categoryByName.has(n.toLowerCase()),
+      );
+      if (unresolved.length > 0) {
+        const tokenSet = new Set<string>();
+        for (const name of unresolved) {
+          for (const token of name.toLowerCase().split(/\s+/)) {
+            if (token.length >= 4 && !PT_STOP.has(token)) tokenSet.add(token);
+          }
+        }
+        if (tokenSet.size > 0) {
+          const tokenFilter = [...tokenSet]
+            .map((t) => `name.ilike.${t}`)
+            .join(",");
+          const { data: tokenRows } = await supabase
+            .from("recipe_ingredients")
+            .select("name, category")
+            .or(tokenFilter)
+            .not("category", "is", null);
+          const catByToken = new Map<string, string>();
+          for (const row of tokenRows ?? []) {
+            if (
+              row.name &&
+              row.category &&
+              !catByToken.has(row.name.toLowerCase())
+            )
+              catByToken.set(row.name.toLowerCase(), row.category);
+          }
+          for (const name of unresolved) {
+            const tokens = name
+              .toLowerCase()
+              .split(/\s+/)
+              .filter((t) => t.length >= 4 && !PT_STOP.has(t));
+            for (const token of tokens) {
+              const cat = catByToken.get(token);
+              if (cat) {
+                categoryByName.set(name.toLowerCase(), cat);
+                break;
+              }
+            }
+          }
+        }
       }
     }
 
