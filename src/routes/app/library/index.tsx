@@ -10,6 +10,8 @@ import {
 } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 import { useMotion } from "../../../lib/use-reduced-motion";
+import { usePullToRefresh } from "../../../lib/use-pull-to-refresh";
+import { PullIndicator } from "../../../components/PullIndicator";
 import { FlyingThumb } from "../../../components/FlyingThumb";
 import { capture } from "../../../lib/analytics";
 import {
@@ -550,6 +552,7 @@ function RecipeCard({
         to="/app/library/$recipeId"
         params={{ recipeId: recipe.id }}
         search={(prev) => ({ ...prev, from: undefined, planItemId: undefined })}
+        viewTransition
         onClick={() =>
           capture("recipe_viewed", { recipeId: recipe.id, source: "library" })
         }
@@ -560,6 +563,7 @@ function RecipeCard({
           ref={thumbRef}
           animate={thumbControls}
           className="w-[96px] shrink-0 relative"
+          style={{ viewTransitionName: `recipe-thumb-${recipe.id}` }}
         >
           {recipe.image_thumb_url ? (
             <img
@@ -1285,6 +1289,10 @@ function LibraryPage() {
       localStorage.getItem("dietary_banner_dismissed") === "1",
   );
   const parentRef = useRef<HTMLDivElement>(null);
+  const { pullY, isRefreshing: isPtrRefreshing } = usePullToRefresh({
+    containerRef: parentRef,
+    onRefresh: () => queryClient.invalidateQueries({ queryKey: ["library"] }),
+  });
   const scrollSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasAnimatedRef = useRef(false);
   const [flyingThumb, setFlyingThumb] = useState<{
@@ -1685,6 +1693,7 @@ function LibraryPage() {
           className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-20"
           style={{ overscrollBehaviorY: "contain" }}
         >
+          <PullIndicator pullY={pullY} isRefreshing={isPtrRefreshing} />
           {/* Strip chips — memoized, unaffected by list re-renders */}
           {stripVisible && (
             <ChipStrip

@@ -101,6 +101,15 @@ body {
 /* View Transitions: recipe title shared element */
 .recipe-title-vt { view-transition-name: recipe-title; }
 
+/* View Transitions: suppress default root cross-fade so only the hero morphs */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+}
+
 /* "I Cooked This" bounce */
 @keyframes cooked-bounce {
   0%   { transform: scale(1); }
