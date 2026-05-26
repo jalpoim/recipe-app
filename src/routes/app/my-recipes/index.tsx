@@ -28,9 +28,9 @@ function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
       className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
     >
       <div className="flex items-start gap-3">
-        {recipe.image_thumb_url ? (
+        {(recipe.image_thumb_url ?? recipe.image_url) ? (
           <img
-            src={recipe.image_thumb_url}
+            src={(recipe.image_thumb_url ?? recipe.image_url)!}
             alt=""
             className="w-[60px] h-[60px] rounded-xl object-cover shrink-0"
             loading="lazy"

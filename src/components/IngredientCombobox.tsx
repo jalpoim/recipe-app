@@ -173,13 +173,15 @@ export function IngredientCombobox({
     staleTime: 30_000,
   });
 
-  // Auto-apply top suggestion's nutrition data when no explicit selection made
+  // Auto-apply top suggestion's nutrition data when no explicit selection made.
+  // Only fires when similarity >= 0.75 to avoid wrong macros from poor matches.
   useEffect(() => {
     const v = valueRef.current;
     if (v.ingredientId) return; // explicit selection already applied
     if (suggestions.length === 0) return;
     const top = suggestions[0];
     if (top.id === lastAutoMatchIdRef.current) return; // already applied this match
+    if ((top.similarity ?? 0) < 0.75) return; // not confident enough
     lastAutoMatchIdRef.current = top.id;
     onValueChangeRef.current({
       ...v,
@@ -203,6 +205,7 @@ export function IngredientCombobox({
   function handleSelect(ing: {
     id: string;
     name: string;
+    similarity?: number;
     default_unit: string | null;
     category: string | null;
     dietary_flags?: string[] | null;

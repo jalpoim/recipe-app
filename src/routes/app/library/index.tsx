@@ -529,7 +529,8 @@ function RecipeCard({
   const cal = perServing(recipe, "calories");
   const pro = perServing(recipe, "protein");
   const hasMacros = recipe.calories != null;
-  const thumbnailBg = recipe.image_thumb_url
+  const recipeThumbnail = recipe.image_thumb_url ?? recipe.image_url ?? null;
+  const thumbnailBg = recipeThumbnail
     ? undefined
     : (PROTEIN_COLORS[recipe.proteins[0]] ??
       "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
@@ -557,9 +558,9 @@ function RecipeCard({
           animate={thumbControls}
           className="w-[96px] shrink-0 relative"
         >
-          {recipe.image_thumb_url ? (
+          {recipeThumbnail ? (
             <img
-              src={recipe.image_thumb_url}
+              src={recipeThumbnail}
               alt=""
               width={96}
               height={136}
@@ -620,7 +621,7 @@ function RecipeCard({
             }
             const rect = thumbRef.current?.getBoundingClientRect();
             onAddToPlan({
-              src: recipe.image_thumb_url ?? null,
+              src: recipeThumbnail,
               background: thumbnailBg ?? null,
               rect: rect ?? new DOMRect(0, 0, 96, 136),
             });

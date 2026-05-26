@@ -629,9 +629,9 @@ function RecipeDetailPage() {
           {/* Hero image */}
           {!isCooking && (
             <div className="w-full aspect-[16/9] overflow-hidden">
-              {recipe.image_thumb_url ? (
+              {(recipe.image_thumb_url ?? recipe.image_url) ? (
                 <img
-                  src={recipe.image_thumb_url}
+                  src={(recipe.image_thumb_url ?? recipe.image_url)!}
                   alt={recipe.name}
                   width={640}
                   height={360}

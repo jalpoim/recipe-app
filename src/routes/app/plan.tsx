@@ -130,7 +130,9 @@ function PlanItemCard({
   const cal = Math.round(perServing(item.recipe, "calories") * scale);
   const pro = Math.round(perServing(item.recipe, "protein") * scale);
   const hasMacros = item.recipe.calories != null;
-  const thumbnailBg = item.recipe.image_thumb_url
+  const recipeThumbnail =
+    item.recipe.image_thumb_url ?? item.recipe.image_url ?? null;
+  const thumbnailBg = recipeThumbnail
     ? undefined
     : (PROTEIN_COLORS[item.recipe.proteins[0]] ??
       "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
@@ -147,9 +149,9 @@ function PlanItemCard({
       >
         {/* Left: thumbnail */}
         <div className="w-[96px] shrink-0 relative">
-          {item.recipe.image_thumb_url ? (
+          {recipeThumbnail ? (
             <img
-              src={item.recipe.image_thumb_url}
+              src={recipeThumbnail}
               alt=""
               width={96}
               height={136}

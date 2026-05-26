@@ -1,13 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { Recipe, RecipeIngredient, RecipeStep } from "../../types/db";
-import { getCookies } from "@tanstack/react-start/server";
-import { makeClient } from "./client-server";
-
-function getLang(): string {
-  const cookies = getCookies();
-  const lang = cookies["i18n_lang"] ?? "pt";
-  return ["pt", "en"].includes(lang) ? lang : "pt";
-}
+import { getLang, makeClient } from "./client-server";
 
 export type RecipeWithIngredients = Recipe & {
   recipe_ingredients: RecipeIngredient[];
@@ -52,7 +45,7 @@ export type FetchLibraryResult = {
 };
 
 const RECIPE_FIELDS =
-  "id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at";
+  "id, name, name_language, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, image_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at";
 
 const INGREDIENT_FIELDS =
   "id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
@@ -204,7 +197,34 @@ export const fetchLibrary = createServerFn({ method: "GET" })
     }
 
     // --- Server-side filters ---
-    if (q) query = query.ilike("name", `%${q}%`);
+    if (q) {
+      if (lang === "pt") {
+        // Base name column is always Portuguese — search it directly
+        query = query.ilike("name", `%${q}%`);
+      } else {
+        // Search the translation table for the active language, then OR with base name
+        // (covers recipes that may lack a translation row)
+        const { data: transMatches } = await supabase
+          .from("recipe_translations")
+          .select("recipe_id")
+          .eq("language", lang)
+          .ilike("name", `%${q}%`);
+        const transIds = (transMatches ?? []).map((t) => t.recipe_id);
+        if (transIds.length > 0) {
+          query = query.or(`name.ilike.%${q}%,id.in.(${transIds.join(",")})`);
+        } else {
+          query = query.ilike("name", `%${q}%`);
+        }
+      }
+    }
+    // Language filter: only for default discovery browsing (no search, no mode filter).
+    // Shows system recipes (name_language IS NULL) + recipes in the user's language.
+    // Skipped for search (user explicitly typed a name), and for mode filters like
+    // "mine" or "saved" where the user already scoped the set intentionally.
+    if (!q && activeModes.length === 0) {
+      query = query.or(`name_language.is.null,name_language.eq.${lang}`);
+    }
+
     if (proteins.length > 0) query = query.overlaps("proteins", proteins);
     if (tags.length > 0) query = query.contains("tags", tags);
     if (maxCal !== undefined) query = query.lte("calories", maxCal);
@@ -217,6 +237,48 @@ export const fetchLibrary = createServerFn({ method: "GET" })
         "ov",
         `{${excludedProteinSlugs.join(",")}}`,
       );
+
+    // --- Server-side ingredient filter ---
+    // Pre-fetch recipe IDs so the filter applies before LIMIT (cursor-safe).
+    // Searches PT names + raw_text on recipe_ingredients, and translations for non-PT users.
+    if (ingredients.length > 0) {
+      const idSets = await Promise.all(
+        ingredients.map(async (ing) => {
+          const matched = new Set<string>();
+
+          const { data: ptMatches } = await supabase
+            .from("recipe_ingredients")
+            .select("recipe_id")
+            .or(`name.ilike.%${ing}%,raw_text.ilike.%${ing}%`);
+          (ptMatches ?? []).forEach((r) => matched.add(r.recipe_id));
+
+          if (lang !== "pt") {
+            const { data: transMatches } = await supabase
+              .from("recipe_ingredient_translations")
+              .select("ingredient_id")
+              .ilike("name", `%${ing}%`)
+              .eq("language", lang);
+            if ((transMatches ?? []).length > 0) {
+              const riIds = transMatches!.map((t) => t.ingredient_id);
+              const { data: riMatches } = await supabase
+                .from("recipe_ingredients")
+                .select("recipe_id")
+                .in("id", riIds);
+              (riMatches ?? []).forEach((r) => matched.add(r.recipe_id));
+            }
+          }
+
+          return matched;
+        }),
+      );
+
+      // AND logic: recipe must match every ingredient term
+      const matchingIds = idSets.reduce(
+        (acc, set) => new Set([...acc].filter((x) => set.has(x))),
+      );
+      if (matchingIds.size === 0) return { data: [], nextCursor: null };
+      query = query.in("id", [...matchingIds]);
+    }
 
     // --- Cursor WHERE clause ---
     if (cursor) {
@@ -246,19 +308,6 @@ export const fetchLibrary = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     let recipes = (data ?? []) as unknown as RecipeWithIngredients[];
-
-    // --- Client-side ingredient filter (post-fetch, small set) ---
-    if (ingredients.length > 0) {
-      recipes = recipes.filter((r) =>
-        ingredients.every((ing) =>
-          r.recipe_ingredients.some((ri) =>
-            (ri.name ?? ri.raw_text ?? "")
-              .toLowerCase()
-              .includes(ing.toLowerCase()),
-          ),
-        ),
-      );
-    }
 
     // --- Translations ---
     if (lang !== "pt" && recipes.length > 0) {
