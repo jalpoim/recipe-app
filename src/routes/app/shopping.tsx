@@ -1030,6 +1030,24 @@ function ShoppingPage() {
           </div>
         ) : (
           <>
+            {/* Add custom item */}
+            <div className="mb-4">
+              {showAddForm ? (
+                <AddCustomItemForm
+                  onAdd={handleAddCustom}
+                  onClose={() => setShowAddForm(false)}
+                />
+              ) : (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                >
+                  <Plus size={16} aria-hidden="true" />
+                  {t("shopping.addExtra")}
+                </button>
+              )}
+            </div>
+
             {/* View toggle */}
             <div className="mb-4">
               <ViewToggle view={view} onChange={setView} />
@@ -1053,24 +1071,6 @@ function ShoppingPage() {
                 onRemoveCustom={handleRemoveCustom}
                 onCategoryChange={handleCategoryChange}
               />
-            </div>
-
-            {/* Add custom item */}
-            <div className="mt-4">
-              {showAddForm ? (
-                <AddCustomItemForm
-                  onAdd={handleAddCustom}
-                  onClose={() => setShowAddForm(false)}
-                />
-              ) : (
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-                >
-                  <Plus size={16} aria-hidden="true" />
-                  {t("shopping.addExtra")}
-                </button>
-              )}
             </div>
 
             {/* Bottom actions */}
