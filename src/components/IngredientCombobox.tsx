@@ -160,7 +160,19 @@ export function IngredientCombobox({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  function handleSelect(ing: { name: string; default_unit: string | null }) {
+  const SLUG_TO_PT: Record<string, string> = {
+    meat: "Talho/Peixaria",
+    produce: "Frutas/Legumes",
+    dairy: "Lacticínios",
+    grains: "Mercearia",
+    other: "Outros",
+  };
+
+  function handleSelect(ing: {
+    name: string;
+    default_unit: string | null;
+    category: string | null;
+  }) {
     const selectedUnit = ing.default_unit ?? "g";
     setText(ing.name);
     onValueChange({
@@ -168,6 +180,7 @@ export function IngredientCombobox({
       rawText: ing.name,
       name: ing.name,
       unit: ing.default_unit,
+      category: ing.category ? (SLUG_TO_PT[ing.category] ?? null) : null,
     });
     setUnit(selectedUnit);
     setOpen(false);
