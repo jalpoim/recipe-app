@@ -31,6 +31,14 @@ export const COUNT_UNIT_KEYS = [
   "sachet",
 ] as const;
 
+const SLUG_TO_PT: Record<string, string> = {
+  meat: "Talho/Peixaria",
+  produce: "Frutas/Legumes",
+  dairy: "Lacticínios",
+  grains: "Mercearia",
+  other: "Outros",
+};
+
 // ---------- useDebounce ----------
 
 export function useDebounce<T>(value: T, delay: number): T {
@@ -147,12 +155,40 @@ export function IngredientCombobox({
   const debouncedText = useDebounce(text, 250);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Latest-ref pattern: always current without becoming a dep
+  const onValueChangeRef = useRef(onValueChange);
+  onValueChangeRef.current = onValueChange;
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  // Track which suggestion ID has already been auto-applied
+  const lastAutoMatchIdRef = useRef<string | null>(null);
+
   const { data: suggestions = [] } = useQuery({
     queryKey: ["ingredientSearch", debouncedText],
     queryFn: () => searchIngredients({ data: debouncedText }),
     enabled: debouncedText.length >= 2,
     staleTime: 30_000,
   });
+
+  // Auto-apply top suggestion's nutrition data when no explicit selection made
+  useEffect(() => {
+    const v = valueRef.current;
+    if (v.ingredientId) return; // explicit selection already applied
+    if (suggestions.length === 0) return;
+    const top = suggestions[0];
+    if (top.id === lastAutoMatchIdRef.current) return; // already applied this match
+    lastAutoMatchIdRef.current = top.id;
+    onValueChangeRef.current({
+      ...v,
+      caloriesPer100g: top.calories_per_100g ?? null,
+      proteinPer100g: top.protein_per_100g ?? null,
+      carbsPer100g: top.carbs_per_100g ?? null,
+      fatPer100g: top.fat_per_100g ?? null,
+      category: top.category ? (SLUG_TO_PT[top.category] ?? null) : null,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestions]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -161,14 +197,6 @@ export function IngredientCombobox({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  const SLUG_TO_PT: Record<string, string> = {
-    meat: "Talho/Peixaria",
-    produce: "Frutas/Legumes",
-    dairy: "Lacticínios",
-    grains: "Mercearia",
-    other: "Outros",
-  };
 
   function handleSelect(ing: {
     id: string;
@@ -183,6 +211,7 @@ export function IngredientCombobox({
   }) {
     const selectedUnit = ing.default_unit ?? "g";
     setText(ing.name);
+    lastAutoMatchIdRef.current = ing.id; // mark as applied so effect doesn't re-apply
     onValueChange({
       ...value,
       rawText: ing.name,
@@ -202,7 +231,18 @@ export function IngredientCombobox({
 
   function handleTextChange(newText: string) {
     setText(newText);
-    onValueChange({ ...value, rawText: newText, name: null });
+    // Clear nutrition so it gets re-matched from next suggestions batch
+    lastAutoMatchIdRef.current = null;
+    onValueChange({
+      ...value,
+      rawText: newText,
+      name: null,
+      ingredientId: null,
+      caloriesPer100g: null,
+      proteinPer100g: null,
+      carbsPer100g: null,
+      fatPer100g: null,
+    });
     setOpen(newText.length >= 2);
   }
 
@@ -271,7 +311,7 @@ export function IngredientCombobox({
         </p>
       )}
       {open && suggestions.length > 0 && (
-        <div className="absolute bottom-full left-6 right-8 mb-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-y-auto max-h-48">
+        <div className="absolute top-full left-6 right-8 mt-1 z-30 bg-white rounded-xl border border-[#E5E7EB] shadow-lg overflow-y-auto max-h-48">
           {suggestions.map((s) => (
             <button
               key={s.id}
