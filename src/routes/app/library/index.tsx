@@ -1801,8 +1801,17 @@ function LibraryPage() {
       <SortSheet
         open={sortSheetOpen}
         onOpenChange={setSortSheetOpen}
-        current={search.sort}
-        onSelect={(s) => update({ sort: s })}
+        current={effectiveSort}
+        onSelect={(s) => {
+          update({ sort: s });
+          if (s === "popular") {
+            setStripChip("em-alta");
+            sessionStorage.setItem("library_strip_chip", "em-alta");
+          } else {
+            setStripChip(null);
+            sessionStorage.removeItem("library_strip_chip");
+          }
+        }}
       />
 
       <DietarySheet
