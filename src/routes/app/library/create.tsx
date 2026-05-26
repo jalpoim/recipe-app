@@ -3,7 +3,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -28,6 +28,7 @@ import { useToast } from "../../../components/Toast";
 import { ProteinPicker } from "../../../components/ProteinPicker";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
+import { deriveProteinsFromIngredients } from "../../../lib/proteins";
 
 export const Route = createFileRoute("/app/library/create")({
   component: CreateRecipePage,
@@ -156,6 +157,7 @@ function CreateRecipePage() {
   const [servings, setServings] = useState(1);
   const [timeMin, setTimeMin] = useState<string>("");
   const [selectedProteins, setSelectedProteins] = useState<string[]>([]);
+  const [proteinsManuallyEdited, setProteinsManuallyEdited] = useState(false);
   const [ingredients, setIngredients] = useState<IngredientRow[]>([
     {
       position: 0,
@@ -234,7 +236,7 @@ function CreateRecipePage() {
           name: name.trim(),
           servings,
           timeMin: timeMin ? parseInt(timeMin, 10) : null,
-          proteins: selectedProteins,
+          proteins: effectiveProteins,
           tags: selectedTags,
           calories: calories ? parseFloat(calories) : null,
           protein: protein ? parseFloat(protein) : null,
@@ -318,9 +320,12 @@ function CreateRecipePage() {
   }
 
   function toggleProtein(slug: string) {
-    setSelectedProteins((prev) =>
-      prev.includes(slug) ? prev.filter((p) => p !== slug) : [...prev, slug],
-    );
+    const base = proteinsManuallyEdited ? selectedProteins : derivedProteins;
+    const next = base.includes(slug)
+      ? base.filter((p) => p !== slug)
+      : [...base, slug];
+    setSelectedProteins(next);
+    setProteinsManuallyEdited(true);
   }
 
   function toggleTag(tag: string) {
@@ -328,6 +333,14 @@ function CreateRecipePage() {
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   }
+
+  const derivedProteins = useMemo(
+    () => deriveProteinsFromIngredients(ingredients),
+    [ingredients],
+  );
+  const effectiveProteins = proteinsManuallyEdited
+    ? selectedProteins
+    : derivedProteins;
 
   const systemTagSlugs = TAG_SECTIONS_CREATE.flatMap((s) => s.tags);
 
@@ -422,13 +435,15 @@ function CreateRecipePage() {
             {t("create.proteinsLabel")}
           </p>
           <ProteinPicker
-            selected={selectedProteins}
+            selected={effectiveProteins}
             onToggle={toggleProtein}
             userProteins={userProteins}
-            onAddCustom={(displayName) =>
-              addCustomProteinMutation.mutate(displayName)
-            }
+            onAddCustom={(displayName) => {
+              addCustomProteinMutation.mutate(displayName);
+              setProteinsManuallyEdited(true);
+            }}
             onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
+            autoDetected={!proteinsManuallyEdited ? derivedProteins : undefined}
           />
         </div>
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import {
   ArrowLeft,
   ChevronDown,
@@ -23,6 +23,7 @@ import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import { useToast } from "../../../components/Toast";
 import { ProteinPicker } from "../../../components/ProteinPicker";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
+import { deriveProteinsFromIngredients } from "../../../lib/proteins";
 import type { RecipeIngredient, RecipeStep } from "../../../types/db";
 
 export const Route = createFileRoute("/app/library/$recipeId_/edit")({
@@ -267,6 +268,11 @@ function EditRecipePage() {
     return Object.keys(errs).length === 0;
   }
 
+  const derivedProteins = useMemo(
+    () => deriveProteinsFromIngredients(ingredients),
+    [ingredients],
+  );
+
   function addIngredient() {
     const newKey = keyCounter.current++;
     setIngredientKeys((prev) => [...prev, newKey]);
@@ -419,6 +425,7 @@ function EditRecipePage() {
               addCustomProteinMutation.mutate(displayName)
             }
             onDeleteUserProtein={(id) => deleteCustomProteinMutation.mutate(id)}
+            autoDetected={derivedProteins}
           />
         </div>
 

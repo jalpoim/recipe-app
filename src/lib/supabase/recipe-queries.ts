@@ -15,6 +15,7 @@ export type IngredientRow = {
   isOptional: boolean;
   ingredientId?: string | null;
   category?: string | null;
+  dietaryFlags?: string[] | null;
 };
 
 export type StepRow = {
@@ -228,7 +229,7 @@ export const searchIngredients = createServerFn({ method: "GET" })
     const [metaResult, translationsResult] = await Promise.all([
       supabase
         .from("ingredients")
-        .select("id, default_unit, category")
+        .select("id, default_unit, category, dietary_flags")
         .in("id", ids),
       supabase
         .from("ingredient_translations")
@@ -249,6 +250,7 @@ export const searchIngredients = createServerFn({ method: "GET" })
         name: ptNameById.get(r.id) ?? r.name,
         default_unit: meta?.default_unit ?? null,
         category: meta?.category ?? null,
+        dietary_flags: meta?.dietary_flags ?? null,
       };
     });
   });

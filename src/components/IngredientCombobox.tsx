@@ -173,6 +173,7 @@ export function IngredientCombobox({
     name: string;
     default_unit: string | null;
     category: string | null;
+    dietary_flags?: string[] | null;
   }) {
     const selectedUnit = ing.default_unit ?? "g";
     setText(ing.name);
@@ -183,6 +184,7 @@ export function IngredientCombobox({
       unit: ing.default_unit,
       ingredientId: ing.id,
       category: ing.category ? (SLUG_TO_PT[ing.category] ?? null) : null,
+      dietaryFlags: ing.dietary_flags ?? null,
     });
     setUnit(selectedUnit);
     setOpen(false);

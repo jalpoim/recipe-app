@@ -1,81 +1,88 @@
-import { createServerFn } from '@tanstack/react-start'
-import type { Recipe, RecipeIngredient, RecipeStep } from '../../types/db'
-import { getCookies } from '@tanstack/react-start/server'
-import { makeClient } from './client-server'
+import { createServerFn } from "@tanstack/react-start";
+import type { Recipe, RecipeIngredient, RecipeStep } from "../../types/db";
+import { getCookies } from "@tanstack/react-start/server";
+import { makeClient } from "./client-server";
 
 function getLang(): string {
-  const cookies = getCookies()
-  const lang = cookies['i18n_lang'] ?? 'pt'
-  return ['pt', 'en'].includes(lang) ? lang : 'pt'
+  const cookies = getCookies();
+  const lang = cookies["i18n_lang"] ?? "pt";
+  return ["pt", "en"].includes(lang) ? lang : "pt";
 }
 
 export type RecipeWithIngredients = Recipe & {
-  recipe_ingredients: RecipeIngredient[]
-}
+  recipe_ingredients: RecipeIngredient[];
+};
 
 export type RecipeDetail = Recipe & {
-  recipe_ingredients: RecipeIngredient[]
-  recipe_steps: RecipeStep[]
-  author_display_name: string | null
-  author_username: string | null
-}
+  recipe_ingredients: RecipeIngredient[];
+  recipe_steps: RecipeStep[];
+  author_display_name: string | null;
+  author_username: string | null;
+};
 
-export type Sort = 'pcal' | 'protein' | 'calories' | 'time' | 'popular' | 'cooked'
-export type LibraryMode = 'all' | 'mine' | 'saved' | 'curated'
+export type Sort =
+  | "pcal"
+  | "protein"
+  | "calories"
+  | "time"
+  | "popular"
+  | "cooked";
+export type LibraryMode = "all" | "mine" | "saved" | "curated";
 
-export type LibraryCursor = { value: number | null; id: string }
+export type LibraryCursor = { value: number | null; id: string };
 
 export type FetchLibraryInput = {
-  limit: number
-  cursor: LibraryCursor | null
-  sort: Sort
-  modes: LibraryMode[]
-  proteins: string[]
-  maxCal: number | undefined
-  maxTime: number | undefined
-  tags: string[]
-  ingredients: string[]
-  q: string
-  excludedFlags?: string[]
-  excludedIngredientIds?: string[]
-}
+  limit: number;
+  cursor: LibraryCursor | null;
+  sort: Sort;
+  modes: LibraryMode[];
+  proteins: string[];
+  maxCal: number | undefined;
+  maxTime: number | undefined;
+  tags: string[];
+  ingredients: string[];
+  q: string;
+  excludedFlags?: string[];
+  excludedIngredientIds?: string[];
+};
 
 export type FetchLibraryResult = {
-  data: RecipeWithIngredients[]
-  nextCursor: LibraryCursor | null
-}
+  data: RecipeWithIngredients[];
+  nextCursor: LibraryCursor | null;
+};
 
 const RECIPE_FIELDS =
-  'id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at'
+  "id, name, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at";
 
-const INGREDIENT_FIELDS = 'id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label'
+const INGREDIENT_FIELDS =
+  "id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
 
 // Maps dietary exclusion flags → protein slugs on the recipes.proteins column.
 // This is the primary exclusion mechanism because recipe_ingredients.ingredient_id
 // is only populated for user-uploaded recipes, not system recipes.
 const FLAG_TO_PROTEIN_SLUGS: Record<string, string[]> = {
-  meat:      ['beef', 'pork', 'lamb'],
-  poultry:   ['chicken', 'turkey'],
-  fish:      ['tuna', 'cod', 'salmon', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus'],
-  shellfish: ['shrimp'],
-  dairy:     ['whey'],
-  egg:       ['eggs'],
-  honey:     [],
-}
+  meat: ["beef", "pork", "lamb", "veal"],
+  poultry: ["chicken", "turkey", "duck"],
+  fish: ["tuna", "salmon", "fish"],
+  shellfish: ["seafood"],
+  dairy: ["whey"],
+  egg: ["eggs"],
+  honey: [],
+};
 
 // UI stores 'nuts'; DB dietary_flags uses 'tree_nut' and 'peanut'
 const FLAG_ALIASES: Record<string, string[]> = {
-  nuts: ['tree_nut', 'peanut'],
-}
+  nuts: ["tree_nut", "peanut"],
+};
 
 const SORT_COL: Record<Sort, string> = {
-  pcal: 'pcal_ratio',
-  protein: 'protein',
-  calories: 'calories',
-  time: 'time_min',
-  popular: 'popularity_score',
-  cooked: 'cook_count',
-}
+  pcal: "pcal_ratio",
+  protein: "protein",
+  calories: "calories",
+  time: "time_min",
+  popular: "popularity_score",
+  cooked: "cook_count",
+};
 
 // true = ascending, false = descending
 const SORT_ASC: Record<Sort, boolean> = {
@@ -85,273 +92,340 @@ const SORT_ASC: Record<Sort, boolean> = {
   time: true,
   popular: false,
   cooked: false,
-}
+};
 
-export const fetchLibrary = createServerFn({ method: 'GET' })
+export const fetchLibrary = createServerFn({ method: "GET" })
   .inputValidator((input: FetchLibraryInput) => input)
   .handler(async ({ data: input }): Promise<FetchLibraryResult> => {
-    const supabase = makeClient()
-    const lang = getLang()
+    const supabase = makeClient();
+    const lang = getLang();
 
-    const { limit, cursor, sort, modes = [], proteins, maxCal, maxTime, tags, ingredients, q, excludedFlags = [], excludedIngredientIds = [] } = input
-    const sortCol = SORT_COL[sort]
-    const ascending = SORT_ASC[sort]
+    const {
+      limit,
+      cursor,
+      sort,
+      modes = [],
+      proteins,
+      maxCal,
+      maxTime,
+      tags,
+      ingredients,
+      q,
+      excludedFlags = [],
+      excludedIngredientIds = [],
+    } = input;
+    const sortCol = SORT_COL[sort];
+    const ascending = SORT_ASC[sort];
 
     // Filter out 'all' token — empty array means show everything
-    const activeModes = modes.filter((m) => m !== 'all')
+    const activeModes = modes.filter((m) => m !== "all");
 
     // Expand flag aliases (e.g. 'nuts' → ['tree_nut', 'peanut'])
-    const expandedFlags = [...new Set(
-      excludedFlags.flatMap(f => FLAG_ALIASES[f] ? FLAG_ALIASES[f] : [f])
-    )]
+    const expandedFlags = [
+      ...new Set(
+        excludedFlags.flatMap((f) => (FLAG_ALIASES[f] ? FLAG_ALIASES[f] : [f])),
+      ),
+    ];
 
     // --- Primary exclusion: proteins array (covers all system recipes) ---
-    const excludedProteinSlugs = [...new Set(
-      expandedFlags.flatMap(f => FLAG_TO_PROTEIN_SLUGS[f] ?? [])
-    )]
+    const excludedProteinSlugs = [
+      ...new Set(expandedFlags.flatMap((f) => FLAG_TO_PROTEIN_SLUGS[f] ?? [])),
+    ];
 
     // --- Secondary exclusion: ingredient_id join (covers user-uploaded recipes) ---
     // recipe_ingredients.ingredient_id is only populated for ~44% of rows (user recipes).
     // System recipes have ingredient_id = null, so this path only supplements the above.
-    let excludedRecipeIds: string[] = []
+    let excludedRecipeIds: string[] = [];
     if (expandedFlags.length > 0 || excludedIngredientIds.length > 0) {
-      let flaggedIngIds: string[] = []
+      let flaggedIngIds: string[] = [];
       if (expandedFlags.length > 0) {
         const { data: flaggedIngs } = await supabase
-          .from('ingredients')
-          .select('id')
-          .overlaps('dietary_flags', expandedFlags)
-        flaggedIngIds = (flaggedIngs ?? []).map(i => i.id)
+          .from("ingredients")
+          .select("id")
+          .overlaps("dietary_flags", expandedFlags);
+        flaggedIngIds = (flaggedIngs ?? []).map((i) => i.id);
       }
-      const allExcludedIngIds = [...new Set([...flaggedIngIds, ...excludedIngredientIds])]
+      const allExcludedIngIds = [
+        ...new Set([...flaggedIngIds, ...excludedIngredientIds]),
+      ];
       if (allExcludedIngIds.length > 0) {
         const { data: excludedRis } = await supabase
-          .from('recipe_ingredients')
-          .select('recipe_id')
-          .in('ingredient_id', allExcludedIngIds)
-        excludedRecipeIds = [...new Set((excludedRis ?? []).map(r => r.recipe_id))]
+          .from("recipe_ingredients")
+          .select("recipe_id")
+          .in("ingredient_id", allExcludedIngIds);
+        excludedRecipeIds = [
+          ...new Set((excludedRis ?? []).map((r) => r.recipe_id)),
+        ];
       }
     }
 
     // Get session for mode-specific filters
-    let userId: string | null = null
-    let savedIds: string[] = []
-    if (activeModes.includes('mine') || activeModes.includes('saved')) {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Not authenticated')
-      userId = session.user.id
-      if (activeModes.includes('saved')) {
+    let userId: string | null = null;
+    let savedIds: string[] = [];
+    if (activeModes.includes("mine") || activeModes.includes("saved")) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+      userId = session.user.id;
+      if (activeModes.includes("saved")) {
         const { data: savedRows } = await supabase
-          .from('user_recipe_interactions')
-          .select('recipe_id')
-          .eq('user_id', userId)
-          .eq('type', 'save')
-        savedIds = (savedRows ?? []).map((r) => r.recipe_id)
+          .from("user_recipe_interactions")
+          .select("recipe_id")
+          .eq("user_id", userId)
+          .eq("type", "save");
+        savedIds = (savedRows ?? []).map((r) => r.recipe_id);
       }
     }
 
     let query = supabase
-      .from('recipes')
+      .from("recipes")
       .select(`${RECIPE_FIELDS}, recipe_ingredients(${INGREDIENT_FIELDS})`)
-      .is('deleted_at', null)
+      .is("deleted_at", null)
       // Hide user-uploaded images awaiting or failing moderation — system recipes (owner_id IS NULL) are always visible
-      .or('owner_id.is.null,moderation_status.is.null,moderation_status.eq.approved')
+      .or(
+        "owner_id.is.null,moderation_status.is.null,moderation_status.eq.approved",
+      );
 
     // --- Mode filters (OR logic across selected modes) ---
     if (activeModes.length > 0) {
-      const orParts: string[] = []
-      if (activeModes.includes('mine') && userId) {
-        orParts.push(`owner_id.eq.${userId}`)
+      const orParts: string[] = [];
+      if (activeModes.includes("mine") && userId) {
+        orParts.push(`owner_id.eq.${userId}`);
       }
-      if (activeModes.includes('saved') && savedIds.length > 0) {
-        orParts.push(`id.in.(${savedIds.join(',')})`)
+      if (activeModes.includes("saved") && savedIds.length > 0) {
+        orParts.push(`id.in.(${savedIds.join(",")})`);
       }
-      if (activeModes.includes('curated')) {
-        orParts.push('owner_id.is.null')
+      if (activeModes.includes("curated")) {
+        orParts.push("owner_id.is.null");
       }
-      if (orParts.length === 0) return { data: [], nextCursor: null }
-      query = query.or(orParts.join(','))
+      if (orParts.length === 0) return { data: [], nextCursor: null };
+      query = query.or(orParts.join(","));
     }
 
     // --- Server-side filters ---
-    if (q) query = query.ilike('name', `%${q}%`)
-    if (proteins.length > 0) query = query.overlaps('proteins', proteins)
-    if (tags.length > 0) query = query.contains('tags', tags)
-    if (maxCal !== undefined) query = query.lte('calories', maxCal)
-    if (maxTime !== undefined) query = query.lte('time_min', maxTime)
-    if (excludedRecipeIds.length > 0) query = query.not('id', 'in', `(${excludedRecipeIds.join(',')})`)
-    if (excludedProteinSlugs.length > 0) query = query.not('proteins', 'ov', `{${excludedProteinSlugs.join(',')}}`)
+    if (q) query = query.ilike("name", `%${q}%`);
+    if (proteins.length > 0) query = query.overlaps("proteins", proteins);
+    if (tags.length > 0) query = query.contains("tags", tags);
+    if (maxCal !== undefined) query = query.lte("calories", maxCal);
+    if (maxTime !== undefined) query = query.lte("time_min", maxTime);
+    if (excludedRecipeIds.length > 0)
+      query = query.not("id", "in", `(${excludedRecipeIds.join(",")})`);
+    if (excludedProteinSlugs.length > 0)
+      query = query.not(
+        "proteins",
+        "ov",
+        `{${excludedProteinSlugs.join(",")}}`,
+      );
 
     // --- Cursor WHERE clause ---
     if (cursor) {
       if (cursor.value === null) {
         // We're in the null section — sort field is null, paginate by id only
-        query = query.is(sortCol, null).gt('id', cursor.id)
+        query = query.is(sortCol, null).gt("id", cursor.id);
       } else if (ascending) {
         // ASC: next page = (col > val) OR (col = val AND id > lastId)
         query = query.or(
           `${sortCol}.gt.${cursor.value},and(${sortCol}.eq.${cursor.value},id.gt.${cursor.id})`,
-        )
+        );
       } else {
         // DESC: next page = (col < val) OR (col = val AND id > lastId)
         query = query.or(
           `${sortCol}.lt.${cursor.value},and(${sortCol}.eq.${cursor.value},id.gt.${cursor.id})`,
-        )
+        );
       }
     }
 
     // --- Order + limit ---
     query = query
       .order(sortCol, { ascending, nullsFirst: false })
-      .order('id', { ascending: true })
-      .limit(limit)
+      .order("id", { ascending: true })
+      .limit(limit);
 
-    const { data, error } = await query
-    if (error) throw new Error(error.message)
+    const { data, error } = await query;
+    if (error) throw new Error(error.message);
 
-    let recipes = (data ?? []) as unknown as RecipeWithIngredients[]
+    let recipes = (data ?? []) as unknown as RecipeWithIngredients[];
 
     // --- Client-side ingredient filter (post-fetch, small set) ---
     if (ingredients.length > 0) {
       recipes = recipes.filter((r) =>
         ingredients.every((ing) =>
           r.recipe_ingredients.some((ri) =>
-            (ri.name ?? ri.raw_text ?? '').toLowerCase().includes(ing.toLowerCase()),
+            (ri.name ?? ri.raw_text ?? "")
+              .toLowerCase()
+              .includes(ing.toLowerCase()),
           ),
         ),
-      )
+      );
     }
 
     // --- Translations ---
-    if (lang !== 'pt' && recipes.length > 0) {
-      const recipeIds = recipes.map((r) => r.id)
-      const ingIds = recipes.flatMap((r) => r.recipe_ingredients.map((i) => i.id))
+    if (lang !== "pt" && recipes.length > 0) {
+      const recipeIds = recipes.map((r) => r.id);
+      const ingIds = recipes.flatMap((r) =>
+        r.recipe_ingredients.map((i) => i.id),
+      );
 
       const [recipeTransResult, ingTransResult] = await Promise.all([
         supabase
-          .from('recipe_translations')
-          .select('recipe_id, name')
-          .in('recipe_id', recipeIds)
-          .eq('language', lang),
+          .from("recipe_translations")
+          .select("recipe_id, name")
+          .in("recipe_id", recipeIds)
+          .eq("language", lang),
         supabase
-          .from('recipe_ingredient_translations')
-          .select('ingredient_id, name, unit, raw_text')
-          .in('ingredient_id', ingIds)
-          .eq('language', lang),
-      ])
+          .from("recipe_ingredient_translations")
+          .select("ingredient_id, name, unit, raw_text")
+          .in("ingredient_id", ingIds)
+          .eq("language", lang),
+      ]);
 
       const recipeTransMap = new Map(
         recipeTransResult.data?.map((t) => [t.recipe_id, t.name]) ?? [],
-      )
-      const ingTransMap = new Map(ingTransResult.data?.map((t) => [t.ingredient_id, t]) ?? [])
+      );
+      const ingTransMap = new Map(
+        ingTransResult.data?.map((t) => [t.ingredient_id, t]) ?? [],
+      );
 
       recipes = recipes.map((r) => ({
         ...r,
         name: recipeTransMap.get(r.id) ?? r.name,
         recipe_ingredients: r.recipe_ingredients.map((ing) => {
-          const t = ingTransMap.get(ing.id)
-          return t ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text } : ing
+          const t = ingTransMap.get(ing.id);
+          return t
+            ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text }
+            : ing;
         }),
-      })) as RecipeWithIngredients[]
+      })) as RecipeWithIngredients[];
     }
 
     // --- Next cursor ---
-    const last = recipes[recipes.length - 1]
+    const last = recipes[recipes.length - 1];
     const nextCursor: LibraryCursor | null =
       recipes.length < limit
         ? null
         : {
-            value: last ? ((last as unknown as Record<string, number | null>)[sortCol] ?? null) : null,
-            id: last?.id ?? '',
-          }
+            value: last
+              ? ((last as unknown as Record<string, number | null>)[sortCol] ??
+                null)
+              : null,
+            id: last?.id ?? "",
+          };
 
-    return { data: recipes, nextCursor }
-  })
+    return { data: recipes, nextCursor };
+  });
 
 // GET: distinct proteins, tags, ingredient names — language-aware
-export const fetchLibraryMeta = createServerFn({ method: 'GET' })
+export const fetchLibraryMeta = createServerFn({ method: "GET" })
   .inputValidator((input: { lang?: string }) => input)
-  .handler(async ({ data: input }): Promise<{ proteins: string[]; tags: string[]; ingredients: string[] }> => {
-    const supabase = makeClient()
-    const lang = input?.lang ?? getLang()
-    const { data, error } = await supabase.rpc('get_library_meta', { lang } as never)
-    if (error) throw new Error(error.message)
-    return data as { proteins: string[]; tags: string[]; ingredients: string[] }
-  })
+  .handler(
+    async ({
+      data: input,
+    }): Promise<{
+      proteins: string[];
+      tags: string[];
+      ingredients: string[];
+    }> => {
+      const supabase = makeClient();
+      const lang = input?.lang ?? getLang();
+      const { data, error } = await supabase.rpc("get_library_meta", {
+        lang,
+      } as never);
+      if (error) throw new Error(error.message);
+      return data as {
+        proteins: string[];
+        tags: string[];
+        ingredients: string[];
+      };
+    },
+  );
 
-export const fetchRecipeById = createServerFn({ method: 'GET' })
+export const fetchRecipeById = createServerFn({ method: "GET" })
   .inputValidator((id: string) => id)
   .handler(async ({ data: id }) => {
-    const supabase = makeClient()
-    const lang = getLang()
+    const supabase = makeClient();
+    const lang = getLang();
 
     const { data, error } = await supabase
-      .from('recipes')
-      .select('*, recipe_ingredients(*), recipe_steps(*)')
-      .eq('id', id)
-      .single()
-    if (error) throw new Error(error.message)
+      .from("recipes")
+      .select("*, recipe_ingredients(*), recipe_steps(*)")
+      .eq("id", id)
+      .single();
+    if (error) throw new Error(error.message);
 
-    const recipe = data as unknown as RecipeDetail
-    recipe.recipe_ingredients.sort((a, b) => a.position - b.position)
-    recipe.recipe_steps.sort((a, b) => a.position - b.position)
+    const recipe = data as unknown as RecipeDetail;
+    recipe.recipe_ingredients.sort((a, b) => a.position - b.position);
+    recipe.recipe_steps.sort((a, b) => a.position - b.position);
 
     // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id)
     if (recipe.owner_id) {
       const { data: profile } = await supabase
-        .from('profiles')
-        .select('display_name, username')
-        .eq('user_id', recipe.owner_id)
-        .maybeSingle()
-      recipe.author_display_name = profile?.display_name ?? null
-      recipe.author_username = profile?.username ?? null
+        .from("profiles")
+        .select("display_name, username")
+        .eq("user_id", recipe.owner_id)
+        .maybeSingle();
+      recipe.author_display_name = profile?.display_name ?? null;
+      recipe.author_username = profile?.username ?? null;
     } else {
-      recipe.author_display_name = null
-      recipe.author_username = null
+      recipe.author_display_name = null;
+      recipe.author_username = null;
     }
 
-    if (lang === 'pt') return recipe
+    if (lang === "pt") return recipe;
 
     // Fetch translations in parallel
-    const ingIds = recipe.recipe_ingredients.map((i) => i.id)
-    const stepIds = recipe.recipe_steps.map((s) => s.id)
+    const ingIds = recipe.recipe_ingredients.map((i) => i.id);
+    const stepIds = recipe.recipe_steps.map((s) => s.id);
 
-    const [recipeTransResult, ingTransResult, stepTransResult] = await Promise.all([
-      supabase
-        .from('recipe_translations')
-        .select('name')
-        .eq('recipe_id', id)
-        .eq('language', lang)
-        .maybeSingle(),
-      supabase
-        .from('recipe_ingredient_translations')
-        .select('ingredient_id, name, unit, raw_text, section_label')
-        .in('ingredient_id', ingIds)
-        .eq('language', lang),
-      supabase
-        .from('recipe_step_translations')
-        .select('step_id, text')
-        .in('step_id', stepIds)
-        .eq('language', lang),
-    ])
+    const [recipeTransResult, ingTransResult, stepTransResult] =
+      await Promise.all([
+        supabase
+          .from("recipe_translations")
+          .select("name")
+          .eq("recipe_id", id)
+          .eq("language", lang)
+          .maybeSingle(),
+        supabase
+          .from("recipe_ingredient_translations")
+          .select("ingredient_id, name, unit, raw_text, section_label")
+          .in("ingredient_id", ingIds)
+          .eq("language", lang),
+        supabase
+          .from("recipe_step_translations")
+          .select("step_id, text")
+          .in("step_id", stepIds)
+          .eq("language", lang),
+      ]);
 
-    const recipeTrans = recipeTransResult.data
-    const ingTrans = ingTransResult.data
-    const stepTrans = stepTransResult.data
+    const recipeTrans = recipeTransResult.data;
+    const ingTrans = ingTransResult.data;
+    const stepTrans = stepTransResult.data;
 
-    const ingTransMap = new Map(ingTrans?.map((t) => [t.ingredient_id, t]) ?? [])
-    const stepTransMap = new Map(stepTrans?.map((t) => [t.step_id, t.text]) ?? [])
+    const ingTransMap = new Map(
+      ingTrans?.map((t) => [t.ingredient_id, t]) ?? [],
+    );
+    const stepTransMap = new Map(
+      stepTrans?.map((t) => [t.step_id, t.text]) ?? [],
+    );
 
     return {
       ...recipe,
       name: recipeTrans?.name ?? recipe.name,
       recipe_ingredients: recipe.recipe_ingredients.map((ing) => {
-        const t = ingTransMap.get(ing.id)
-        return t ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text, section_label: t.section_label ?? ing.section_label } : ing
+        const t = ingTransMap.get(ing.id);
+        return t
+          ? {
+              ...ing,
+              name: t.name,
+              unit: t.unit,
+              raw_text: t.raw_text,
+              section_label: t.section_label ?? ing.section_label,
+            }
+          : ing;
       }),
       recipe_steps: recipe.recipe_steps.map((step) => ({
         ...step,
         text: stepTransMap.get(step.id) ?? step.text,
       })),
-    } as RecipeDetail
-  })
+    } as RecipeDetail;
+  });

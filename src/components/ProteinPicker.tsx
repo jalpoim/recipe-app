@@ -1,11 +1,28 @@
-import { useState } from 'react'
-import { Plus, X } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import type { UserProtein } from '../types/db'
+import { useState } from "react";
+import { Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import type { UserProtein } from "../types/db";
 
-export const PROTEIN_TIER1 = ['chicken', 'beef', 'pork', 'salmon', 'tuna', 'cod', 'eggs', 'shrimp']
-export const PROTEIN_TIER2 = ['turkey', 'lamb', 'sardine', 'hake', 'sea-bream', 'sea-bass', 'mackerel', 'octopus', 'tofu', 'legumes', 'whey']
-export const ALL_PROTEIN_SLUGS = [...PROTEIN_TIER1, ...PROTEIN_TIER2]
+export const PROTEIN_TIER1 = [
+  "chicken",
+  "beef",
+  "pork",
+  "salmon",
+  "tuna",
+  "fish",
+  "eggs",
+  "seafood",
+];
+export const PROTEIN_TIER2 = [
+  "turkey",
+  "duck",
+  "veal",
+  "lamb",
+  "tofu",
+  "legumes",
+  "whey",
+];
+export const ALL_PROTEIN_SLUGS = [...PROTEIN_TIER1, ...PROTEIN_TIER2];
 
 export function ProteinPicker({
   selected,
@@ -13,26 +30,30 @@ export function ProteinPicker({
   userProteins,
   onAddCustom,
   onDeleteUserProtein,
+  autoDetected,
 }: {
-  selected: string[]
-  onToggle: (slug: string) => void
-  userProteins: UserProtein[]
-  onAddCustom: (displayName: string) => void
-  onDeleteUserProtein: (id: string) => void
+  selected: string[];
+  onToggle: (slug: string) => void;
+  userProteins: UserProtein[];
+  onAddCustom: (displayName: string) => void;
+  onDeleteUserProtein: (id: string) => void;
+  autoDetected?: string[];
 }) {
-  const { t } = useTranslation()
-  const [expanded, setExpanded] = useState(false)
-  const [customInput, setCustomInput] = useState('')
-  const chipBase = 'text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none'
-  const chipActive = 'bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]'
-  const chipInactive = 'bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]'
-  const visible = expanded ? ALL_PROTEIN_SLUGS : PROTEIN_TIER1
-  const canAdd = customInput.trim().length > 0
+  const { t } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const chipBase =
+    "text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none";
+  const chipActive = "bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]";
+  const chipInactive =
+    "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A]";
+  const visible = expanded ? ALL_PROTEIN_SLUGS : PROTEIN_TIER1;
+  const canAdd = customInput.trim().length > 0;
 
   function handleAddCustom() {
-    if (!customInput.trim()) return
-    onAddCustom(customInput.trim())
-    setCustomInput('')
+    if (!customInput.trim()) return;
+    onAddCustom(customInput.trim());
+    setCustomInput("");
   }
 
   return (
@@ -50,18 +71,24 @@ export function ProteinPicker({
           </button>
         ))}
       </div>
+      {autoDetected && autoDetected.length > 0 && (
+        <p className="text-xs text-[#9CA3AF]">
+          {t("create.autoDetected")}:{" "}
+          {autoDetected.map((s) => t(`proteins.${s}`, s)).join(" · ")}
+        </p>
+      )}
       <button
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((e) => !e)}
         className="text-xs text-[#F4623A] font-medium focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
       >
-        {expanded ? t('tagSections.verMenos') : t('tagSections.verMais')}
+        {expanded ? t("tagSections.verMenos") : t("tagSections.verMais")}
       </button>
       {userProteins.length > 0 && (
         <div>
           <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-            {t('create.myProteins', 'Os meus')}
+            {t("create.myProteins", "Os meus")}
           </p>
           <div className="flex flex-wrap gap-2">
             {userProteins.map((p) => (
@@ -95,8 +122,13 @@ export function ProteinPicker({
           type="text"
           value={customInput}
           onChange={(e) => setCustomInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustom() } }}
-          placeholder={t('create.addProteinPlaceholder', 'Adicionar proteína…')}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleAddCustom();
+            }
+          }}
+          placeholder={t("create.addProteinPlaceholder", "Adicionar proteína…")}
           className="flex-1 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-2 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors"
         />
         <button
@@ -109,5 +141,5 @@ export function ProteinPicker({
         </button>
       </div>
     </div>
-  )
+  );
 }
