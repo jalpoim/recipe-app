@@ -129,8 +129,40 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
     if (recipeErr) throw new Error(recipeErr.message);
     if (ingErr) throw new Error(ingErr.message);
 
+    // For ingredients with no category, look up by name in ingredient_translations
+    const uncategorised = (ingredients ?? []).filter((i) => !i.category);
+    const lookupNames = [
+      ...new Set(
+        uncategorised
+          .map((i) => (i.name ?? i.raw_text ?? "").trim())
+          .filter((n) => n.length > 0),
+      ),
+    ];
+
+    const categoryByName = new Map<string, string>();
+    if (lookupNames.length > 0) {
+      const orFilter = lookupNames.map((n) => `name.ilike.${n}`).join(",");
+      const { data: translations } = await supabase
+        .from("ingredient_translations")
+        .select("name, ingredient_id, ingredients(category)")
+        .eq("language", "pt")
+        .or(orFilter);
+      for (const row of translations ?? []) {
+        const cat = (row.ingredients as { category: string | null } | null)
+          ?.category;
+        if (cat) categoryByName.set(row.name.toLowerCase(), cat);
+      }
+    }
+
+    const patchedIngredients = (ingredients ?? []).map((ing) => {
+      if (ing.category) return ing;
+      const lookupName = (ing.name ?? ing.raw_text ?? "").trim().toLowerCase();
+      const resolved = categoryByName.get(lookupName) ?? null;
+      return resolved ? { ...ing, category: resolved } : ing;
+    });
+
     const ingByRecipe = new Map<string, RecipeIngredient[]>();
-    for (const ing of ingredients ?? []) {
+    for (const ing of patchedIngredients) {
       const list = ingByRecipe.get(ing.recipe_id) ?? [];
       list.push(ing as RecipeIngredient);
       ingByRecipe.set(ing.recipe_id, list);
@@ -319,17 +351,15 @@ export const upsertUserRecipePreference = createServerFn({ method: "POST" })
       data: { session },
     } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
-    const { error } = await supabase
-      .from("user_recipe_preferences")
-      .upsert(
-        {
-          user_id: session.user.id,
-          recipe_id: data.recipeId,
-          preferred_servings: data.servings,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id,recipe_id" },
-      );
+    const { error } = await supabase.from("user_recipe_preferences").upsert(
+      {
+        user_id: session.user.id,
+        recipe_id: data.recipeId,
+        preferred_servings: data.servings,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,recipe_id" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
