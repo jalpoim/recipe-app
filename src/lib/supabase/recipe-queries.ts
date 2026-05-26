@@ -13,6 +13,7 @@ export type IngredientRow = {
   unit: string | null;
   name: string | null;
   isOptional: boolean;
+  ingredientId?: string | null;
   category?: string | null;
 };
 
@@ -87,6 +88,7 @@ export const createRecipe = createServerFn({ method: "POST" })
         unit: ing.unit,
         name: ing.name,
         is_optional: ing.isOptional,
+        ingredient_id: ing.ingredientId ?? null,
         category: ing.category ?? null,
       }));
       const { error: ingErr } = await supabase
@@ -170,6 +172,7 @@ export const updateRecipe = createServerFn({ method: "POST" })
           unit: ing.unit,
           name: ing.name,
           is_optional: ing.isOptional,
+          ingredient_id: ing.ingredientId ?? null,
           category: ing.category ?? null,
         })),
       );

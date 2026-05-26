@@ -115,6 +115,7 @@ function ingToRow(ing: RecipeIngredient): IngredientRow {
     unit: ing.unit,
     name: ing.name,
     isOptional: ing.is_optional,
+    ingredientId: ing.ingredient_id,
     category: ing.category,
   };
 }

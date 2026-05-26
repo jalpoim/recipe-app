@@ -169,6 +169,7 @@ export function IngredientCombobox({
   };
 
   function handleSelect(ing: {
+    id: string;
     name: string;
     default_unit: string | null;
     category: string | null;
@@ -180,6 +181,7 @@ export function IngredientCombobox({
       rawText: ing.name,
       name: ing.name,
       unit: ing.default_unit,
+      ingredientId: ing.id,
       category: ing.category ? (SLUG_TO_PT[ing.category] ?? null) : null,
     });
     setUnit(selectedUnit);

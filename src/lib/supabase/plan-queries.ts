@@ -122,114 +122,98 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
       supabase
         .from("recipe_ingredients")
         .select(
-          "id, recipe_id, name, raw_text, unit, quantity, category, position, is_pantry",
+          "id, recipe_id, name, raw_text, unit, quantity, category, position, is_pantry, ingredient_id",
         )
         .in("recipe_id", recipeIds),
     ]);
     if (recipeErr) throw new Error(recipeErr.message);
     if (ingErr) throw new Error(ingErr.message);
 
-    // For ingredients with no category, resolve via existing recipe_ingredients
-    // (system recipes already carry correct PT category values).
+    // Resolve category for rows that don't have one stored:
+    // 1. Via ingredient_id → ingredients.category (canonical source of truth)
+    // 2. Fallback: exact PT name match against ingredient_translations → ingredients.category
     const uncategorised = (ingredients ?? []).filter((i) => !i.category);
-    const lookupNames = [
-      ...new Set(
-        uncategorised
-          .map((i) => (i.name ?? i.raw_text ?? "").trim())
-          .filter((n) => n.length > 0),
-      ),
-    ];
 
+    const SLUG_TO_PT: Record<string, string> = {
+      meat: "Talho/Peixaria",
+      produce: "Frutas/Legumes",
+      dairy: "Lacticínios",
+      grains: "Mercearia",
+      other: "Outros",
+    };
+
+    const categoryById = new Map<string, string>();
     const categoryByName = new Map<string, string>();
-    if (lookupNames.length > 0) {
-      // Pass 1 — exact name match
-      const exactFilter = lookupNames.map((n) => `name.ilike.${n}`).join(",");
-      const { data: exactRows } = await supabase
-        .from("recipe_ingredients")
-        .select("name, category")
-        .or(exactFilter)
-        .not("category", "is", null);
-      for (const row of exactRows ?? []) {
-        if (row.name && row.category)
-          categoryByName.set(row.name.toLowerCase(), row.category);
-      }
 
-      // Pass 2 — token fallback for compound names not resolved above
-      const PT_STOP = new Set([
-        "com",
-        "sem",
-        "para",
-        "uma",
-        "uns",
-        "umas",
-        "dos",
-        "das",
-        "pelo",
-        "pela",
-        "que",
-        "não",
-        "por",
-        "ao",
-        "de",
-        "do",
-        "da",
-        "em",
-        "ou",
-        "num",
-        "numa",
-        "tipo",
-        "sabor",
+    if (uncategorised.length > 0) {
+      const ingredientIds = [
+        ...new Set(
+          uncategorised
+            .map((i) => i.ingredient_id)
+            .filter((id): id is string => !!id),
+        ),
+      ];
+      const nameOnlyRows = uncategorised.filter((i) => !i.ingredient_id);
+      const lookupNames = [
+        ...new Set(
+          nameOnlyRows
+            .map((i) => (i.name ?? i.raw_text ?? "").trim())
+            .filter((n) => n.length > 0),
+        ),
+      ];
+
+      await Promise.all([
+        ingredientIds.length > 0
+          ? supabase
+              .from("ingredients")
+              .select("id, category")
+              .in("id", ingredientIds)
+              .not("category", "is", null)
+              .then(({ data }) => {
+                for (const row of data ?? []) {
+                  if (row.category)
+                    categoryById.set(
+                      row.id,
+                      SLUG_TO_PT[row.category] ?? row.category,
+                    );
+                }
+              })
+          : Promise.resolve(),
+
+        lookupNames.length > 0
+          ? supabase
+              .from("ingredient_translations")
+              .select("name, ingredient_id, ingredients(id, category)")
+              .eq("language", "pt")
+              .or(lookupNames.map((n) => `name.ilike.${n}`).join(","))
+              .then(({ data }) => {
+                for (const row of data ?? []) {
+                  const cat = (
+                    row.ingredients as {
+                      id: string;
+                      category: string | null;
+                    } | null
+                  )?.category;
+                  if (cat)
+                    categoryByName.set(
+                      row.name.toLowerCase(),
+                      SLUG_TO_PT[cat] ?? cat,
+                    );
+                }
+              })
+          : Promise.resolve(),
       ]);
-      const unresolved = lookupNames.filter(
-        (n) => !categoryByName.has(n.toLowerCase()),
-      );
-      if (unresolved.length > 0) {
-        const tokenSet = new Set<string>();
-        for (const name of unresolved) {
-          for (const token of name.toLowerCase().split(/\s+/)) {
-            if (token.length >= 4 && !PT_STOP.has(token)) tokenSet.add(token);
-          }
-        }
-        if (tokenSet.size > 0) {
-          const tokenFilter = [...tokenSet]
-            .map((t) => `name.ilike.${t}`)
-            .join(",");
-          const { data: tokenRows } = await supabase
-            .from("recipe_ingredients")
-            .select("name, category")
-            .or(tokenFilter)
-            .not("category", "is", null);
-          const catByToken = new Map<string, string>();
-          for (const row of tokenRows ?? []) {
-            if (
-              row.name &&
-              row.category &&
-              !catByToken.has(row.name.toLowerCase())
-            )
-              catByToken.set(row.name.toLowerCase(), row.category);
-          }
-          for (const name of unresolved) {
-            const tokens = name
-              .toLowerCase()
-              .split(/\s+/)
-              .filter((t) => t.length >= 4 && !PT_STOP.has(t));
-            for (const token of tokens) {
-              const cat = catByToken.get(token);
-              if (cat) {
-                categoryByName.set(name.toLowerCase(), cat);
-                break;
-              }
-            }
-          }
-        }
-      }
     }
 
     const patchedIngredients = (ingredients ?? []).map((ing) => {
       if (ing.category) return ing;
+      if (ing.ingredient_id) {
+        const cat = categoryById.get(ing.ingredient_id);
+        if (cat) return { ...ing, category: cat };
+      }
       const lookupName = (ing.name ?? ing.raw_text ?? "").trim().toLowerCase();
-      const resolved = categoryByName.get(lookupName) ?? null;
-      return resolved ? { ...ing, category: resolved } : ing;
+      const cat = categoryByName.get(lookupName);
+      return cat ? { ...ing, category: cat } : ing;
     });
 
     const ingByRecipe = new Map<string, RecipeIngredient[]>();
