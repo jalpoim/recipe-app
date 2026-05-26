@@ -563,7 +563,6 @@ function RecipeCard({
           ref={thumbRef}
           animate={thumbControls}
           className="w-[96px] shrink-0 relative"
-          style={{ viewTransitionName: `recipe-thumb-${recipe.id}` }}
         >
           {recipe.image_thumb_url ? (
             <img

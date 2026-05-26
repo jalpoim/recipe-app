@@ -101,19 +101,12 @@ body {
 /* View Transitions: recipe title shared element */
 .recipe-title-vt { view-transition-name: recipe-title; }
 
-/* View Transitions: suppress default root cross-fade so only the hero morphs */
+/* View Transitions: speed up default cross-fade (default browser animation is ~250ms) */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation: none;
-    mix-blend-mode: normal;
-  }
-  /* Hero morph: use cover so the image fills correctly during aspect-ratio change */
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    object-fit: cover;
-    animation-duration: 300ms;
-    animation-timing-function: cubic-bezier(0.25, 0.1, 0.25, 1);
+    animation-duration: 200ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

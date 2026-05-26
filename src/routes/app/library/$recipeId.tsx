@@ -652,7 +652,6 @@ function RecipeDetailPage() {
                   width={640}
                   height={360}
                   className="w-full h-full object-cover"
-                  style={{ viewTransitionName: `recipe-thumb-${recipe.id}` }}
                 />
               ) : (
                 <div
@@ -661,7 +660,6 @@ function RecipeDetailPage() {
                     background:
                       PROTEIN_COLORS[recipe.proteins[0]] ??
                       "linear-gradient(135deg, #FEE9E1, #bbf7d0)",
-                    viewTransitionName: `recipe-thumb-${recipe.id}`,
                   }}
                   aria-hidden="true"
                 />

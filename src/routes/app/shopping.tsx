@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { capture } from "../../lib/analytics";
-import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
-import { PullIndicator } from "../../components/PullIndicator";
 import { Check, Plus, Share2, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -842,14 +840,6 @@ function ShoppingPage() {
   const qc = useQueryClient();
   const { showToast } = useToast();
 
-  const { pullY: shopPullY, isRefreshing: isShopPtrRefreshing } =
-    usePullToRefresh({
-      onRefresh: async () => {
-        await qc.invalidateQueries({ queryKey: ["active-plan"] });
-        await qc.invalidateQueries({ queryKey: ["shopping-checks"] });
-      },
-    });
-
   const { data: plan, isLoading: isPlanLoading } = useQuery({
     queryKey: ["active-plan"],
     queryFn: fetchActivePlanWithCount,
@@ -1015,11 +1005,6 @@ function ShoppingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
-      <PullIndicator
-        pullY={shopPullY}
-        isRefreshing={isShopPtrRefreshing}
-        variant="fixed"
-      />
       <div className="mx-auto w-full max-w-md px-4 pt-4">
         {/* no header row — bottom nav provides tab context */}
 
