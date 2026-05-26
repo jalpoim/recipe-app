@@ -2,14 +2,17 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../../lib/use-reduced-motion";
-import { Clock, Plus, Settings } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Clock, ClipboardList, Plus, Settings, Trash2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import {
   fetchLibrary,
   type RecipeWithIngredients,
 } from "../../../lib/supabase/queries";
+import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
+import { deleteRecipe } from "../../../lib/supabase/recipe-queries";
+import { useToast } from "../../../lib/use-toast";
 
 export const Route = createFileRoute("/app/my-recipes/")({
   component: MyRecipesPage,
@@ -17,20 +20,32 @@ export const Route = createFileRoute("/app/my-recipes/")({
 
 type Tab = "created" | "saved";
 
-function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
+function RecipeCard({
+  recipe,
+  canDelete,
+  onAddToPlan,
+  onDelete,
+}: {
+  recipe: RecipeWithIngredients;
+  canDelete?: boolean;
+  onAddToPlan: () => void;
+  onDelete?: () => void;
+}) {
   const { t } = useTranslation();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const thumbnail = recipe.image_thumb_url ?? recipe.image_url ?? null;
 
   return (
-    <Link
-      to="/app/library/$recipeId"
-      params={{ recipeId: recipe.id }}
-      search={{ from: undefined, planItemId: undefined }}
-      className="block rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 active:scale-[0.98] hover:shadow-md transition-all"
-    >
-      <div className="flex items-start gap-3">
-        {(recipe.image_thumb_url ?? recipe.image_url) ? (
+    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden active:scale-[0.98] transition-transform">
+      <Link
+        to="/app/library/$recipeId"
+        params={{ recipeId: recipe.id }}
+        search={{ from: undefined, planItemId: undefined }}
+        className="flex items-start gap-3 p-4 pr-12"
+      >
+        {thumbnail ? (
           <img
-            src={(recipe.image_thumb_url ?? recipe.image_url)!}
+            src={thumbnail}
             alt=""
             className="w-[60px] h-[60px] rounded-xl object-cover shrink-0"
             loading="lazy"
@@ -55,8 +70,67 @@ function RecipeCard({ recipe }: { recipe: RecipeWithIngredients }) {
             )}
           </div>
         </div>
+      </Link>
+
+      {/* Action buttons column — right edge */}
+      <div className="absolute right-0 top-0 bottom-0 flex flex-col">
+        {/* Add to plan — always shown */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddToPlan();
+          }}
+          aria-label={t("plan.addRecipe")}
+          className={`flex-1 w-11 flex items-center justify-center border-l border-[#F0F0EE] text-[#F4623A] hover:bg-[#FEF2EF] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${canDelete ? "border-b" : ""}`}
+        >
+          <ClipboardList size={18} aria-hidden="true" />
+        </button>
+
+        {/* Delete — only for owned recipes */}
+        {canDelete && !confirmDelete && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setConfirmDelete(true);
+            }}
+            aria-label={t("common.delete")}
+            className="flex-1 w-11 flex items-center justify-center border-l border-[#F0F0EE] text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+          >
+            <Trash2 size={16} aria-hidden="true" />
+          </button>
+        )}
+
+        {/* Delete confirm state */}
+        {canDelete && confirmDelete && (
+          <div className="flex-1 w-11 flex flex-col border-l border-[#F0F0EE]">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.();
+              }}
+              aria-label={t("common.confirm")}
+              className="flex-1 flex items-center justify-center bg-[#DC2626] text-white text-[10px] font-semibold hover:bg-[#B91C1C] transition-colors focus:outline-none"
+            >
+              {t("common.yes")}
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setConfirmDelete(false);
+              }}
+              aria-label={t("common.cancel")}
+              className="flex-1 flex items-center justify-center bg-[#F3F4F6] text-[#6B7280] text-[10px] font-semibold hover:bg-[#E5E7EB] transition-colors focus:outline-none"
+            >
+              {t("common.no")}
+            </button>
+          </div>
+        )}
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -86,6 +160,8 @@ function MyRecipesPage() {
   const lang = i18n.language.startsWith("en") ? "en" : "pt";
   const [tab, setTab] = useState<Tab>("created");
   const { skip: reducedMotion } = useMotion();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   const { data: profile } = useQuery({
     queryKey: ["my-profile"],
@@ -132,6 +208,25 @@ function MyRecipesPage() {
       }),
     enabled: tab === "saved",
     staleTime: 2 * 60 * 1000,
+  });
+
+  const addToPlanMutation = useMutation({
+    mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plan"] });
+      showToast(t("plan.added"), "success");
+    },
+    onError: () => showToast(t("common.error"), "error"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (recipeId: string) => deleteRecipe({ data: recipeId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-recipes-created"] });
+      queryClient.invalidateQueries({ queryKey: ["library"] });
+      showToast(t("recipe.deleted"), "success");
+    },
+    onError: () => showToast(t("common.error"), "error"),
   });
 
   const displayName = profile?.display_name ?? "—";
@@ -241,7 +336,13 @@ function MyRecipesPage() {
                 ) : (
                   <div className="space-y-3">
                     {createdRecipes.map((recipe) => (
-                      <RecipeCard key={recipe.id} recipe={recipe} />
+                      <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        canDelete
+                        onAddToPlan={() => addToPlanMutation.mutate(recipe.id)}
+                        onDelete={() => deleteMutation.mutate(recipe.id)}
+                      />
                     ))}
                   </div>
                 )}
@@ -259,7 +360,11 @@ function MyRecipesPage() {
                 ) : (
                   <div className="space-y-3">
                     {savedRecipes.map((recipe) => (
-                      <RecipeCard key={recipe.id} recipe={recipe} />
+                      <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        onAddToPlan={() => addToPlanMutation.mutate(recipe.id)}
+                      />
                     ))}
                   </div>
                 )}

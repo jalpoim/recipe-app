@@ -189,7 +189,8 @@
     "addedToPlan": "Added to plan ✓",
     "addedToPlanError": "Error adding to plan",
     "decreaseServings": "Decrease servings",
-    "increaseServings": "Increase servings"
+    "increaseServings": "Increase servings",
+    "deleted": "Recipe deleted"
   },
   "plan": {
     "title": "My plan",
@@ -225,6 +226,9 @@
   "common": {
     "confirm": "Confirm",
     "cancel": "Cancel",
+    "yes": "Yes",
+    "no": "No",
+    "delete": "Delete",
     "save": "Save",
     "close": "Close",
     "loading": "Loading…",
