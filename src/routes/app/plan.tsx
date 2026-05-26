@@ -597,11 +597,6 @@ function PlanPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
-      <PullIndicator
-        pullY={planPullY}
-        isRefreshing={isPlanPtrRefreshing}
-        variant="fixed"
-      />
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
         <div className="pt-4 pb-3 flex items-center justify-between">
@@ -620,6 +615,12 @@ function PlanPage() {
         </div>
 
         <CookHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
+
+        <PullIndicator
+          pullY={planPullY}
+          isRefreshing={isPlanPtrRefreshing}
+          variant="flow"
+        />
 
         {/* Empty state */}
         {items.length === 0 ? (

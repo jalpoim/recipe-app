@@ -1015,13 +1015,14 @@ function ShoppingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
-      <PullIndicator
-        pullY={shopPullY}
-        isRefreshing={isShopPtrRefreshing}
-        variant="fixed"
-      />
       <div className="mx-auto w-full max-w-md px-4 pt-4">
         {/* no header row — bottom nav provides tab context */}
+
+        <PullIndicator
+          pullY={shopPullY}
+          isRefreshing={isShopPtrRefreshing}
+          variant="flow"
+        />
 
         {isEmpty ? (
           <div className="py-16 text-center">

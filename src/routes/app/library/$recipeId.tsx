@@ -113,10 +113,12 @@ function scaleIngredient(
 function CookingDrawer({
   steps,
   onExit,
+  onComplete,
   onStepChange,
 }: {
   steps: RecipeStep[];
   onExit: () => void;
+  onComplete: () => void;
   onStepChange: (completedUpTo: number) => void;
 }) {
   const { t } = useTranslation();
@@ -215,7 +217,7 @@ function CookingDrawer({
           </button>
           {isLast ? (
             <button
-              onClick={onExit}
+              onClick={onComplete}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-2xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t("cooking.done")}
@@ -957,7 +959,8 @@ function RecipeDetailPage() {
         {isCooking && (
           <CookingDrawer
             steps={recipe.recipe_steps}
-            onExit={handleCookingDone}
+            onExit={exitCooking}
+            onComplete={handleCookingDone}
             onStepChange={setCompletedUpToStep}
           />
         )}

@@ -408,7 +408,7 @@ function SpringChip({
   return (
     <button
       onClick={handleClick}
-      className={className}
+      className={`chip-hit ${className}`}
       aria-pressed={ariaPressed}
     >
       <motion.span animate={controls} className="block">
@@ -553,6 +553,7 @@ function RecipeCard({
         params={{ recipeId: recipe.id }}
         search={(prev) => ({ ...prev, from: undefined, planItemId: undefined })}
         viewTransition
+        preload="intent"
         onClick={() =>
           capture("recipe_viewed", { recipeId: recipe.id, source: "library" })
         }
@@ -770,7 +771,7 @@ function FilterSheet({
     "text-xs font-semibold text-[#6B7280] uppercase tracking-wide mb-3";
 
   function chipCls(active: boolean) {
-    return `text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+    return `chip-hit text-xs px-3 py-1.5 rounded-full border font-medium transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
       active
         ? "bg-[#FEE9E1] border-[#F4623A] text-[#D94F2B]"
         : "bg-white border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A] hover:text-[#D94F2B]"
@@ -1414,7 +1415,15 @@ function LibraryPage() {
     ? STRIP_CHIPS.find((c) => c.id === stripChip)
     : undefined;
 
-  const orderedChips = STRIP_CHIPS;
+  const orderedChips = useMemo(() => {
+    const idx = STRIP_CHIPS.findIndex((c) => c.id === stripChip);
+    if (idx <= 0) return STRIP_CHIPS;
+    return [
+      STRIP_CHIPS[idx],
+      ...STRIP_CHIPS.slice(0, idx),
+      ...STRIP_CHIPS.slice(idx + 1),
+    ];
+  }, [stripChip]);
 
   const effectiveSort: Sort = activeStripChip?.sort ?? search.sort;
 

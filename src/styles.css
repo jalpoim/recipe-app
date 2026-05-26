@@ -129,6 +129,16 @@ body {
   .cooked-success { animation: cooked-bounce 300ms ease both; }
 }
 
+/* Expand tap area on small chips without visual change */
+.chip-hit {
+  position: relative;
+}
+.chip-hit::after {
+  content: '';
+  position: absolute;
+  inset: -8px -2px;
+}
+
 /* Shopping list animated strikethrough */
 .item-text { position: relative; }
 .item-text::after {
