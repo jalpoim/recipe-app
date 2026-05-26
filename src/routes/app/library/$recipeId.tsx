@@ -285,6 +285,7 @@ function RecipeDetailError({ error }: { error: Error }) {
 
 export const Route = createFileRoute("/app/library/$recipeId")({
   pendingMs: 0,
+  staleTime: 5 * 60 * 1000,
   pendingComponent: RecipeDetailSkeleton,
   errorComponent: ({ error }) => <RecipeDetailError error={error as Error} />,
   validateSearch: (search) => ({
@@ -554,23 +555,8 @@ function RecipeDetailPage() {
     sectionMap.get(key)!.items.push(ing);
   }
 
-  // Skip framer entrance when the browser supports View Transitions — the hero
-  // morph provides the visual transition. Without this, both animations compete:
-  // VT captures the new page at opacity:0 and fades it in while framer also
-  // animates opacity:0→1, creating a double-fade and misaligned hero position.
-  const canViewTransition =
-    typeof document !== "undefined" && "startViewTransition" in document;
-  const skipEntrance = reducedMotion || canViewTransition;
-
   return (
-    <motion.div
-      initial={skipEntrance ? false : { y: 20, opacity: 0 }}
-      animate={skipEntrance ? {} : { y: 0, opacity: 1 }}
-      transition={{
-        y: { type: "spring", stiffness: 200, damping: 24 },
-        opacity: { duration: 0.2, ease: "easeOut" },
-      }}
-    >
+    <div>
       <div
         className="min-h-screen bg-[#FAFAF8]"
         style={{
@@ -1024,6 +1010,6 @@ function RecipeDetailPage() {
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
