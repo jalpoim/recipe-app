@@ -6,7 +6,7 @@ import type {
   ActivePlanWithCount,
   RecipeIngredient,
 } from "../../types/db";
-import { makeClient } from "./client-server";
+import { getLang, makeClient } from "./client-server";
 
 // GET: active plan with item count — single RPC call, no sequential queries
 export const fetchActivePlanWithCount = createServerFn({
@@ -98,6 +98,7 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
   .inputValidator((planId: string) => planId)
   .handler(async ({ data: planId }): Promise<PlanItemWithRecipe[]> => {
     const supabase = makeClient();
+    const lang = getLang();
 
     const { data: items, error } = await supabase
       .from("plan_items")
@@ -223,10 +224,47 @@ export const fetchPlanItems = createServerFn({ method: "GET" })
       ingByRecipe.set(ing.recipe_id, list);
     }
 
+    let translatedRecipeNames = new Map<string, string>();
+    let translatedIngredients = new Map<
+      string,
+      { name: string | null; unit: string | null; raw_text: string | null }
+    >();
+
+    if (lang !== "pt") {
+      const ingIds = patchedIngredients.map((i) => i.id);
+      const [recipeTransResult, ingTransResult] = await Promise.all([
+        supabase
+          .from("recipe_translations")
+          .select("recipe_id, name")
+          .in("recipe_id", recipeIds)
+          .eq("language", lang),
+        supabase
+          .from("recipe_ingredient_translations")
+          .select("ingredient_id, name, unit, raw_text")
+          .in("ingredient_id", ingIds)
+          .eq("language", lang),
+      ]);
+      translatedRecipeNames = new Map(
+        (recipeTransResult.data ?? []).map((t) => [t.recipe_id, t.name]),
+      );
+      translatedIngredients = new Map(
+        (ingTransResult.data ?? []).map((t) => [t.ingredient_id, t]),
+      );
+    }
+
     const recipeMap = new Map(
       (recipes ?? []).map((r) => [
         r.id,
-        { ...r, recipe_ingredients: ingByRecipe.get(r.id) ?? [] },
+        {
+          ...r,
+          name: translatedRecipeNames.get(r.id) ?? r.name,
+          recipe_ingredients: (ingByRecipe.get(r.id) ?? []).map((ing) => {
+            const t = translatedIngredients.get(ing.id);
+            return t
+              ? { ...ing, name: t.name, unit: t.unit, raw_text: t.raw_text }
+              : ing;
+          }),
+        },
       ]),
     );
 

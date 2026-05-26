@@ -64,6 +64,7 @@ export const createRecipe = createServerFn({ method: "POST" })
       .from("recipes")
       .insert({
         name: data.name,
+        name_language: data.lang,
         servings: data.servings,
         time_min: data.timeMin,
         proteins: data.proteins,
@@ -118,13 +119,6 @@ export const createRecipe = createServerFn({ method: "POST" })
       if (stepErr) throw new Error(stepErr.message);
     }
 
-    // Insert translations if not PT
-    if (data.lang !== "pt") {
-      await supabase
-        .from("recipe_translations")
-        .insert({ recipe_id: recipeId, language: data.lang, name: data.name });
-    }
-
     return { id: recipeId };
   });
 
@@ -145,6 +139,7 @@ export const updateRecipe = createServerFn({ method: "POST" })
       .from("recipes")
       .update({
         name: data.name,
+        name_language: data.lang,
         servings: data.servings,
         time_min: data.timeMin,
         proteins: data.proteins,
@@ -258,6 +253,7 @@ export const searchIngredients = createServerFn({ method: "GET" })
       return {
         id: r.id,
         name: displayNameById.get(r.id) ?? r.name,
+        similarity: r.similarity as number,
         default_unit: meta?.default_unit ?? null,
         category: meta?.category ?? null,
         dietary_flags: meta?.dietary_flags ?? null,
