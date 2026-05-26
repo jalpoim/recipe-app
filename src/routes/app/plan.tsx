@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../lib/use-reduced-motion";
+import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
+import { PullIndicator } from "../../components/PullIndicator";
 import { capture } from "../../lib/analytics";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -489,6 +491,14 @@ function PlanPage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
+  const { pullY: planPullY, isRefreshing: isPlanPtrRefreshing } =
+    usePullToRefresh({
+      onRefresh: async () => {
+        await qc.invalidateQueries({ queryKey: ["active-plan"] });
+        await qc.invalidateQueries({ queryKey: ["plan-items"] });
+      },
+    });
+
   const { data: plan, isLoading: isPlanLoading } = useQuery({
     queryKey: ["active-plan"],
     queryFn: fetchActivePlanWithCount,
@@ -587,6 +597,11 @@ function PlanPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
+      <PullIndicator
+        pullY={planPullY}
+        isRefreshing={isPlanPtrRefreshing}
+        variant="fixed"
+      />
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
         <div className="pt-4 pb-3 flex items-center justify-between">

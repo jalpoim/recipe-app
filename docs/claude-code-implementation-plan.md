@@ -124,12 +124,12 @@ recipe_steps:
 - text text not null
 - timer_seconds int
 
-households (table exists but unused in v1):
+households (fully implemented — up to 2 members share a plan):
 - id uuid pk default gen_random_uuid()
 - name text not null
 - created_at timestamptz default now()
 
-household_members (table exists but unused in v1):
+household_members (fully implemented):
 - household_id uuid references households(id) on delete cascade
 - user_id uuid references auth.users(id) on delete cascade
 - role text check (role in ('owner','member')) default 'member'
@@ -4090,6 +4090,516 @@ Where animations are conditional (stagger, flying thumb, badge bounce), check `s
 - Kitchen tab switching cross-fades
 - On a device/browser with `prefers-reduced-motion: reduce`, all of the above are instant (no animation)
 - No TypeScript errors; bundle size increase is under 50kB gzipped (Framer Motion tree-shakes well)
+
+---
+
+## Session 25 — Protein simplification: "fish" catch-all + auto-derive from ingredients
+
+**Goal:** Reduce protein picker complexity in recipe creation. Replace seven specific fish slugs with a single `fish` catch-all, migrate existing recipe data, and auto-derive the `proteins[]` array from ingredient dietary flags so users rarely have to pick manually.
+
+**Why:** The 19-slug protein list (Session 17) gave the filter sheet too much granularity for common fish. Users creating a sea-bass recipe do not think "I need to select Robalo". They select ingredients, and the app should infer the protein. Auto-derive removes a friction point that was causing users to skip the protein field entirely.
+
+---
+
+### 1. Protein slug list — final vocabulary
+
+**Remove** from Session 17's list: `sardine`, `hake`, `sea-bream`, `sea-bass`, `mackerel`, `octopus`, `cod` — collapsed into `fish`.
+
+**Replace** `shrimp` with `seafood` — broader catch-all for all shellfish/seafood (shrimp, clams, mussels, squid, octopus, etc.)
+
+**Add** to Tier 2: `duck` (pato) and `veal` (vitela) — both common enough in Portuguese cooking to deserve their own slug.
+
+**Final vocabulary (13 slugs total):**
+
+| Slug      | PT label      | EN label | Tier                |
+| --------- | ------------- | -------- | ------------------- |
+| `chicken` | Frango        | Chicken  | 1 — default visible |
+| `beef`    | Carne de Vaca | Beef     | 1 — default visible |
+| `pork`    | Porco         | Pork     | 1 — default visible |
+| `salmon`  | Salmão        | Salmon   | 1 — default visible |
+| `tuna`    | Atum          | Tuna     | 1 — default visible |
+| `fish`    | Peixe         | Fish     | 1 — default visible |
+| `eggs`    | Ovos          | Eggs     | 1 — default visible |
+| `seafood` | Marisco       | Seafood  | 1 — default visible |
+| `turkey`  | Peru          | Turkey   | 2 — behind Ver mais |
+| `duck`    | Pato          | Duck     | 2 — behind Ver mais |
+| `veal`    | Vitela        | Veal     | 2 — behind Ver mais |
+| `lamb`    | Borrego       | Lamb     | 2 — behind Ver mais |
+| `tofu`    | Tofu          | Tofu     | 2 — behind Ver mais |
+| `legumes` | Leguminosas   | Legumes  | 2 — behind Ver mais |
+| `whey`    | Whey          | Whey     | 2 — behind Ver mais |
+
+**Note on `veal`:** In Portugal vitela is treated as a distinct product from carne de vaca. Separate slug is correct.
+
+**Note on `seafood` vs `shrimp`:** `seafood` maps to dietary_flag `shellfish`. Shrimp recipes get `seafood`. So do clam, mussel, squid, octopus, crab recipes.
+
+**Note on fish specifics:** `salmon` and `tuna` remain distinct because they dominate fitness meal prep and have very distinct culinary use. `fish` covers everything else (bacalhau, sea bass, sardines, etc.).
+
+Remove from locale files: `sardine`, `hake`, `sea-bream`, `sea-bass`, `mackerel`, `octopus`, `cod`, `shrimp` translation keys under `proteins.*`.
+
+Add to locale files: `proteins.fish`, `proteins.seafood`, `proteins.duck`, `proteins.veal`.
+
+---
+
+### 2. DB migration — collapse removed slugs
+
+```sql
+-- Collapse specific fish slugs → 'fish'
+UPDATE recipes
+SET proteins = array_replace(
+  array_replace(
+    array_replace(
+      array_replace(
+        array_replace(
+          array_replace(
+            array_replace(proteins, 'sardine', 'fish'),
+            'hake', 'fish'),
+          'sea-bream', 'fish'),
+        'sea-bass', 'fish'),
+      'mackerel', 'fish'),
+    'octopus', 'fish'),
+  'cod', 'fish')
+WHERE proteins && ARRAY['sardine','hake','sea-bream','sea-bass','mackerel','octopus','cod'];
+
+-- Rename shrimp → seafood
+UPDATE recipes
+SET proteins = array_replace(proteins, 'shrimp', 'seafood')
+WHERE 'shrimp' = ANY(proteins);
+
+-- Deduplicate any arrays that now contain duplicate slugs
+UPDATE recipes
+SET proteins = ARRAY(SELECT DISTINCT unnest(proteins) ORDER BY 1)
+WHERE array_length(proteins, 1) != array_length(ARRAY(SELECT DISTINCT unnest(proteins)), 1);
+```
+
+Verify:
+
+```sql
+SELECT DISTINCT unnest(proteins) FROM recipes ORDER BY 1;
+-- Should not contain: sardine, hake, sea-bream, sea-bass, mackerel, octopus, cod, shrimp
+-- Should contain: fish, seafood (if any such recipes exist)
+```
+
+---
+
+### 3. Ingredient dietary_flags → protein slug mapping
+
+Add `src/lib/proteins.ts`:
+
+```ts
+const FLAG_TO_PROTEIN: Record<string, string> = {
+  meat:      'beef',     // fallback — user can override to pork/veal/duck/lamb
+  poultry:   'chicken',  // fallback — user can override to turkey/duck
+  fish:      'fish',
+  shellfish: 'seafood',
+  egg:       'eggs',
+  dairy:     'whey',     // only if no other protein
+  soy:       'tofu',
+};
+
+export function deriveProteinsFromIngredients(
+  ingredients: Array<{ name?: string | null; dietary_flags?: string[] | null }>
+): string[] {
+  const derived = new Set<string>();
+  for (const ing of ingredients) {
+    for (const flag of (ing.dietary_flags ?? [])) {
+      const slug = FLAG_TO_PROTEIN[flag];
+      if (slug) derived.add(slug);
+    }
+  }
+  // Name-based overrides (more specific than dietary_flags alone)
+  for (const ing of ingredients) {
+    const n = (ing.name ?? '').toLowerCase();
+    if (/salmon|salmão/.test(n))            { derived.add('salmon');  derived.delete('fish'); }
+    if (/\btuna\b|atum/.test(n))            { derived.add('tuna');    derived.delete('fish'); }
+    if (/\bpato\b|duck/.test(n))            { derived.add('duck');    derived.delete('chicken'); }
+    if (/\bperu\b|turkey/.test(n))          { derived.add('turkey');  derived.delete('chicken'); }
+    if (/\bporco\b|pork|leitão/.test(n))    { derived.add('pork');    derived.delete('beef'); }
+    if (/vitela|veal/.test(n))              { derived.add('veal');    derived.delete('beef'); }
+    if (/borrego|lamb/.test(n))             { derived.add('lamb');    derived.delete('beef'); }
+    if (/camarão|shrimp|gambas/.test(n))    derived.add('seafood');
+    if (/amêijoa|mexilhão|lula|squid|clam|mussel/.test(n)) derived.add('seafood');
+  }
+  return [...derived];
+}
+```
+
+---
+
+### 4. Auto-derive in the recipe creation form (`create.tsx` + `edit.tsx`)
+
+In the `IngredientCombobox`'s `onValueChange`, after updating the ingredient row, re-derive the protein list:
+
+```ts
+const derivedProteins = useMemo(
+  () => deriveProteinsFromIngredients(ingredients),
+  [ingredients]
+);
+```
+
+Display derived proteins as **pre-selected chips** in the ProteinPicker with a small `(auto)` label in muted text below the chip grid:
+
+> _"Auto-detected from ingredients: Frango · Peixe"_
+
+These are pre-filled but fully editable — users can deselect auto-derived proteins or add additional ones. Track a `proteinsManuallyEdited` boolean. On save: use derived if not manually edited, use explicit selection if edited.
+
+---
+
+### 5. ProteinPicker changes
+
+In `src/components/ProteinPicker.tsx`:
+
+- Accept a new optional prop `autoDetected?: string[]`
+- When `autoDetected` is non-empty and no manual edits have been made, show a row below the chip grid:
+  ```
+  Auto-detected: [Frango] [Marisco]  ← chips, same style as selected state
+  "Edit to change ›"                 ← muted text, tapping focuses the manual picker
+  ```
+- Remove all deleted slugs from the chip list in both the picker and the filter sheet
+- Add `duck`, `veal`, `seafood` chips (duck and veal in Tier 2; seafood in Tier 1)
+
+---
+
+### Verify before moving on
+
+- `SELECT DISTINCT unnest(proteins) FROM recipes` — no removed slugs; `shrimp` absent
+- Filter sheet Tier 1: chicken, beef, pork, salmon, tuna, fish, eggs, seafood
+- Filter sheet Tier 2: turkey, duck, veal, lamb, tofu, legumes, whey
+- Adding chicken breast → `chicken` auto-detected; adding camarão → `seafood`; adding pato → `duck`
+- Adding both salmon and bacalhau → proteins = `['salmon', 'fish']` (salmon stays distinct)
+- Manual override works: deselecting and reselecting sticks
+- Locale files: all removed keys gone; no i18n warnings
+- No TypeScript errors
+
+---
+
+### What to do next — Session 26 (recipe creation form v3)
+
+---
+
+## Session 26 — Recipe creation form v3: reorder, macro calculation, UX micro-improvements
+
+**Goal:** Make recipe creation the fastest path from idea to saved recipe. Reorder form sections by natural creation flow, calculate macros automatically from ingredient database data, surface an auto-name suggestion, warn on duplicate ingredients, and scale quantities when servings change.
+
+---
+
+### 1. Form section reorder
+
+Current order: name → proteins → ingredients → steps → image → time → tags → macros → servings → publish toggle
+
+**New order** (single linear scroll, no collapsed sections):
+
+1. **Name** — text input, large font. Optional — user can leave blank and use auto-name.
+2. **Servings** — inline next to name: `Receita para [2] pessoas` with +/− steppers. Default: 2.
+3. **Image** — full-width upload zone (already built in Session 19). Collapsed by default with `+ Adicionar foto` trigger. Tap to expand.
+4. **Ingredients** — always visible. "Adicionar ingrediente" button. (Auto-derive proteins happens here reactively.)
+5. **Steps** — always visible. "Adicionar passo" button.
+6. **Macros** — shown once ≥ 1 ingredient is added. Auto-populated from DB (see §2). User can edit.
+7. **Optional details** (collapsed section, `▸ Mais detalhes`):
+   - Proteins (with auto-derived pre-selection from §25)
+   - Time (total time in minutes)
+   - Tags
+   - Publish toggle
+
+The optional details section is collapsed by default. If the user has previously expanded it in this session, remember the state via `useState`. The section auto-expands if a validation error relates to one of its fields.
+
+---
+
+### 2. Macro auto-calculation from DB
+
+When ingredients are added/changed, calculate macros client-side using `calories_per_100g`, `protein_per_100g`, etc. from the ingredient database (fetched alongside ingredient search results and stored in the `IngredientRow`):
+
+```ts
+// Add to IngredientRow type in src/lib/supabase/recipe-queries.ts
+type IngredientRow = {
+  // ...existing fields...
+  caloriesPer100g?: number | null;
+  proteinPer100g?: number | null;
+  carbsPer100g?: number | null;
+  fatPer100g?: number | null;
+};
+```
+
+`searchIngredients` already returns the ingredient record — add `calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g` to the select.
+
+`handleSelect` in `IngredientCombobox` stores these values in the `IngredientRow`.
+
+**Macro estimation logic** (in create.tsx):
+
+```ts
+function estimateMacrosFromIngredients(
+  ingredients: IngredientRow[],
+  servings: number,
+): { calories: number; protein: number; carbs: number; fat: number } | null {
+  let calories = 0, protein = 0, carbs = 0, fat = 0;
+  let coveredCount = 0;
+
+  for (const ing of ingredients) {
+    if (ing.caloriesPer100g == null) continue;
+    const qtyG = convertToGrams(ing.quantity ?? 0, ing.unit ?? 'g');
+    const factor = qtyG / 100;
+    calories += (ing.caloriesPer100g ?? 0) * factor;
+    protein  += (ing.proteinPer100g  ?? 0) * factor;
+    carbs    += (ing.carbsPer100g    ?? 0) * factor;
+    fat      += (ing.fatPer100g      ?? 0) * factor;
+    coveredCount++;
+  }
+
+  // Only return auto-estimated values if ≥ 50% of ingredients have DB data
+  if (coveredCount < ingredients.length * 0.5) return null;
+
+  return {
+    calories: Math.round(calories / servings),
+    protein:  Math.round(protein  / servings * 10) / 10,
+    carbs:    Math.round(carbs    / servings * 10) / 10,
+    fat:      Math.round(fat      / servings * 10) / 10,
+  };
+}
+```
+
+`convertToGrams` converts from the stored unit to grams using the same conversion table from `src/lib/units.ts`. For count units (`clove`, `slice`, etc.) where gram conversion is ambiguous, skip that ingredient (treat as uncovered).
+
+**UI:** The macro fields in the form are pre-populated by `estimateMacrosFromIngredients`. If the result is non-null, show a small `(calculado automaticamente)` label in muted text below the macro grid. The user can still edit any field manually; on edit, the label changes to `(editado manualmente)`.
+
+**Haiku fallback:** The existing "Estimate macros" button remains. It is relabelled to `✨ Estimar macros restantes` and only triggers a Haiku call for ingredients that have no DB nutritional data. If all ingredients are covered by the DB, the button is hidden.
+
+---
+
+### 3. Auto-name suggestion
+
+When the name field is empty AND at least 2 ingredients have been added, show a dismissible chip below the name input:
+
+```
+Sugestão:  [Frango com Brócolos e Arroz  ×]
+```
+
+The suggestion is generated client-side using this simple algorithm:
+
+```ts
+function suggestRecipeName(
+  proteins: string[],          // derived slugs, e.g. ['chicken']
+  ingredientNames: string[],   // raw text of added ingredients
+  t: TFunction,
+): string {
+  const proteinLabel = proteins[0] ? t(`proteins.${proteins[0]}`) : null;
+  // Pick up to 2 non-protein ingredient names (skip very short ones)
+  const others = ingredientNames
+    .filter(n => n.length > 2 && !isProteinIngredient(n, proteins))
+    .slice(0, 2);
+
+  if (!proteinLabel) return ingredientNames.slice(0, 3).join(', ');
+  if (others.length === 0) return proteinLabel;
+  return `${proteinLabel} com ${others.join(' e ')}`;
+}
+```
+
+`isProteinIngredient` checks if the ingredient name is effectively naming the same protein as the slug (e.g. "peito de frango" when proteins = ['chicken']).
+
+Tapping the chip populates the name field with the suggestion. Tapping × dismisses it without populating. The chip regenerates whenever proteins or ingredients change, as long as the name field is still empty.
+
+---
+
+### 4. Duplicate ingredient warning
+
+When the user adds an ingredient that is already in the list (same `ingredientId`, or same `rawText` case-insensitively if no `ingredientId`), show an inline warning on the duplicate row rather than silently allowing it:
+
+```
+⚠ "Frango" já foi adicionado
+```
+
+The warning appears as a small orange text line below the duplicate ingredient row. The ingredient row itself is not blocked or auto-removed — the user can keep both (e.g. chicken breast + chicken thigh share the same name but are different ingredients). The warning is purely informational.
+
+Implementation: after each `onValueChange` call, scan the `ingredients` array for duplicates. A duplicate is:
+- Same `ingredientId` (when both are linked to DB ingredients), OR
+- Same `rawText.toLowerCase().trim()` when `ingredientId` is null for either
+
+Track duplicates in a `Set<number>` of indices and pass this down as a prop to each `IngredientCombobox`.
+
+---
+
+### 5. Scale quantities with servings change
+
+When the user changes the servings stepper, offer to scale all ingredient quantities proportionally:
+
+- On stepper change (from N to M), show a small confirm row below the servings control for 3 seconds:
+  ```
+  Ajustar quantidades para N porções?  [Sim]  [Não]
+  ```
+- Tapping **Sim**: multiply every ingredient's `quantity` by `M / N`. Round to 1 decimal place. Update all rows.
+- Tapping **Não** or timeout: leave quantities unchanged.
+- If servings changes back (e.g. 2 → 4 → 2), each change gets its own confirm row (don't compound-scale automatically).
+
+Implementation: track `prevServings` ref. On `setServings(newVal)`, if `prevServings !== newVal && ingredients.some(i => i.quantity != null)`, show the confirm UI with `newVal / prevServings` as the scale factor.
+
+---
+
+### Verify before moving on
+
+- Create form section order matches spec: name → servings → image → ingredients → steps → macros → optional details
+- Adding chicken breast (with DB nutrition data) → macros auto-populate; `(calculado automaticamente)` label shown
+- "Estimar macros restantes" button hidden when all ingredients have DB data
+- Name field empty + 2 ingredients → auto-name suggestion chip appears; tapping populates name field
+- Adding the same ingredient twice → warning on the duplicate row
+- Changing servings from 2 to 4 → confirm row appears; Sim scales all quantities ×2; Não leaves them
+- Optional details collapsed by default; expands on tap; proteins show auto-derived state
+- Editing a recipe pre-populates all fields in the new order
+- No TypeScript errors
+
+---
+
+### What to do next — Session 27 (import from URL)
+
+---
+
+## Session 27 — Import recipe from URL
+
+**Goal:** Users can paste a URL to a recipe page and import it. The app parses the page's `schema.org/Recipe` JSON-LD, maps it to the internal recipe format, and pre-fills the creation form. The original source URL is always shown as an attribution link on the detail page.
+
+**Legal note:** This flow does not copy content to the DB silently. The imported data pre-fills the creation form and the user must explicitly tap **Save** — creating a recipe that is attributed to the source. The source URL is stored and displayed as "Fonte: [domain]" on the detail page. This is the same model used by Paprika, Mela, and most recipe manager apps.
+
+---
+
+### 1. Entry point
+
+On the recipe creation form, below the image zone, add a small link:
+
+> _📎 Importar de um link_
+
+Tapping opens a bottom sheet (Vaul `Drawer`) with a single URL input and an "Importar" button.
+
+---
+
+### 2. Server function: `parseRecipeUrl`
+
+```ts
+// src/lib/supabase/recipe-queries.ts
+export const parseRecipeUrl = createServerFn()
+  .inputValidator(z.object({ url: z.string().url() }))
+  .handler(async ({ data }) => {
+    // Fetch the page HTML server-side (avoids CORS)
+    const html = await fetch(data.url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RecipeImporter/1.0)' },
+      signal: AbortSignal.timeout(8000),
+    }).then(r => r.text());
+
+    // Extract JSON-LD blocks
+    const jsonLdMatches = html.matchAll(
+      /<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi
+    );
+
+    for (const match of jsonLdMatches) {
+      try {
+        const data = JSON.parse(match[1]);
+        const schema = Array.isArray(data) ? data[0] : data;
+        if (schema['@type'] === 'Recipe' || schema['@type']?.includes?.('Recipe')) {
+          return mapSchemaToRecipe(schema, url);
+        }
+      } catch { continue; }
+    }
+
+    return null; // No schema.org/Recipe found
+  });
+```
+
+**`mapSchemaToRecipe`** maps JSON-LD fields to the internal form state:
+
+| JSON-LD field          | Maps to                              | Notes                                                           |
+| ---------------------- | ------------------------------------ | --------------------------------------------------------------- |
+| `name`                 | `name`                               | Strip leading/trailing whitespace                               |
+| `recipeYield`          | `servings`                           | Parse integer from "4 servings", "4 pessoas", etc.              |
+| `totalTime` / `cookTime` + `prepTime` | `time_min`          | ISO 8601 duration → minutes: `PT30M` → 30, `PT1H30M` → 90      |
+| `recipeIngredient[]`   | `ingredients[]` as free-text entries | Each string becomes `rawText`; `ingredientId = null`            |
+| `recipeInstructions[]` | `steps[]`                            | Each `HowToStep.text` or string → one step                      |
+| `image` / `image[0].url` | `imageUrl` (for preview only)      | Not uploaded — just shown as a preview in the form              |
+| `nutrition.calories`   | `calories`                           | Strip "calories" suffix, parse int                              |
+| `nutrition.proteinContent` | `protein`                        | Strip "g" suffix                                                |
+| `nutrition.carbohydrateContent` | `carbs`                    | Strip "g" suffix                                                |
+| `nutrition.fatContent` | `fat`                                | Strip "g" suffix                                                |
+
+Always store `sourceUrl: data.url` alongside the mapped recipe. This is written to `recipes.source_url` on save.
+
+---
+
+### 3. Schema change
+
+```sql
+ALTER TABLE recipes ADD COLUMN IF NOT EXISTS source_url text;
+```
+
+No index needed — it's a display field only. No RLS change needed.
+
+---
+
+### 4. Attribution on recipe detail page
+
+On the recipe detail page (`$recipeId.tsx`), when `recipe.source_url` is non-null, show below the recipe name:
+
+```
+Fonte: allrecipes.com  ↗
+```
+
+`allrecipes.com` is derived by `new URL(recipe.source_url).hostname.replace('www.', '')`. Tapping opens the URL in a new tab (`rel="noopener noreferrer"`).
+
+The attribution line is always visible (not owner-only). It replaces the "by [username]" attribution when `source_url` is present and `owner_id` is the current user.
+
+---
+
+### 5. Form pre-fill behaviour
+
+After `parseRecipeUrl` returns:
+
+1. Close the URL bottom sheet.
+2. Pre-fill all form fields from the mapped recipe:
+   - Name, servings, time, ingredients (as free-text rows), steps
+   - Show macros if present (labelled `(importado)`)
+   - Show the source image as a small thumbnail preview with `Alt: imagem da receita original` — not auto-uploaded; just shown for reference. User can upload their own photo instead.
+3. Show a non-dismissible banner at the top of the form:
+
+   > _📎 Receita importada de allrecipes.com — edita e guarda como tua_
+
+4. All ingredient rows are free-text (no `ingredientId` since we can't auto-match them). The autocomplete still works — if the user taps an ingredient row, the combobox opens and they can optionally link it to a DB ingredient.
+5. Auto-name suggestion still fires (auto-derive proteins from any matched ingredients).
+
+---
+
+### 6. Error states
+
+| Condition                        | UI response                                                  |
+| -------------------------------- | ------------------------------------------------------------ |
+| URL fetch fails (timeout, 4xx)   | Toast: "Não foi possível aceder ao link. Tenta novamente."   |
+| No `schema.org/Recipe` found     | Toast: "Esta página não tem uma receita que possamos importar." |
+| Partial data (no ingredients)    | Pre-fill what's available; ingredients section shows empty state |
+
+---
+
+### 7. i18n keys to add
+
+```json
+"import": {
+  "trigger": "Importar de um link",
+  "placeholder": "Cole o link da receita aqui…",
+  "button": "Importar",
+  "importing": "A importar…",
+  "banner": "Receita importada de {{domain}} — edita e guarda como tua",
+  "sourceLabel": "Fonte",
+  "errorFetch": "Não foi possível aceder ao link. Tenta novamente.",
+  "errorNoSchema": "Esta página não tem uma receita que possamos importar."
+}
+```
+
+---
+
+### Verify before moving on
+
+- Pasting a URL to a recipe with `schema.org/Recipe` JSON-LD (e.g. allrecipes.com) → form pre-fills name, ingredients, steps, servings
+- Source image shown as preview (not uploaded)
+- Saving the recipe → `source_url` stored in DB
+- Detail page shows "Fonte: allrecipes.com ↗" attribution link
+- Tapping attribution link opens original URL in new tab
+- URL with no schema.org/Recipe → error toast
+- Network timeout → error toast
+- All strings go through `t()` — no hardcoded Portuguese
+- No TypeScript errors
 
 ---
 

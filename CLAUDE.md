@@ -27,7 +27,7 @@ This is a meal prep planning web app built around a protein-first paradigm. The 
 
 ## Architectural decisions (locked)
 - **Recipe visibility model:** Cookbook/personal recipes → `visibility = 'private'`, `owner_id = user UUID`. Only original recipes created for public launch → `visibility = 'system'`, `owner_id = null`. Never seed cookbook recipes as system.
-- **Accounts:** Single-user only in v1. `household` and `household_members` tables exist but are unused. No sharing features.
+- **Accounts:** Households are fully implemented. Up to 2 members per household share a plan. Invite flow: owner generates a token → `/join/$token` page → `acceptInvite` server fn → `household_id` written to JWT `app_metadata`. Leave flow dissolves the household and creates fresh personal plans for both members. `household-queries.ts` contains all server functions.
 - **Mobile-first UX:** One-handed operation for shopping and cooking flows. Shopping list and cooking companion are designed for phone-in-hand use.
 - **Theme:** Light/dark toggle exists in Settings. Light — background `#FAFAF8`, cards `#FFFFFF` with `shadow-sm`, foreground `#1A1A1A`, muted `#6B7280`, border `#E5E7EB`. Dark — dark equivalents. Accent green `#16A34A` in both modes. Rounded corners `rounded-2xl` on cards. Badge colors: green `bg-[#dcfce7] text-[#15803d]`, yellow `bg-[#fef3c7] text-[#B45309]`, red `bg-[#fee2e2] text-[#DC2626]`. Every component must respect the active theme — hardcoded dark background classes are a bug.
 - **Protein picker vocabulary:** `proteins text[]` on recipes is the source of truth. Values are generic tokens (e.g. `'frango'`, `'salmão'`) — the picker shows canonical labels, not ingredient substrings.
