@@ -172,14 +172,20 @@ export const fetchLibrary = createServerFn({ method: "GET" })
       }
     }
 
+    // Build moderation visibility filter: system recipes, approved, and the authenticated
+    // user's own recipes (any moderation status — they need to see their rejected ones).
+    const moderationFilter = [
+      "owner_id.is.null",
+      "moderation_status.is.null",
+      "moderation_status.eq.approved",
+      ...(userId ? [`owner_id.eq.${userId}`] : []),
+    ].join(",");
+
     let query = supabase
       .from("recipes")
       .select(`${RECIPE_FIELDS}, recipe_ingredients(${INGREDIENT_FIELDS})`)
       .is("deleted_at", null)
-      // Hide user-uploaded images awaiting or failing moderation — system recipes (owner_id IS NULL) are always visible
-      .or(
-        "owner_id.is.null,moderation_status.is.null,moderation_status.eq.approved",
-      );
+      .or(moderationFilter);
 
     // --- Mode filters (OR logic across selected modes) ---
     if (activeModes.length > 0) {

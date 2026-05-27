@@ -2,7 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../../lib/use-reduced-motion";
-import { Clock, ClipboardList, Plus, Settings, Trash2 } from "lucide-react";
+import {
+  AlertCircle,
+  Clock,
+  ClipboardList,
+  Plus,
+  Settings,
+  Trash2,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
@@ -66,6 +73,17 @@ function RecipeCard({
               <span className="flex items-center gap-0.5">
                 <Clock size={10} aria-hidden="true" />
                 {recipe.time_min} {t("common.min")}
+              </span>
+            )}
+            {recipe.moderation_status === "rejected" && (
+              <span className="flex items-center gap-0.5 text-[#DC2626] font-medium">
+                <AlertCircle size={10} aria-hidden="true" />
+                {t("moderation.rejected")}
+              </span>
+            )}
+            {recipe.moderation_status === "pending_review" && (
+              <span className="text-[#B45309] font-medium">
+                {t("moderation.pending")}
               </span>
             )}
           </div>
@@ -302,7 +320,29 @@ function MyRecipesPage() {
             transition={{ duration: 0.18, ease: "easeOut" }}
           >
             {tab === "created" && (
-              <div>
+              <div className="space-y-3">
+                {/* Rejection alert banner */}
+                {!createdLoading &&
+                  createdRecipes.some(
+                    (r) => r.moderation_status === "rejected",
+                  ) && (
+                    <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/20 px-4 py-3 flex gap-3 items-start">
+                      <AlertCircle
+                        size={16}
+                        className="text-[#DC2626] shrink-0 mt-0.5"
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <p className="text-sm font-semibold text-[#DC2626]">
+                          {t("moderation.rejected")}
+                        </p>
+                        <p className="text-xs text-[#DC2626]/80 mt-0.5">
+                          {t("moderation.rejectedHint")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                 {createdLoading ? (
                   <RecipeListSkeleton />
                 ) : createdRecipes.length === 0 ? (
