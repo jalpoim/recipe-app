@@ -194,6 +194,54 @@ export type Database = {
           },
         ];
       };
+      cook_log_completions: {
+        Row: {
+          checked_item_keys: string[];
+          completed_at: string;
+          deleted_item_keys: string[];
+          id: string;
+          plan_id: string | null;
+          skipped_item_keys: string[];
+          user_id: string;
+        };
+        Insert: {
+          checked_item_keys?: string[];
+          completed_at?: string;
+          deleted_item_keys?: string[];
+          id?: string;
+          plan_id?: string | null;
+          skipped_item_keys?: string[];
+          user_id: string;
+        };
+        Update: {
+          checked_item_keys?: string[];
+          completed_at?: string;
+          deleted_item_keys?: string[];
+          id?: string;
+          plan_id?: string | null;
+          skipped_item_keys?: string[];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      ingredient_dislikes: {
+        Row: {
+          confirmed_at: string;
+          ingredient_name: string;
+          user_id: string;
+        };
+        Insert: {
+          confirmed_at?: string;
+          ingredient_name: string;
+          user_id: string;
+        };
+        Update: {
+          confirmed_at?: string;
+          ingredient_name?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       ingredients: {
         Row: {
           aliases: string[];
@@ -202,9 +250,12 @@ export type Database = {
           category: string | null;
           classification_source: string | null;
           created_at: string | null;
+          cuisine_signals: string[];
           default_unit: string | null;
           dietary_flags: string[];
           fat_per_100g: number | null;
+          flavor_notes: string[];
+          heat_level: number;
           id: string;
           name: string;
           owner_id: string | null;
@@ -217,9 +268,12 @@ export type Database = {
           category?: string | null;
           classification_source?: string | null;
           created_at?: string | null;
+          cuisine_signals?: string[];
           default_unit?: string | null;
           dietary_flags?: string[];
           fat_per_100g?: number | null;
+          flavor_notes?: string[];
+          heat_level?: number;
           id?: string;
           name: string;
           owner_id?: string | null;
@@ -232,9 +286,12 @@ export type Database = {
           category?: string | null;
           classification_source?: string | null;
           created_at?: string | null;
+          cuisine_signals?: string[];
           default_unit?: string | null;
           dietary_flags?: string[];
           fat_per_100g?: number | null;
+          flavor_notes?: string[];
+          heat_level?: number;
           id?: string;
           name?: string;
           owner_id?: string | null;
@@ -599,8 +656,10 @@ export type Database = {
           carbs: number | null;
           cook_count: number;
           created_at: string | null;
+          cuisine_tags: string[];
           deleted_at: string | null;
           fat: number | null;
+          flavor_notes: string[];
           id: string;
           image_thumb_url: string | null;
           image_url: string | null;
@@ -631,8 +690,10 @@ export type Database = {
           carbs?: number | null;
           cook_count?: number;
           created_at?: string | null;
+          cuisine_tags?: string[];
           deleted_at?: string | null;
           fat?: number | null;
+          flavor_notes?: string[];
           id?: string;
           image_thumb_url?: string | null;
           image_url?: string | null;
@@ -663,8 +724,10 @@ export type Database = {
           carbs?: number | null;
           cook_count?: number;
           created_at?: string | null;
+          cuisine_tags?: string[];
           deleted_at?: string | null;
           fat?: number | null;
+          flavor_notes?: string[];
           id?: string;
           image_thumb_url?: string | null;
           image_url?: string | null;
@@ -1157,6 +1220,12 @@ export type UserRecipeInteraction =
   Database["public"]["Tables"]["user_recipe_interactions"]["Row"];
 export type NotificationPreferences =
   Database["public"]["Tables"]["notification_preferences"]["Row"];
+export type CookLogCompletion =
+  Database["public"]["Tables"]["cook_log_completions"]["Row"];
+export type CookLogCompletionInsert =
+  Database["public"]["Tables"]["cook_log_completions"]["Insert"];
+export type IngredientDislike =
+  Database["public"]["Tables"]["ingredient_dislikes"]["Row"];
 export type RecipeReport =
   Database["public"]["Tables"]["recipe_reports"]["Row"];
 export type UserProtein = Database["public"]["Tables"]["user_proteins"]["Row"];

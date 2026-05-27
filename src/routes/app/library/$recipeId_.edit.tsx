@@ -30,6 +30,7 @@ import { useToast } from "../../../components/Toast";
 import { ProteinPicker } from "../../../components/ProteinPicker";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
 import type { RecipeIngredient, RecipeStep } from "../../../types/db";
+import { getSuggestedTags } from "../../../lib/auto-tag";
 
 export const Route = createFileRoute("/app/library/$recipeId_/edit")({
   loader: async ({ params }) => fetchRecipeById({ data: params.recipeId }),
@@ -81,6 +82,8 @@ const TAG_SECTIONS: { key: string; tags: string[] }[] = [
       "alto-proteína",
       "low-carb",
       "fit",
+      "picante",
+      "fumado",
     ],
   },
   {
@@ -261,6 +264,9 @@ function EditRecipePage() {
   const [dismissedSuggestion, setDismissedSuggestion] = useState<string | null>(
     null,
   );
+  const [dismissedAutoTags, setDismissedAutoTags] = useState<Set<string>>(
+    new Set(),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // ── queries ──────────────────────────────────────────────────────────────────
@@ -358,6 +364,32 @@ function EditRecipePage() {
       ? rawSuggestion
       : null;
 
+  // Auto-tag suggestions
+  const suggestedTags = useMemo(() => {
+    const raw = getSuggestedTags({
+      tags: selectedTags,
+      calories: effCalories ? parseFloat(effCalories) : null,
+      protein: effProtein ? parseFloat(effProtein) : null,
+      servings,
+      macros_total: true,
+      time_min: timeMin ? parseInt(timeMin, 10) : null,
+      ingredientNames: ingredients
+        .filter((i) => i.rawText.trim())
+        .map((i) => i.name ?? i.rawText),
+      stepTexts: steps.map((s) => s.text),
+    });
+    return raw.filter((t) => !dismissedAutoTags.has(t));
+  }, [
+    selectedTags,
+    effCalories,
+    effProtein,
+    servings,
+    timeMin,
+    ingredients,
+    steps,
+    dismissedAutoTags,
+  ]);
+
   // ── mutations ─────────────────────────────────────────────────────────────────
   const addCustomProteinMutation = useMutation({
     mutationFn: (displayName: string) =>
@@ -415,7 +447,7 @@ function EditRecipePage() {
           servings,
           timeMin: timeMin ? parseInt(timeMin, 10) : null,
           proteins: effectiveProteins,
-          tags: selectedTags,
+          tags: [...new Set([...selectedTags, ...suggestedTags])],
           calories: effCalories ? parseFloat(effCalories) : null,
           protein: effProtein ? parseFloat(effProtein) : null,
           carbs: effCarbs ? parseFloat(effCarbs) : null,
@@ -1089,6 +1121,50 @@ function EditRecipePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Suggested tags row */}
+              {suggestedTags.length > 0 && (
+                <div className="rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-3 py-3">
+                  <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
+                    {t("create.suggestedTags", "Sugerido automaticamente")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#dcfce7] text-[#15803d] border border-[#bbf7d0]"
+                      >
+                        {t(`tags.${tag}`, { defaultValue: tag })}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTags((prev) => [...prev, tag]);
+                            setDismissedAutoTags((prev) => {
+                              const next = new Set(prev);
+                              next.delete(tag);
+                              return next;
+                            });
+                          }}
+                          aria-label={`Adicionar tag ${tag}`}
+                          className="text-[#15803d] hover:text-[#166534] focus:outline-none"
+                        >
+                          ✓
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setDismissedAutoTags((prev) => new Set([...prev, tag]))
+                          }
+                          aria-label={`Dispensar tag ${tag}`}
+                          className="text-[#15803d] hover:text-[#DC2626] focus:outline-none"
+                        >
+                          <X size={10} aria-hidden="true" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Publish toggle */}
               <div className="flex items-center justify-between">

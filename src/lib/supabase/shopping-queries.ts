@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import type { ShoppingCheckState } from '../../types/db'
+import type { CookLogCompletion, ShoppingCheckState } from '../../types/db'
 import { makeClient } from './client-server'
 
 // GET: all check rows for a plan
@@ -140,4 +140,77 @@ export const upsertCategoryOverride = createServerFn({ method: 'POST' })
       )
     if (error) throw new Error(error.message)
     return { ok: true }
+  })
+
+// POST: record a shopping trip completion
+export const recordShoppingCompletion = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      planId: string
+      checkedItemKeys: string[]
+      deletedItemKeys: string[]
+      skippedItemKeys: string[]
+    }) => input,
+  )
+  .handler(async ({ data }): Promise<CookLogCompletion> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const { data: row, error } = await supabase
+      .from('cook_log_completions')
+      .insert({
+        user_id: session.user.id,
+        plan_id: data.planId,
+        checked_item_keys: data.checkedItemKeys,
+        deleted_item_keys: data.deletedItemKeys,
+        skipped_item_keys: data.skippedItemKeys,
+      })
+      .select()
+      .single()
+    if (error) throw new Error(error.message)
+    return row as CookLogCompletion
+  })
+
+// GET: fetch recent completions for dislike detection (last 10)
+export const fetchRecentCompletions = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<CookLogCompletion[]> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
+    const { data, error } = await supabase
+      .from('cook_log_completions')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('completed_at', { ascending: false })
+      .limit(10)
+    if (error) throw new Error(error.message)
+    return (data ?? []) as CookLogCompletion[]
+  })
+
+// POST: confirm an ingredient dislike
+export const confirmIngredientDislike = createServerFn({ method: 'POST' })
+  .inputValidator((ingredientName: string) => ingredientName)
+  .handler(async ({ data: ingredientName }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+    const { error } = await supabase
+      .from('ingredient_dislikes')
+      .upsert({ user_id: session.user.id, ingredient_name: ingredientName })
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
+// GET: fetch all ingredient dislikes for the current user
+export const fetchIngredientDislikes = createServerFn({ method: 'GET' })
+  .handler(async (): Promise<string[]> => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return []
+    const { data, error } = await supabase
+      .from('ingredient_dislikes')
+      .select('ingredient_name')
+      .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return (data ?? []).map((r: { ingredient_name: string }) => r.ingredient_name)
   })

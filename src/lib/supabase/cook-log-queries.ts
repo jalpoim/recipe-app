@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import type { CookLog } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
 
+export type CookSummary = {
+  countThisMonth: number;
+  countLastMonth: number;
+  topProtein: string | null;
+  mostCookedRecipe: { name: string; count: number } | null;
+  masteredRecipes: { id: string; name: string }[];
+  cuisinesThisMonth: string[];
+  firstTimeCuisine: string | null;
+};
+
 export type CookLogWithRecipe = CookLog & { recipe_name: string };
 
 // POST: log a recipe as cooked
@@ -114,6 +124,236 @@ export const fetchCookLog = createServerFn({ method: "GET" }).handler(
       ...row,
       recipe_name: row.recipes?.name ?? "",
     }));
+  },
+);
+
+// GET: count distinct recipes ever cooked (for tier gating)
+export const getDistinctCookedCount = createServerFn({ method: "GET" }).handler(
+  async (): Promise<number> => {
+    const supabase = makeClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return 0;
+    // supabase-js doesn't support COUNT DISTINCT; deduplicate in JS instead
+    const { data } = await supabase
+      .from("cook_log")
+      .select("recipe_id")
+      .eq("user_id", session.user.id);
+    if (!data) return 0;
+    return new Set(data.map((r) => r.recipe_id)).size;
+  },
+);
+
+// GET: monthly cook summary for profile
+export const getCookSummaryThisMonth = createServerFn({
+  method: "GET",
+}).handler(async (): Promise<CookSummary> => {
+  const supabase = makeClient();
+  const lang = getLang();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) {
+    return {
+      countThisMonth: 0,
+      countLastMonth: 0,
+      topProtein: null,
+      mostCookedRecipe: null,
+      masteredRecipes: [],
+      cuisinesThisMonth: [],
+      firstTimeCuisine: null,
+    };
+  }
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const endOfLastMonth = startOfMonth;
+
+  // Fetch this month's cook log with recipe data
+  const { data: thisMonthRows } = await supabase
+    .from("cook_log")
+    .select("recipe_id, recipes(id, name, proteins, cuisine_tags)")
+    .eq("user_id", session.user.id)
+    .gte("cooked_at", startOfMonth) as unknown as {
+    data:
+      | {
+          recipe_id: string;
+          recipes: {
+            id: string;
+            name: string;
+            proteins: string[];
+            cuisine_tags: string[];
+          } | null;
+        }[]
+      | null;
+  };
+
+  // Fetch last month count
+  const { data: lastMonthRows } = await supabase
+    .from("cook_log")
+    .select("id")
+    .eq("user_id", session.user.id)
+    .gte("cooked_at", startOfLastMonth)
+    .lt("cooked_at", endOfLastMonth);
+
+  const countThisMonth = (thisMonthRows ?? []).length;
+  const countLastMonth = (lastMonthRows ?? []).length;
+
+  // Top protein this month
+  const proteinCounts = new Map<string, number>();
+  for (const row of thisMonthRows ?? []) {
+    for (const p of row.recipes?.proteins ?? []) {
+      proteinCounts.set(p, (proteinCounts.get(p) ?? 0) + 1);
+    }
+  }
+  const topProtein =
+    proteinCounts.size > 0
+      ? [...proteinCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+      : null;
+
+  // Most cooked recipe this month
+  const recipeCounts = new Map<string, { name: string; count: number }>();
+  for (const row of thisMonthRows ?? []) {
+    if (!row.recipes) continue;
+    const existing = recipeCounts.get(row.recipe_id);
+    if (existing) {
+      existing.count++;
+    } else {
+      recipeCounts.set(row.recipe_id, { name: row.recipes.name, count: 1 });
+    }
+  }
+  const mostCookedEntry =
+    recipeCounts.size > 0
+      ? [...recipeCounts.values()].sort((a, b) => b.count - a.count)[0]
+      : null;
+  const mostCookedRecipe = mostCookedEntry ?? null;
+
+  // Mastered recipes (cooked ≥ 3× all time)
+  const { data: allCooks } = await supabase
+    .from("cook_log")
+    .select("recipe_id, recipes(id, name)")
+    .eq("user_id", session.user.id) as unknown as {
+    data:
+      | { recipe_id: string; recipes: { id: string; name: string } | null }[]
+      | null;
+  };
+  const allTimeCounts = new Map<string, { id: string; name: string; count: number }>();
+  for (const row of allCooks ?? []) {
+    if (!row.recipes) continue;
+    const existing = allTimeCounts.get(row.recipe_id);
+    if (existing) {
+      existing.count++;
+    } else {
+      allTimeCounts.set(row.recipe_id, { id: row.recipes.id, name: row.recipes.name, count: 1 });
+    }
+  }
+  const masteredRecipes = [...allTimeCounts.values()]
+    .filter((r) => r.count >= 3)
+    .map(({ id, name }) => ({ id, name }));
+
+  // Handle translations for recipe names if not PT
+  if (lang !== "pt" && (mostCookedRecipe || masteredRecipes.length > 0)) {
+    const idsToTranslate = [
+      ...(mostCookedEntry ? [recipeCounts.keys().next().value as string] : []),
+      ...masteredRecipes.map((r) => r.id),
+    ];
+    if (idsToTranslate.length > 0) {
+      const { data: trans } = await supabase
+        .from("recipe_translations")
+        .select("recipe_id, name")
+        .in("recipe_id", idsToTranslate)
+        .eq("language", lang);
+      const transMap = new Map((trans ?? []).map((t) => [t.recipe_id, t.name]));
+      if (mostCookedRecipe) {
+        const topId = [...recipeCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0]?.[0];
+        if (topId && transMap.has(topId)) mostCookedRecipe.name = transMap.get(topId)!;
+      }
+      for (const r of masteredRecipes) {
+        if (transMap.has(r.id)) r.name = transMap.get(r.id)!;
+      }
+    }
+  }
+
+  // Cuisines this month
+  const cuisinesSet = new Set<string>();
+  for (const row of thisMonthRows ?? []) {
+    for (const c of row.recipes?.cuisine_tags ?? []) {
+      cuisinesSet.add(c);
+    }
+  }
+  const cuisinesThisMonth = [...cuisinesSet];
+
+  // First-time cuisine this month (not in any previous cook log)
+  const { data: prevCooks } = await supabase
+    .from("cook_log")
+    .select("recipes(cuisine_tags)")
+    .eq("user_id", session.user.id)
+    .lt("cooked_at", startOfMonth) as unknown as {
+    data: { recipes: { cuisine_tags: string[] } | null }[] | null;
+  };
+  const prevCuisines = new Set<string>();
+  for (const row of prevCooks ?? []) {
+    for (const c of row.recipes?.cuisine_tags ?? []) {
+      prevCuisines.add(c);
+    }
+  }
+  const firstTimeCuisine =
+    cuisinesThisMonth.find((c) => !prevCuisines.has(c)) ?? null;
+
+  return {
+    countThisMonth,
+    countLastMonth,
+    topProtein,
+    mostCookedRecipe,
+    masteredRecipes,
+    cuisinesThisMonth,
+    firstTimeCuisine,
+  };
+});
+
+// GET: saves/likes summary for browser tier
+export const getSavesSummary = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ topCuisine: string | null; topProtein: string | null }> => {
+    const supabase = makeClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return { topCuisine: null, topProtein: null };
+
+    const { data } = await supabase
+      .from("user_recipe_interactions")
+      .select("recipe_id, type, recipes(proteins, cuisine_tags)")
+      .eq("user_id", session.user.id)
+      .in("type", ["like", "save"]) as unknown as {
+      data:
+        | {
+            recipe_id: string;
+            type: string;
+            recipes: { proteins: string[]; cuisine_tags: string[] } | null;
+          }[]
+        | null;
+    };
+
+    const proteinCounts = new Map<string, number>();
+    const cuisineCounts = new Map<string, number>();
+    for (const row of data ?? []) {
+      for (const p of row.recipes?.proteins ?? []) {
+        proteinCounts.set(p, (proteinCounts.get(p) ?? 0) + 1);
+      }
+      for (const c of row.recipes?.cuisine_tags ?? []) {
+        cuisineCounts.set(c, (cuisineCounts.get(c) ?? 0) + 1);
+      }
+    }
+    const topProtein =
+      proteinCounts.size > 0
+        ? [...proteinCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+        : null;
+    const topCuisine =
+      cuisineCounts.size > 0
+        ? [...cuisineCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+        : null;
+    return { topProtein, topCuisine };
   },
 );
 

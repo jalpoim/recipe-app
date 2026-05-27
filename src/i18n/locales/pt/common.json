@@ -303,6 +303,8 @@
     "alto-proteína": "Alto Proteína",
     "low-carb": "Low Carb",
     "fit": "Fit",
+    "picante": "Picante",
+    "fumado": "Fumado",
     "pequeno-almoço": "Pequeno-almoço",
     "almoço": "Almoço",
     "jantar": "Jantar",
@@ -418,5 +420,26 @@
     "householdCreating": "A criar…",
     "householdLeaving": "A sair…",
     "signOut": "Terminar sessão"
+  },
+  "cookProfile": {
+    "title": "O teu perfil de sabor",
+    "progressHint": "Cozinha {{remaining}} receitas mais para desbloquear o teu perfil de sabor.",
+    "browserHint": "Começa a cozinhar para desbloquear o teu perfil completo.",
+    "basedOnSaved": "Com base nas receitas que guardaste, tens tendência para pratos {{cuisine}} com {{protein}}.",
+    "recipesThisMonth": "Receitas este mês",
+    "deltaUp": "↑ {{n}} em relação ao mês passado",
+    "deltaDown": "↓ {{n}} em relação ao mês passado",
+    "deltaSame": "igual ao mês passado",
+    "topProtein": "Proteína favorita",
+    "mostCooked": "Receita mais cozinhada",
+    "masteredBadge": "Dominada",
+    "cuisinesExplored": "Cozinhas exploradas",
+    "firstTimeCuisine": "Primeira vez a cozinhar {{cuisine}} 🎉",
+    "completeShoppingTrip": "Concluir compras",
+    "completeConfirm": "Marcar compras como concluídas? O plano será arquivado.",
+    "completedToast": "Compras concluídas ✓",
+    "dislikePrompt": "Reparámos que costumas remover {{ingredient}} — queres que deixemos de o incluir na lista?",
+    "dislikeConfirm": "Sim, remover sempre",
+    "dislikeDismiss": "Não, manter"
   }
 }

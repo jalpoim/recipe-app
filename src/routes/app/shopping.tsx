@@ -20,7 +20,12 @@ import {
   clearCustomItems,
   fetchCategoryOverrides,
   upsertCategoryOverride,
+  recordShoppingCompletion,
+  fetchRecentCompletions,
+  confirmIngredientDislike,
+  fetchIngredientDislikes,
 } from "../../lib/supabase/shopping-queries";
+import { archiveAndCreatePlan } from "../../lib/supabase/plan-queries";
 import {
   useIngredientCategory,
   CATEGORY_SLUG_MAP,
@@ -606,11 +611,15 @@ function buildRecipeShareText(groups: RecipeGroup[]): string {
 function RecipeView({
   items,
   checkMap,
+  deletedItemKeys,
   onToggle,
+  onRemoveDerived,
 }: {
   items: PlanItemWithRecipe[];
   checkMap: Map<string, boolean>;
+  deletedItemKeys: Set<string>;
   onToggle: (keys: string[], next: boolean) => void;
+  onRemoveDerived: (keys: string[], name: string) => void;
 }) {
   if (items.length === 0) return null;
 
@@ -624,7 +633,10 @@ function RecipeView({
       </div>
       <div className="space-y-3">
         {groups.map((group) => {
-          if (group.ingredients.length === 0) return null;
+          const visibleIngredients = group.ingredients.filter(
+            (ing) => !deletedItemKeys.has(ing.itemKeys[0]),
+          );
+          if (visibleIngredients.length === 0) return null;
           return (
             <div
               key={group.recipeId}
@@ -636,7 +648,7 @@ function RecipeView({
                 </p>
               </div>
               <div className="divide-y divide-[#F3F4F6]">
-                {group.ingredients.map((ing) => {
+                {visibleIngredients.map((ing) => {
                   const checkedCount = ing.itemKeys.filter(
                     (k) => checkMap.get(k) ?? false,
                   ).length;
@@ -658,6 +670,12 @@ function RecipeView({
                       checked={allChecked}
                       partial={someChecked}
                       onToggle={() => onToggle(ing.itemKeys, !allChecked)}
+                      onRemove={() =>
+                        onRemoveDerived(
+                          ing.itemKeys,
+                          ing.name ?? ing.rawText ?? "",
+                        )
+                      }
                     />
                   );
                 })}
@@ -1093,6 +1111,7 @@ function ShoppingPage() {
         checksData.filter((c) => c.item_key.startsWith("custom:")),
       );
       setInitializedForPlan(planId);
+      setDeletedItemKeys(new Set());
     }
   }, [checksData, planId, initializedForPlan]);
 
@@ -1109,9 +1128,27 @@ function ShoppingPage() {
     onError: () => showToast("Erro ao guardar", "error"),
   });
 
+  const { data: ingredientDislikes = [] } = useQuery({
+    queryKey: ["ingredient-dislikes"],
+    queryFn: fetchIngredientDislikes,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const dislikeMutation = useMutation({
+    mutationFn: (ingredientName: string) =>
+      confirmIngredientDislike({ data: ingredientName }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ingredient-dislikes"] });
+      setDislikePrompt(null);
+    },
+  });
+
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmClearChecks, setConfirmClearChecks] = useState(false);
   const [confirmClearCustom, setConfirmClearCustom] = useState(false);
+  const [confirmComplete, setConfirmComplete] = useState(false);
+  const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
+  const [dislikePrompt, setDislikePrompt] = useState<string | null>(null);
 
   const isLoading =
     isPlanLoading ||
@@ -1217,6 +1254,119 @@ function ShoppingPage() {
     );
   }
 
+  function handleRemoveDerived(keys: string[], ingredientName: string) {
+    setDeletedItemKeys((prev) => new Set([...prev, ...keys]));
+    // Remove from checkMap optimistically too
+    setCheckMap((prev) => {
+      const next = new Map(prev);
+      for (const k of keys) next.delete(k);
+      return next;
+    });
+    void ingredientName; // used in dislike detection on completion
+  }
+
+  async function handleCompleteShoppingTrip() {
+    if (!planId) return;
+
+    // Gather all recipe-derived item keys that exist across all plan items
+    const allRecipeKeys: string[] = [];
+    for (const item of items) {
+      for (const ing of item.recipe.recipe_ingredients) {
+        if (!ing.is_pantry) {
+          allRecipeKeys.push(`recipe:${item.id}:${ing.id}`);
+        }
+      }
+    }
+
+    const checkedKeys = allRecipeKeys.filter((k) => checkMap.get(k) ?? false);
+    const deletedKeys = [...deletedItemKeys].filter((k) =>
+      allRecipeKeys.includes(k),
+    );
+    const skippedKeys = allRecipeKeys.filter(
+      (k) => !checkedKeys.includes(k) && !deletedKeys.includes(k),
+    );
+
+    try {
+      await recordShoppingCompletion({
+        data: {
+          planId,
+          checkedItemKeys: checkedKeys,
+          deletedItemKeys: deletedKeys,
+          skippedItemKeys: skippedKeys,
+        },
+      });
+
+      await archiveAndCreatePlan({ data: planId });
+      qc.invalidateQueries({ queryKey: ["active-plan"] });
+      qc.invalidateQueries({ queryKey: ["plan"] });
+      showToast(t("cookProfile.completedToast"), "success");
+      setDeletedItemKeys(new Set());
+      setConfirmComplete(false);
+
+      // Check for ingredient dislikes — names that appear in deleted across ≥3 completions
+      checkDislikeSuggestions(deletedKeys, items);
+    } catch {
+      showToast(t("common.error"), "error");
+      setConfirmComplete(false);
+    }
+  }
+
+  function checkDislikeSuggestions(
+    deletedKeys: string[],
+    planItems: PlanItemWithRecipe[],
+  ) {
+    // Build a name → ingredient_id map for deleted keys
+    const deletedNames: string[] = [];
+    for (const key of deletedKeys) {
+      // key format: recipe:<planItemId>:<ingredientId>
+      const parts = key.split(":");
+      if (parts.length < 3) continue;
+      const ingId = parts[2];
+      for (const item of planItems) {
+        const ing = item.recipe.recipe_ingredients.find((i) => i.id === ingId);
+        if (ing) {
+          const name = (ing.name ?? ing.raw_text).trim().toLowerCase();
+          if (name && !ingredientDislikes.includes(name)) {
+            deletedNames.push(name);
+          }
+        }
+      }
+    }
+
+    if (deletedNames.length === 0) return;
+
+    // Load recent completions and check frequency
+    fetchRecentCompletions().then((completions) => {
+      const frequencyMap = new Map<string, number>();
+      for (const completion of completions) {
+        for (const key of completion.deleted_item_keys) {
+          const parts = key.split(":");
+          if (parts.length < 3) continue;
+          const ingId = parts[2];
+          for (const item of planItems) {
+            const ing = item.recipe.recipe_ingredients.find((i) => i.id === ingId);
+            if (ing) {
+              const name = (ing.name ?? ing.raw_text).trim().toLowerCase();
+              frequencyMap.set(name, (frequencyMap.get(name) ?? 0) + 1);
+            }
+          }
+        }
+      }
+
+      // Also count the current deletion
+      for (const name of deletedNames) {
+        frequencyMap.set(name, (frequencyMap.get(name) ?? 0) + 1);
+      }
+
+      // Find first ingredient deleted ≥3 times that's not already disliked
+      const candidate = [...frequencyMap.entries()].find(
+        ([name, count]) =>
+          count >= 3 && !ingredientDislikes.includes(name),
+      );
+      if (candidate) setDislikePrompt(candidate[0]);
+    }).catch(() => {/* silently ignore */});
+  }
+
   if (isLoading) return <ShoppingSkeleton />;
 
   const isEmpty = items.length === 0;
@@ -1279,7 +1429,9 @@ function ShoppingPage() {
               <RecipeView
                 items={items}
                 checkMap={checkMap}
+                deletedItemKeys={deletedItemKeys}
                 onToggle={toggleKeys}
+                onRemoveDerived={handleRemoveDerived}
               />
             </div>
             <div className={view !== "global" ? "hidden" : ""}>
@@ -1294,8 +1446,56 @@ function ShoppingPage() {
               />
             </div>
 
+            {/* Ingredient dislike prompt */}
+            {dislikePrompt && (
+              <div className="mt-4 rounded-xl border border-[#E5E7EB] bg-white p-4 space-y-3">
+                <p className="text-sm text-[#1A1A1A]">
+                  {t("cookProfile.dislikePrompt", { ingredient: dislikePrompt })}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setDislikePrompt(null)}
+                    className="flex-1 py-2 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus:outline-none"
+                  >
+                    {t("cookProfile.dislikeDismiss")}
+                  </button>
+                  <button
+                    onClick={() => dislikeMutation.mutate(dislikePrompt)}
+                    className="flex-1 py-2 rounded-xl bg-[#1A1A1A] text-white text-sm font-medium hover:bg-[#374151] transition-colors focus:outline-none"
+                  >
+                    {t("cookProfile.dislikeConfirm")}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Bottom actions */}
             <div className="mt-4 flex flex-col gap-2">
+              {/* Concluir compras */}
+              {items.length > 0 &&
+                (confirmComplete ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmComplete(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                    <button
+                      onClick={handleCompleteShoppingTrip}
+                      className="flex-1 py-2.5 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                    >
+                      {t("common.confirm")}
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmComplete(true)}
+                    className="w-full py-3 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
+                  >
+                    {t("cookProfile.completeShoppingTrip")}
+                  </button>
+                ))}
               {checkedCount > 0 &&
                 (confirmClearChecks ? (
                   <div className="flex gap-2">

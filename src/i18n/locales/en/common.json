@@ -303,6 +303,8 @@
     "alto-proteína": "High Protein",
     "low-carb": "Low Carb",
     "fit": "Fit",
+    "picante": "Spicy",
+    "fumado": "Smoky",
     "pequeno-almoço": "Breakfast",
     "almoço": "Lunch",
     "jantar": "Dinner",
@@ -418,5 +420,26 @@
     "householdCreating": "Creating…",
     "householdLeaving": "Leaving…",
     "signOut": "Sign out"
+  },
+  "cookProfile": {
+    "title": "Your flavor profile",
+    "progressHint": "Cook {{remaining}} more recipes to unlock your flavor profile.",
+    "browserHint": "Start cooking to unlock your full profile.",
+    "basedOnSaved": "Based on the recipes you've saved, you tend toward {{cuisine}} dishes with {{protein}}.",
+    "recipesThisMonth": "Recipes this month",
+    "deltaUp": "↑ {{n}} vs last month",
+    "deltaDown": "↓ {{n}} vs last month",
+    "deltaSame": "same as last month",
+    "topProtein": "Favourite protein",
+    "mostCooked": "Most cooked recipe",
+    "masteredBadge": "Mastered",
+    "cuisinesExplored": "Cuisines explored",
+    "firstTimeCuisine": "First time cooking {{cuisine}} 🎉",
+    "completeShoppingTrip": "Complete shopping trip",
+    "completeConfirm": "Mark shopping as done? The plan will be archived.",
+    "completedToast": "Shopping completed ✓",
+    "dislikePrompt": "We noticed you often remove {{ingredient}} — want us to stop including it in your list?",
+    "dislikeConfirm": "Yes, always remove",
+    "dislikeDismiss": "No, keep it"
   }
 }
