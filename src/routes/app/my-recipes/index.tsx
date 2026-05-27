@@ -9,6 +9,7 @@ import {
   Plus,
   Settings,
   Trash2,
+  X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -148,6 +149,7 @@ function MyRecipesPage() {
   const lang = i18n.language.startsWith("en") ? "en" : "pt";
   const [tab, setTab] = useState<Tab>("created");
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [dismissedRejection, setDismissedRejection] = useState(false);
   const { skip: reducedMotion } = useMotion();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -323,23 +325,32 @@ function MyRecipesPage() {
               <div className="space-y-3">
                 {/* Rejection alert banner */}
                 {!createdLoading &&
+                  !dismissedRejection &&
                   createdRecipes.some(
                     (r) => r.moderation_status === "rejected",
                   ) && (
-                    <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/20 px-4 py-3 flex gap-3 items-start">
+                    <div className="rounded-xl bg-[#FFFBEB] border border-[#B45309]/25 px-4 py-3 flex gap-3 items-start">
                       <AlertCircle
                         size={16}
-                        className="text-[#DC2626] shrink-0 mt-0.5"
+                        className="text-[#B45309] shrink-0 mt-0.5"
                         aria-hidden="true"
                       />
-                      <div>
-                        <p className="text-sm font-semibold text-[#DC2626]">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#92400E]">
                           {t("moderation.rejected")}
                         </p>
-                        <p className="text-xs text-[#DC2626]/80 mt-0.5">
+                        <p className="text-xs text-[#B45309] mt-0.5">
                           {t("moderation.rejectedHint")}
                         </p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => setDismissedRejection(true)}
+                        aria-label={t("common.dismiss")}
+                        className="text-[#B45309] hover:text-[#92400E] transition-colors focus:outline-none shrink-0"
+                      >
+                        <X size={16} aria-hidden="true" />
+                      </button>
                     </div>
                   )}
 

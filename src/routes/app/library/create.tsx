@@ -896,14 +896,14 @@ function CreateRecipePage() {
                     importMutation.mutate(importUrl.trim());
                   }
                 }}
-                className={`w-full rounded-xl border bg-[#F9FAFB] px-4 py-3 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 transition-colors mb-3 ${importError ? "border-[#DC2626] focus:border-[#DC2626]" : "border-[#E5E7EB] focus:border-[#F4623A]"}`}
+                className={`w-full rounded-xl border bg-[#F9FAFB] px-4 py-3 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 transition-colors mb-3 ${importError ? "border-[#D97706] focus:border-[#D97706]" : "border-[#E5E7EB] focus:border-[#F4623A]"}`}
               />
               {importError && (
-                <div className="mb-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] px-4 py-3">
-                  <p className="text-sm font-medium text-[#DC2626] mb-0.5">
+                <div className="mb-3 rounded-xl bg-[#FFFBEB] border border-[#B45309]/25 px-4 py-3">
+                  <p className="text-sm font-medium text-[#92400E] mb-0.5">
                     {t("import.errorTitle")}
                   </p>
-                  <p className="text-xs text-[#B91C1C]">{importError}</p>
+                  <p className="text-xs text-[#B45309]">{importError}</p>
                 </div>
               )}
               {importedImagePreview && !imageUrl && (

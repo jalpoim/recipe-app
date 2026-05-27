@@ -135,7 +135,7 @@
     "banner": "Recipe imported from {{domain}} — edit and save as yours",
     "sourceLabel": "Source",
     "errorTitle": "Couldn't import this recipe",
-    "errorFetch": "We couldn't reach this site — it may be blocked or unavailable. Try copying the ingredients and steps manually instead.",
+    "errorFetch": "We couldn't reach this site — it may be blocked or unavailable.",
     "errorNoSchema": "This site doesn't share recipe data in a format we can read. You can copy the ingredients and steps directly into the fields below."
   },
   "units": {
@@ -248,6 +248,7 @@
     "loading": "Loading…",
     "error": "Something went wrong",
     "retry": "Try again",
+    "dismiss": "Dismiss",
     "recipes_one": "recipe",
     "recipes_other": "recipes",
     "min": "min"

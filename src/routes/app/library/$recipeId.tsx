@@ -233,6 +233,39 @@ function CookingDrawer({
   );
 }
 
+// ---------- Rejected banner ----------
+
+function RejectedBanner({ recipeId }: { recipeId: string }) {
+  const { t } = useTranslation();
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+  return (
+    <div className="rounded-xl bg-[#FFFBEB] border border-[#B45309]/25 px-3 py-2 space-y-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-semibold text-[#92400E]">
+          {t("moderation.rejected")}
+        </p>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label={t("common.dismiss")}
+          className="text-[#B45309] hover:text-[#92400E] transition-colors focus:outline-none shrink-0 -mt-0.5"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
+      </div>
+      <p className="text-xs text-[#B45309]">{t("moderation.rejectedHint")}</p>
+      <Link
+        to="/app/library/$recipeId/edit"
+        params={{ recipeId }}
+        className="inline-block text-xs font-semibold text-[#92400E] underline underline-offset-2"
+      >
+        {t("recipe.edit")}
+      </Link>
+    </div>
+  );
+}
+
 // ---------- Skeleton / Error ----------
 
 function RecipeDetailSkeleton() {
@@ -786,21 +819,7 @@ function RecipeDetailPage() {
                   </div>
                 )}
                 {isOwner && recipe.moderation_status === "rejected" && (
-                  <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2 space-y-1.5">
-                    <p className="text-xs font-semibold text-[#DC2626]">
-                      {t("moderation.rejected")}
-                    </p>
-                    <p className="text-xs text-[#DC2626]/80">
-                      {t("moderation.rejectedHint")}
-                    </p>
-                    <Link
-                      to="/app/library/$recipeId/edit"
-                      params={{ recipeId: recipe.id }}
-                      className="inline-block text-xs font-semibold text-[#DC2626] underline underline-offset-2"
-                    >
-                      {t("recipe.edit")}
-                    </Link>
-                  </div>
+                  <RejectedBanner recipeId={recipe.id} />
                 )}
 
                 {myCookCount > 0 && (

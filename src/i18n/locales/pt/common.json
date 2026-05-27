@@ -248,6 +248,7 @@
     "loading": "A carregar…",
     "error": "Algo correu mal",
     "retry": "Tentar novamente",
+    "dismiss": "Fechar",
     "recipes_one": "receita",
     "recipes_other": "receitas",
     "min": "min"
