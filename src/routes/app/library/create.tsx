@@ -667,6 +667,18 @@ function CreateRecipePage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-4">
+        {/* Import from URL — primary entry point */}
+        {!importedSourceUrl && (
+          <button
+            type="button"
+            onClick={() => setImportSheetOpen(true)}
+            className="w-full flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#E5E7EB] bg-white px-4 py-4 text-sm font-medium text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+          >
+            <Link2 size={16} aria-hidden="true" />
+            {t("import.trigger")}
+          </button>
+        )}
+
         {/* Import banner */}
         {importedSourceUrl && (
           <div className="flex items-start gap-2 rounded-2xl bg-[#F0FDF4] border border-[#16A34A]/30 px-4 py-3">
@@ -855,16 +867,6 @@ function CreateRecipePage() {
             </div>
           )}
         </div>
-
-        {/* Import from URL link */}
-        <button
-          type="button"
-          onClick={() => setImportSheetOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none"
-        >
-          <Link2 size={12} aria-hidden="true" />
-          {t("import.trigger")}
-        </button>
 
         {/* Import URL bottom sheet */}
         <Drawer.Root
