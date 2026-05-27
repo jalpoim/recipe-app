@@ -147,7 +147,15 @@ function BottomNav() {
     prevTabRef.current = to;
   }
 
-  const activeTabIndex = tabs.findIndex((tab) => pathname.startsWith(tab.to));
+  // Create/edit pages belong to the "my-recipes" tab, not "library"
+  const isCreateOrEdit =
+    pathname === "/app/library/create" ||
+    /^\/app\/library\/[^/]+\/edit/.test(pathname);
+  const effectivePathname = isCreateOrEdit ? "/app/my-recipes" : pathname;
+
+  const activeTabIndex = tabs.findIndex((tab) =>
+    effectivePathname.startsWith(tab.to),
+  );
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-[#E5E7EB] pb-safe">
@@ -163,7 +171,7 @@ function BottomNav() {
         />
         <div className="flex items-stretch">
           {tabs.map((tab) => {
-            const isActive = pathname.startsWith(tab.to);
+            const isActive = effectivePathname.startsWith(tab.to);
             const Icon = tab.icon;
 
             if (tab.disabled) {

@@ -28,6 +28,7 @@ import {
   type IngredientRow,
   type StepRow,
 } from "../../../lib/supabase/recipe-queries";
+import { parseIngredientText } from "../../../lib/parse-recipe-url";
 import { supabase } from "../../../lib/supabase/browser";
 import { convertToGrams } from "../../../lib/units";
 import { deriveProteinsFromIngredients } from "../../../lib/proteins";
@@ -401,23 +402,30 @@ function CreateRecipePage() {
       setImportSheetOpen(false);
       setImportUrl("");
       setImportedSourceUrl(result.sourceUrl);
-      if (result.imageUrl) setImportedImagePreview(result.imageUrl);
+      if (result.imageUrl) {
+        setImageUrl(result.imageUrl);
+        setImportedImagePreview(result.imageUrl);
+      }
       if (result.name) setName(result.name);
-      if (result.servings) {
-        prevServingsRef.current = result.servings;
-        setServings(result.servings);
+      {
+        const sv = result.servings ?? 1;
+        prevServingsRef.current = sv;
+        setServings(sv);
       }
       if (result.timeMin) setTimeMin(String(result.timeMin));
       if (result.ingredients.length > 0) {
         const newKey = ++keyCounter.current;
-        const parsed: IngredientRow[] = result.ingredients.map((raw, idx) => ({
-          position: idx,
-          rawText: raw,
-          quantity: null,
-          unit: null,
-          name: null,
-          isOptional: false,
-        }));
+        const parsed: IngredientRow[] = result.ingredients.map((raw, idx) => {
+          const p = parseIngredientText(raw);
+          return {
+            position: idx,
+            rawText: raw,
+            quantity: p.quantity,
+            unit: p.unit,
+            name: p.name,
+            isOptional: false,
+          };
+        });
         setIngredients(parsed);
         setIngredientKeys(parsed.map((_, i) => newKey + i));
       }
