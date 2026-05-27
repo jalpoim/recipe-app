@@ -391,7 +391,16 @@ function CreateRecipePage() {
       setMacrosManuallyEdited(true);
       showToast(t("create.macrosEstimated"), "success");
     },
-    onError: () => showToast(t("create.macrosEstimateError"), "error"),
+    onError: (e) => {
+      const isRateLimit =
+        e instanceof Error && e.message.includes("RATE_LIMIT_EXCEEDED");
+      showToast(
+        t(
+          isRateLimit ? "create.macrosRateLimit" : "create.macrosEstimateError",
+        ),
+        "error",
+      );
+    },
   });
 
   const importMutation = useMutation({

@@ -62,6 +62,24 @@ export type Database = {
           },
         ];
       };
+      daily_ai_usage: {
+        Row: {
+          date: string;
+          macro_calls: number;
+          user_id: string;
+        };
+        Insert: {
+          date?: string;
+          macro_calls?: number;
+          user_id: string;
+        };
+        Update: {
+          date?: string;
+          macro_calls?: number;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       household_invites: {
         Row: {
           created_at: string | null;
@@ -332,6 +350,7 @@ export type Database = {
           created_at: string;
           dietary_mode: string;
           display_name: string;
+          email: string | null;
           intolerances: string[];
           measurement_unit: string;
           onboarding_completed: boolean;
@@ -344,6 +363,7 @@ export type Database = {
           created_at?: string;
           dietary_mode?: string;
           display_name: string;
+          email?: string | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;
@@ -356,6 +376,7 @@ export type Database = {
           created_at?: string;
           dietary_mode?: string;
           display_name?: string;
+          email?: string | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;
@@ -904,6 +925,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      compute_popularity_score: {
+        Args: {
+          p_cook_count: number;
+          p_created_at: string;
+          p_is_featured: boolean;
+          p_like_count: number;
+          p_save_count: number;
+        };
+        Returns: number;
+      };
       get_active_plan: {
         Args: { p_household_id?: string; p_user_id: string };
         Returns: {
@@ -932,16 +963,26 @@ export type Database = {
         Args: { other_user_id: string };
         Returns: boolean;
       };
-      search_ingredients_fuzzy: {
-        Args: { result_limit?: number; search_term: string };
-        Returns: {
-          id: string;
-          name: string;
-          similarity: number;
-        }[];
-      };
+      search_ingredients_fuzzy:
+        | {
+            Args: { lang?: string; result_limit?: number; search_term: string };
+            Returns: {
+              id: string;
+              name: string;
+              similarity: number;
+            }[];
+          }
+        | {
+            Args: { result_limit?: number; search_term: string };
+            Returns: {
+              id: string;
+              name: string;
+              similarity: number;
+            }[];
+          };
       show_limit: { Args: never; Returns: number };
       show_trgm: { Args: { "": string }; Returns: string[] };
+      unaccent: { Args: { "": string }; Returns: string };
     };
     Enums: {
       [_ in never]: never;

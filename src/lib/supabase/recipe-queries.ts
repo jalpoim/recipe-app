@@ -291,6 +291,22 @@ export const estimateMacros = createServerFn({ method: "POST" })
     const apiKey = process.env["ANTHROPIC_API_KEY"];
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
+    const supabase = makeClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
+
+    const today = new Date().toISOString().split("T")[0]!;
+    const { data: usage } = await supabase
+      .from("daily_ai_usage")
+      .select("macro_calls")
+      .eq("user_id", user.id)
+      .eq("date", today)
+      .single();
+    const currentCalls = usage?.macro_calls ?? 0;
+    if (currentCalls >= 10) throw new Error("RATE_LIMIT_EXCEEDED");
+
     const prompt = `You are a nutrition expert. Estimate the macros per serving for this recipe.
 
 Recipe: ${data.name}
@@ -326,7 +342,7 @@ Values should be per serving, rounded to the nearest integer. Use 0 if truly zer
 
     try {
       const parsed = JSON.parse(text) as Record<string, unknown>;
-      return {
+      const result = {
         calories:
           typeof parsed.calories === "number"
             ? Math.round(parsed.calories)
@@ -339,7 +355,14 @@ Values should be per serving, rounded to the nearest integer. Use 0 if truly zer
           typeof parsed.carbs === "number" ? Math.round(parsed.carbs) : null,
         fat: typeof parsed.fat === "number" ? Math.round(parsed.fat) : null,
       };
-    } catch {
+      await supabase.from("daily_ai_usage").upsert({
+        user_id: user.id,
+        date: today,
+        macro_calls: currentCalls + 1,
+      });
+      return result;
+    } catch (e) {
+      if (e instanceof Error && e.message === "RATE_LIMIT_EXCEEDED") throw e;
       throw new Error("Failed to parse macro estimate response");
     }
   });

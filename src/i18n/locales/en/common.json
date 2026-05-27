@@ -112,6 +112,7 @@
     "estimateMacros": "Estimate macros with AI",
     "macrosEstimated": "Macros estimated ✓",
     "macrosEstimateError": "Could not estimate macros",
+    "macrosRateLimit": "Daily limit reached (10 estimates/day). Come back tomorrow!",
     "macrosAutoLabel": "(calculated automatically)",
     "macrosManualLabel": "(manually edited)",
     "estimateMacrosRemaining": "Estimate remaining macros",
