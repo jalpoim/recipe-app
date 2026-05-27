@@ -3872,7 +3872,7 @@ Add `orderBy: 'popularity' | 'time'` parameter alongside existing filters. When 
 
 ---
 
-## Session 24 — Motion & animation layer
+## Session 24 — Motion & animation layer ✅ COMPLETE (2026-05-26)
 
 **Goal:** Make every key interaction feel alive with spring-physics animations. No new features — only motion layered on top of what already exists. Every animation must respect `prefers-reduced-motion`.
 
@@ -4635,3 +4635,635 @@ Before making the app URL publicly shareable, complete these steps. None require
 - Add Supabase usage to your regular check (Dashboard → Usage) — watch Storage and bandwidth
 - Set up a Vercel spend alert if you upgrade to Pro
 - After first 100 users, check `SELECT COUNT(*), classification_source FROM ingredients GROUP BY classification_source` to see how fast user-submitted ingredients are growing
+
+---
+
+## Flavor Identity & Cook Profile — Phase 1
+
+### Goal
+
+Make cook history visible and purposeful on the profile page without any AI or comparative stats. Lays the data foundation for Phase 2. Ships fast, gives users something immediately and starts accumulating the signals Phase 2 depends on.
+
+### Context & rationale
+
+The "I cooked this" button currently has no loop — the data goes nowhere visible. Phase 1 closes that loop with a profile section that shows what you've cooked, your top protein, your cuisine tendencies, and a progress bar toward the full flavor profile. No AI yet. No comparisons. Just honest, well-displayed data.
+
+---
+
+### 1. Database migrations
+
+#### 1a. Add `cuisine_tags` and `flavor_notes` to `recipes`
+
+```sql
+alter table recipes
+  add column if not exists cuisine_tags text[] not null default '{}',
+  add column if not exists flavor_notes text[] not null default '{}';
+
+create index if not exists recipes_cuisine_tags_gin on recipes using gin(cuisine_tags);
+create index if not exists recipes_flavor_notes_gin on recipes using gin(flavor_notes);
+```
+
+#### 1b. Add flavor/cuisine signal columns to `ingredients`
+
+```sql
+alter table ingredients
+  add column if not exists cuisine_signals text[] not null default '{}',
+  add column if not exists heat_level int not null default 0 check (heat_level between 0 and 3),
+  add column if not exists flavor_notes text[] not null default '{}';
+```
+
+#### 1c. Add `cook_log_completions` table (shopping list completion events)
+
+```sql
+create table if not exists cook_log_completions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  plan_id uuid references plans(id) on delete set null,
+  completed_at timestamptz not null default now(),
+  checked_item_keys text[] not null default '{}',   -- item_keys that were checked
+  deleted_item_keys text[] not null default '{}',   -- item_keys deleted before shopping (already had)
+  skipped_item_keys text[] not null default '{}'    -- item_keys left unchecked at completion
+);
+
+alter table cook_log_completions enable row level security;
+
+create policy "users manage own completions" on cook_log_completions
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+create index cook_log_completions_user_id on cook_log_completions(user_id);
+create index cook_log_completions_completed_at on cook_log_completions(completed_at desc);
+```
+
+#### 1d. Add `ingredient_dislikes` table
+
+```sql
+create table if not exists ingredient_dislikes (
+  user_id uuid references auth.users(id) on delete cascade not null,
+  ingredient_name text not null,
+  confirmed_at timestamptz not null default now(),
+  primary key (user_id, ingredient_name)
+);
+
+alter table ingredient_dislikes enable row level security;
+
+create policy "users manage own dislikes" on ingredient_dislikes
+  to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+```
+
+---
+
+### 2. New tags: `picante` and `fumado`
+
+#### Add to `src/i18n/locales/pt/common.json` and `en/common.json`
+
+In the `tags` object:
+```json
+"picante": "Picante",
+"fumado": "Fumado"
+```
+(PT and EN are the same label for both.)
+
+In `tagSections`, add both to the `diet` section (or create a new `flavor` section — your call, but keeping them in `diet` avoids a new filter category for now).
+
+#### Add to the tag picker in `create.tsx` and `$recipeId_.edit.tsx`
+
+These should appear as selectable tags in the recipe form, same as any other tag.
+
+---
+
+### 3. Auto-tagging at recipe save time
+
+In `src/lib/supabase/recipe-queries.ts` (or a new `src/lib/auto-tag.ts`), add a pure function `autoTagRecipe(recipe)` that derives tags deterministically from the recipe data. Call it on both create and edit save paths.
+
+```typescript
+// Rules (all additive — existing user tags are preserved, not overwritten):
+
+// fit / alto-proteína
+if (proteinPerServing >= 25 && caloriesPerServing <= 500) add 'fit', 'alto-proteína'
+if (proteinPerServing / caloriesPerServing >= 0.15) add 'alto-proteína'
+
+// rápido
+if (time_min !== null && time_min < 30) add 'rápido'
+
+// meal-prep
+if (servings >= 4) add 'meal-prep'
+
+// 5-ingredientes
+if (non-pantry ingredient count <= 5) add '5-ingredientes'
+
+// picante — scan ingredient names for heat-signal keywords
+const HEAT_SIGNALS = ['piri-piri', 'malagueta', 'gochugaru', 'gochujang', 'harissa',
+  'jalapeño', 'sriracha', 'cayenne', 'chili', 'chile', 'cayena', 'tabasco']
+if any ingredient name includes a heat signal → add 'picante'
+
+// fumado — scan ingredient names for smoke-signal keywords
+const SMOKE_SIGNALS = ['chouriço', 'chorizo', 'paprika defumada', 'smoked', 'fumado',
+  'salmão fumado', 'bacon', 'panceta']
+if any ingredient name includes a smoke signal → add 'fumado'
+
+// cooking method — scan step text
+if steps contain 'forno' or 'assado' → add 'forno'
+if steps contain 'frigideira' or 'saltear' or 'refogar' → add 'fogão'  (only if forno not already added)
+if steps contain 'air fryer' or 'airfryer' → add 'air-fryer'
+if steps contain 'grelhador' or 'grelhado' or 'grelha' → add 'grelhador'
+if steps contain 'micro-ondas' or 'microwave' → add 'micro-ondas'
+if steps contain 'vapor' or 'cozido a vapor' → add 'fogão'
+```
+
+The function returns the merged tag array (existing tags + auto-detected, deduplicated). It never removes a tag the user set manually.
+
+**"Suggest and confirm" pattern:** In the recipe creation/edit form, after computing auto-tags, show a small "Suggested tags" row below the tag picker with any newly detected tags highlighted. The user can dismiss individual suggestions. Accepted suggestions are added to the tag array on save. This gives users awareness and control without requiring them to tag manually.
+
+---
+
+### 4. Shopping list: "Complete shopping trip" button
+
+#### In `src/routes/app/shopping.tsx`
+
+Add a "Concluir compras" primary button in the bottom actions section, visible when the plan has items. On tap:
+
+1. Show a confirmation: "Marcar compras como concluídas? O plano será arquivado."
+2. On confirm:
+   - Record a `cook_log_completions` row with:
+     - `checked_item_keys`: all keys currently checked in `checkMap`
+     - `deleted_item_keys`: item_keys that were deleted during this session (need to track these in local state — see below)
+     - `skipped_item_keys`: all recipe-derived item keys that are neither checked nor deleted
+   - Call the existing "clear plan" / archive flow
+3. Toast: "Compras concluídas ✓"
+
+#### Track deletions in local state
+
+In `ShoppingPage`, add:
+```typescript
+const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
+```
+
+When a recipe-derived item is deleted (new delete gesture — see next section), add its key to this set. Pass it to the completion handler.
+
+#### Make recipe-derived items removable
+
+Currently only custom items have a remove button. Add a swipe-to-delete gesture (or a long-press reveal) on recipe-derived `CheckRow` items. On delete:
+- Remove from the rendered list optimistically
+- Add to `deletedItemKeys` local state
+- Do **not** archive the item in Supabase yet — only persist deletion on shopping trip completion
+
+#### New server function: `recordShoppingCompletion`
+
+```typescript
+// src/lib/supabase/shopping-queries.ts
+export const recordShoppingCompletion = createServerFn()
+  .inputValidator(...)
+  .handler(async ({ data }) => {
+    // insert into cook_log_completions
+    // returns the inserted row
+  });
+```
+
+---
+
+### 5. Ingredient dislike detection
+
+After each shopping trip completion, check if any ingredient appears in `deleted_item_keys` across 3 or more recent completions. If so, and if it's not already in `ingredient_dislikes` for this user, surface a prompt:
+
+> "Reparámos que costumas remover **coentros** — queres que deixemos de o incluir na lista?"
+
+On confirm → insert into `ingredient_dislikes`. On dismiss → do nothing (will re-check next completion).
+
+Use this table in shopping list generation: filter out ingredients that match any `ingredient_dislikes` row for the current user, or mark them with a small "⚠ não gostas disto — incluir?" toggle.
+
+---
+
+### 6. Profile page — cook history section
+
+Add a new section to the existing Kitchen/profile page (`src/routes/app/my-recipes.tsx` or wherever the profile currently lives). This section appears above the recipe tabs.
+
+#### Three-tier display
+
+**Tier 1 — New user (0–4 distinct recipes cooked)**
+```
+[Progress bar: 3/5]
+Cozinha 2 receitas mais para desbloquear o teu perfil de sabor.
+```
+
+**Tier 2 — Browser (saves/likes but 0 cooks)**
+```
+Com base nas receitas que guardaste, tens tendência para pratos 
+[top cuisine from saved recipes] com [top protein from saved recipes].
+Começa a cozinhar para desbloquear o teu perfil completo.
+[progress bar]
+```
+
+**Tier 3 — Active cook (5+ distinct recipes cooked)**
+Show the full stats panel (see below).
+
+#### Full stats panel (Tier 3)
+
+Display as a card with the following rows:
+
+| Label | Value source |
+|---|---|
+| **Receitas este mês** | COUNT of cook_logs this calendar month, with delta vs. last month (e.g. "↑ 3 em relação ao mês passado") |
+| **Proteína favorita** | Most frequent protein across recipes cooked this month |
+| **Receita mais cozinhada** | Recipe with highest cook count, with number (e.g. "Frango Assado · 4×") |
+| **Cozinhado de novo** | Whether any recipe has been cooked ≥ 3× (mastered marker — small ✓ badge) |
+| **Cozinhas exploradas** | Distinct `cuisine_tags` across cooked recipes this month (shown as small chips) |
+| **Algo novo este mês?** | If a cuisine_tag appears for the first time ever → highlight: "Primeira vez a cozinhar [coreano] 🎉" |
+
+All queries are server functions that take `userId` and return aggregated data. Keep them simple — no complex joins, just counts and max frequency groupings.
+
+#### Empty / loading states
+
+- Loading: skeleton rows matching the stats panel shape
+- No cook logs at all: Tier 1 progress bar
+- Saves but no cooks: Tier 2 browser message
+
+---
+
+### 7. New server queries needed
+
+In `src/lib/supabase/cook-log-queries.ts` (extend existing file):
+
+```typescript
+// Monthly cook summary for profile
+getCookSummaryThisMonth(userId) → {
+  countThisMonth: number,
+  countLastMonth: number,
+  topProtein: string | null,
+  mostCookedRecipe: { name: string, count: number } | null,
+  masteredRecipes: { id: string, name: string }[],   // cooked ≥ 3×
+  cuisinesThisMonth: string[],
+  firstTimeCuisine: string | null    // first cuisine ever this month
+}
+
+// Distinct recipes cooked ever (for tier gating)
+getDistinctCookedCount(userId) → number
+
+// Saves/likes summary for browser tier
+getSavesSummary(userId) → {
+  topCuisine: string | null,
+  topProtein: string | null
+}
+```
+
+---
+
+### 8. i18n keys to add
+
+```json
+"cookProfile": {
+  "title": "O teu perfil",
+  "progressHint": "Cozinha {{remaining}} receitas mais para desbloquear o teu perfil de sabor.",
+  "browserHint": "Começa a cozinhar para desbloquear o teu perfil completo.",
+  "basedOnSaved": "Com base nas receitas que guardaste, tens tendência para pratos {{cuisine}} com {{protein}}.",
+  "recipesThisMonth": "Receitas este mês",
+  "deltaUp": "↑ {{n}} em relação ao mês passado",
+  "deltaDown": "↓ {{n}} em relação ao mês passado",
+  "deltaSame": "igual ao mês passado",
+  "topProtein": "Proteína favorita",
+  "mostCooked": "Receita mais cozinhada",
+  "masteredBadge": "Dominada",
+  "cuisinesExplored": "Cozinhas exploradas",
+  "firstTimeCuisine": "Primeira vez a cozinhar {{cuisine}} 🎉",
+  "completeShoppingTrip": "Concluir compras",
+  "completeConfirm": "Marcar compras como concluídas? O plano será arquivado.",
+  "completedToast": "Compras concluídas ✓",
+  "dislikePrompt": "Reparámos que costumas remover {{ingredient}} — queres que deixemos de o incluir na lista?",
+  "dislikeConfirm": "Sim, remover sempre",
+  "dislikeDismiss": "Não, manter"
+}
+```
+
+---
+
+### Verify before moving on
+
+- New `cuisine_tags` and `flavor_notes` columns exist on `recipes`
+- New signal columns exist on `ingredients`
+- `cook_log_completions` and `ingredient_dislikes` tables created with RLS
+- Creating a recipe with piri-piri in ingredients → `picante` appears as suggested tag
+- Creating a recipe with protein ≥ 25g/serving and ≤ 500 cal → `fit` and `alto-proteína` auto-suggested
+- "Concluir compras" button appears on shopping page when plan has items
+- Tapping it shows confirmation, then archives plan and records completion
+- Recipe-derived items are deletable (swipe or gesture)
+- Profile page shows progress bar for new users
+- Profile page shows full stats panel for users with 5+ distinct recipes cooked
+- Stats panel shows correct top protein, most cooked recipe, delta vs. last month
+- All strings go through `t()` — no hardcoded Portuguese
+- No TypeScript errors
+
+---
+
+## Flavor Identity & Cook Profile — Phase 2
+
+### Goal
+
+Add the AI narrative, signature ingredient, comparative stats, share card, and monthly evolution notification. Phase 2 is only meaningful after Phase 1 has accumulated real user data — do not start until at least 2–3 weeks of Phase 1 data exists.
+
+### Context & rationale
+
+Phase 2 turns the data Phase 1 collects into a story. The AI narrative tells users something true and specific about themselves as cooks, framed warmly and comparatively ("you cook bolder than 80% of Portuguese users"). The share card makes that identity shareable on social media without building a social network inside the app.
+
+---
+
+### 1. Ingredient signal map
+
+Populate the `cuisine_signals`, `heat_level`, and `flavor_notes` columns on `ingredients` for the top ~300 most-used ingredients in your recipe database. This is a one-time data task, done via a migration script.
+
+Key signal assignments (examples):
+
+| Ingredient | cuisine_signals | heat_level | flavor_notes |
+|---|---|---|---|
+| gochugaru | korean, asian | 3 | picante, umami |
+| gochujang | korean, asian | 2 | picante, umami, adocicado |
+| kimchi | korean, asian | 2 | picante, ácido, umami |
+| lemongrass | vietnamese, thai, asian | 0 | aromático, cítrico |
+| fish sauce | vietnamese, thai, asian | 0 | umami, salgado |
+| miso | japanese, asian | 0 | umami |
+| mirin | japanese, asian | 0 | adocicado |
+| tahini | middle-eastern | 0 | rico, noz |
+| za'atar | middle-eastern | 0 | aromático, herbáceo |
+| harissa | middle-eastern, north-african | 3 | picante, fumado |
+| piri-piri | portuguese | 3 | picante |
+| chouriço | portuguese | 1 | fumado, umami |
+| paprika defumada | portuguese, spanish | 0 | fumado, aromático |
+| coco (leite) | asian, caribbean | 0 | rico, adocicado |
+| ginger | asian | 1 | aromático, picante |
+
+Script: `scripts/seed-ingredient-signals.ts` — reads the ingredient table, applies signals row by row via upsert. Idempotent.
+
+---
+
+### 2. Flavor profile aggregation query
+
+New server function: `getUserFlavorProfile(userId)` in `src/lib/supabase/cook-log-queries.ts`.
+
+```typescript
+// Returns aggregated flavor data from the user's cook history
+getUserFlavorProfile(userId) → {
+  // Signature ingredient: ingredient appearing in user's cooked recipes at
+  // ≥ 2× the platform average rate, excluding the top 10 most common ingredients
+  signatureIngredient: string | null,
+  signatureIngredientCount: number,
+  signatureIngredientPlatformMultiple: number,  // e.g. 4.2 = "4x more than average"
+
+  // Flavor notes: aggregated from flavor_notes of all ingredients in cooked recipes
+  topFlavorNotes: string[],  // top 3 by frequency
+
+  // Heat index: percentile vs all users
+  heatPercentile: number,    // e.g. 82 = "spicier than 82% of users"
+
+  // Adventurousness: percentile vs all users
+  // = (distinct cuisines cooked + new recipe ratio) normalised
+  adventurousnessPercentile: number,
+
+  // Cuisine breakdown: % of cooked recipes per cuisine_tag
+  cuisineBreakdown: { cuisine: string, pct: number }[],
+
+  // Protein loyalty
+  topProtein: string,
+  proteinVarietyCount: number,  // distinct proteins cooked
+
+  // Cooking style
+  avgCookingTimeMin: number | null,
+  avgCookingTimePercentile: number,  // fast vs slow vs platform average
+}
+```
+
+**Platform average computation:** Run nightly as a Supabase Edge Function or a cron job that materialises a `platform_averages` table with pre-computed aggregates. Do NOT compute this live on every profile load — it would be expensive at scale. The table has a single row updated daily.
+
+```sql
+create table if not exists platform_averages (
+  id int primary key default 1,
+  top_10_ingredients text[] not null default '{}',  -- noise filter for signature ingredient
+  avg_heat_level numeric,
+  avg_distinct_cuisines numeric,
+  avg_new_recipe_ratio numeric,
+  avg_cooking_time_min numeric,
+  updated_at timestamptz default now()
+);
+```
+
+---
+
+### 3. AI narrative generation
+
+#### New server function: `generateFlavorNarrative`
+
+Location: `src/lib/supabase/flavor-profile-queries.ts`
+
+```typescript
+export const generateFlavorNarrative = createServerFn()
+  .inputValidator(z.object({ userId: z.string(), lang: z.enum(['pt', 'en']) }))
+  .handler(async ({ data }) => {
+    const profile = await getUserFlavorProfile(data.userId);
+    if (!profile || profile is insufficient) return null;
+
+    const prompt = buildNarrativePrompt(profile, data.lang);
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 200,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const narrative = response.content[0].text;
+
+    // Persist to profiles table so it doesn't regenerate every page load
+    await supabase
+      .from('profiles')
+      .update({
+        flavor_narrative: narrative,
+        flavor_narrative_generated_at: new Date().toISOString(),
+        flavor_profile_data: profile,  // store raw data for share card
+      })
+      .eq('id', data.userId);
+
+    return { narrative, profile };
+  });
+```
+
+#### Prompt structure (`buildNarrativePrompt`)
+
+```
+You are writing a short, warm, personal description of someone's cooking identity for a meal prep app.
+
+Write 2–3 sentences in ${lang === 'pt' ? 'Portuguese (European, informal tu form)' : 'English'}.
+Tone: like a friend who has been watching them cook — warm, specific, slightly poetic. NOT clinical, NOT like a nutritionist report.
+Write in second person ("você" or "tu" in Portuguese, "you" in English — use tu form for PT).
+Do not use lists. Do not use hashtags. Do not mention the app name.
+
+Data about this person:
+- Signature ingredient: ${signatureIngredient} (appears ${signatureIngredientPlatformMultiple}x more than the average user)
+- Top flavor notes in their cooking: ${topFlavorNotes.join(', ')}
+- Heat preference: spicier than ${heatPercentile}% of users on the platform
+- Adventurousness: more adventurous than ${adventurousnessPercentile}% of users (tries more new recipes, more cuisines)
+- Top protein: ${topProtein}
+- Cuisine breakdown: ${cuisineBreakdown.map(c => `${c.cuisine} ${c.pct}%`).join(', ')}
+- Cooking style: ${avgCookingTimePercentile < 30 ? 'tends toward quick, practical cooking' : avgCookingTimePercentile > 70 ? 'tends toward slow, elaborate cooking' : 'balanced between quick and elaborate'}
+- Month: ${monthName} ${year}
+
+Write the description now. Do not start with "You are" or "Este mês". Start with something specific and true about them.
+```
+
+#### Add columns to `profiles`
+
+```sql
+alter table profiles
+  add column if not exists flavor_narrative text,
+  add column if not exists flavor_narrative_generated_at timestamptz,
+  add column if not exists flavor_profile_data jsonb,
+  add column if not exists flavor_narrative_lang text;
+```
+
+#### Trigger logic (client-side, on profile page load)
+
+```typescript
+// In the profile page component:
+// 1. Load profile from DB
+// 2. If distinctCookedCount < 5 → show progress bar, do not generate
+// 3. If flavor_narrative_generated_at is null → call generateFlavorNarrative
+// 4. If flavor_narrative_generated_at is > 30 days ago → regenerate
+// 5. If flavor_profile_data changed significantly vs. last generation → regenerate
+//    (significant = new cuisine appeared, or signature ingredient changed)
+// 6. Otherwise → show cached narrative
+```
+
+This means the AI call only fires when needed, not on every page load. Most users see cached text.
+
+---
+
+### 4. Comparative stats on profile page
+
+Replace the plain stats in Phase 1's stats panel with comparative versions where available:
+
+| Before (Phase 1) | After (Phase 2) |
+|---|---|
+| "Proteína favorita: Frango" | "Proteína favorita: Frango · leal a esta proteína" or "rotacionas bem entre X proteínas" |
+| Cuisine chips | Cuisine chips + "mais aventureiro que X% dos utilizadores" |
+| Most cooked recipe | Most cooked recipe + if signature ingredient is from it → callout |
+| (not present) | Signature ingredient card |
+| (not present) | Heat index: "Gostas mais de picante que X% dos utilizadores" (only if heatPercentile > 60) |
+
+Add a dedicated **"A tua assinatura"** card showing:
+- Signature ingredient name, large
+- "Aparece na tua cozinha {{multiple}}× mais do que na maioria dos utilizadores"
+- Small flavor chips derived from that ingredient's flavor_notes
+
+---
+
+### 5. Share card
+
+A screenshot-friendly block rendered at the bottom of the profile page (only visible when narrative is available):
+
+```
+┌─────────────────────────────────────────┐
+│  🍳  A tua cozinha · Maio 2026          │
+│                                          │
+│  "Tens uma assinatura: o tahini aparece  │
+│   na tua cozinha mais do que em quase    │
+│   qualquer outro utilizador."            │
+│                                          │
+│  ● picante   ● umami   ● fumado          │
+│                                          │
+│              mealprep.app               │
+└─────────────────────────────────────────┘
+```
+
+Design notes:
+- No numbers (feels like MyFitnessPal)
+- One narrative sentence only (the most specific/interesting one from the full paragraph)
+- Flavor chips styled prominently
+- App name/URL at bottom
+- Designed to be screenshotted and shared — use `html2canvas` or a server-side image generation endpoint if you want a proper image export
+
+Share button: native share sheet (`navigator.share`) with the card image + a caption pre-filled. Falls back to clipboard copy.
+
+---
+
+### 6. Monthly evolution notification
+
+After each monthly profile regeneration, compare the new `flavor_profile_data` with the previous one. If any of these changed:
+- A new cuisine appeared for the first time
+- Signature ingredient changed
+- Top protein changed
+- Adventurousness percentile moved by ≥ 15 points
+
+→ Send an in-app notification (not push, not email — just a badge on the Kitchen tab and a card at the top of the profile page):
+
+> "Algo mudou na tua cozinha este mês →"
+
+On tap: scroll to the narrative section. The new narrative explains what changed.
+
+Implementation: a `profile_notifications` table with a `dismissed_at` field. The badge clears on tap.
+
+---
+
+### 7. Onboarding: heat/spice preference
+
+Add a single question to the existing onboarding flow, between dietary preferences and the finish screen:
+
+**Screen:** "Gostas de comida picante?"
+**Options:** 3 large buttons:
+- "Não muito" (heat_preference = 0)
+- "Às vezes" (heat_preference = 1)
+- "Sim, quanto mais melhor!" (heat_preference = 2)
+
+Store in `profiles.heat_preference int default null`.
+
+Use immediately in:
+- Library: if heat_preference = 0, deprioritise `picante`-tagged recipes in default sort (don't hide them)
+- Profile narrative prompt: include as context ("self-reported: avoids spicy")
+- Phase 2 heat percentile: cross-reference with actual cook history — interesting if self-report and behaviour diverge
+
+---
+
+### 8. Rate limiting for AI narrative generation
+
+Narrative generation uses Claude Sonnet which costs more than Haiku. Add a server-side check:
+
+- Max 1 narrative generation per user per 25 days (enforced via `flavor_narrative_generated_at`)
+- If a user somehow triggers regeneration more than once in a month, return the cached version silently
+- Log generation events to a `ai_usage_log` table for monitoring
+
+---
+
+### 9. i18n keys to add (Phase 2)
+
+```json
+"cookProfile": {
+  "narrativeLoading": "A gerar o teu perfil…",
+  "narrativeEmpty": "Ainda não há dados suficientes para gerar o teu perfil.",
+  "signatureIngredient": "A tua assinatura",
+  "signatureMultiple": "Aparece {{multiple}}× mais na tua cozinha do que na média",
+  "heatIndex": "Gostas mais de picante que {{pct}}% dos utilizadores",
+  "adventurousness": "Mais aventureiro que {{pct}}% dos utilizadores",
+  "shareCard": "Partilhar perfil",
+  "shareCaption": "A minha cozinha em {{month}} {{year}} 🍳",
+  "evolutionNotification": "Algo mudou na tua cozinha este mês →",
+  "onboardingHeatTitle": "Gostas de comida picante?",
+  "heatNone": "Não muito",
+  "heatSometimes": "Às vezes",
+  "heatYes": "Sim, quanto mais melhor!"
+}
+```
+
+---
+
+### Verify before moving on (Phase 2)
+
+- `platform_averages` table exists and is populated by the nightly cron/edge function
+- `getUserFlavorProfile()` returns correct data for a test user with 5+ cook logs
+- AI narrative generates in PT for PT users, EN for EN users
+- Narrative is cached in `profiles.flavor_narrative` and does not regenerate on every page load
+- Narrative only regenerates if > 30 days old or significant profile change
+- Share card renders correctly and native share sheet works on mobile
+- Comparative stats show correct percentiles
+- Signature ingredient card shows for users where one exists
+- Evolution notification appears after a monthly regen that detected a meaningful change
+- Heat/spice question appears in onboarding and stores to `profiles.heat_preference`
+- Rate limiting: second generation attempt within 25 days returns cached version
+- No TypeScript errors
+- All strings go through `t()`
