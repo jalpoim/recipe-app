@@ -752,7 +752,7 @@ function AddCustomItemForm({
 }) {
   const { t } = useTranslation();
   const [label, setLabel] = useState("");
-  const [category, setCategory] = useState<Category | null>(null);
+  const [category, setCategory] = useState<Category>("Outros");
   const [showCatPicker, setShowCatPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -768,16 +768,16 @@ function AddCustomItemForm({
       const auto = autoCategory(val);
       setCategory(auto);
     } else {
-      setCategory(null);
+      setCategory("Outros");
     }
   }
 
   function handleSubmit() {
     const trimmed = label.trim();
     if (!trimmed) return;
-    onAdd(trimmed, category ?? "Outros");
+    onAdd(trimmed, category);
     setLabel("");
-    setCategory(null);
+    setCategory("Outros");
   }
 
   return (
@@ -808,7 +808,7 @@ function AddCustomItemForm({
           onClick={() => setShowCatPicker(true)}
           className="flex-1 text-left text-xs px-3 py-1.5 rounded-lg border border-[#E5E7EB] text-[#6B7280] hover:border-[#F4623A] hover:text-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         >
-          {category ?? t("shopping.categoryPlaceholder")}
+          {category}
         </button>
         <button
           onClick={handleSubmit}
@@ -821,7 +821,7 @@ function AddCustomItemForm({
 
       {showCatPicker && (
         <CategoryPicker
-          current={category ?? "Outros"}
+          current={category}
           onSelect={(cat) => {
             setCategory(cat);
             setShowCatPicker(false);
@@ -958,6 +958,7 @@ function ShoppingPage() {
     setCustomItems((prev) => [...prev, tempItem]);
     setCheckMap((prev) => new Map(prev).set(tempKey, false));
     setShowAddForm(false);
+    setView("global");
 
     addCustomShoppingItem({ data: { planId: planId!, label, category } })
       .then((saved) => {
@@ -1018,18 +1019,23 @@ function ShoppingPage() {
       <div className="mx-auto w-full max-w-md px-4 pt-4">
         {/* no header row — bottom nav provides tab context */}
 
-        <PullIndicator
-          pullY={shopPullY}
-          isRefreshing={isShopPtrRefreshing}
-          variant="flow"
-        />
-
         {isEmpty ? (
           <div className="py-16 text-center">
             <p className="text-[#6B7280] text-sm">{t("shopping.emptyHint")}</p>
           </div>
         ) : (
           <>
+            {/* View toggle */}
+            <div className="mb-4">
+              <ViewToggle view={view} onChange={setView} />
+            </div>
+
+            <PullIndicator
+              pullY={shopPullY}
+              isRefreshing={isShopPtrRefreshing}
+              variant="flow"
+            />
+
             {/* Add custom item */}
             <div className="mb-4">
               {showAddForm ? (
@@ -1046,11 +1052,6 @@ function ShoppingPage() {
                   {t("shopping.addExtra")}
                 </button>
               )}
-            </div>
-
-            {/* View toggle */}
-            <div className="mb-4">
-              <ViewToggle view={view} onChange={setView} />
             </div>
 
             {/* Content — both always mounted so checkMap stays in sync */}
