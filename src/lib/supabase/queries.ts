@@ -35,6 +35,7 @@ export type FetchLibraryInput = {
   tags: string[];
   ingredients: string[];
   q: string;
+  lang?: string;
   excludedFlags?: string[];
   excludedIngredientIds?: string[];
 };
@@ -91,7 +92,6 @@ export const fetchLibrary = createServerFn({ method: "GET" })
   .inputValidator((input: FetchLibraryInput) => input)
   .handler(async ({ data: input }): Promise<FetchLibraryResult> => {
     const supabase = makeClient();
-    const lang = getLang();
 
     const {
       limit,
@@ -107,6 +107,7 @@ export const fetchLibrary = createServerFn({ method: "GET" })
       excludedFlags = [],
       excludedIngredientIds = [],
     } = input;
+    const lang = input.lang ?? getLang();
     const sortCol = SORT_COL[sort];
     const ascending = SORT_ASC[sort];
 

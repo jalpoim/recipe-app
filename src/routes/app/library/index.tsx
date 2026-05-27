@@ -1474,6 +1474,7 @@ function LibraryPage() {
           tags: activeStripChip?.tags ?? search.tags,
           ingredients: search.ingredients,
           q: search.q,
+          lang,
           excludedFlags: userExcludedFlags,
           excludedIngredientIds,
         },

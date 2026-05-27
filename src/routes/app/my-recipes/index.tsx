@@ -184,6 +184,7 @@ function MyRecipesPage() {
           tags: [],
           ingredients: [],
           q: "",
+          lang,
         },
       }),
     staleTime: 2 * 60 * 1000,
