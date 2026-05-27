@@ -753,6 +753,7 @@ function AddCustomItemForm({
   const { t } = useTranslation();
   const [label, setLabel] = useState("");
   const [category, setCategory] = useState<Category>("Outros");
+  const [categoryPicked, setCategoryPicked] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -764,11 +765,8 @@ function AddCustomItemForm({
 
   function handleLabelChange(val: string) {
     setLabel(val);
-    if (val.trim()) {
-      const auto = autoCategory(val);
-      setCategory(auto);
-    } else {
-      setCategory("Outros");
+    if (!categoryPicked) {
+      setCategory(autoCategory(val) ?? "Outros");
     }
   }
 
@@ -778,6 +776,7 @@ function AddCustomItemForm({
     onAdd(trimmed, category);
     setLabel("");
     setCategory("Outros");
+    setCategoryPicked(false);
   }
 
   return (
@@ -824,6 +823,7 @@ function AddCustomItemForm({
           current={category}
           onSelect={(cat) => {
             setCategory(cat);
+            setCategoryPicked(true);
             setShowCatPicker(false);
           }}
           onClose={() => setShowCatPicker(false)}
