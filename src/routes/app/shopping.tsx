@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { capture } from "../../lib/analytics";
 import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
 import { PullIndicator } from "../../components/PullIndicator";
@@ -322,11 +323,12 @@ function CategoryPicker({
   onClose: () => void;
 }) {
   const { t } = useTranslation();
-  return (
-    <div className="fixed inset-0 z-50 flex items-end" onClick={onClose}>
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end" onPointerDown={onClose}>
       <div
         className="w-full max-w-md mx-auto bg-white rounded-t-2xl border-t border-[#E5E7EB] pb-6"
-        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
@@ -337,8 +339,12 @@ function CategoryPicker({
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
-            onClick={() => onSelect(cat)}
-            className={`w-full text-left px-4 py-3 text-sm transition-colors hover:bg-[#F9FAFB] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+            type="button"
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              onSelect(cat);
+            }}
+            className={`w-full cursor-pointer text-left px-4 py-3 text-sm transition-colors hover:bg-[#F9FAFB] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
               cat === current
                 ? "font-semibold text-[#F4623A]"
                 : "text-[#1A1A1A]"
@@ -351,7 +357,8 @@ function CategoryPicker({
           </button>
         ))}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
