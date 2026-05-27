@@ -43,26 +43,20 @@ This is a meal prep planning web app built around a protein-first paradigm. The 
 - **LLM translation:** Translations generated via Claude API (claude-haiku-4-5-20251001) in `scripts/translate-recipes.ts`. Idempotent — skips existing rows.
 
 ## Current session
-**Session 3.5 is next.** Session 4 library scaffold is built but the filter UX and i18n layer need to be done first. Do Session 3.5 before touching the library UI.
-
-### What is already built (do not rebuild)
-- `src/lib/supabase/queries.ts` — `fetchLibrary()` and `fetchRecipeById()` server functions
-- `src/routes/app/library/index.tsx` — library page (filter panel needs replacing with Vaul bottom sheet)
-- `src/routes/app/library/$recipeId.tsx` — recipe detail page (keep, add `from` param awareness in Session 5)
-- `src/routes/app/index.tsx` — redirects `/app` → `/app/library`
-- `src/routes/app.tsx` — layout route with `<Outlet />` (bottom nav goes here in Session 5)
-- `src/routes/index.tsx` — sign-in page (magic link)
-- `src/routes/__root.tsx` — root HTML shell (light theme)
-- `src/styles.css` — Tailwind v4 theme variables
+**Flavor Identity Phase 1 is next.** Sessions 1–27 and the pre-launch checklist are complete. The app is in production on Vercel. See `docs/claude-code-implementation-plan.md` "Flavor Identity & Cook Profile — Phase 1" for the full spec.
 
 ### Key implementation notes
 - Env vars: `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (both `VITE_` prefixed)
 - Server auth check: `getAuthUser()` from `src/lib/supabase/server.ts` in `beforeLoad`
 - Cookie handling: `getCookies()` / `setCookie()` from `@tanstack/react-start/server`
-- DB types: import from `src/types/db.ts`
+- DB types: import from `src/types/db.ts` — regenerate with `mcp__supabase__generate_typescript_types` after schema changes
 - Macro columns: `calories` (int), `protein` (numeric), `carbs` (numeric), `fat` (numeric) — no `_g` suffix
 - `macros_total = true` → divide by `servings` for per-serving display
-- `proteins text[]` — queried with `where 'frango' = any(proteins)`, GIN indexed
+- `proteins text[]` — queried with `where 'chicken' = any(proteins)`, GIN indexed. Slugs are English, display via i18next `proteins.*`
 - `is_pantry` on recipe_ingredients is `not null default false`
 - Filter state in URL search params via TanStack Router `validateSearch`
 - `createServerFn` uses `.inputValidator()` not `.validator()` in this version of TanStack Start
+- Supabase project ID: `kgvycfrvxzkfhvuazzle`
+- Theme: `[data-theme="dark"]` selector — never use Tailwind `dark:` prefix
+- Rate limiting: `daily_ai_usage` table tracks AI macro estimation (10 calls/user/day)
+- DB schema changes: use `execute_sql` (MCP) to iterate, then `supabase migration new <name>` + write the SQL manually to the file

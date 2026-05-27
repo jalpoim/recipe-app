@@ -4603,38 +4603,17 @@ After `parseRecipeUrl` returns:
 
 ---
 
-## Pre-launch checklist
+## Pre-launch checklist ✅ COMPLETE (2026-05-27)
 
-Before making the app URL publicly shareable, complete these steps. None require code changes — they are configuration and account-level settings.
+### Done (code)
+- ✅ AI macro estimation rate limit: 10 calls/user/day via `daily_ai_usage` table (`migration: 20260527204027`)
+- ✅ DB advisor fixes: `search_path` on 11 functions, SECURITY DEFINER exposure, RLS performance, storage listing, 7 FK indexes
 
-### Anthropic API safeguards
-
-- Set a hard monthly budget cap in the Anthropic console: start at **$50/month**
-- Configure email alerts at 50% ($25) and 80% ($40) of monthly budget
-- Verify the Haiku model ID in all scripts uses `claude-haiku-4-5-20251001` (current pricing: $0.80/MTok input, $4/MTok output)
-
-### Rate limits to implement (code changes, one PR)
-
-- AI macro estimation (`estimateMacros` server fn): max **10 calls per user per day** — track in a `daily_ai_usage` table or a simple counter in `profiles`
-- New ingredient Haiku classification: max **20 unrecognized ingredients per user per day**
-- Image uploads: max **5MB per file** (Supabase Storage bucket policy), max **20 uploads per user per day**
-
-### Supabase
-
-- Upgrade to **Pro plan ($25/month)** — eliminates the 1-week inactivity pause that would kill a live app
-- Storage bucket `recipe-images`: verify public access is set correctly, hero images load without authentication
-- Run `supabase db advisors` and fix any flagged issues before launch
-
-### Vercel
-
-- Vercel Hobby is fine for soft launch (beta, shared-link only)
-- Upgrade to **Pro ($20/month)** when the URL becomes public and you start acquiring real users — Hobby terms prohibit commercial use
-
-### Monitoring
-
-- Add Supabase usage to your regular check (Dashboard → Usage) — watch Storage and bandwidth
-- Set up a Vercel spend alert if you upgrade to Pro
-- After first 100 users, check `SELECT COUNT(*), classification_source FROM ingredients GROUP BY classification_source` to see how fast user-submitted ingredients are growing
+### Still pending (manual / account-level)
+- [ ] Enable Leaked Password Protection — Supabase Auth dashboard → Settings → Auth → Password Security
+- [ ] Set $50/month budget cap + alerts in Anthropic console
+- [ ] Upgrade Supabase to Pro ($25/month) before going public
+- [ ] Upgrade Vercel to Pro ($20/month) when URL becomes public (Hobby prohibits commercial use)
 
 ---
 
