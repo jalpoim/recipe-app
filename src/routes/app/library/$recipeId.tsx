@@ -768,13 +768,20 @@ function RecipeDetailPage() {
                   </div>
                 )}
                 {isOwner && recipe.moderation_status === "rejected" && (
-                  <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2">
+                  <div className="rounded-xl bg-[#fee2e2] border border-[#DC2626]/30 px-3 py-2 space-y-1.5">
                     <p className="text-xs font-semibold text-[#DC2626]">
                       {t("moderation.rejected")}
                     </p>
-                    <p className="text-xs text-[#DC2626]/80 mt-0.5">
+                    <p className="text-xs text-[#DC2626]/80">
                       {t("moderation.rejectedHint")}
                     </p>
+                    <Link
+                      to="/app/library/$recipeId/edit"
+                      params={{ recipeId: recipe.id }}
+                      className="inline-block text-xs font-semibold text-[#DC2626] underline underline-offset-2"
+                    >
+                      {t("recipe.edit")}
+                    </Link>
                   </div>
                 )}
 

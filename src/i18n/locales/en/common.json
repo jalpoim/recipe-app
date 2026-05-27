@@ -80,9 +80,10 @@
   },
   "moderation": {
     "pending": "In review",
-    "rejected": "Rejected",
+    "rejected": "Image rejected",
     "pendingHint": "Your recipe is under review and not visible to others.",
-    "rejectedHint": "Your recipe did not pass moderation."
+    "rejectedHint": "Your image was rejected by moderation. Edit the recipe to upload a new one.",
+    "rejectedEditHint": "Your previous image was rejected. Please upload a new one."
   },
   "create": {
     "title": "New recipe",
@@ -96,7 +97,7 @@
     "tagsLabel": "Tags",
     "macrosLabel": "Macros (optional)",
     "imageLabel": "Image",
-    "publishLabel": "Share with community",
+    "publishLabel": "Make public",
     "publishHint": "Your recipe will be visible to others after review.",
     "addIngredient": "Add ingredient",
     "addStep": "Add step",

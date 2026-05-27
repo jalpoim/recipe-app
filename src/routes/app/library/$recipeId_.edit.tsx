@@ -733,6 +733,11 @@ function EditRecipePage() {
                   </button>
                 )}
               </div>
+              {recipe.moderation_status === "rejected" && !imageUrl && (
+                <p className="text-xs text-[#DC2626] font-medium">
+                  {t("moderation.rejectedEditHint")}
+                </p>
+              )}
               {imageUrl ? (
                 <div className="relative">
                   <img
