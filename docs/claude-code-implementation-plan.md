@@ -4093,7 +4093,7 @@ Where animations are conditional (stagger, flying thumb, badge bounce), check `s
 
 ---
 
-## Session 25 — Protein simplification: "fish" catch-all + auto-derive from ingredients
+## Session 25 — Protein simplification: "fish" catch-all + auto-derive from ingredients ✅ COMPLETE (2026-05-27)
 
 **Goal:** Reduce protein picker complexity in recipe creation. Replace seven specific fish slugs with a single `fish` catch-all, migrate existing recipe data, and auto-derive the `proteins[]` array from ingredient dietary flags so users rarely have to pick manually.
 
@@ -4277,7 +4277,7 @@ In `src/components/ProteinPicker.tsx`:
 
 ---
 
-## Session 26 — Recipe creation form v3: reorder, macro calculation, UX micro-improvements
+## Session 26 — Recipe creation form v3: reorder, macro calculation, UX micro-improvements ✅ COMPLETE (2026-05-27)
 
 **Goal:** Make recipe creation the fastest path from idea to saved recipe. Reorder form sections by natural creation flow, calculate macros automatically from ingredient database data, surface an auto-name suggestion, warn on duplicate ingredients, and scale quantities when servings change.
 
