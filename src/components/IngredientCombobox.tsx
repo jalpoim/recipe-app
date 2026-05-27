@@ -7,6 +7,7 @@ import {
   searchIngredients,
   type IngredientRow,
 } from "../lib/supabase/recipe-queries";
+import { CATEGORY_SLUG_MAP } from "../lib/ingredient-category";
 
 // ---------- constants ----------
 
@@ -31,14 +32,6 @@ export const COUNT_UNIT_KEYS = [
   "sachet",
   "scoop",
 ] as const;
-
-const SLUG_TO_PT: Record<string, string> = {
-  meat: "Talho/Peixaria",
-  produce: "Frutas/Legumes",
-  dairy: "Lacticínios",
-  grains: "Mercearia",
-  other: "Outros",
-};
 
 // ---------- useDebounce ----------
 
@@ -190,7 +183,7 @@ export function IngredientCombobox({
       proteinPer100g: top.protein_per_100g ?? null,
       carbsPer100g: top.carbs_per_100g ?? null,
       fatPer100g: top.fat_per_100g ?? null,
-      category: top.category ? (SLUG_TO_PT[top.category] ?? null) : null,
+      category: top.category ? (CATEGORY_SLUG_MAP[top.category] ?? null) : null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestions]);
@@ -224,7 +217,7 @@ export function IngredientCombobox({
       name: ing.name,
       unit: ing.default_unit,
       ingredientId: ing.id,
-      category: ing.category ? (SLUG_TO_PT[ing.category] ?? null) : null,
+      category: ing.category ? (CATEGORY_SLUG_MAP[ing.category] ?? null) : null,
       dietaryFlags: ing.dietary_flags ?? null,
       caloriesPer100g: ing.calories_per_100g ?? null,
       proteinPer100g: ing.protein_per_100g ?? null,
