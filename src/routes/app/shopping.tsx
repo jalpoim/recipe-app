@@ -21,6 +21,7 @@ import {
   fetchCategoryOverrides,
   upsertCategoryOverride,
 } from "../../lib/supabase/shopping-queries";
+import { searchIngredients } from "../../lib/supabase/recipe-queries";
 import type { PlanItemWithRecipe, ShoppingCheckState } from "../../types/db";
 import { useToast } from "../../components/Toast";
 
@@ -750,6 +751,14 @@ function GlobalView({
 
 // ---------- AddCustomItemForm ----------
 
+const INGREDIENT_CATEGORY_MAP: Record<string, Category> = {
+  meat: "Talho/Peixaria",
+  produce: "Frutas/Legumes",
+  dairy: "Lacticínios",
+  grains: "Mercearia",
+  other: "Outros",
+};
+
 function AddCustomItemForm({
   onAdd,
   onClose,
@@ -757,12 +766,14 @@ function AddCustomItemForm({
   onAdd: (label: string, category: Category) => void;
   onClose: () => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.startsWith("en") ? "en" : "pt";
   const [label, setLabel] = useState("");
   const [category, setCategory] = useState<Category>("Outros");
   const [categoryPicked, setCategoryPicked] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (window.matchMedia("(hover: hover)").matches) {
@@ -772,9 +783,29 @@ function AddCustomItemForm({
 
   function handleLabelChange(val: string) {
     setLabel(val);
-    if (!categoryPicked) {
-      setCategory(autoCategory(val) ?? "Outros");
-    }
+    if (categoryPicked) return;
+
+    // Immediate keyword fallback
+    setCategory(autoCategory(val) ?? "Outros");
+
+    // Debounced DB lookup for a smarter match
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (val.trim().length < 2) return;
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const results = await searchIngredients({
+          data: { q: val.trim(), lang },
+        });
+        if (!results.length) return;
+        const top = results[0];
+        if ((top.similarity as number) >= 0.25 && top.category) {
+          const mapped = INGREDIENT_CATEGORY_MAP[top.category];
+          if (mapped) setCategory(mapped);
+        }
+      } catch {
+        // silently ignore — keyword fallback already applied
+      }
+    }, 350);
   }
 
   function handleSubmit() {
