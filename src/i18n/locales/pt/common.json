@@ -134,8 +134,9 @@
     "importing": "A importar…",
     "banner": "Receita importada de {{domain}} — edita e guarda como tua",
     "sourceLabel": "Fonte",
-    "errorFetch": "Não foi possível aceder ao link. Tenta novamente.",
-    "errorNoSchema": "Esta página não tem uma receita que possamos importar."
+    "errorTitle": "Não foi possível importar",
+    "errorFetch": "Não conseguimos aceder a este site — pode estar bloqueado ou indisponível. Tenta copiar os ingredientes e passos manualmente.",
+    "errorNoSchema": "Este site não partilha os dados da receita num formato que conseguimos ler. Podes copiar os ingredientes e passos directamente para os campos abaixo."
   },
   "units": {
     "unit": "Unidade",

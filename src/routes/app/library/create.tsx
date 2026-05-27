@@ -249,6 +249,7 @@ function CreateRecipePage() {
   // ── import state ─────────────────────────────────────────────────────────────
   const [importSheetOpen, setImportSheetOpen] = useState(false);
   const [importUrl, setImportUrl] = useState("");
+  const [importError, setImportError] = useState<string | null>(null);
   const [importedSourceUrl, setImportedSourceUrl] = useState<string | null>(
     null,
   );
@@ -401,6 +402,7 @@ function CreateRecipePage() {
       }
       setImportSheetOpen(false);
       setImportUrl("");
+      setImportError(null);
       setImportedSourceUrl(result.sourceUrl);
       if (result.imageUrl) {
         setImageUrl(result.imageUrl);
@@ -454,9 +456,9 @@ function CreateRecipePage() {
     onError: (err) => {
       const msg = (err as Error).message ?? "";
       if (msg.startsWith("fetch_failed")) {
-        showToast(t("import.errorFetch"), "error");
+        setImportError(t("import.errorFetch"));
       } else {
-        showToast(t("import.errorNoSchema"), "error");
+        setImportError(t("import.errorNoSchema"));
       }
     },
   });
@@ -884,15 +886,26 @@ function CreateRecipePage() {
               <input
                 type="url"
                 value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
+                onChange={(e) => {
+                  setImportUrl(e.target.value);
+                  if (importError) setImportError(null);
+                }}
                 placeholder={t("import.placeholder")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && importUrl.trim()) {
                     importMutation.mutate(importUrl.trim());
                   }
                 }}
-                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors mb-3"
+                className={`w-full rounded-xl border bg-[#F9FAFB] px-4 py-3 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 transition-colors mb-3 ${importError ? "border-[#DC2626] focus:border-[#DC2626]" : "border-[#E5E7EB] focus:border-[#F4623A]"}`}
               />
+              {importError && (
+                <div className="mb-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] px-4 py-3">
+                  <p className="text-sm font-medium text-[#DC2626] mb-0.5">
+                    {t("import.errorTitle")}
+                  </p>
+                  <p className="text-xs text-[#B91C1C]">{importError}</p>
+                </div>
+              )}
               {importedImagePreview && !imageUrl && (
                 <div className="mb-3 flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-2">
                   <img

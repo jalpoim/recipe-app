@@ -134,8 +134,9 @@
     "importing": "Importing…",
     "banner": "Recipe imported from {{domain}} — edit and save as yours",
     "sourceLabel": "Source",
-    "errorFetch": "Could not access the link. Please try again.",
-    "errorNoSchema": "This page does not contain a recipe we can import."
+    "errorTitle": "Couldn't import this recipe",
+    "errorFetch": "We couldn't reach this site — it may be blocked or unavailable. Try copying the ingredients and steps manually instead.",
+    "errorNoSchema": "This site doesn't share recipe data in a format we can read. You can copy the ingredients and steps directly into the fields below."
   },
   "units": {
     "unit": "Unit",
