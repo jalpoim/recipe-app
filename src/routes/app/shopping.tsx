@@ -847,13 +847,8 @@ function GlobalView({
     customItems,
     onRemoveCustom,
   );
-  const shareText = buildShareText(grouped);
-
   return (
     <>
-      <div className="flex justify-end mb-3">
-        <ShareButton text={shareText} />
-      </div>
       <div className="space-y-3">
         {[...grouped.entries()].map(([category, aggItems]) => (
           <div
@@ -1248,23 +1243,36 @@ function ShoppingPage() {
               variant="flow"
             />
 
-            {/* Add custom item */}
-            <div className="mb-4">
-              {showAddForm ? (
-                <AddCustomItemForm
-                  onAdd={handleAddCustom}
-                  onClose={() => setShowAddForm(false)}
-                />
-              ) : (
+            {/* Share + add custom item row */}
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <ShareButton
+                text={buildShareText(
+                  buildGlobalList(
+                    items,
+                    categoryOverrides,
+                    customItems,
+                    () => {},
+                  ),
+                )}
+              />
+              {!showAddForm && (
                 <button
                   onClick={() => setShowAddForm(true)}
-                  className="flex items-center gap-2 w-full rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                  className="flex items-center gap-2 flex-1 rounded-2xl border border-dashed border-[#D1D5DB] bg-white px-4 py-3 text-sm text-[#9CA3AF] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                 >
                   <Plus size={16} aria-hidden="true" />
                   {t("shopping.addExtra")}
                 </button>
               )}
             </div>
+            {showAddForm && (
+              <div className="mb-4">
+                <AddCustomItemForm
+                  onAdd={handleAddCustom}
+                  onClose={() => setShowAddForm(false)}
+                />
+              </div>
+            )}
 
             {/* Content — both always mounted so checkMap stays in sync */}
             <div className={view !== "recipe" ? "hidden" : ""}>
