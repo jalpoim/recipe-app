@@ -1,4 +1,5 @@
 # Skills
+@.claude/skills/grill-me/SKILL.md
 @.claude/skills/supabase/SKILL.md
 @.claude/skills/supabase-postgres-best-practices/SKILL.md
 @.claude/skills/web-design-guidelines/SKILL.md
