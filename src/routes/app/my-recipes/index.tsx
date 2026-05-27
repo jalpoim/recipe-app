@@ -12,7 +12,7 @@ import {
 } from "../../../lib/supabase/queries";
 import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
 import { deleteRecipe } from "../../../lib/supabase/recipe-queries";
-import { useToast } from "../../../lib/use-toast";
+import { useToast } from "../../../components/Toast";
 
 export const Route = createFileRoute("/app/my-recipes/")({
   component: MyRecipesPage,
