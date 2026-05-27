@@ -80,9 +80,14 @@ type PdfSource = {
   // Manual page overrides: recipe EN/PT name → title page number.
   // Used when PDF titles differ enough from DB names that text matching fails.
   pageOverrides?: Record<string, number>;
-  // When true, the largest embedded image per recipe is skipped.
-  // Use for cookbooks where the hero image has design/title text baked into the bitmap.
-  skipLargestEmbedded?: boolean;
+  // How to pick the image from the extracted set (default: 'vision').
+  // 'second' — always use the 2nd embedded image (index 1); for cookbooks where
+  //            the first image has title text baked into the bitmap and the second
+  //            is the clean food photo (e.g. Cooking Abs PT).
+  // 'last'   — always use the last embedded image; for cookbooks where step photos
+  //            are numbered and the final one shows the finished dish (e.g. Joe x Fitness).
+  // 'vision' — send candidates to Claude Vision to pick the best one (default).
+  imagePickStrategy?: "vision" | "second" | "last";
 };
 
 const PDF_SOURCES: PdfSource[] = [
@@ -93,7 +98,7 @@ const PDF_SOURCES: PdfSource[] = [
     created_after: "2026-05-21T00:00:00Z",
     min_page: 20,
     name_language: "pt",
-    skipLargestEmbedded: true,
+    imagePickStrategy: "second",
   },
   {
     key: "joe",
@@ -130,6 +135,7 @@ const PDF_SOURCES: PdfSource[] = [
       "Muguk (Beef & Radish Soup)": 161,
       "Oi-muchim (Spicy Cucumber)": 143,
     },
+    imagePickStrategy: "last",
   },
 ];
 
@@ -779,24 +785,7 @@ async function processPdfSource(source: PdfSource) {
       minPx,
     );
 
-    // Drop the largest embedded image when the source uses design-text overlays
-    // baked into the biggest image (e.g. PT cookbook intro shots).
-    // The second-largest image is the same photo without text.
-    if (source.skipLargestEmbedded && embeddedImages.length > 1) {
-      let largestIdx = 0;
-      let largestSize = 0;
-      for (let i = 0; i < embeddedImages.length; i++) {
-        const meta = await sharp(embeddedImages[i].buf).metadata();
-        const area = (meta.width ?? 0) * (meta.height ?? 0);
-        if (area > largestSize) {
-          largestSize = area;
-          largestIdx = i;
-        }
-      }
-      embeddedImages = embeddedImages.filter((_, i) => i !== largestIdx);
-    }
-
-    // Strategy 2 (fallback): render full pages with pdftoppm
+    // Fallback to full page renders if no embedded images found
     let candidates: Array<{ buf: Buffer; page: number }> = embeddedImages;
     if (candidates.length === 0) {
       for (
@@ -817,17 +806,28 @@ async function processPdfSource(source: PdfSource) {
       continue;
     }
 
-    // Pick the best food-photo via Vision
+    // Pick image using the source's strategy (no Vision for deterministic strategies)
+    const strategy = source.imagePickStrategy ?? "vision";
     let best: { buf: Buffer; page: number } | null = null;
-    try {
-      best =
-        candidates.length === 1
-          ? candidates[0]
-          : await selectBestFoodPage(candidates, recipe.name);
-      await new Promise((r) => setTimeout(r, 250));
-    } catch (e) {
-      console.warn(`  ⚠ Vision failed for "${recipe.name}": ${e}`);
-      best = candidates[0];
+
+    if (strategy === "second") {
+      // PT cookbook: first image has title text baked in; second is the clean food photo
+      best = candidates[1] ?? candidates[0];
+    } else if (strategy === "last") {
+      // Korean cookbook: step photos are numbered; last is the finished dish
+      best = candidates[candidates.length - 1];
+    } else {
+      // Vision: send to Claude to pick the best
+      try {
+        best =
+          candidates.length === 1
+            ? candidates[0]
+            : await selectBestFoodPage(candidates, recipe.name);
+        await new Promise((r) => setTimeout(r, 250));
+      } catch (e) {
+        console.warn(`  ⚠ Vision failed for "${recipe.name}": ${e}`);
+        best = candidates[0];
+      }
     }
 
     if (!best) best = candidates[0];
