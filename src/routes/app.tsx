@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
-import { BookOpen, ChefHat, ClipboardList, ShoppingCart } from "lucide-react";
+import { BookOpen, ChefHat, ClipboardList, ShoppingCart, User } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
 import { fetchActivePlanWithCount } from "../lib/supabase/plan-queries";
@@ -131,6 +131,13 @@ function BottomNav() {
       icon: ShoppingCart,
       to: "/app/shopping" as const,
       key: "shopping",
+      disabled: false,
+    },
+    {
+      label: t("nav.profile"),
+      icon: User,
+      to: "/app/me" as const,
+      key: "me",
       disabled: false,
     },
   ];

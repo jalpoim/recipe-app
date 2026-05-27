@@ -3,7 +3,8 @@
     "recipes": "Recipes",
     "myRecipes": "Kitchen",
     "plan": "Plan",
-    "list": "List"
+    "list": "List",
+    "profile": "Profile"
   },
   "myRecipes": {
     "title": "Kitchen",
@@ -420,6 +421,40 @@
     "householdCreating": "Creating…",
     "householdLeaving": "Leaving…",
     "signOut": "Sign out"
+  },
+  "flavorIdentity": {
+    "persona": {
+      "chicken": "Chicken Master",
+      "beef": "Beef King",
+      "pork": "Pork Specialist",
+      "fish": "Flavor Fisher",
+      "salmon": "Salmon Lover",
+      "shrimp": "Seafood King",
+      "eggs": "Egg Royalty",
+      "tofu": "Plant-Based Chef",
+      "turkey": "Turkey Specialist",
+      "lamb": "Lamb Master",
+      "default": "Flavor Explorer"
+    },
+    "newCook": "Chef in Training",
+    "browserTitle": "Your tastes are taking shape",
+    "progressHint": "Cook {{remaining}} more recipes to unlock your full flavor profile",
+    "progressCount": "{{current}} of {{total}} recipes",
+    "monthTitle": "{{month}} in recipes",
+    "cookedTimes_one": "You cooked {{count}} recipe this month",
+    "cookedTimes_other": "You cooked {{count}} recipes this month",
+    "bestMonth": "Your best month yet 🔥",
+    "upVsLastMonth": "{{n}} more than last month ↑",
+    "downVsLastMonth": "{{n}} less than last month ↓",
+    "sameAsLastMonth": "Same as last month",
+    "signatureRecipe": "Your signature",
+    "signatureTimes_one": "you've cooked it {{count}} time",
+    "signatureTimes_other": "you've cooked it {{count}} times",
+    "proteinPersonality": "Your dishes are big on {{protein}}",
+    "newCuisineUnlock": "You tried {{cuisine}} cuisine for the first time 🎉",
+    "masteredTitle": "Recipes you've mastered",
+    "masteredHint": "Cooked 3 or more times",
+    "settingsTitle": "Settings"
   },
   "cookProfile": {
     "title": "Your flavor profile",

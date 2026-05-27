@@ -7,24 +7,17 @@ import {
   Clock,
   ClipboardList,
   Plus,
-  Settings,
   Trash2,
   X,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import {
   fetchLibrary,
   type RecipeWithIngredients,
 } from "../../../lib/supabase/queries";
 import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
 import { deleteRecipe } from "../../../lib/supabase/recipe-queries";
-import {
-  getCookSummaryThisMonth,
-  getDistinctCookedCount,
-  getSavesSummary,
-} from "../../../lib/supabase/cook-log-queries";
 import { useToast } from "../../../components/Toast";
 import { ConfirmModal } from "../../../components/ConfirmModal";
 
@@ -128,224 +121,6 @@ function RecipeCard({
   );
 }
 
-function CookProfileSkeleton() {
-  return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 animate-pulse space-y-3">
-      <div className="h-4 bg-[#F3F4F6] rounded-full w-1/3" />
-      <div className="h-2.5 bg-[#F3F4F6] rounded-full w-full" />
-      <div className="h-3 bg-[#F3F4F6] rounded-full w-2/3" />
-    </div>
-  );
-}
-
-function CookProfileSection({
-  distinctCount,
-  countLoading,
-  cookSummary,
-  summaryLoading,
-  savesSummary,
-  savesLoading,
-}: {
-  distinctCount: number;
-  countLoading: boolean;
-  cookSummary: import("../../../lib/supabase/cook-log-queries").CookSummary | undefined;
-  summaryLoading: boolean;
-  savesSummary: { topCuisine: string | null; topProtein: string | null } | undefined;
-  savesLoading: boolean;
-}) {
-  const { t } = useTranslation();
-
-  if (countLoading) return <CookProfileSkeleton />;
-
-  const UNLOCK_THRESHOLD = 5;
-
-  // Tier 3: active cook (5+ distinct recipes cooked)
-  if (distinctCount >= UNLOCK_THRESHOLD) {
-    if (summaryLoading || !cookSummary) return <CookProfileSkeleton />;
-
-    const delta = cookSummary.countThisMonth - cookSummary.countLastMonth;
-    const deltaPositive = delta > 0;
-
-    return (
-      <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-4">
-        <h2 className="text-sm font-semibold text-[#1A1A1A]">
-          {t("cookProfile.title")}
-        </h2>
-
-        {/* Stats row */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl bg-[#FAFAF8] border border-[#F0F0EE] p-3">
-            <p className="text-2xl font-bold text-[#1A1A1A]">
-              {cookSummary.countThisMonth}
-            </p>
-            <p className="text-xs text-[#6B7280] mt-0.5">
-              {t("cookProfile.recipesThisMonth")}
-            </p>
-            {delta !== 0 && (
-              <p
-                className={`text-xs font-medium mt-1 ${deltaPositive ? "text-[#16A34A]" : "text-[#DC2626]"}`}
-              >
-                {deltaPositive
-                  ? t("cookProfile.deltaUp", { n: delta })
-                  : t("cookProfile.deltaDown", { n: Math.abs(delta) })}
-              </p>
-            )}
-          </div>
-
-          {cookSummary.mostCookedRecipe && (
-            <div className="rounded-xl bg-[#FAFAF8] border border-[#F0F0EE] p-3">
-              <p className="text-xs text-[#6B7280]">
-                {t("cookProfile.mostCooked")}
-              </p>
-              <p className="text-sm font-semibold text-[#1A1A1A] mt-0.5 line-clamp-2 leading-snug">
-                {cookSummary.mostCookedRecipe.name}
-              </p>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
-                ×{cookSummary.mostCookedRecipe.count}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Top protein */}
-        {cookSummary.topProtein && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[#6B7280]">
-              {t("cookProfile.topProtein")}
-            </span>
-            <span className="text-xs font-medium bg-[#FEE9E1] text-[#C2410C] px-2 py-0.5 rounded-full">
-              {t(`proteins.${cookSummary.topProtein}`, {
-                defaultValue: cookSummary.topProtein,
-              })}
-            </span>
-          </div>
-        )}
-
-        {/* Cuisines this month */}
-        {cookSummary.cuisinesThisMonth.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs text-[#6B7280]">
-              {t("cookProfile.cuisinesExplored")}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {cookSummary.cuisinesThisMonth.map((c) => (
-                <span
-                  key={c}
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    c === cookSummary.firstTimeCuisine
-                      ? "bg-[#dcfce7] text-[#15803d]"
-                      : "bg-[#F3F4F6] text-[#6B7280]"
-                  }`}
-                >
-                  {c}
-                </span>
-              ))}
-            </div>
-            {cookSummary.firstTimeCuisine && (
-              <p className="text-xs text-[#16A34A] font-medium">
-                {t("cookProfile.firstTimeCuisine", {
-                  cuisine: cookSummary.firstTimeCuisine,
-                })}
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Mastered recipes */}
-        {cookSummary.masteredRecipes.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-xs text-[#6B7280]">
-              {t("cookProfile.masteredBadge")}
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {cookSummary.masteredRecipes.map((r) => (
-                <span
-                  key={r.id}
-                  className="text-xs px-2 py-0.5 rounded-full bg-[#fef3c7] text-[#B45309] font-medium"
-                >
-                  {r.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Tier 2: has saves/likes but hasn't cooked much
-  const hasSaves =
-    savesSummary?.topCuisine !== null || savesSummary?.topProtein !== null;
-  if (!countLoading && hasSaves && !savesLoading) {
-    const remaining = UNLOCK_THRESHOLD - distinctCount;
-    const progress = Math.round((distinctCount / UNLOCK_THRESHOLD) * 100);
-
-    return (
-      <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-[#1A1A1A]">
-          {t("cookProfile.title")}
-        </h2>
-        <p className="text-xs text-[#6B7280]">
-          {t("cookProfile.browserHint")}
-        </p>
-
-        {(savesSummary?.topProtein || savesSummary?.topCuisine) && (
-          <div className="flex flex-wrap gap-1.5">
-            {savesSummary?.topProtein && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#FEE9E1] text-[#C2410C] font-medium">
-                {t(`proteins.${savesSummary.topProtein}`, {
-                  defaultValue: savesSummary.topProtein,
-                })}
-              </span>
-            )}
-            {savesSummary?.topCuisine && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[#F3F4F6] text-[#6B7280] font-medium">
-                {savesSummary.topCuisine}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-[#9CA3AF]">
-            <span>
-              {t("cookProfile.progressHint", { remaining })}
-            </span>
-            <span>{distinctCount}/{UNLOCK_THRESHOLD}</span>
-          </div>
-          <div className="h-1.5 w-full rounded-full bg-[#F3F4F6] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[#F4623A] transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Tier 1: new user
-  const remaining = UNLOCK_THRESHOLD - distinctCount;
-  const progress = Math.round((distinctCount / UNLOCK_THRESHOLD) * 100);
-
-  return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-[#1A1A1A]">
-        {t("cookProfile.title")}
-      </h2>
-      <p className="text-xs text-[#6B7280]">
-        {t("cookProfile.progressHint", { remaining })}
-      </p>
-      <div className="h-1.5 w-full rounded-full bg-[#F3F4F6] overflow-hidden">
-        <div
-          className="h-full rounded-full bg-[#F4623A] transition-all"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function RecipeListSkeleton() {
   return (
     <div className="space-y-3">
@@ -376,32 +151,6 @@ function MyRecipesPage() {
   const { skip: reducedMotion } = useMotion();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
-
-  const { data: profile } = useQuery({
-    queryKey: ["my-profile"],
-    queryFn: () => fetchMyProfile(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: distinctCount = 0, isLoading: countLoading } = useQuery({
-    queryKey: ["cook-distinct-count"],
-    queryFn: () => getDistinctCookedCount(),
-    staleTime: 5 * 60 * 1000,
-  });
-
-  const { data: cookSummary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["cook-summary-this-month"],
-    queryFn: () => getCookSummaryThisMonth(),
-    staleTime: 5 * 60 * 1000,
-    enabled: distinctCount >= 5,
-  });
-
-  const { data: savesSummary, isLoading: savesLoading } = useQuery({
-    queryKey: ["saves-summary"],
-    queryFn: () => getSavesSummary(),
-    staleTime: 5 * 60 * 1000,
-    enabled: distinctCount < 5,
-  });
 
   const { data: createdResult, isLoading: createdLoading } = useQuery({
     queryKey: ["my-recipes-created", lang],
@@ -468,11 +217,6 @@ function MyRecipesPage() {
     },
   });
 
-  const displayName = profile?.display_name ?? "—";
-  const bio = profile?.bio ?? null;
-  const avatarUrl = profile?.avatar_url ?? null;
-  const username = profile?.username ?? null;
-
   const createdRecipes = createdResult?.data ?? [];
   const savedRecipes = savedResult?.data ?? [];
 
@@ -480,63 +224,14 @@ function MyRecipesPage() {
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-[#FAFAF8] border-b border-[#F0F0EE]">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-md mx-auto px-4 py-3">
           <h1 className="text-base font-semibold text-[#1A1A1A]">
             {t("myRecipes.title")}
           </h1>
-          <Link
-            to="/app/settings"
-            aria-label={t("settings.title")}
-            className="w-9 h-9 rounded-xl border border-[#E5E7EB] bg-white flex items-center justify-center text-[#9CA3AF] hover:text-[#6B7280] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-          >
-            <Settings size={16} aria-hidden="true" />
-          </Link>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
-        {/* Profile header */}
-        <div className="flex items-center gap-4">
-          {avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={displayName}
-              className="w-16 h-16 rounded-full object-cover shrink-0"
-            />
-          ) : (
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shrink-0"
-              style={{
-                background: "linear-gradient(135deg, #F4623A, #D94F2B)",
-              }}
-              aria-hidden="true"
-            >
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-lg font-bold text-[#1A1A1A] truncate">
-              {displayName}
-            </p>
-            {username && <p className="text-sm text-[#9CA3AF]">@{username}</p>}
-            {bio && (
-              <p className="text-sm text-[#6B7280] mt-0.5 line-clamp-2">
-                {bio}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Cook profile section */}
-        <CookProfileSection
-          distinctCount={distinctCount}
-          countLoading={countLoading}
-          cookSummary={cookSummary}
-          summaryLoading={summaryLoading}
-          savesSummary={savesSummary}
-          savesLoading={savesLoading}
-        />
-
+      <div className="max-w-md mx-auto px-4 py-4 space-y-4">
         {/* Tabs */}
         <div className="flex rounded-xl bg-[#F3F4F6] p-1">
           <button

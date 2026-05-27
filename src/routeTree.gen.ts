@@ -19,6 +19,7 @@ import { Route as AppShoppingRouteImport } from './routes/app/shopping'
 import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppPlanRouteImport } from './routes/app/plan'
 import { Route as AppOnboardingRouteImport } from './routes/app/onboarding'
+import { Route as AppMeRouteImport } from './routes/app/me'
 import { Route as AppMyRecipesIndexRouteImport } from './routes/app/my-recipes/index'
 import { Route as AppLibraryIndexRouteImport } from './routes/app/library/index'
 import { Route as AppProfileUsernameRouteImport } from './routes/app/profile/$username'
@@ -76,6 +77,11 @@ const AppOnboardingRoute = AppOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMeRoute = AppMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMyRecipesIndexRoute = AppMyRecipesIndexRouteImport.update({
   id: '/my-recipes/',
   path: '/my-recipes/',
@@ -111,6 +117,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/app': typeof AppRouteWithChildren
+  '/app/me': typeof AppMeRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/app/me': typeof AppMeRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/app': typeof AppRouteWithChildren
+  '/app/me': typeof AppMeRoute
   '/app/onboarding': typeof AppOnboardingRoute
   '/app/plan': typeof AppPlanRoute
   '/app/settings': typeof AppSettingsRoute
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/app/me'
     | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/app/me'
     | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/app'
+    | '/app/me'
     | '/app/onboarding'
     | '/app/plan'
     | '/app/settings'
@@ -297,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOnboardingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/me': {
+      id: '/app/me'
+      path: '/me'
+      fullPath: '/app/me'
+      preLoaderRoute: typeof AppMeRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/my-recipes/': {
       id: '/app/my-recipes/'
       path: '/my-recipes'
@@ -343,6 +362,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppMeRoute: typeof AppMeRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppPlanRoute: typeof AppPlanRoute
   AppSettingsRoute: typeof AppSettingsRoute
@@ -357,6 +377,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppMeRoute: AppMeRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppPlanRoute: AppPlanRoute,
   AppSettingsRoute: AppSettingsRoute,
@@ -382,12 +403,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

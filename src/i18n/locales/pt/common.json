@@ -3,7 +3,8 @@
     "recipes": "Receitas",
     "myRecipes": "Cozinha",
     "plan": "Plano",
-    "list": "Lista"
+    "list": "Lista",
+    "profile": "Perfil"
   },
   "myRecipes": {
     "title": "Cozinha",
@@ -420,6 +421,40 @@
     "householdCreating": "A criar…",
     "householdLeaving": "A sair…",
     "signOut": "Terminar sessão"
+  },
+  "flavorIdentity": {
+    "persona": {
+      "chicken": "Mestre do Frango",
+      "beef": "Rei da Carne",
+      "pork": "Especialista em Porco",
+      "fish": "Pescador de Sabores",
+      "salmon": "Amante do Salmão",
+      "shrimp": "Rei dos Mariscos",
+      "eggs": "Rei dos Ovos",
+      "tofu": "Chef Plant-Based",
+      "turkey": "Especialista em Peru",
+      "lamb": "Mestre do Borrego",
+      "default": "Explorador de Sabores"
+    },
+    "newCook": "Chef em Formação",
+    "browserTitle": "Os teus gostos estão a emergir",
+    "progressHint": "Faltam {{remaining}} receitas para desbloquear o teu perfil de sabor",
+    "progressCount": "{{current}} de {{total}} receitas",
+    "monthTitle": "{{month}} em receitas",
+    "cookedTimes_one": "Cozinhaste {{count}} receita este mês",
+    "cookedTimes_other": "Cozinhaste {{count}} receitas este mês",
+    "bestMonth": "O teu melhor mês até agora 🔥",
+    "upVsLastMonth": "{{n}} mais que o mês passado ↑",
+    "downVsLastMonth": "{{n}} menos que o mês passado ↓",
+    "sameAsLastMonth": "Igual ao mês passado",
+    "signatureRecipe": "A tua assinatura",
+    "signatureTimes_one": "cozinhaste-a {{count}} vez",
+    "signatureTimes_other": "cozinhaste-a {{count}} vezes",
+    "proteinPersonality": "Os teus pratos têm muito de {{protein}}",
+    "newCuisineUnlock": "Estreaste-te na cozinha {{cuisine}} 🎉",
+    "masteredTitle": "Receitas que dominaste",
+    "masteredHint": "Cozinhada 3 ou mais vezes",
+    "settingsTitle": "Definições"
   },
   "cookProfile": {
     "title": "O teu perfil de sabor",
