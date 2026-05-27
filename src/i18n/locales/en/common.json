@@ -123,7 +123,19 @@
     "selectUnit": "Select unit",
     "unitMetric": "Metric",
     "unitImperial": "Imperial",
-    "unitCount": "Count"
+    "unitCount": "Count",
+    "customTagsSection": "My tags",
+    "addCustomTag": "Add tag…"
+  },
+  "import": {
+    "trigger": "Import from a link",
+    "placeholder": "Paste the recipe link here…",
+    "button": "Import",
+    "importing": "Importing…",
+    "banner": "Recipe imported from {{domain}} — edit and save as yours",
+    "sourceLabel": "Source",
+    "errorFetch": "Could not access the link. Please try again.",
+    "errorNoSchema": "This page does not contain a recipe we can import."
   },
   "units": {
     "unit": "Unit",

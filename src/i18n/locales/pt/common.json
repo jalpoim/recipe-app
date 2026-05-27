@@ -123,7 +123,19 @@
     "selectUnit": "Selecionar unidade",
     "unitMetric": "Métrico",
     "unitImperial": "Imperial",
-    "unitCount": "Contagem"
+    "unitCount": "Contagem",
+    "customTagsSection": "Os meus tags",
+    "addCustomTag": "Adicionar tag…"
+  },
+  "import": {
+    "trigger": "Importar de um link",
+    "placeholder": "Cole o link da receita aqui…",
+    "button": "Importar",
+    "importing": "A importar…",
+    "banner": "Receita importada de {{domain}} — edita e guarda como tua",
+    "sourceLabel": "Fonte",
+    "errorFetch": "Não foi possível aceder ao link. Tenta novamente.",
+    "errorNoSchema": "Esta página não tem uma receita que possamos importar."
   },
   "units": {
     "unit": "Unidade",

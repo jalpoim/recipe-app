@@ -9,10 +9,12 @@ import {
   Camera,
   ChevronDown,
   ChevronUp,
+  Link2,
   Minus,
   Plus,
   X,
 } from "lucide-react";
+import { Drawer } from "vaul";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -22,6 +24,7 @@ import {
   fetchUserProteins,
   createUserProtein,
   deleteUserProtein,
+  parseRecipeUrl,
   type IngredientRow,
   type StepRow,
 } from "../../../lib/supabase/recipe-queries";
@@ -242,6 +245,16 @@ function CreateRecipePage() {
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ── import state ─────────────────────────────────────────────────────────────
+  const [importSheetOpen, setImportSheetOpen] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
+  const [importedSourceUrl, setImportedSourceUrl] = useState<string | null>(
+    null,
+  );
+  const [importedImagePreview, setImportedImagePreview] = useState<
+    string | null
+  >(null);
+
   // ── queries ─────────────────────────────────────────────────────────────────
   const { data: profile } = useQuery({
     queryKey: ["my-profile"],
@@ -378,6 +391,68 @@ function CreateRecipePage() {
     onError: () => showToast(t("create.macrosEstimateError"), "error"),
   });
 
+  const importMutation = useMutation({
+    mutationFn: (url: string) => parseRecipeUrl({ data: { url } }),
+    onSuccess: (result) => {
+      if (!result) {
+        showToast(t("import.errorNoSchema"), "error");
+        return;
+      }
+      setImportSheetOpen(false);
+      setImportUrl("");
+      setImportedSourceUrl(result.sourceUrl);
+      if (result.imageUrl) setImportedImagePreview(result.imageUrl);
+      if (result.name) setName(result.name);
+      if (result.servings) {
+        prevServingsRef.current = result.servings;
+        setServings(result.servings);
+      }
+      if (result.timeMin) setTimeMin(String(result.timeMin));
+      if (result.ingredients.length > 0) {
+        const newKey = ++keyCounter.current;
+        const parsed: IngredientRow[] = result.ingredients.map((raw, idx) => ({
+          position: idx,
+          rawText: raw,
+          quantity: null,
+          unit: null,
+          name: null,
+          isOptional: false,
+        }));
+        setIngredients(parsed);
+        setIngredientKeys(parsed.map((_, i) => newKey + i));
+      }
+      if (result.steps.length > 0) {
+        setSteps(
+          result.steps.map((text, idx) => ({
+            position: idx,
+            text,
+            timerSeconds: null,
+          })),
+        );
+      }
+      if (
+        result.calories != null ||
+        result.protein != null ||
+        result.carbs != null ||
+        result.fat != null
+      ) {
+        if (result.calories != null) setCalories(String(result.calories));
+        if (result.protein != null) setProtein(String(result.protein));
+        if (result.carbs != null) setCarbs(String(result.carbs));
+        if (result.fat != null) setFat(String(result.fat));
+        setMacrosManuallyEdited(true);
+      }
+    },
+    onError: (err) => {
+      const msg = (err as Error).message ?? "";
+      if (msg.startsWith("fetch_failed")) {
+        showToast(t("import.errorFetch"), "error");
+      } else {
+        showToast(t("import.errorNoSchema"), "error");
+      }
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: () => {
       const effectiveName = name.trim() || autoNameSuggestion || name.trim();
@@ -394,6 +469,7 @@ function CreateRecipePage() {
           fat: effFat ? parseFloat(effFat) : null,
           visibility: publish ? "public" : "private",
           imageUrl,
+          sourceUrl: importedSourceUrl,
           ingredients: ingredients
             .filter((i) => i.rawText.trim())
             .map((ing, idx) => ({ ...ing, position: idx })),
@@ -583,6 +659,25 @@ function CreateRecipePage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-4">
+        {/* Import banner */}
+        {importedSourceUrl && (
+          <div className="flex items-start gap-2 rounded-2xl bg-[#F0FDF4] border border-[#16A34A]/30 px-4 py-3">
+            <Link2
+              size={14}
+              className="text-[#16A34A] shrink-0 mt-0.5"
+              aria-hidden="true"
+            />
+            <p className="text-xs text-[#15803d]">
+              {t("import.banner", {
+                domain: new URL(importedSourceUrl).hostname.replace(
+                  /^www\./,
+                  "",
+                ),
+              })}
+            </p>
+          </div>
+        )}
+
         {/* 1. Name + servings row */}
         <div className="rounded-2xl bg-white border border-[#E5E7EB] shadow-sm p-4 space-y-3">
           <input
@@ -752,6 +847,69 @@ function CreateRecipePage() {
             </div>
           )}
         </div>
+
+        {/* Import from URL link */}
+        <button
+          type="button"
+          onClick={() => setImportSheetOpen(true)}
+          className="flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors focus:outline-none"
+        >
+          <Link2 size={12} aria-hidden="true" />
+          {t("import.trigger")}
+        </button>
+
+        {/* Import URL bottom sheet */}
+        <Drawer.Root
+          open={importSheetOpen}
+          onOpenChange={setImportSheetOpen}
+          shouldScaleBackground
+        >
+          <Drawer.Portal>
+            <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-2xl bg-white px-4 pb-8 pt-3 focus:outline-none">
+              <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-[#E5E7EB]" />
+              <Drawer.Title className="mb-4 text-base font-semibold text-[#1A1A1A]">
+                {t("import.trigger")}
+              </Drawer.Title>
+              <input
+                type="url"
+                value={importUrl}
+                onChange={(e) => setImportUrl(e.target.value)}
+                placeholder={t("import.placeholder")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && importUrl.trim()) {
+                    importMutation.mutate(importUrl.trim());
+                  }
+                }}
+                className="w-full rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] px-4 py-3 text-[16px] text-[#1A1A1A] placeholder:text-[#9CA3AF] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:border-[#F4623A] transition-colors mb-3"
+              />
+              {importedImagePreview && !imageUrl && (
+                <div className="mb-3 flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-[#F9FAFB] p-2">
+                  <img
+                    src={importedImagePreview}
+                    alt={t("import.trigger")}
+                    className="h-12 w-12 rounded-lg object-cover shrink-0"
+                  />
+                  <p className="text-xs text-[#6B7280]">
+                    Imagem da receita original (referência)
+                  </p>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (importUrl.trim()) importMutation.mutate(importUrl.trim());
+                }}
+                disabled={!importUrl.trim() || importMutation.isPending}
+                className="w-full rounded-2xl bg-[#F4623A] py-3.5 text-sm font-semibold text-white disabled:opacity-50 hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                {importMutation.isPending
+                  ? t("import.importing")
+                  : t("import.button")}
+              </button>
+            </Drawer.Content>
+          </Drawer.Portal>
+        </Drawer.Root>
 
         {/* 3. Ingredients */}
         <div

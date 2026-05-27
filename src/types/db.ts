@@ -598,6 +598,7 @@ export type Database = {
           save_count: number;
           servings: number;
           source: string | null;
+          source_url: string | null;
           tags: string[];
           time_min: number | null;
           updated_at: string | null;
@@ -629,6 +630,7 @@ export type Database = {
           save_count?: number;
           servings?: number;
           source?: string | null;
+          source_url?: string | null;
           tags?: string[];
           time_min?: number | null;
           updated_at?: string | null;
@@ -660,6 +662,7 @@ export type Database = {
           save_count?: number;
           servings?: number;
           source?: string | null;
+          source_url?: string | null;
           tags?: string[];
           time_min?: number | null;
           updated_at?: string | null;

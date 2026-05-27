@@ -747,7 +747,24 @@ function RecipeDetailPage() {
                   </div>
                 )}
 
-                {recipe.owner_id != null &&
+                {recipe.source_url ? (
+                  <p className="text-xs text-[#9CA3AF]">
+                    {t("import.sourceLabel")}:{" "}
+                    <a
+                      href={recipe.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-[#6B7280] underline underline-offset-2 hover:text-[#1A1A1A] transition-colors"
+                    >
+                      {new URL(recipe.source_url).hostname.replace(
+                        /^www\./,
+                        "",
+                      )}
+                      {" ↗"}
+                    </a>
+                  </p>
+                ) : (
+                  recipe.owner_id != null &&
                   recipe.author_display_name != null && (
                     <p className="text-xs text-[#9CA3AF]">
                       {t("recipe.by")}{" "}
@@ -755,7 +772,8 @@ function RecipeDetailPage() {
                         {recipe.author_display_name}
                       </span>
                     </p>
-                  )}
+                  )
+                )}
 
                 {isOwner && recipe.moderation_status === "pending_review" && (
                   <div className="rounded-xl bg-[#fef3c7] border border-[#B45309]/30 px-3 py-2">
