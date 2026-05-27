@@ -24,10 +24,10 @@ import {
   fetchUserProteins,
   createUserProtein,
   deleteUserProtein,
-  parseRecipeUrl,
   type IngredientRow,
   type StepRow,
 } from "../../../lib/supabase/recipe-queries";
+import { parseRecipeUrl } from "../../../lib/parse-recipe-url";
 import { supabase } from "../../../lib/supabase/browser";
 import { convertToGrams } from "../../../lib/units";
 import { deriveProteinsFromIngredients } from "../../../lib/proteins";
@@ -392,7 +392,7 @@ function CreateRecipePage() {
   });
 
   const importMutation = useMutation({
-    mutationFn: (url: string) => parseRecipeUrl({ data: { url } }),
+    mutationFn: (url: string) => parseRecipeUrl(url),
     onSuccess: (result) => {
       if (!result) {
         showToast(t("import.errorNoSchema"), "error");
