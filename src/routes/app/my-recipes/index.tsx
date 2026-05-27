@@ -13,6 +13,7 @@ import {
 import { addRecipeToPlan } from "../../../lib/supabase/plan-queries";
 import { deleteRecipe } from "../../../lib/supabase/recipe-queries";
 import { useToast } from "../../../components/Toast";
+import { ConfirmModal } from "../../../components/ConfirmModal";
 
 export const Route = createFileRoute("/app/my-recipes/")({
   component: MyRecipesPage,
@@ -32,7 +33,6 @@ function RecipeCard({
   onDelete?: () => void;
 }) {
   const { t } = useTranslation();
-  const [confirmDelete, setConfirmDelete] = useState(false);
   const thumbnail = recipe.image_thumb_url ?? recipe.image_url ?? null;
 
   return (
@@ -74,7 +74,6 @@ function RecipeCard({
 
       {/* Action buttons column — right edge */}
       <div className="absolute right-0 top-0 bottom-0 flex flex-col">
-        {/* Add to plan — always shown */}
         <button
           type="button"
           onClick={(e) => {
@@ -87,47 +86,18 @@ function RecipeCard({
           <ClipboardList size={18} aria-hidden="true" />
         </button>
 
-        {/* Delete — only for owned recipes */}
-        {canDelete && !confirmDelete && (
+        {canDelete && (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              setConfirmDelete(true);
+              onDelete?.();
             }}
             aria-label={t("common.delete")}
             className="flex-1 w-11 flex items-center justify-center border-l border-[#F0F0EE] text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
           >
             <Trash2 size={16} aria-hidden="true" />
           </button>
-        )}
-
-        {/* Delete confirm state */}
-        {canDelete && confirmDelete && (
-          <div className="flex-1 w-11 flex flex-col border-l border-[#F0F0EE]">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.();
-              }}
-              aria-label={t("common.confirm")}
-              className="flex-1 flex items-center justify-center bg-[#DC2626] text-white text-[10px] font-semibold hover:bg-[#B91C1C] transition-colors focus:outline-none"
-            >
-              {t("common.yes")}
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setConfirmDelete(false);
-              }}
-              aria-label={t("common.cancel")}
-              className="flex-1 flex items-center justify-center bg-[#F3F4F6] text-[#6B7280] text-[10px] font-semibold hover:bg-[#E5E7EB] transition-colors focus:outline-none"
-            >
-              {t("common.no")}
-            </button>
-          </div>
         )}
       </div>
     </div>
@@ -159,6 +129,7 @@ function MyRecipesPage() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language.startsWith("en") ? "en" : "pt";
   const [tab, setTab] = useState<Tab>("created");
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const { skip: reducedMotion } = useMotion();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -223,11 +194,15 @@ function MyRecipesPage() {
   const deleteMutation = useMutation({
     mutationFn: (recipeId: string) => deleteRecipe({ data: recipeId }),
     onSuccess: () => {
+      setDeleteTarget(null);
       queryClient.invalidateQueries({ queryKey: ["my-recipes-created"] });
       queryClient.invalidateQueries({ queryKey: ["library"] });
       showToast(t("recipe.deleted"), "success");
     },
-    onError: () => showToast(t("common.error"), "error"),
+    onError: () => {
+      setDeleteTarget(null);
+      showToast(t("common.error"), "error");
+    },
   });
 
   const displayName = profile?.display_name ?? "—";
@@ -342,7 +317,7 @@ function MyRecipesPage() {
                         recipe={recipe}
                         canDelete
                         onAddToPlan={() => addToPlanMutation.mutate(recipe.id)}
-                        onDelete={() => deleteMutation.mutate(recipe.id)}
+                        onDelete={() => setDeleteTarget(recipe.id)}
                       />
                     ))}
                   </div>
@@ -384,6 +359,16 @@ function MyRecipesPage() {
       >
         <Plus size={24} aria-hidden="true" />
       </Link>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title={t("recipe.delete")}
+        message={t("recipe.deleteConfirm")}
+        confirmLabel={t("common.delete")}
+        destructive
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

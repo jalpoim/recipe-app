@@ -200,15 +200,15 @@ export const deleteRecipe = createServerFn({ method: "POST" })
   .handler(async ({ data: recipeId }) => {
     const supabase = makeClient();
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not authenticated");
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
 
     const { error } = await supabase
       .from("recipes")
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", recipeId)
-      .eq("owner_id", session.user.id);
+      .eq("owner_id", user.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
