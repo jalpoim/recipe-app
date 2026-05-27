@@ -29,6 +29,7 @@ import {
   type StepRow,
 } from "../../../lib/supabase/recipe-queries";
 import { parseIngredientText } from "../../../lib/parse-recipe-url";
+import { resolveIngredientCategoriesBatch } from "../../../lib/ingredient-category";
 import { supabase } from "../../../lib/supabase/browser";
 import { convertToGrams } from "../../../lib/units";
 import { deriveProteinsFromIngredients } from "../../../lib/proteins";
@@ -426,10 +427,21 @@ function CreateRecipePage() {
             unit: p.unit,
             name: p.name,
             isOptional: false,
+            category: null,
           };
         });
         setIngredients(parsed);
         setIngredientKeys(parsed.map((_, i) => newKey + i));
+
+        // Resolve categories in the background — doesn't block the UI
+        const names = parsed.map((r) => r.name ?? r.rawText);
+        resolveIngredientCategoriesBatch(names, lang).then((cats) => {
+          setIngredients((prev) =>
+            prev.map((row, i) =>
+              cats[i] != null ? { ...row, category: cats[i] } : row,
+            ),
+          );
+        });
       }
       if (result.steps.length > 0) {
         setSteps(

@@ -73,3 +73,32 @@ export function useIngredientCategory(
     return () => clearTimeout(id);
   }, [label, lang, locked, delay]);
 }
+
+/**
+ * Resolves shopping categories for a batch of ingredient names in parallel.
+ * Used after URL import to categorise all imported ingredients at once.
+ * Returns null for names that don't match anything with sufficient confidence.
+ */
+export async function resolveIngredientCategoriesBatch(
+  names: string[],
+  lang: string,
+): Promise<(IngredientCategory | null)[]> {
+  return Promise.all(
+    names.map(async (name) => {
+      if (!name || name.trim().length < 2) return null;
+      try {
+        const results = await searchIngredients({
+          data: { q: name.trim(), lang },
+        });
+        if (!results.length) return null;
+        const top = results[0];
+        if ((top.similarity as number) >= 0.25 && top.category) {
+          return CATEGORY_SLUG_MAP[top.category] ?? null;
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+}
