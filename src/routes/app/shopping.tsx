@@ -21,7 +21,11 @@ import {
   fetchCategoryOverrides,
   upsertCategoryOverride,
 } from "../../lib/supabase/shopping-queries";
-import { useIngredientCategory } from "../../lib/ingredient-category";
+import {
+  useIngredientCategory,
+  CATEGORY_SLUG_MAP,
+} from "../../lib/ingredient-category";
+import { searchIngredients } from "../../lib/supabase/recipe-queries";
 import type { PlanItemWithRecipe, ShoppingCheckState } from "../../types/db";
 import { useToast } from "../../components/Toast";
 
@@ -95,25 +99,95 @@ const CATEGORY_KEYWORDS: [Category, string[]][] = [
   [
     "Talho/Peixaria",
     [
+      // Portuguese meat
       "frango",
       "carne",
       "bife",
+      "porco",
+      "peru",
+      "pato",
+      "vitela",
+      "cordeiro",
+      "borrego",
+      "cabrito",
+      "coelho",
+      "presunto",
+      "chouriço",
+      "linguiça",
+      "morcela",
+      "bacon",
+      "fiambre",
+      "salsicha",
+      "hamburguer",
+      // Portuguese fish & seafood
       "peixe",
       "atum",
       "salmão",
-      "peru",
       "bacalhau",
-      "porco",
-      "filete",
+      "dourada",
+      "robalo",
+      "linguado",
+      "pescada",
+      "tamboril",
+      "cherne",
+      "pregado",
+      "pargo",
+      "corvina",
+      "sardinhas",
+      "sardinha",
+      "cavala",
+      "carapau",
+      "espadarte",
+      "truta",
+      "tilápia",
+      "enguia",
+      "solha",
+      "anchova",
+      "camarão",
+      "gambas",
+      "lagosta",
+      "sapateira",
+      "mexilhão",
+      "amêijoa",
+      "lula",
+      "polvo",
+      "choco",
+      // English meat
       "chicken",
-      "salmon",
-      "tuna",
-      "turkey",
-      "cod",
       "beef",
       "pork",
+      "turkey",
+      "duck",
+      "veal",
+      "lamb",
+      "rabbit",
+      "ham",
+      "bacon",
+      "sausage",
+      "mince",
+      // English fish & seafood
+      "salmon",
+      "tuna",
+      "cod",
+      "sea bream",
+      "bass",
+      "sole",
+      "hake",
+      "monkfish",
+      "sardine",
+      "mackerel",
+      "trout",
+      "tilapia",
+      "swordfish",
       "shrimp",
-      "camarão",
+      "prawn",
+      "lobster",
+      "crab",
+      "mussel",
+      "clam",
+      "squid",
+      "octopus",
+      "cuttlefish",
     ],
   ],
   [
@@ -126,27 +200,72 @@ const CATEGORY_KEYWORDS: [Category, string[]][] = [
       "nata",
       "ovo",
       "ovos",
+      "requeijão",
+      "ricota",
+      "mozzarella",
+      "parmesão",
+      "brie",
+      "creme",
       "milk",
       "yogurt",
       "cheese",
       "butter",
       "egg",
+      "cream",
       "whey",
+      "cheddar",
+      "feta",
+      "gouda",
     ],
   ],
   [
     "Frutas/Legumes",
     [
+      // vegetables PT
       "tomate",
       "alface",
       "cenoura",
       "brócolo",
       "espinafre",
-      "banana",
-      "maçã",
       "cebola",
       "alho",
       "batata",
+      "courgette",
+      "pepino",
+      "pimento",
+      "beringela",
+      "couve",
+      "feijão verde",
+      "ervilha",
+      "milho",
+      "cogumelo",
+      "abóbora",
+      "aipo",
+      "alho francês",
+      "nabo",
+      "rabanete",
+      // fruit PT
+      "maçã",
+      "banana",
+      "laranja",
+      "limão",
+      "morango",
+      "uva",
+      "pêra",
+      "pêssego",
+      "melancia",
+      "melão",
+      "ananás",
+      "kiwi",
+      "manga",
+      "abacate",
+      "framboesa",
+      "mirtilo",
+      "cereja",
+      "ameixa",
+      "figo",
+      "dióspiro",
+      // vegetables EN
       "tomato",
       "lettuce",
       "carrot",
@@ -155,6 +274,36 @@ const CATEGORY_KEYWORDS: [Category, string[]][] = [
       "onion",
       "garlic",
       "potato",
+      "zucchini",
+      "cucumber",
+      "pepper",
+      "eggplant",
+      "cabbage",
+      "pea",
+      "corn",
+      "mushroom",
+      "pumpkin",
+      "celery",
+      "leek",
+      // fruit EN
+      "apple",
+      "banana",
+      "orange",
+      "lemon",
+      "strawberry",
+      "grape",
+      "pear",
+      "peach",
+      "watermelon",
+      "melon",
+      "pineapple",
+      "kiwi",
+      "mango",
+      "avocado",
+      "raspberry",
+      "blueberry",
+      "cherry",
+      "plum",
     ],
   ],
   [
@@ -167,6 +316,32 @@ const CATEGORY_KEYWORDS: [Category, string[]][] = [
       "farinha",
       "azeite",
       "óleo",
+      "açúcar",
+      "sal",
+      "vinagre",
+      "molho",
+      "ketchup",
+      "mostarda",
+      "maionese",
+      "massa de tomate",
+      "tomate pelado",
+      "feijão",
+      "grão",
+      "lentilha",
+      "ervilha seca",
+      "bolachas",
+      "cereais",
+      "granola",
+      "chocolate",
+      "cacau",
+      "mel",
+      "compota",
+      "manteiga de amendoim",
+      "levedura",
+      "fermento",
+      "bicarbonato",
+      "amido",
+      "maizena",
       "rice",
       "pasta",
       "oats",
@@ -783,10 +958,34 @@ function AddCustomItemForm({
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const trimmed = label.trim();
     if (!trimmed) return;
-    onAdd(trimmed, category);
+
+    let resolvedCategory = category;
+    // If the keyword fallback left "Outros" and the user didn't manually pick,
+    // do a synchronous DB lookup before submitting so fast typists still get
+    // the right category.
+    if (
+      !categoryPicked &&
+      resolvedCategory === "Outros" &&
+      trimmed.length >= 2
+    ) {
+      try {
+        const results = await searchIngredients({ data: { q: trimmed, lang } });
+        if (results.length) {
+          const top = results[0];
+          if ((top.similarity as number) >= 0.25 && top.category) {
+            resolvedCategory =
+              (CATEGORY_SLUG_MAP[top.category] as Category) ?? "Outros";
+          }
+        }
+      } catch {
+        // use keyword fallback result
+      }
+    }
+
+    onAdd(trimmed, resolvedCategory);
     setLabel("");
     setCategory("Outros");
     setCategoryPicked(false);
