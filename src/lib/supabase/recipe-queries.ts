@@ -5,6 +5,10 @@ import type {
   RecipeStepInsert,
   UserProtein,
 } from "../../types/db";
+import {
+  extractRecipeFromHtml,
+  type ParsedRecipeImport,
+} from "../parse-recipe-url";
 
 export type IngredientRow = {
   position: number;
@@ -400,4 +404,30 @@ export const deleteUserProtein = createServerFn({ method: "POST" })
       .eq("user_id", session.user.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export type { ParsedRecipeImport };
+
+export const parseRecipeUrl = createServerFn({ method: "POST" })
+  .inputValidator((input: { url: string }) => input)
+  .handler(async ({ data }): Promise<ParsedRecipeImport | null> => {
+    let html: string;
+    try {
+      const res = await fetch(data.url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9,pt;q=0.8",
+          "Cache-Control": "max-age=0",
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      html = await res.text();
+    } catch (err) {
+      throw new Error(`fetch_failed: ${(err as Error).message}`);
+    }
+    return extractRecipeFromHtml(html, data.url);
   });

@@ -152,6 +152,8 @@ function extractRecipeFromHtml(
   return null;
 }
 
+export { extractRecipeFromHtml };
+
 export async function parseRecipeUrl(
   url: string,
 ): Promise<ParsedRecipeImport | null> {
