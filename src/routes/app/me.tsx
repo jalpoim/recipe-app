@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
-import { Settings, X } from "lucide-react";
+import { Settings, X, ChevronRight } from "lucide-react";
+import { Drawer } from "vaul";
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
 import {
   getCookProfile,
@@ -398,6 +399,13 @@ function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // ── Sheet state ────────────────────────────────────────────────────────────
+  type ProfileSheet =
+    | { type: 'cook-history' }
+    | { type: 'recipe'; recipeId: string; name: string; sub: string; category: string }
+    | null;
+  const [sheet, setSheet] = useState<ProfileSheet>(null);
+
   // ── Badge change banner — hooks must be before any early returns ───────────
   const [badgeBanner, setBadgeBanner] = useState<string | null>(null);
   const specialtyBadgeKeyRaw = cookProfile?.specialty_badge_key ?? null;
@@ -556,20 +564,28 @@ function ProfilePage() {
           <BadgeCard label={creatorTitle!} category={t("flavorIdentity.creatorBadge")} />
         )}
 
-        {/* Cook count */}
+        {/* Cook count — tappable: opens top recipes sheet */}
         {showCookCount && (
-          <StatCard value={distinctCount} label={t("flavorIdentity.cookCountLabel")} />
+          <button
+            onClick={() => setSheet({ type: 'cook-history' })}
+            className="w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+          >
+            <StatCard value={distinctCount} label={t("flavorIdentity.cookCountLabel")} />
+          </button>
         )}
 
-        {/* Signature recipe — dark warm card, most earned moment */}
+        {/* Signature recipe — tappable: opens recipe preview sheet */}
         {signatureRecipe && (
-          <Link to="/app/library/$recipeId" params={{ recipeId: signatureRecipe.id }} search={{ from: undefined, planItemId: undefined }}>
+          <button
+            onClick={() => setSheet({ type: 'recipe', recipeId: signatureRecipe.id, name: signatureRecipe.name, sub: t("flavorIdentity.signatureTimes", { count: signatureRecipe.count }), category: t("flavorIdentity.signatureRecipe") })}
+            className="w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+          >
             <SignatureCard
               category={t("flavorIdentity.signatureRecipe")}
               headline={signatureRecipe.name}
               sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
             />
-          </Link>
+          </button>
         )}
 
         {/* Top protein — only if not already shown via specialty badge */}
@@ -581,9 +597,12 @@ function ProfilePage() {
           />
         )}
 
-        {/* Recently explored cuisine — full brand coral */}
+        {/* Recently explored cuisine — tappable: opens recipe preview sheet */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
-          <Link to="/app/library/$recipeId" params={{ recipeId: cookSummary.firstTimeCuisine.recipeId }} search={{ from: undefined, planItemId: undefined }}>
+          <button
+            onClick={() => setSheet({ type: 'recipe', recipeId: cookSummary.firstTimeCuisine!.recipeId, name: cookSummary.firstTimeCuisine!.recipeName, sub: cuisineLabel(cookSummary.firstTimeCuisine!.cuisine), category: t("flavorIdentity.cuisineRecentLabel") })}
+            className="w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+          >
             <DiscoveryCard
               category={t("flavorIdentity.cuisineRecentLabel")}
               headline={t("flavorIdentity.cuisineDiscoveryHeadline", {
@@ -591,7 +610,7 @@ function ProfilePage() {
               })}
               sub={cookSummary.firstTimeCuisine.recipeName}
             />
-          </Link>
+          </button>
         )}
 
         {/* Cuisine badge collection — hidden until first earned or teaser */}
@@ -635,6 +654,74 @@ function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* ── Profile sheets ───────────────────────────────────────────────── */}
+      <Drawer.Root open={sheet !== null} onOpenChange={(v) => !v && setSheet(null)}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+          <Drawer.Content
+            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl outline-none max-h-[85dvh] flex flex-col"
+            aria-label={sheet?.type === 'cook-history' ? t("flavorIdentity.cookHistoryTitle") : sheet?.name ?? ""}
+          >
+            <div className="flex justify-center pt-3 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-[#E5E7EB]" />
+            </div>
+
+            {sheet?.type === 'cook-history' && (
+              <div className="px-5 pt-2 pb-8 overflow-y-auto">
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#9C6355" }}>
+                  {t("flavorIdentity.cookHistoryTitle")}
+                </p>
+                {!cookSummary?.masteredRecipes.length ? (
+                  <p className="text-[14px] leading-relaxed" style={{ color: "#9C6355" }}>
+                    {t("flavorIdentity.cookHistoryEmpty")}
+                  </p>
+                ) : (
+                  <div>
+                    {cookSummary.masteredRecipes.map((r) => (
+                      <Link
+                        key={r.id}
+                        to="/app/library/$recipeId"
+                        params={{ recipeId: r.id }}
+                        search={{ from: undefined, planItemId: undefined }}
+                        onClick={() => setSheet(null)}
+                        className="flex items-center justify-between py-3.5 border-b border-[#F5F5F3] last:border-0 focus:outline-none"
+                      >
+                        <span className="text-[15px] font-medium" style={{ color: "#1C0F0C" }}>{r.name}</span>
+                        <ChevronRight size={16} style={{ color: "#D1D5DB" }} aria-hidden="true" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {sheet?.type === 'recipe' && (
+              <div className="px-5 pt-2 pb-8">
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#9C6355" }}>
+                  {sheet.category}
+                </p>
+                <p className="text-[24px] font-bold leading-snug mb-1" style={{ color: "#1C0F0C" }}>
+                  {sheet.name}
+                </p>
+                <p className="text-[13px] mb-6" style={{ color: "#9C6355" }}>
+                  {sheet.sub}
+                </p>
+                <Link
+                  to="/app/library/$recipeId"
+                  params={{ recipeId: sheet.recipeId }}
+                  search={{ from: undefined, planItemId: undefined }}
+                  onClick={() => setSheet(null)}
+                  className="block w-full text-center py-3.5 rounded-2xl font-semibold text-[15px] text-white focus:outline-none"
+                  style={{ background: "#F4623A" }}
+                >
+                  {t("flavorIdentity.viewRecipe")}
+                </Link>
+              </div>
+            )}
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </div>
   );
 }

@@ -489,7 +489,10 @@
     "levelUp": "New level!",
     "levelUpSubcopy": "Your cooking style is evolving based on your habits — keep it up!",
     "badgeChanged": "Your flavour profile evolved — {{badge}}",
-    "cuisineBadgesTitle": "Collection",
+    "cuisineBadgesTitle": "Your badges",
+    "cookHistoryTitle": "Your favourites",
+    "cookHistoryEmpty": "Cook your favourite recipes 3 or more times to see them here.",
+    "viewRecipe": "View full recipe",
     "cuisineBadgeTeaser_one": "{{count}} to go",
     "cuisineBadgeTeaser_other": "{{count}} to go",
     "titles": {
