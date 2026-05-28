@@ -14,6 +14,19 @@ export const Route = createFileRoute("/app/me")({
   component: ProfilePage,
 });
 
+// ─── Design tokens ────────────────────────────────────────────────────────────
+// All colors derived from brand coral #F4623A — no foreign hues on this page.
+// MD3-style tonal palette: same family at varying tone/lightness.
+//
+// brand:       #F4623A  hero, discovery card bg, accent elements
+// brand-dark:  #C23E22  numbers and text-on-light where coral is too bright
+// surface:     #FFF4F0  all card backgrounds (warm tint)
+// dark-warm:   #2D1208  signature card bg (very dark warm brown, not cold black)
+// text-hi:     #1C0F0C  headlines on light surfaces
+// text-lo:     #9C6355  labels, sub-lines on light surfaces
+// chip-bg:     #FFE8DE  cuisine collection chips
+// chip-text:   #7A2C18  text on chips
+
 // ─── Level thresholds ────────────────────────────────────────────────────────
 
 const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
@@ -79,13 +92,13 @@ function IdentityHero({
 
   return (
     <div
-      className="relative px-5 pt-12 pb-10 text-white"
-      style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
+      className="relative px-5 pt-12 pb-8 text-white"
+      style={{ background: "linear-gradient(160deg, #F4623A 0%, #C23E22 100%)" }}
     >
       <Link
         to="/app/settings"
         aria-label={t("flavorIdentity.settingsTitle")}
-        className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors focus:outline-none"
+        className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors focus-visible:ring-2 focus-visible:ring-white/50 focus:outline-none"
       >
         <Settings size={16} aria-hidden="true" />
       </Link>
@@ -95,33 +108,41 @@ function IdentityHero({
           <img
             src={avatarUrl}
             alt={displayName}
-            className="w-20 h-20 rounded-full object-cover ring-4 ring-white/30 shrink-0 mb-3"
+            width={80}
+            height={80}
+            className="w-20 h-20 rounded-full object-cover ring-2 ring-white/30 shrink-0 mb-3"
           />
         ) : (
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold ring-4 ring-white/30 shrink-0 mb-3"
-            style={{ background: "rgba(255,255,255,0.2)" }}
+            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold ring-2 ring-white/30 shrink-0 mb-3"
+            style={{ background: "rgba(255,255,255,0.18)" }}
             aria-hidden="true"
           >
             {displayName.charAt(0).toUpperCase()}
           </div>
         )}
 
-        <p className="text-xl font-bold leading-tight">{displayName}</p>
+        <p className="text-[20px] font-bold leading-tight">{displayName}</p>
         {username && (
-          <p className="text-sm text-white/60 mt-0.5">@{username}</p>
+          <p className="text-[14px] text-white/60 mt-0.5">@{username}</p>
         )}
 
-        <p className="text-[26px] font-bold leading-tight mt-4">{primaryTitle}</p>
+        {/* Title — dominant identity statement */}
+        <p
+          className="text-[28px] font-bold leading-tight mt-4"
+          style={{ textWrap: "balance" } as React.CSSProperties}
+        >
+          {primaryTitle}
+        </p>
 
         {specialtyBadgeLabel && (
-          <div className="mt-2 px-3 py-1 rounded-full bg-white/15 border border-white/25">
-            <p className="text-xs font-medium tracking-wide">{specialtyBadgeLabel}</p>
+          <div className="mt-2 px-3 py-1 rounded-full bg-white/15 border border-white/20">
+            <p className="text-[12px] font-medium tracking-wide">{specialtyBadgeLabel}</p>
           </div>
         )}
 
         {subtitle && (
-          <p className="text-[13px] text-white/65 max-w-[260px] leading-relaxed mt-4">
+          <p className="text-[13px] text-white/60 max-w-[260px] leading-relaxed mt-4">
             {subtitle}
           </p>
         )}
@@ -130,75 +151,89 @@ function IdentityHero({
   );
 }
 
-// ─── Stat card — number as the hero ──────────────────────────────────────────
+// ─── Stat card ────────────────────────────────────────────────────────────────
+// Horizontal layout: large number left + label wrapping right.
+// Fills horizontal space intentionally — no empty right-side void.
 
 function StatCard({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-2xl bg-white shadow-sm px-7 py-6">
-      <p className="text-[64px] font-extrabold leading-none text-[#F4623A] tracking-tight">
+    <div className="rounded-2xl shadow-sm px-6 py-5 flex items-baseline gap-4" style={{ background: "#FFF4F0" }}>
+      <p
+        className="text-[56px] font-extrabold leading-none tracking-tight shrink-0"
+        style={{ color: "#C23E22", fontVariantNumeric: "tabular-nums" }}
+      >
         {value}
       </p>
-      <p className="text-[13px] text-[#9CA3AF] mt-2 leading-snug">{label}</p>
+      <p className="text-[14px] leading-snug" style={{ color: "#9C6355" }}>
+        {label}
+      </p>
     </div>
   );
 }
 
-// ─── Discovery card — full-color, celebratory ─────────────────────────────────
+// ─── Discovery card ───────────────────────────────────────────────────────────
+// Full brand coral — echoes the hero, signals celebration.
 
 function DiscoveryCard({ category, headline }: { category: string; headline: string }) {
   return (
-    <div className="rounded-2xl bg-[#16A34A] shadow-sm px-6 py-5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/60 mb-1.5">
+    <div className="rounded-2xl shadow-sm px-6 py-5" style={{ background: "#F4623A" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
         {category}
       </p>
-      <p className="text-[20px] font-bold text-white leading-snug">{headline}</p>
+      <p
+        className="text-[20px] font-bold text-white leading-snug"
+        style={{ textWrap: "balance" } as React.CSSProperties}
+      >
+        {headline}
+      </p>
     </div>
   );
 }
 
-// ─── Signature card — dark, earned ───────────────────────────────────────────
+// ─── Signature card ───────────────────────────────────────────────────────────
+// Dark warm brown — most earned moment on the page.
+// Coral sub-line glows against the dark surface.
 
-function SignatureCard({
-  category,
-  headline,
-  sub,
-}: {
-  category: string;
-  headline: string;
-  sub: string;
-}) {
+function SignatureCard({ category, headline, sub }: { category: string; headline: string; sub: string }) {
   return (
-    <div className="rounded-2xl bg-[#1A1A1A] shadow-md px-6 py-5">
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-1.5">
+    <div className="rounded-2xl shadow-md px-6 py-5" style={{ background: "#2D1208" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.35)" }}>
         {category}
       </p>
-      <p className="text-[18px] font-bold text-white leading-snug">{headline}</p>
-      <p className="text-[12px] text-[#F4623A] mt-2 font-medium">{sub}</p>
+      <p
+        className="text-[18px] font-bold text-white leading-snug"
+        style={{ textWrap: "balance" } as React.CSSProperties}
+      >
+        {headline}
+      </p>
+      <p className="text-[12px] font-medium mt-2" style={{ color: "#F4623A" }}>
+        {sub}
+      </p>
     </div>
   );
 }
 
-// ─── Narrative card — clean white, for general content ───────────────────────
+// ─── Narrative card ───────────────────────────────────────────────────────────
+// General content — warm surface, consistent with StatCard family.
 
-function NarrativeCard({
-  category,
-  headline,
-  sub,
-}: {
-  category?: string;
-  headline: string;
-  sub?: string;
-}) {
+function NarrativeCard({ category, headline, sub }: { category?: string; headline: string; sub?: string }) {
   return (
-    <div className="rounded-2xl bg-white shadow-sm px-6 py-5">
+    <div className="rounded-2xl shadow-sm px-6 py-5" style={{ background: "#FFF4F0" }}>
       {category && (
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-1.5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "#9C6355" }}>
           {category}
         </p>
       )}
-      <p className="text-[17px] font-bold text-[#1A1A1A] leading-snug">{headline}</p>
+      <p
+        className="text-[17px] font-semibold leading-snug"
+        style={{ color: "#1C0F0C", textWrap: "balance" } as React.CSSProperties}
+      >
+        {headline}
+      </p>
       {sub && (
-        <p className="text-[12px] text-[#6B7280] mt-1 leading-relaxed">{sub}</p>
+        <p className="text-[13px] mt-1 leading-relaxed" style={{ color: "#9C6355" }}>
+          {sub}
+        </p>
       )}
     </div>
   );
@@ -208,13 +243,15 @@ function NarrativeCard({
 
 function BadgeCard({ label, category }: { label: string; category: string }) {
   return (
-    <div className="flex-1 rounded-2xl bg-white shadow-sm overflow-hidden">
-      <div className="h-0.5 bg-[#F4623A]" />
+    <div className="flex-1 rounded-2xl shadow-sm overflow-hidden" style={{ background: "#FFF4F0" }}>
+      <div className="h-0.5" style={{ background: "#F4623A" }} />
       <div className="px-4 pt-3 pb-5 flex flex-col items-center gap-1 text-center">
-        <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF]">
+        <p className="text-[9px] font-semibold uppercase tracking-widest" style={{ color: "#9C6355" }}>
           {category}
         </p>
-        <p className="text-[14px] font-bold text-[#1A1A1A] leading-snug">{label}</p>
+        <p className="text-[14px] font-bold leading-snug" style={{ color: "#1C0F0C" }}>
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -225,14 +262,11 @@ function BadgeCard({ label, category }: { label: string; category: string }) {
 function ProfileSkeleton() {
   return (
     <div className="animate-pulse">
-      <div
-        className="h-60"
-        style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
-      />
-      <div className="px-4 py-6 space-y-4">
-        <div className="rounded-2xl bg-white shadow-sm h-32" />
-        <div className="rounded-2xl bg-[#16A34A] opacity-20 h-20" />
-        <div className="rounded-2xl bg-[#1A1A1A] opacity-10 h-20" />
+      <div className="h-60" style={{ background: "linear-gradient(160deg, #F4623A 0%, #C23E22 100%)" }} />
+      <div className="px-4 pt-4 pb-6 space-y-4">
+        <div className="rounded-2xl h-20" style={{ background: "#FFF4F0" }} />
+        <div className="rounded-2xl h-16" style={{ background: "#F4623A", opacity: 0.2 }} />
+        <div className="rounded-2xl h-16" style={{ background: "#2D1208", opacity: 0.08 }} />
       </div>
     </div>
   );
@@ -324,7 +358,6 @@ function ProfilePage() {
   // ── Badge row visibility ───────────────────────────────────────────────────
   const showBadgeRow = !!creatorTitle || !!specialtyBadgeLabel;
 
-  // ── Translate a cuisine slug to a proper label ─────────────────────────────
   function cuisineLabel(slug: string): string {
     return t(`flavorIdentity.cuisineLabels.${slug}`, { defaultValue: slug });
   }
@@ -332,7 +365,7 @@ function ProfilePage() {
   const lifetimeCookCount = cookProfile?.lifetime_cook_count ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] pb-24">
+    <div className="min-h-screen pb-24" style={{ background: "#FFFAF8" }}>
       <IdentityHero
         displayName={displayName}
         username={username}
@@ -342,35 +375,26 @@ function ProfilePage() {
         specialtyBadgeLabel={specialtyBadgeLabel ?? undefined}
       />
 
-      <div className="max-w-md mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-md mx-auto px-4 pt-4 pb-6 space-y-3">
 
         {/* Badge row — appears only when earned */}
         {showBadgeRow && (
           <div className="flex gap-3">
             {creatorTitle && (
-              <BadgeCard
-                label={creatorTitle}
-                category={t("flavorIdentity.creatorBadge")}
-              />
+              <BadgeCard label={creatorTitle} category={t("flavorIdentity.creatorBadge")} />
             )}
             {specialtyBadgeLabel && (
-              <BadgeCard
-                label={specialtyBadgeLabel}
-                category={t("flavorIdentity.specialtyBadgeCategory")}
-              />
+              <BadgeCard label={specialtyBadgeLabel} category={t("flavorIdentity.specialtyBadgeCategory")} />
             )}
           </div>
         )}
 
-        {/* Cook count — number as the statement */}
+        {/* Cook count — number + label inline */}
         {showCookCount && (
-          <StatCard
-            value={distinctCount}
-            label={t("flavorIdentity.cookCountLabel")}
-          />
+          <StatCard value={distinctCount} label={t("flavorIdentity.cookCountLabel")} />
         )}
 
-        {/* First-time cuisine this month — celebratory full-green */}
+        {/* First-time cuisine — full brand coral, celebratory */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
           <DiscoveryCard
             category={t("flavorIdentity.cuisineFirstTimeLabel")}
@@ -380,7 +404,7 @@ function ProfilePage() {
           />
         )}
 
-        {/* Signature recipe — dark card, recipe name is the hero */}
+        {/* Signature recipe — dark warm card, most earned moment */}
         {signatureRecipe && (
           <SignatureCard
             category={t("flavorIdentity.signatureRecipe")}
@@ -398,18 +422,22 @@ function ProfilePage() {
           />
         )}
 
-        {/* Cuisine collection — label + horizontal scroll, no card container */}
+        {/* Cuisine collection — horizontal scroll, warm chips */}
         {exploredCuisines.length > 0 && (
-          <div className="space-y-3 pt-2">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9CA3AF] px-1">
+          <div className="space-y-3 pt-1">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest px-1"
+              style={{ color: "#9C6355" }}
+            >
               {t("flavorIdentity.cuisineCollectionTitle")}
             </p>
-            <div className="-mx-1 overflow-x-auto">
+            <div className="-mx-1 overflow-x-auto" style={{ overscrollBehaviorX: "contain" }}>
               <div className="flex gap-2 px-1 pb-1">
                 {exploredCuisines.map((c) => (
                   <span
                     key={c}
-                    className="text-[12px] px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap bg-[#FEF2EE] text-[#C23E22] shrink-0"
+                    className="text-[12px] px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap shrink-0"
+                    style={{ background: "#FFE8DE", color: "#7A2C18" }}
                   >
                     {cuisineLabel(c)}
                   </span>
@@ -419,19 +447,17 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Lifetime counters — bare text, no container */}
+        {/* Lifetime counters — bare centered text, archive-level content */}
         {(lifetimeCookCount > 0 || (cookProfile?.shopping_trip_count ?? 0) > 0) && (
           <div className="pt-2 pb-1 space-y-1 text-center">
             {lifetimeCookCount > 0 && (
-              <p className="text-[13px] text-[#B0B3B8]">
+              <p className="text-[13px]" style={{ color: "#C4A49C" }}>
                 {t("flavorIdentity.lifetimeCooks", { count: lifetimeCookCount })}
               </p>
             )}
             {(cookProfile?.shopping_trip_count ?? 0) > 0 && (
-              <p className="text-[13px] text-[#B0B3B8]">
-                {t("flavorIdentity.lifetimeShopping", {
-                  count: cookProfile!.shopping_trip_count,
-                })}
+              <p className="text-[13px]" style={{ color: "#C4A49C" }}>
+                {t("flavorIdentity.lifetimeShopping", { count: cookProfile!.shopping_trip_count })}
               </p>
             )}
           </div>
