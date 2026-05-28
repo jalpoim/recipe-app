@@ -16,6 +16,7 @@ i18n
     defaultNS: 'common',
     fallbackLng: 'pt',
     supportedLngs: ['pt', 'en'],
+    nsSeparator: false,
     interpolation: { escapeValue: false },
     detection: {
       order: ['cookie', 'localStorage', 'navigator'],
