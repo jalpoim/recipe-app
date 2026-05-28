@@ -1,6 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { makeClient } from './client-server'
-import type { DietaryMode } from '../../types/db'
+import type { DietaryMode, CookStyle } from '../../types/db'
 import type { Profile } from '../../types/db'
 import type { MeasurementUnit } from '../detect-locale'
 
@@ -79,7 +79,7 @@ export const saveDietaryPreferences = createServerFn({ method: 'POST' })
   })
 
 export const completeOnboarding = createServerFn({ method: 'POST' })
-  .inputValidator((input: { measurementUnit: MeasurementUnit; dietaryMode: DietaryMode; intolerances: string[] }) => input)
+  .inputValidator((input: { measurementUnit: MeasurementUnit; dietaryMode: DietaryMode; intolerances: string[]; cookStyle: CookStyle | null }) => input)
   .handler(async ({ data }) => {
     const supabase = makeClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -91,6 +91,7 @@ export const completeOnboarding = createServerFn({ method: 'POST' })
         measurement_unit: data.measurementUnit,
         dietary_mode: data.dietaryMode,
         intolerances: data.intolerances,
+        cook_style: data.cookStyle,
         onboarding_completed: true,
       })
       .eq('user_id', session.user.id)

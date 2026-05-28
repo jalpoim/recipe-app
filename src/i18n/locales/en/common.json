@@ -326,6 +326,19 @@
     "verão": "Summer"
   },
   "onboarding": {
+    "cookStyleTitle": "What matters most when you choose what to cook?",
+    "cookStyleSubtitle": "Help us personalise your experience.",
+    "cookStyleOptimizer": "🥩 Protein & macros",
+    "cookStyleOptimizerSub": "I want to hit my goals",
+    "cookStyleTimeCrunched": "⏱️ Speed & simplicity",
+    "cookStyleTimeCrunchedSub": "I don't have much time",
+    "cookStyleExplorer": "🌍 Explore flavours",
+    "cookStyleExplorerSub": "I want to try new things",
+    "cookStyleDietary": "🥗 Fits my diet",
+    "cookStyleDietarySub": "I have dietary preferences",
+    "cookStyleMealPrepper": "🍽️ Practical meals",
+    "cookStyleMealPrepperSub": "I cook for family/the week",
+    "cookStyleSkip": "Skip",
     "langTitle": "What's your language?",
     "langSubtitle": "You can change this later in Settings.",
     "unitsTitle": "How do you prefer measurements?",
@@ -338,7 +351,8 @@
     "dietaryPescatarianDesc": "No meat or poultry",
     "continue": "Continue",
     "back": "Back",
-    "finish": "Get started"
+    "finish": "Get started",
+    "closingSentence": "The more you cook, the richer your profile gets and the better your recommendations become."
   },
   "cookHistory": {
     "title": "Cook History",
@@ -437,6 +451,7 @@
       "default": "Flavor Explorer"
     },
     "newCook": "Chef in Training",
+    "heroSubtitleNewCook": "Your flavour profile is taking shape.",
     "browserTitle": "Your tastes are taking shape",
     "progressHint": "Cook {{remaining}} more recipes to unlock your full flavor profile",
     "progressCount": "{{current}} of {{total}} recipes",
@@ -450,11 +465,90 @@
     "signatureRecipe": "Your signature",
     "signatureTimes_one": "you've cooked it {{count}} time",
     "signatureTimes_other": "you've cooked it {{count}} times",
-    "proteinPersonality": "Your dishes are big on {{protein}}",
+    "proteinPersonality": "Your dishes are often high in {{protein}}",
     "newCuisineUnlock": "You tried {{cuisine}} cuisine for the first time 🎉",
     "masteredTitle": "Recipes you've mastered",
     "masteredHint": "Cooked 3 or more times",
-    "settingsTitle": "Settings"
+    "settingsTitle": "Settings",
+    "cookLoggedToast": "Cooking logged ✓ · {{count}} meals cooked at home",
+    "cookLoggedUndo": "Undo",
+    "titles": {
+      "explorer": {
+        "1": "Curious",
+        "2": "Wanderer",
+        "3": "Explorer",
+        "4": "Flavour Ambassador",
+        "5": "Gastronomic Nomad"
+      },
+      "optimizer": {
+        "1": "Mindful",
+        "2": "Precise",
+        "3": "Kitchen Athlete",
+        "4": "Nutritional Engineer",
+        "5": "High Performance Chef"
+      },
+      "planner": {
+        "1": "Organised",
+        "2": "Planner",
+        "3": "Weekly Chef",
+        "4": "Meal Prep Master",
+        "5": "Meal Architect"
+      },
+      "swift": {
+        "1": "Agile",
+        "2": "Swift",
+        "3": "Kitchen Ninja",
+        "4": "Express Chef",
+        "5": "Time Master"
+      },
+      "creator": {
+        "1": "Recipe Author",
+        "2": "Content Creator",
+        "3": "Community Chef",
+        "4": "Culinary Influencer",
+        "5": "Master Creator"
+      }
+    },
+    "specialtyBadge": {
+      "cuisine:portuguese": "Portuguese Chef",
+      "cuisine:italian": "Italian Ambassador",
+      "cuisine:japanese": "Japanese Master",
+      "cuisine:mexican": "Mexican Explorer",
+      "cuisine:indian": "Indian Chef",
+      "cuisine:thai": "Thai Master",
+      "cuisine:chinese": "Chinese Chef",
+      "cuisine:french": "French Chef",
+      "cuisine:greek": "Mediterranean Explorer",
+      "cuisine:moroccan": "Moroccan Master",
+      "cuisine:korean": "Korean Chef",
+      "cuisine:spanish": "Spanish Ambassador",
+      "cuisine:middleeastern": "Middle Eastern Chef",
+      "cuisine:american": "American Chef",
+      "cuisine:brazilian": "Brazilian Chef",
+      "dietary:vegan": "Plant-Based Chef",
+      "dietary:vegetarian": "Vegetarian Chef",
+      "dietary:gluten-free": "Gluten-Free Chef",
+      "dietary:dairy-free": "Dairy-Free Chef",
+      "dietary:keto": "Keto Chef",
+      "method:grill": "Grill Master",
+      "method:bake": "Oven Master",
+      "method:air-fry": "Air Fryer Master",
+      "method:slow-cook": "Slow Cook Master",
+      "protein:chicken": "Chicken Specialist",
+      "protein:salmon": "Salmon Specialist",
+      "protein:beef": "Beef Specialist",
+      "protein:eggs": "Egg Specialist",
+      "protein:fish": "Fish Master"
+    },
+    "creatorBadge": "Creator",
+    "lifetimeCooks_one": "{{count}} meal cooked at home",
+    "lifetimeCooks_other": "{{count}} meals cooked at home",
+    "lifetimeShopping_one": "{{count}} shopping trip completed",
+    "lifetimeShopping_other": "{{count}} shopping trips completed",
+    "cookCountCard": "You've cooked {{count}} recipes",
+    "signatureCardTitle": "Your favourite recipe",
+    "cuisineDiscoveryTitle": "New cuisine discovered",
+    "topProteinTitle": "Your dishes are often high in {{protein}}"
   },
   "cookProfile": {
     "title": "Your flavor profile",

@@ -4,24 +4,58 @@ import { useTranslation } from "react-i18next";
 import { Settings } from "lucide-react";
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
 import {
+  getCookProfile,
   getCookSummaryThisMonth,
   getDistinctCookedCount,
-  getSavesSummary,
-  type CookSummary,
 } from "../../lib/supabase/cook-log-queries";
+import type { UserCookProfile } from "../../types/db";
 
 export const Route = createFileRoute("/app/me")({
   component: ProfilePage,
 });
 
-const UNLOCK_THRESHOLD = 5;
+// ─── Level thresholds ────────────────────────────────────────────────────────
 
-function getPersonaKey(topProtein: string | null): string {
-  if (!topProtein) return "default";
-  const known = [
-    "chicken","beef","pork","fish","salmon","shrimp","eggs","tofu","turkey","lamb",
-  ];
-  return known.includes(topProtein) ? topProtein : "default";
+const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
+const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const; // optimizer & swift
+const PLANNER_THRESHOLDS = [3, 10, 20, 35, 50] as const;
+const CREATOR_THRESHOLDS = [5, 15, 30, 55, 90] as const;
+
+type Axis = "explorer" | "optimizer" | "planner" | "swift";
+
+function getLevel(score: number, thresholds: readonly number[]): 1 | 2 | 3 | 4 | 5 {
+  if (score >= thresholds[4]) return 5;
+  if (score >= thresholds[3]) return 4;
+  if (score >= thresholds[2]) return 3;
+  if (score >= thresholds[1]) return 2;
+  return 1;
+}
+
+function getCreatorLevel(points: number): 1 | 2 | 3 | 4 | 5 {
+  return getLevel(points, CREATOR_THRESHOLDS);
+}
+
+function getAxisLevel(axis: Axis, cp: UserCookProfile): 1 | 2 | 3 | 4 | 5 {
+  switch (axis) {
+    case "explorer":
+      return getLevel(Number(cp.explorer_score), EXPLORER_THRESHOLDS);
+    case "optimizer":
+      return getLevel(Number(cp.optimizer_score), PCT_THRESHOLDS);
+    case "planner":
+      return getLevel(Number(cp.planner_score), PLANNER_THRESHOLDS);
+    case "swift":
+      return getLevel(Number(cp.swift_score), PCT_THRESHOLDS);
+  }
+}
+
+function getPrimaryAxis(cp: UserCookProfile): Axis {
+  const scores: Record<Axis, number> = {
+    explorer: Number(cp.explorer_score),
+    optimizer: Number(cp.optimizer_score),
+    planner: Number(cp.planner_score),
+    swift: Number(cp.swift_score),
+  };
+  return (Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis);
 }
 
 // ─── Hero ────────────────────────────────────────────────────────────────────
@@ -30,14 +64,16 @@ function IdentityHero({
   displayName,
   username,
   avatarUrl,
-  identityTitle,
+  primaryTitle,
   subtitle,
+  specialtyBadgeLabel,
 }: {
   displayName: string;
   username: string | null;
   avatarUrl: string | null;
-  identityTitle: string;
+  primaryTitle: string;
   subtitle: string;
+  specialtyBadgeLabel?: string;
 }) {
   const { t } = useTranslation();
 
@@ -46,7 +82,6 @@ function IdentityHero({
       className="relative px-5 pt-14 pb-8 text-white overflow-hidden"
       style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
     >
-      {/* Decorative blobs */}
       <div
         aria-hidden="true"
         className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-20"
@@ -58,7 +93,6 @@ function IdentityHero({
         style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }}
       />
 
-      {/* Settings link — top right */}
       <Link
         to="/app/settings"
         aria-label={t("flavorIdentity.settingsTitle")}
@@ -67,7 +101,6 @@ function IdentityHero({
         <Settings size={16} aria-hidden="true" />
       </Link>
 
-      {/* Avatar */}
       <div className="flex flex-col items-center text-center gap-3">
         {avatarUrl ? (
           <img
@@ -92,12 +125,18 @@ function IdentityHero({
           )}
         </div>
 
-        {/* Identity badge */}
         <div className="mt-1 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
-          <p className="text-sm font-semibold tracking-wide">{identityTitle}</p>
+          <p className="text-sm font-semibold tracking-wide">{primaryTitle}</p>
         </div>
+
+        {specialtyBadgeLabel && (
+          <div className="px-3 py-1 rounded-full bg-white/15 border border-white/20">
+            <p className="text-xs font-medium">{specialtyBadgeLabel}</p>
+          </div>
+        )}
+
         {subtitle && (
-          <p className="text-xs text-white/70 max-w-[220px] leading-relaxed">
+          <p className="text-xs text-white/70 max-w-[240px] leading-relaxed">
             {subtitle}
           </p>
         )}
@@ -143,177 +182,50 @@ function NarrativeCard({
   );
 }
 
-// ─── Progress tier (new / browser users) ─────────────────────────────────────
+// ─── Badge row ────────────────────────────────────────────────────────────────
 
-function ProgressSection({
-  distinctCount,
-  savesSummary,
+function BadgeCard({
+  label,
+  sublabel,
+  emoji,
 }: {
-  distinctCount: number;
-  savesSummary: { topCuisine: string | null; topProtein: string | null } | undefined;
+  label: string;
+  sublabel: string;
+  emoji: string;
 }) {
-  const { t } = useTranslation();
-  const remaining = UNLOCK_THRESHOLD - distinctCount;
-  const progress = Math.round((distinctCount / UNLOCK_THRESHOLD) * 100);
-  const hasSaves =
-    savesSummary?.topCuisine !== null || savesSummary?.topProtein !== null;
-
   return (
-    <div className="space-y-3">
-      {hasSaves && (savesSummary?.topProtein || savesSummary?.topCuisine) && (
-        <NarrativeCard
-          emoji="👀"
-          headline={t("flavorIdentity.browserTitle")}
-          sub={[savesSummary?.topProtein
-            ? t(`proteins.${savesSummary.topProtein}`, { defaultValue: savesSummary.topProtein })
-            : null,
-            savesSummary?.topCuisine,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-          accent="orange"
-        />
-      )}
-
-      <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
-        <p className="text-sm font-semibold text-[#1A1A1A]">
-          {t("flavorIdentity.progressHint", { remaining })}
-        </p>
-        <div className="space-y-1.5">
-          <div className="h-2 w-full rounded-full bg-[#F3F4F6] overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all"
-              style={{
-                width: `${progress}%`,
-                background: "linear-gradient(90deg, #F4623A, #D94F2B)",
-              }}
-            />
-          </div>
-          <p className="text-xs text-[#9CA3AF] text-right">
-            {t("flavorIdentity.progressCount", {
-              current: distinctCount,
-              total: UNLOCK_THRESHOLD,
-            })}
-          </p>
-        </div>
-      </div>
+    <div className="flex-1 rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 flex flex-col items-center gap-2 text-center">
+      <span className="text-3xl leading-none" aria-hidden="true">{emoji}</span>
+      <p className="text-xs font-semibold text-[#1A1A1A] leading-snug">{label}</p>
+      <p className="text-[10px] text-[#6B7280]">{sublabel}</p>
     </div>
   );
 }
 
-// ─── Active cook stats ────────────────────────────────────────────────────────
+// ─── Lifetime counters ────────────────────────────────────────────────────────
 
-function ActiveCookSection({ summary }: { summary: CookSummary }) {
-  const { t, i18n } = useTranslation();
+function LifetimeCounters({
+  cookCount,
+  shoppingCount,
+}: {
+  cookCount: number;
+  shoppingCount: number;
+}) {
+  const { t } = useTranslation();
 
-  const monthName = new Date().toLocaleDateString(i18n.language, {
-    month: "long",
-  });
-  const delta = summary.countThisMonth - summary.countLastMonth;
-
-  const deltaLabel =
-    delta > 0
-      ? t("flavorIdentity.upVsLastMonth", { n: delta })
-      : delta < 0
-        ? t("flavorIdentity.downVsLastMonth", { n: Math.abs(delta) })
-        : t("flavorIdentity.sameAsLastMonth");
-
-  const isBestMonth = delta > 0 && summary.countLastMonth > 0;
+  if (cookCount === 0 && shoppingCount === 0) return null;
 
   return (
-    <div className="space-y-3">
-      {/* Cook count */}
-      <NarrativeCard
-        emoji="🍳"
-        headline={t("flavorIdentity.cookedTimes", { count: summary.countThisMonth })}
-        sub={isBestMonth ? t("flavorIdentity.bestMonth") : deltaLabel}
-        accent="orange"
-      />
-
-      {/* Signature recipe */}
-      {summary.mostCookedRecipe && (
-        <NarrativeCard
-          emoji="⭐"
-          headline={`${t("flavorIdentity.signatureRecipe")}: ${summary.mostCookedRecipe.name}`}
-          sub={t("flavorIdentity.signatureTimes", {
-            count: summary.mostCookedRecipe.count,
-          })}
-        />
+    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-1.5">
+      {cookCount > 0 && (
+        <p className="text-sm text-[#6B7280]">
+          🍳 {t("flavorIdentity.lifetimeCooks", { count: cookCount })}
+        </p>
       )}
-
-      {/* First-time cuisine */}
-      {summary.firstTimeCuisine && (
-        <NarrativeCard
-          emoji="🌍"
-          headline={t("flavorIdentity.newCuisineUnlock", {
-            cuisine: summary.firstTimeCuisine,
-          })}
-          accent="green"
-        />
-      )}
-
-      {/* Top protein personality */}
-      {summary.topProtein && (
-        <NarrativeCard
-          emoji="💪"
-          headline={t("flavorIdentity.proteinPersonality", {
-            protein: t(`proteins.${summary.topProtein}`, {
-              defaultValue: summary.topProtein,
-            }),
-          })}
-        />
-      )}
-
-      {/* Month title chip — decorative label */}
-      <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest px-1 pt-1">
-        {t("flavorIdentity.monthTitle", { month: monthName })}
-      </p>
-
-      {/* Cuisines explored */}
-      {summary.cuisinesThisMonth.length > 0 && (
-        <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-2.5">
-          <div className="flex flex-wrap gap-1.5">
-            {summary.cuisinesThisMonth.map((c) => (
-              <span
-                key={c}
-                className={`text-xs px-3 py-1 rounded-full font-medium ${
-                  c === summary.firstTimeCuisine
-                    ? "bg-[#dcfce7] text-[#15803d]"
-                    : "bg-[#F3F4F6] text-[#6B7280]"
-                }`}
-              >
-                {c}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Mastered recipes */}
-      {summary.masteredRecipes.length > 0 && (
-        <div className="space-y-2.5">
-          <div className="flex items-baseline justify-between px-1">
-            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest">
-              {t("flavorIdentity.masteredTitle")}
-            </p>
-            <p className="text-xs text-[#9CA3AF]">
-              {t("flavorIdentity.masteredHint")}
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            {summary.masteredRecipes.map((r) => (
-              <div
-                key={r.id}
-                className="flex items-center gap-3 rounded-2xl bg-[#fef3c7] border border-[#fbbf24]/30 px-4 py-3"
-              >
-                <span className="text-lg leading-none" aria-hidden="true">
-                  🏆
-                </span>
-                <p className="text-sm font-semibold text-[#92400E]">{r.name}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {shoppingCount > 0 && (
+        <p className="text-sm text-[#6B7280]">
+          🛒 {t("flavorIdentity.lifetimeShopping", { count: shoppingCount })}
+        </p>
       )}
     </div>
   );
@@ -324,7 +236,6 @@ function ActiveCookSection({ summary }: { summary: CookSummary }) {
 function ProfileSkeleton() {
   return (
     <div className="animate-pulse">
-      {/* Hero skeleton */}
       <div
         className="h-56"
         style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
@@ -366,18 +277,17 @@ function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: cookSummary, isLoading: summaryLoading } = useQuery({
+  const { data: cookProfile } = useQuery({
+    queryKey: ["cook-profile"],
+    queryFn: () => getCookProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: cookSummary } = useQuery({
     queryKey: ["cook-summary-this-month"],
     queryFn: () => getCookSummaryThisMonth(),
     staleTime: 5 * 60 * 1000,
-    enabled: distinctCount >= UNLOCK_THRESHOLD,
-  });
-
-  const { data: savesSummary, isLoading: savesLoading } = useQuery({
-    queryKey: ["saves-summary"],
-    queryFn: () => getSavesSummary(),
-    staleTime: 5 * 60 * 1000,
-    enabled: distinctCount < UNLOCK_THRESHOLD,
+    enabled: distinctCount >= 5,
   });
 
   if (countLoading || !profile) return <ProfileSkeleton />;
@@ -386,31 +296,56 @@ function ProfilePage() {
   const username = profile.username ?? null;
   const avatarUrl = profile.avatar_url ?? null;
 
-  const isActiveCook = distinctCount >= UNLOCK_THRESHOLD;
-  const hasSaves =
-    savesSummary?.topCuisine !== null || savesSummary?.topProtein !== null;
-
-  // Derive identity title
-  let identityTitle: string;
-  let heroSubtitle: string;
-
-  if (isActiveCook && cookSummary?.topProtein) {
-    const personaKey = getPersonaKey(cookSummary.topProtein);
-    identityTitle = t(`flavorIdentity.persona.${personaKey}`);
-    heroSubtitle = t("flavorIdentity.cookedTimes", { count: cookSummary.countThisMonth });
-  } else if (!isActiveCook && hasSaves && savesSummary?.topProtein) {
-    const personaKey = getPersonaKey(savesSummary.topProtein);
-    identityTitle = t(`flavorIdentity.persona.${personaKey}`);
-    heroSubtitle = t("flavorIdentity.browserTitle");
+  // ── Primary title ──────────────────────────────────────────────────────────
+  let primaryTitle: string;
+  if (cookProfile && (cookProfile.lifetime_cook_count ?? 0) >= 5) {
+    const axis = getPrimaryAxis(cookProfile);
+    const level = getAxisLevel(axis, cookProfile);
+    primaryTitle = t(`flavorIdentity.titles.${axis}.${level}`);
   } else {
-    identityTitle = t("flavorIdentity.newCook");
-    heroSubtitle = t("flavorIdentity.progressHint", {
-      remaining: UNLOCK_THRESHOLD - distinctCount,
-    });
+    primaryTitle = t("flavorIdentity.newCook");
   }
 
-  const showActiveCook = isActiveCook && !summaryLoading && cookSummary;
-  const showProgress = !isActiveCook;
+  // ── Specialty badge ────────────────────────────────────────────────────────
+  const specialtyBadgeKey = cookProfile?.specialty_badge_key ?? null;
+  const specialtyBadgeLabel = specialtyBadgeKey
+    ? t(`flavorIdentity.specialtyBadge.${specialtyBadgeKey}`, { defaultValue: "" }) || null
+    : null;
+
+  // ── Creator badge ──────────────────────────────────────────────────────────
+  const creatorPoints = Number(cookProfile?.creator_points ?? 0);
+  const creatorLevel = creatorPoints >= CREATOR_THRESHOLDS[0] ? getCreatorLevel(creatorPoints) : null;
+  const creatorTitle = creatorLevel
+    ? t(`flavorIdentity.titles.creator.${creatorLevel}`)
+    : null;
+
+  // ── Hero subtitle ──────────────────────────────────────────────────────────
+  const lifetimeCookCount = cookProfile?.lifetime_cook_count ?? 0;
+  const heroSubtitle =
+    lifetimeCookCount < 5 ? t("flavorIdentity.heroSubtitleNewCook") : "";
+
+  // ── Unlock gates ───────────────────────────────────────────────────────────
+  const showCookCount = distinctCount >= 5;
+  const showSignatureAndCuisine = distinctCount >= 10;
+  const showTopProtein = distinctCount >= 15;
+
+  // ── Signature recipe (≥3 cooks same recipe, ≥10 distinct) ─────────────────
+  const signatureRecipe =
+    showSignatureAndCuisine && cookSummary?.mostCookedRecipe?.count != null &&
+    cookSummary.mostCookedRecipe.count >= 3
+      ? cookSummary.mostCookedRecipe
+      : null;
+
+  // ── Top protein (≥40% concentration) ──────────────────────────────────────
+  const topProtein = showTopProtein && cookSummary?.topProtein ? cookSummary.topProtein : null;
+
+  // ── Cuisine collection ─────────────────────────────────────────────────────
+  const exploredCuisines = cookProfile?.explored_cuisines ?? [];
+  // Badge earned = cooked ≥3 distinct recipes; for now we surface all explored as earned
+  const earnedCuisineBadges = exploredCuisines.length > 0 ? exploredCuisines : [];
+
+  // ── Badge row visibility ───────────────────────────────────────────────────
+  const showBadgeRow = !!creatorTitle || !!specialtyBadgeLabel;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -418,21 +353,95 @@ function ProfilePage() {
         displayName={displayName}
         username={username}
         avatarUrl={avatarUrl}
-        identityTitle={identityTitle}
+        primaryTitle={primaryTitle}
         subtitle={heroSubtitle}
+        specialtyBadgeLabel={specialtyBadgeLabel ?? undefined}
       />
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-3">
-        {showActiveCook ? (
-          <ActiveCookSection summary={cookSummary!} />
-        ) : showProgress ? (
-          <ProgressSection
-            distinctCount={distinctCount}
-            savesSummary={savesLoading ? undefined : savesSummary}
-          />
-        ) : (
-          <ProfileSkeleton />
+
+        {/* Badge row — creator + specialty */}
+        {showBadgeRow && (
+          <div className="flex gap-3">
+            {creatorTitle && (
+              <BadgeCard
+                emoji="📓"
+                label={creatorTitle}
+                sublabel={t("flavorIdentity.creatorBadge")}
+              />
+            )}
+            {specialtyBadgeLabel && (
+              <BadgeCard
+                emoji="⭐"
+                label={specialtyBadgeLabel}
+                sublabel={t("flavorIdentity.specialtyBadge.label", { defaultValue: "Specialty" })}
+              />
+            )}
+          </div>
         )}
+
+        {/* Cook count card (gate: 5+ cooks) */}
+        {showCookCount && cookSummary && (
+          <NarrativeCard
+            emoji="🍳"
+            headline={t("flavorIdentity.cookCountCard", { count: distinctCount })}
+            accent="orange"
+          />
+        )}
+
+        {/* Cuisine discovery card (gate: 10+ cooks) */}
+        {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
+          <NarrativeCard
+            emoji="🌍"
+            headline={t("flavorIdentity.cuisineDiscoveryTitle")}
+            sub={cookSummary.firstTimeCuisine}
+            accent="green"
+          />
+        )}
+
+        {/* Signature recipe card (gate: 10+ cooks, same recipe ≥3×) */}
+        {signatureRecipe && (
+          <NarrativeCard
+            emoji="⭐"
+            headline={t("flavorIdentity.signatureCardTitle")}
+            sub={signatureRecipe.name}
+          />
+        )}
+
+        {/* Top protein card (gate: 15+ cooks, ≥40% concentration) */}
+        {topProtein && (
+          <NarrativeCard
+            emoji="💪"
+            headline={t("flavorIdentity.topProteinTitle", {
+              protein: t(`proteins.${topProtein}`, { defaultValue: topProtein }),
+            })}
+          />
+        )}
+
+        {/* Cuisine badge collection */}
+        {earnedCuisineBadges.length > 0 && (
+          <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
+            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest">
+              {t("flavorIdentity.cuisineDiscoveryTitle")}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {earnedCuisineBadges.map((c) => (
+                <span
+                  key={c}
+                  className="text-xs px-3 py-1 rounded-full font-medium bg-[#F3F4F6] text-[#6B7280]"
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lifetime counters */}
+        <LifetimeCounters
+          cookCount={lifetimeCookCount}
+          shoppingCount={cookProfile?.shopping_trip_count ?? 0}
+        />
       </div>
     </div>
   );

@@ -301,8 +301,14 @@ type LibrarySearch = {
   maxTime: number | undefined;
   tags: string[];
   ingredients: string[];
-  sort: Sort;
+  sort: Sort | undefined;
 };
+
+function getPersonaSort(cookStyle: string | null | undefined): Sort {
+  if (cookStyle === "optimizer") return "pcal";
+  if (cookStyle === "time_crunched") return "time";
+  return "popular";
+}
 
 function CardSkeleton() {
   return (
@@ -495,7 +501,7 @@ export const Route = createFileRoute("/app/library/")({
       ["pcal", "protein", "calories", "time", "popular", "cooked"] as Sort[]
     ).includes(search.sort as Sort)
       ? (search.sort as Sort)
-      : "pcal",
+      : undefined,
   }),
   component: LibraryPage,
 });
@@ -1420,7 +1426,7 @@ function LibraryPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const effectiveSort: Sort = activeStripChip?.sort ?? search.sort;
+  const effectiveSort: Sort = activeStripChip?.sort ?? search.sort ?? getPersonaSort(profile?.cook_style);
 
   const filterKey = useMemo(
     () => ({
@@ -1670,7 +1676,7 @@ function LibraryPage() {
               onClick={() => setSortSheetOpen(true)}
               aria-label={t("sort.label")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-                search.sort !== "pcal" && !activeStripChip?.sort
+                effectiveSort !== "pcal" && !activeStripChip?.sort
                   ? "border-[#F4623A] bg-[#FEE9E1] text-[#D94F2B]"
                   : "border-[#E5E7EB] bg-white text-[#6B7280] hover:border-[#D1D5DB]"
               }`}

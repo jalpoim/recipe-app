@@ -326,6 +326,19 @@
     "verão": "Verão"
   },
   "onboarding": {
+    "cookStyleTitle": "O que mais importa quando escolhes o que cozinhar?",
+    "cookStyleSubtitle": "Ajuda-nos a personalizar a tua experiência.",
+    "cookStyleOptimizer": "🥩 Proteína e macros",
+    "cookStyleOptimizerSub": "Quero atingir os meus objetivos",
+    "cookStyleTimeCrunched": "⏱️ Rapidez e simplicidade",
+    "cookStyleTimeCrunchedSub": "Tenho pouco tempo",
+    "cookStyleExplorer": "🌍 Explorar sabores",
+    "cookStyleExplorerSub": "Quero experimentar coisas novas",
+    "cookStyleDietary": "🥗 Cabe na minha dieta",
+    "cookStyleDietarySub": "Tenho preferências alimentares",
+    "cookStyleMealPrepper": "🍽️ Refeições práticas",
+    "cookStyleMealPrepperSub": "Cozinho para a família/semana",
+    "cookStyleSkip": "Saltar",
     "langTitle": "Qual é o teu idioma?",
     "langSubtitle": "Podes alterar isto mais tarde em Definições.",
     "unitsTitle": "Como preferes as medidas?",
@@ -338,7 +351,8 @@
     "dietaryPescatarianDesc": "Sem carne ou aves",
     "continue": "Continuar",
     "back": "Voltar",
-    "finish": "Começar"
+    "finish": "Começar",
+    "closingSentence": "Quanto mais cozinhares, mais o teu perfil ganha vida e as sugestões melhoram."
   },
   "cookHistory": {
     "title": "Histórico de cozinha",
@@ -437,6 +451,7 @@
       "default": "Explorador de Sabores"
     },
     "newCook": "Chef em Formação",
+    "heroSubtitleNewCook": "O teu perfil de sabor está a ganhar vida.",
     "browserTitle": "Os teus gostos estão a emergir",
     "progressHint": "Faltam {{remaining}} receitas para desbloquear o teu perfil de sabor",
     "progressCount": "{{current}} de {{total}} receitas",
@@ -450,11 +465,90 @@
     "signatureRecipe": "A tua assinatura",
     "signatureTimes_one": "cozinhaste-a {{count}} vez",
     "signatureTimes_other": "cozinhaste-a {{count}} vezes",
-    "proteinPersonality": "Os teus pratos têm muito de {{protein}}",
+    "proteinPersonality": "Os teus pratos são frequentemente ricos em {{protein}}",
     "newCuisineUnlock": "Estreaste-te na cozinha {{cuisine}} 🎉",
     "masteredTitle": "Receitas que dominaste",
     "masteredHint": "Cozinhada 3 ou mais vezes",
-    "settingsTitle": "Definições"
+    "settingsTitle": "Definições",
+    "cookLoggedToast": "Receita registada ✓ · {{count}} receitas cozinhadas em casa",
+    "cookLoggedUndo": "Anular",
+    "titles": {
+      "explorer": {
+        "1": "Curioso",
+        "2": "Viajante",
+        "3": "Explorador",
+        "4": "Embaixador dos Sabores",
+        "5": "Nómada Gastronómico"
+      },
+      "optimizer": {
+        "1": "Consciente",
+        "2": "Preciso",
+        "3": "Atleta de Cozinha",
+        "4": "Engenheiro Nutricional",
+        "5": "Chef de Alta Performance"
+      },
+      "planner": {
+        "1": "Organizado",
+        "2": "Planeador",
+        "3": "Chef de Semana",
+        "4": "Mestre do Meal Prep",
+        "5": "Arquiteto de Refeições"
+      },
+      "swift": {
+        "1": "Ágil",
+        "2": "Veloz",
+        "3": "Ninja da Cozinha",
+        "4": "Chef Expresso",
+        "5": "Mestre do Tempo"
+      },
+      "creator": {
+        "1": "Autor de Receitas",
+        "2": "Criador de Conteúdo",
+        "3": "Chef da Comunidade",
+        "4": "Influenciador Culinário",
+        "5": "Mestre Criador"
+      }
+    },
+    "specialtyBadge": {
+      "cuisine:portuguese": "Chef Português",
+      "cuisine:italian": "Embaixador Italiano",
+      "cuisine:japanese": "Mestre Japonês",
+      "cuisine:mexican": "Explorador Mexicano",
+      "cuisine:indian": "Chef Indiano",
+      "cuisine:thai": "Mestre Tailandês",
+      "cuisine:chinese": "Chef Chinês",
+      "cuisine:french": "Chef Francês",
+      "cuisine:greek": "Explorador Mediterrâneo",
+      "cuisine:moroccan": "Mestre Marroquino",
+      "cuisine:korean": "Chef Coreano",
+      "cuisine:spanish": "Embaixador Espanhol",
+      "cuisine:middleeastern": "Chef do Médio Oriente",
+      "cuisine:american": "Chef Americano",
+      "cuisine:brazilian": "Chef Brasileiro",
+      "dietary:vegan": "Chef Plant-Based",
+      "dietary:vegetarian": "Chef Vegetariano",
+      "dietary:gluten-free": "Chef Sem Glúten",
+      "dietary:dairy-free": "Chef Sem Lactose",
+      "dietary:keto": "Chef Keto",
+      "method:grill": "Mestre do Grelhador",
+      "method:bake": "Mestre do Forno",
+      "method:air-fry": "Mestre do Air Fryer",
+      "method:slow-cook": "Mestre do Slow Cook",
+      "protein:chicken": "Especialista em Frango",
+      "protein:salmon": "Especialista em Salmão",
+      "protein:beef": "Especialista em Carne",
+      "protein:eggs": "Especialista em Ovos",
+      "protein:fish": "Mestre do Peixe"
+    },
+    "creatorBadge": "Criador",
+    "lifetimeCooks_one": "{{count}} refeição cozinhada em casa",
+    "lifetimeCooks_other": "{{count}} refeições cozinhadas em casa",
+    "lifetimeShopping_one": "{{count}} lista de compras concluída",
+    "lifetimeShopping_other": "{{count}} listas de compras concluídas",
+    "cookCountCard": "Cozinhaste {{count}} receitas",
+    "signatureCardTitle": "A tua receita preferida",
+    "cuisineDiscoveryTitle": "Nova cozinha descoberta",
+    "topProteinTitle": "Os teus pratos são frequentemente ricos em {{protein}}"
   },
   "cookProfile": {
     "title": "O teu perfil de sabor",

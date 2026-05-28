@@ -62,6 +62,44 @@ export type Database = {
           },
         ];
       };
+      cook_log_completions: {
+        Row: {
+          checked_item_keys: string[];
+          completed_at: string;
+          deleted_item_keys: string[];
+          id: string;
+          plan_id: string | null;
+          skipped_item_keys: string[];
+          user_id: string;
+        };
+        Insert: {
+          checked_item_keys?: string[];
+          completed_at?: string;
+          deleted_item_keys?: string[];
+          id?: string;
+          plan_id?: string | null;
+          skipped_item_keys?: string[];
+          user_id: string;
+        };
+        Update: {
+          checked_item_keys?: string[];
+          completed_at?: string;
+          deleted_item_keys?: string[];
+          id?: string;
+          plan_id?: string | null;
+          skipped_item_keys?: string[];
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cook_log_completions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       daily_ai_usage: {
         Row: {
           date: string;
@@ -162,6 +200,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      ingredient_dislikes: {
+        Row: {
+          confirmed_at: string;
+          ingredient_name: string;
+          user_id: string;
+        };
+        Insert: {
+          confirmed_at?: string;
+          ingredient_name: string;
+          user_id: string;
+        };
+        Update: {
+          confirmed_at?: string;
+          ingredient_name?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       ingredient_translations: {
         Row: {
           created_at: string | null;
@@ -193,54 +249,6 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
-      };
-      cook_log_completions: {
-        Row: {
-          checked_item_keys: string[];
-          completed_at: string;
-          deleted_item_keys: string[];
-          id: string;
-          plan_id: string | null;
-          skipped_item_keys: string[];
-          user_id: string;
-        };
-        Insert: {
-          checked_item_keys?: string[];
-          completed_at?: string;
-          deleted_item_keys?: string[];
-          id?: string;
-          plan_id?: string | null;
-          skipped_item_keys?: string[];
-          user_id: string;
-        };
-        Update: {
-          checked_item_keys?: string[];
-          completed_at?: string;
-          deleted_item_keys?: string[];
-          id?: string;
-          plan_id?: string | null;
-          skipped_item_keys?: string[];
-          user_id?: string;
-        };
-        Relationships: [];
-      };
-      ingredient_dislikes: {
-        Row: {
-          confirmed_at: string;
-          ingredient_name: string;
-          user_id: string;
-        };
-        Insert: {
-          confirmed_at?: string;
-          ingredient_name: string;
-          user_id: string;
-        };
-        Update: {
-          confirmed_at?: string;
-          ingredient_name?: string;
-          user_id?: string;
-        };
-        Relationships: [];
       };
       ingredients: {
         Row: {
@@ -404,6 +412,7 @@ export type Database = {
         Row: {
           avatar_url: string | null;
           bio: string | null;
+          cook_style: string | null;
           created_at: string;
           dietary_mode: string;
           display_name: string;
@@ -417,6 +426,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null;
           bio?: string | null;
+          cook_style?: string | null;
           created_at?: string;
           dietary_mode?: string;
           display_name: string;
@@ -430,6 +440,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null;
           bio?: string | null;
+          cook_style?: string | null;
           created_at?: string;
           dietary_mode?: string;
           display_name?: string;
@@ -655,9 +666,11 @@ export type Database = {
           calories: number | null;
           carbs: number | null;
           cook_count: number;
+          cooking_method: string | null;
           created_at: string | null;
           cuisine_tags: string[];
           deleted_at: string | null;
+          dietary_flags: string[];
           fat: number | null;
           flavor_notes: string[];
           id: string;
@@ -689,9 +702,11 @@ export type Database = {
           calories?: number | null;
           carbs?: number | null;
           cook_count?: number;
+          cooking_method?: string | null;
           created_at?: string | null;
           cuisine_tags?: string[];
           deleted_at?: string | null;
+          dietary_flags?: string[];
           fat?: number | null;
           flavor_notes?: string[];
           id?: string;
@@ -723,9 +738,11 @@ export type Database = {
           calories?: number | null;
           carbs?: number | null;
           cook_count?: number;
+          cooking_method?: string | null;
           created_at?: string | null;
           cuisine_tags?: string[];
           deleted_at?: string | null;
+          dietary_flags?: string[];
           fat?: number | null;
           flavor_notes?: string[];
           id?: string;
@@ -842,6 +859,51 @@ export type Database = {
           category?: string;
           ingredient_name?: string;
           updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      user_cook_profile: {
+        Row: {
+          creator_points: number;
+          explored_cuisines: string[];
+          explored_proteins: string[];
+          explorer_score: number;
+          last_computed_at: string | null;
+          lifetime_cook_count: number;
+          optimizer_score: number;
+          planner_score: number;
+          shopping_trip_count: number;
+          specialty_badge_key: string | null;
+          swift_score: number;
+          user_id: string;
+        };
+        Insert: {
+          creator_points?: number;
+          explored_cuisines?: string[];
+          explored_proteins?: string[];
+          explorer_score?: number;
+          last_computed_at?: string | null;
+          lifetime_cook_count?: number;
+          optimizer_score?: number;
+          planner_score?: number;
+          shopping_trip_count?: number;
+          specialty_badge_key?: string | null;
+          swift_score?: number;
+          user_id: string;
+        };
+        Update: {
+          creator_points?: number;
+          explored_cuisines?: string[];
+          explored_proteins?: string[];
+          explorer_score?: number;
+          last_computed_at?: string | null;
+          lifetime_cook_count?: number;
+          optimizer_score?: number;
+          planner_score?: number;
+          shopping_trip_count?: number;
+          specialty_badge_key?: string | null;
+          swift_score?: number;
           user_id?: string;
         };
         Relationships: [];
@@ -1250,3 +1312,11 @@ export type HouseholdInfo = {
   inviteToken: string | null;
 };
 export type DietaryMode = "none" | "vegetarian" | "vegan" | "pescatarian";
+export type CookStyle =
+  | "optimizer"
+  | "time_crunched"
+  | "explorer"
+  | "dietary"
+  | "meal_prepper";
+export type UserCookProfile =
+  Database["public"]["Tables"]["user_cook_profile"]["Row"];
