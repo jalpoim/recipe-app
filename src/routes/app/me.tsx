@@ -402,7 +402,7 @@ function ProfilePage() {
   // ── Sheet state ────────────────────────────────────────────────────────────
   type ProfileSheet =
     | { type: 'cook-history' }
-    | { type: 'recipe'; recipeId: string; name: string; sub: string; category: string }
+    | { type: 'recipe'; recipeId: string; name: string; sub: string; category: string; imageUrl: string | null }
     | null;
   const [sheet, setSheet] = useState<ProfileSheet>(null);
 
@@ -577,7 +577,7 @@ function ProfilePage() {
         {/* Signature recipe — tappable: opens recipe preview sheet */}
         {signatureRecipe && (
           <button
-            onClick={() => setSheet({ type: 'recipe', recipeId: signatureRecipe.id, name: signatureRecipe.name, sub: t("flavorIdentity.signatureTimes", { count: signatureRecipe.count }), category: t("flavorIdentity.signatureRecipe") })}
+            onClick={() => setSheet({ type: 'recipe', recipeId: signatureRecipe.id, name: signatureRecipe.name, sub: t("flavorIdentity.signatureTimes", { count: signatureRecipe.count }), category: t("flavorIdentity.signatureRecipe"), imageUrl: signatureRecipe.imageUrl ?? null })}
             className="w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
           >
             <SignatureCard
@@ -600,7 +600,7 @@ function ProfilePage() {
         {/* Recently explored cuisine — tappable: opens recipe preview sheet */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
           <button
-            onClick={() => setSheet({ type: 'recipe', recipeId: cookSummary.firstTimeCuisine!.recipeId, name: cookSummary.firstTimeCuisine!.recipeName, sub: cuisineLabel(cookSummary.firstTimeCuisine!.cuisine), category: t("flavorIdentity.cuisineRecentLabel") })}
+            onClick={() => setSheet({ type: 'recipe', recipeId: cookSummary.firstTimeCuisine!.recipeId, name: cookSummary.firstTimeCuisine!.recipeName, sub: cuisineLabel(cookSummary.firstTimeCuisine!.cuisine), category: t("flavorIdentity.cuisineRecentLabel"), imageUrl: cookSummary.firstTimeCuisine!.imageUrl ?? null })}
             className="w-full text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
           >
             <DiscoveryCard
@@ -669,7 +669,7 @@ function ProfilePage() {
 
             {sheet?.type === 'cook-history' && (
               <div className="px-5 pt-2 pb-8 overflow-y-auto">
-                <p className="text-[10px] font-semibold uppercase tracking-widest mb-4" style={{ color: "#9C6355" }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "#9C6355" }}>
                   {t("flavorIdentity.cookHistoryTitle")}
                 </p>
                 {!cookSummary?.masteredRecipes.length ? (
@@ -685,9 +685,19 @@ function ProfilePage() {
                         params={{ recipeId: r.id }}
                         search={{ from: undefined, planItemId: undefined }}
                         onClick={() => setSheet(null)}
-                        className="flex items-center justify-between py-3.5 border-b border-[#F5F5F3] last:border-0 focus:outline-none"
+                        className="flex items-center gap-3 py-3 border-b border-[#F5F5F3] last:border-0 focus:outline-none"
                       >
-                        <span className="text-[15px] font-medium" style={{ color: "#1C0F0C" }}>{r.name}</span>
+                        <div
+                          className="w-12 h-12 rounded-xl shrink-0 overflow-hidden"
+                          style={{ background: "#FFE8DE" }}
+                        >
+                          {r.imageUrl ? (
+                            <img src={r.imageUrl} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #FFE8DE, #FECDB3)" }} />
+                          )}
+                        </div>
+                        <span className="flex-1 text-[15px] font-medium leading-snug" style={{ color: "#1C0F0C" }}>{r.name}</span>
                         <ChevronRight size={16} style={{ color: "#D1D5DB" }} aria-hidden="true" />
                       </Link>
                     ))}
@@ -697,26 +707,37 @@ function ProfilePage() {
             )}
 
             {sheet?.type === 'recipe' && (
-              <div className="px-5 pt-2 pb-8">
-                <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#9C6355" }}>
-                  {sheet.category}
-                </p>
-                <p className="text-[24px] font-bold leading-snug mb-1" style={{ color: "#1C0F0C" }}>
-                  {sheet.name}
-                </p>
-                <p className="text-[13px] mb-6" style={{ color: "#9C6355" }}>
-                  {sheet.sub}
-                </p>
-                <Link
-                  to="/app/library/$recipeId"
-                  params={{ recipeId: sheet.recipeId }}
-                  search={{ from: undefined, planItemId: undefined }}
-                  onClick={() => setSheet(null)}
-                  className="block w-full text-center py-3.5 rounded-2xl font-semibold text-[15px] text-white focus:outline-none"
-                  style={{ background: "#F4623A" }}
+              <div className="pb-8">
+                {/* Thumbnail */}
+                <div
+                  className="w-full h-44 overflow-hidden"
+                  style={{ background: "linear-gradient(135deg, #FFE8DE, #FECDB3)" }}
                 >
-                  {t("flavorIdentity.viewRecipe")}
-                </Link>
+                  {sheet.imageUrl && (
+                    <img src={sheet.imageUrl} alt={sheet.name} className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div className="px-5 pt-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#9C6355" }}>
+                    {sheet.category}
+                  </p>
+                  <p className="text-[22px] font-bold leading-snug mb-1" style={{ color: "#1C0F0C" }}>
+                    {sheet.name}
+                  </p>
+                  <p className="text-[13px] mb-5" style={{ color: "#9C6355" }}>
+                    {sheet.sub}
+                  </p>
+                  <Link
+                    to="/app/library/$recipeId"
+                    params={{ recipeId: sheet.recipeId }}
+                    search={{ from: undefined, planItemId: undefined }}
+                    onClick={() => setSheet(null)}
+                    className="block w-full text-center py-3.5 rounded-2xl font-semibold text-[15px] text-white focus:outline-none"
+                    style={{ background: "#F4623A" }}
+                  >
+                    {t("flavorIdentity.viewRecipe")}
+                  </Link>
+                </div>
               </div>
             )}
           </Drawer.Content>

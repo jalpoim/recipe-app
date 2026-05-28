@@ -6,10 +6,10 @@ export type CookSummary = {
   countThisMonth: number;
   countLastMonth: number;
   topProtein: string | null;
-  mostCookedRecipe: { id: string; name: string; count: number } | null;
-  masteredRecipes: { id: string; name: string }[];
+  mostCookedRecipe: { id: string; name: string; count: number; imageUrl: string | null } | null;
+  masteredRecipes: { id: string; name: string; imageUrl: string | null }[];
   cuisinesThisMonth: string[];
-  firstTimeCuisine: { cuisine: string; recipeName: string; recipeId: string } | null;
+  firstTimeCuisine: { cuisine: string; recipeName: string; recipeId: string; imageUrl: string | null } | null;
 };
 
 export type CookLogWithRecipe = CookLog & { recipe_name: string };
@@ -211,7 +211,7 @@ export const getCookSummaryThisMonth = createServerFn({
   // All-time aggregates: single fetch covers signature dish, top protein, first-time cuisine
   const { data: allCooks } = await supabase
     .from("cook_log")
-    .select("recipe_id, cooked_at, recipes(id, name, proteins, cuisine_tags)")
+    .select("recipe_id, cooked_at, recipes(id, name, proteins, cuisine_tags, image_url)")
     .eq("user_id", session.user.id)
     .order("cooked_at", { ascending: true }) as unknown as {
     data:
@@ -223,14 +223,15 @@ export const getCookSummaryThisMonth = createServerFn({
             name: string;
             proteins: string[];
             cuisine_tags: string[];
+            image_url: string | null;
           } | null;
         }[]
       | null;
   };
 
-  const allTimeCounts = new Map<string, { id: string; name: string; count: number }>();
+  const allTimeCounts = new Map<string, { id: string; name: string; count: number; imageUrl: string | null }>();
   const allTimeProteinCounts = new Map<string, number>();
-  const cuisineFirstSeen = new Map<string, { date: string; recipeName: string; recipeId: string }>();
+  const cuisineFirstSeen = new Map<string, { date: string; recipeName: string; recipeId: string; imageUrl: string | null }>();
 
   for (const row of allCooks ?? []) {
     const r = row.recipes;
@@ -239,27 +240,27 @@ export const getCookSummaryThisMonth = createServerFn({
     if (existing) {
       existing.count++;
     } else {
-      allTimeCounts.set(row.recipe_id, { id: r.id, name: r.name, count: 1 });
+      allTimeCounts.set(row.recipe_id, { id: r.id, name: r.name, count: 1, imageUrl: r.image_url ?? null });
     }
     for (const p of r.proteins ?? []) {
       allTimeProteinCounts.set(p, (allTimeProteinCounts.get(p) ?? 0) + 1);
     }
     for (const c of r.cuisine_tags ?? []) {
       if (!cuisineFirstSeen.has(c)) {
-        cuisineFirstSeen.set(c, { date: row.cooked_at, recipeName: r.name, recipeId: r.id });
+        cuisineFirstSeen.set(c, { date: row.cooked_at, recipeName: r.name, recipeId: r.id, imageUrl: r.image_url ?? null });
       }
     }
   }
 
   const masteredRecipes = [...allTimeCounts.values()]
     .filter((r) => r.count >= 3)
-    .map(({ id, name }) => ({ id, name }));
+    .map(({ id, name, imageUrl }) => ({ id, name, imageUrl }));
 
   const topRecipeEntry = allTimeCounts.size > 0
     ? [...allTimeCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0]
     : null;
   let mostCookedRecipe = topRecipeEntry
-    ? { id: topRecipeEntry[0], name: topRecipeEntry[1].name, count: topRecipeEntry[1].count }
+    ? { id: topRecipeEntry[0], name: topRecipeEntry[1].name, count: topRecipeEntry[1].count, imageUrl: topRecipeEntry[1].imageUrl }
     : null;
 
   const topProtein = allTimeProteinCounts.size > 0
@@ -271,7 +272,7 @@ export const getCookSummaryThisMonth = createServerFn({
     ? [...cuisineFirstSeen.entries()].sort((a, b) => b[1].date.localeCompare(a[1].date))[0]
     : null;
   const firstTimeCuisine = mostRecentCuisineEntry
-    ? { cuisine: mostRecentCuisineEntry[0], recipeName: mostRecentCuisineEntry[1].recipeName, recipeId: mostRecentCuisineEntry[1].recipeId }
+    ? { cuisine: mostRecentCuisineEntry[0], recipeName: mostRecentCuisineEntry[1].recipeName, recipeId: mostRecentCuisineEntry[1].recipeId, imageUrl: mostRecentCuisineEntry[1].imageUrl }
     : null;
 
   // Cuisines this month (used for monthly activity tracking)
