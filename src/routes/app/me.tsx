@@ -477,9 +477,6 @@ function ProfilePage() {
       ? cookSummary.topProtein
       : null;
 
-  // ── Cuisine collection ─────────────────────────────────────────────────────
-  const exploredCuisines = cookProfile?.explored_cuisines ?? [];
-
   // ── Creator badge — shown as a card only (separate from specialty in hero) ─
   const showCreatorCard = !!creatorTitle;
 
@@ -494,7 +491,6 @@ function ProfilePage() {
   const visibleBadges = TARGET_CUISINES
     .map((c) => ({ cuisine: c, count: badgeMap.get(c) ?? 0 }))
     .filter(({ count }) => count >= 2); // earned (≥3) or teaser (2)
-  const hasAnyBadge = visibleBadges.some(({ count }) => count >= BADGE_THRESHOLD);
 
   return (
     <div className="min-h-screen pb-24" style={{ background: "#FFFAF8" }}>
@@ -599,8 +595,8 @@ function ProfilePage() {
         )}
 
         {/* Cuisine badge collection — hidden until first earned or teaser */}
-        {(hasAnyBadge || visibleBadges.length > 0) && (
-          <div className="space-y-3 pt-1">
+        {visibleBadges.length > 0 && (
+          <div className="space-y-2">
             <p
               className="text-[10px] font-semibold uppercase tracking-widest px-1"
               style={{ color: "#9C6355" }}
@@ -623,34 +619,9 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Explored cuisine chips — breadth indicator, all cuisines cooked at least once */}
-        {exploredCuisines.length > 0 && (
-          <div className="space-y-2 pt-1">
-            <p
-              className="text-[10px] font-semibold uppercase tracking-widest px-1"
-              style={{ color: "#9C6355" }}
-            >
-              {t("flavorIdentity.cuisineCollectionTitle")}
-            </p>
-            <div className="-mx-1 overflow-x-auto" style={{ overscrollBehaviorX: "contain" }}>
-              <div className="flex gap-2 px-1 pb-1">
-                {exploredCuisines.map((c) => (
-                  <span
-                    key={c}
-                    className="text-[12px] px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap shrink-0"
-                    style={{ background: "#FFE8DE", color: "#7A2C18" }}
-                  >
-                    {cuisineLabel(c)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Lifetime counters — bare centered text, archive-level content */}
         {(lifetimeCookCount > 0 || (cookProfile?.shopping_trip_count ?? 0) > 0) && (
-          <div className="pt-2 pb-1 space-y-1 text-center">
+          <div className="space-y-1 text-center">
             {lifetimeCookCount > 0 && (
               <p className="text-[13px]" style={{ color: "#C4A49C" }}>
                 {t("flavorIdentity.lifetimeCooks", { count: lifetimeCookCount })}
