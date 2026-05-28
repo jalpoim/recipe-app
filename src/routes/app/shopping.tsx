@@ -624,13 +624,9 @@ function RecipeView({
   if (items.length === 0) return null;
 
   const groups = buildRecipeGroups(items);
-  const shareText = buildRecipeShareText(groups);
 
   return (
     <>
-      <div className="flex justify-end mb-3">
-        <ShareButton text={shareText} />
-      </div>
       <div className="space-y-3">
         {groups.map((group) => {
           const visibleIngredients = group.ingredients.filter(
@@ -1393,18 +1389,8 @@ function ShoppingPage() {
               variant="flow"
             />
 
-            {/* Share + add custom item row */}
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <ShareButton
-                text={buildShareText(
-                  buildGlobalList(
-                    items,
-                    categoryOverrides,
-                    customItems,
-                    () => {},
-                  ),
-                )}
-              />
+            {/* Add custom item row + share */}
+            <div className="mb-4 flex items-center gap-2">
               {!showAddForm && (
                 <button
                   onClick={() => setShowAddForm(true)}
@@ -1414,6 +1400,15 @@ function ShoppingPage() {
                   {t("shopping.addExtra")}
                 </button>
               )}
+              <ShareButton
+                text={
+                  view === "recipe"
+                    ? buildRecipeShareText(buildRecipeGroups(items))
+                    : buildShareText(
+                        buildGlobalList(items, categoryOverrides, customItems, () => {}),
+                      )
+                }
+              />
             </div>
             {showAddForm && (
               <div className="mb-4">
