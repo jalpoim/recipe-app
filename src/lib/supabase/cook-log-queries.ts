@@ -2,6 +2,54 @@ import { createServerFn } from "@tanstack/react-start";
 import type { CookLog, UserCookProfile } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
 
+// ─── Canonical cuisine normalisation ─────────────────────────────────────────
+// Maps any non-canonical or regional tag to one of the 18 target cuisine slugs.
+// Keys must be lowercase. Unmapped tags are silently dropped from badge/profile logic.
+export const CUISINE_CANONICAL_MAP: Record<string, string> = {
+  // Greek / Mediterranean
+  mediterranean: "greek", albanian: "greek", croatian: "greek",
+  serbian: "greek", bosnian: "greek", macedonian: "greek",
+  cypriot: "greek", cretan: "greek",
+  // Moroccan / North Africa
+  tunisian: "moroccan", algerian: "moroccan", libyan: "moroccan",
+  "north-african": "moroccan", egyptian: "moroccan",
+  // Middle Eastern
+  lebanese: "middle-eastern", persian: "middle-eastern", iranian: "middle-eastern",
+  iraqi: "middle-eastern", syrian: "middle-eastern", yemeni: "middle-eastern",
+  saudi: "middle-eastern", emirati: "middle-eastern", armenian: "middle-eastern",
+  // German / Central European
+  austrian: "german", hungarian: "german", czech: "german", slovak: "german",
+  polish: "german", swiss: "german", romanian: "german", bulgarian: "german",
+  scandinavian: "german", nordic: "german", danish: "german",
+  swedish: "german", norwegian: "german", finnish: "german",
+  dutch: "german", russian: "german", ukrainian: "german",
+  // French / Belgian
+  belgian: "french",
+  // Chinese region
+  taiwanese: "chinese", cantonese: "chinese", sichuan: "chinese", hongkong: "chinese",
+  // Thai / South-East Asia
+  cambodian: "thai", laotian: "thai", burmese: "thai", malay: "thai",
+  malaysian: "thai", indonesian: "thai", filipino: "thai", singaporean: "thai",
+  // Brazilian / South America
+  argentinian: "brazilian", colombian: "brazilian", peruvian: "brazilian",
+  chilean: "brazilian", ecuadorian: "brazilian", uruguayan: "brazilian",
+  // American / Caribbean
+  caribbean: "american", cuban: "american", "puerto-rican": "american",
+  cajun: "american", southern: "american", "tex-mex": "mexican",
+};
+
+export function canonicaliseCuisine(tag: string): string | null {
+  const lower = tag.toLowerCase();
+  // Already canonical
+  const canonical = [
+    "portuguese","italian","japanese","mexican","indian","thai","chinese",
+    "french","greek","moroccan","korean","spanish","middle-eastern","american",
+    "brazilian","vietnamese","turkish","german",
+  ];
+  if (canonical.includes(lower)) return lower;
+  return CUISINE_CANONICAL_MAP[lower] ?? null;
+}
+
 export type CookSummary = {
   countThisMonth: number;
   countLastMonth: number;
@@ -422,7 +470,8 @@ async function _recomputeProfileForUser(
     for (const row of rows) {
       const r = row.recipes;
       if (!r) continue;
-      for (const c of r.cuisine_tags ?? []) {
+      for (const rawC of r.cuisine_tags ?? []) {
+        const c = canonicaliseCuisine(rawC) ?? rawC; // keep raw if unmapped (for explorer score)
         if (!seenCuisines.has(c)) {
           seenCuisines.add(c);
           explorerScore += 5;
@@ -489,7 +538,8 @@ async function _recomputeProfileForUser(
     for (const row of rows) {
       const r = row.recipes;
       if (!r) continue;
-      for (const c of r.cuisine_tags ?? []) {
+      for (const rawC of r.cuisine_tags ?? []) {
+        const c = canonicaliseCuisine(rawC) ?? rawC;
         cuisineCounts.set(c, (cuisineCounts.get(c) ?? 0) + 1);
       }
       for (const f of r.dietary_flags ?? []) {
@@ -549,7 +599,12 @@ async function _recomputeProfileForUser(
       swift_score: swiftScore,
       specialty_badge_key: specialtyBadgeKey,
       lifetime_cook_count: rows.length,
-      explored_cuisines: [...seenCuisines],
+      // Only store canonical cuisines in explored_cuisines (unmapped tags dropped)
+      explored_cuisines: [...seenCuisines].filter((c) => canonicaliseCuisine(c) !== null || [
+        "portuguese","italian","japanese","mexican","indian","thai","chinese",
+        "french","greek","moroccan","korean","spanish","middle-eastern","american",
+        "brazilian","vietnamese","turkish","german",
+      ].includes(c)),
       explored_proteins: [...seenProteins],
       last_computed_at: new Date().toISOString(),
     };
@@ -589,9 +644,12 @@ export const getCuisineBadgeProgress = createServerFn({ method: "GET" }).handler
         data: { recipe_id: string; recipes: { cuisine_tags: string[] } | null }[] | null;
       };
 
+    // Normalise to canonical slugs — merge counts across synonyms (e.g. mediterranean → greek)
     const cuisineRecipes = new Map<string, Set<string>>();
     for (const log of logs ?? []) {
-      for (const tag of log.recipes?.cuisine_tags ?? []) {
+      for (const rawTag of log.recipes?.cuisine_tags ?? []) {
+        const tag = canonicaliseCuisine(rawTag);
+        if (!tag) continue; // drop unmapped tags (e.g. "russian", "european")
         if (!cuisineRecipes.has(tag)) cuisineRecipes.set(tag, new Set());
         cuisineRecipes.get(tag)!.add(log.recipe_id);
       }
