@@ -266,7 +266,7 @@ function BadgeCard({ label, category }: { label: string; category: string }) {
 
 function ProfileSkeleton() {
   return (
-    <div className="animate-pulse">
+    <div className="motion-safe:animate-pulse">
       <div className="h-60" style={{ background: "linear-gradient(160deg, #F4623A 0%, #C23E22 100%)" }} />
       <div className="px-4 pt-4 pb-6 space-y-4">
         <div className="rounded-2xl h-20" style={{ background: "#FFF4F0" }} />

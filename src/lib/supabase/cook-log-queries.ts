@@ -44,18 +44,17 @@ export const logRecipeCooked = createServerFn({ method: "POST" })
     _recomputeProfileForUser(supabase, user.id).catch(() => {});
 
     // Award +8 creator points when cooking someone else's recipe
-    supabase
-      .from("recipes")
-      .select("owner_id")
-      .eq("id", data.recipeId)
-      .maybeSingle()
-      .then(({ data: recipe }) => {
-        if (recipe?.owner_id && recipe.owner_id !== user.id) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          void (supabase as any).rpc("increment_creator_points", { p_user_id: recipe.owner_id, p_points: 8 });
-        }
-      })
-      .then(undefined, () => {});
+    void (async () => {
+      const { data: recipe } = await supabase
+        .from("recipes")
+        .select("owner_id")
+        .eq("id", data.recipeId)
+        .maybeSingle();
+      if (recipe?.owner_id && recipe.owner_id !== user.id) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).rpc("increment_creator_points", { p_user_id: recipe.owner_id, p_points: 8 });
+      }
+    })().catch(() => {});
 
     return row;
   });

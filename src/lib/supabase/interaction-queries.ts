@@ -28,17 +28,17 @@ export const upsertInteraction = createServerFn({ method: 'POST' })
 
     // Award +5 creator points when another user saves a recipe for the first time
     if (!existing && data.type === 'save') {
-      supabase
-        .from('recipes')
-        .select('owner_id')
-        .eq('id', data.recipeId)
-        .maybeSingle()
-        .then(({ data: recipe }) => {
-          if (recipe?.owner_id && recipe.owner_id !== user.id) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            void (supabase as any).rpc('increment_creator_points', { p_user_id: recipe.owner_id, p_points: 5 })
-          }
-        })
+      void (async () => {
+        const { data: recipe } = await supabase
+          .from('recipes')
+          .select('owner_id')
+          .eq('id', data.recipeId)
+          .maybeSingle()
+        if (recipe?.owner_id && recipe.owner_id !== user.id) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          await (supabase as any).rpc('increment_creator_points', { p_user_id: recipe.owner_id, p_points: 5 })
+        }
+      })().catch(() => {})
     }
 
     return { ok: true }
