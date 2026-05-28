@@ -546,9 +546,13 @@
     "lifetimeShopping_one": "{{count}} lista de compras concluída",
     "lifetimeShopping_other": "{{count}} listas de compras concluídas",
     "cookCountCard": "Já tens {{count}} receitas no teu repertório",
+    "cookCountLabel": "receitas no teu repertório",
     "signatureCardTitle": "A tua receita preferida",
     "cuisineDiscoveryCard": "Estreaste-te na cozinha {{cuisine}}",
+    "cuisineDiscoveryHeadline": "Cozinha {{cuisine}}",
+    "cuisineFirstTimeLabel": "Primeira vez",
     "cuisineCollectionTitle": "As tuas cozinhas",
+    "specialtyBadgeCategory": "Especialidade",
     "topProteinTitle": "Os teus pratos são frequentemente ricos em {{protein}}",
     "cuisineLabels": {
       "portuguese": "Portuguesa",

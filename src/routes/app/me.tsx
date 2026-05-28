@@ -17,7 +17,7 @@ export const Route = createFileRoute("/app/me")({
 // ─── Level thresholds ────────────────────────────────────────────────────────
 
 const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
-const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const; // optimizer & swift
+const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const;
 const PLANNER_THRESHOLDS = [3, 10, 20, 35, 50] as const;
 const CREATOR_THRESHOLDS = [5, 15, 30, 55, 90] as const;
 
@@ -55,7 +55,7 @@ function getPrimaryAxis(cp: UserCookProfile): Axis {
     planner: Number(cp.planner_score),
     swift: Number(cp.swift_score),
   };
-  return (Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis);
+  return Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis;
 }
 
 // ─── Hero ────────────────────────────────────────────────────────────────────
@@ -79,20 +79,9 @@ function IdentityHero({
 
   return (
     <div
-      className="relative px-5 pt-14 pb-8 text-white overflow-hidden"
+      className="relative px-5 pt-12 pb-10 text-white overflow-hidden"
       style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
     >
-      <div
-        aria-hidden="true"
-        className="absolute -top-10 -right-10 w-48 h-48 rounded-full opacity-20"
-        style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }}
-      />
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 -left-6 w-32 h-32 rounded-full opacity-10"
-        style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }}
-      />
-
       <Link
         to="/app/settings"
         aria-label={t("flavorIdentity.settingsTitle")}
@@ -101,16 +90,17 @@ function IdentityHero({
         <Settings size={16} aria-hidden="true" />
       </Link>
 
-      <div className="flex flex-col items-center text-center gap-3">
+      <div className="flex flex-col items-center text-center">
+        {/* Avatar */}
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={displayName}
-            className="w-20 h-20 rounded-full object-cover ring-4 ring-white/30 shrink-0"
+            className="w-20 h-20 rounded-full object-cover ring-4 ring-white/30 shrink-0 mb-3"
           />
         ) : (
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold ring-4 ring-white/30 shrink-0"
+            className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold ring-4 ring-white/30 shrink-0 mb-3"
             style={{ background: "rgba(255,255,255,0.2)" }}
             aria-hidden="true"
           >
@@ -118,25 +108,25 @@ function IdentityHero({
           </div>
         )}
 
-        <div>
-          <p className="text-xl font-bold leading-tight">{displayName}</p>
-          {username && (
-            <p className="text-sm text-white/70 mt-0.5">@{username}</p>
-          )}
-        </div>
+        {/* Name */}
+        <p className="text-xl font-bold leading-tight">{displayName}</p>
+        {username && (
+          <p className="text-sm text-white/60 mt-0.5">@{username}</p>
+        )}
 
-        <div className="mt-1 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm border border-white/30">
-          <p className="text-sm font-semibold tracking-wide">{primaryTitle}</p>
-        </div>
+        {/* Title — the identity statement, dominant element */}
+        <p className="text-[26px] font-bold leading-tight mt-4">{primaryTitle}</p>
 
+        {/* Specialty badge chip — only when earned */}
         {specialtyBadgeLabel && (
-          <div className="px-3 py-1 rounded-full bg-white/15 border border-white/20">
-            <p className="text-xs font-medium">{specialtyBadgeLabel}</p>
+          <div className="mt-2 px-3 py-1 rounded-full bg-white/15 border border-white/25">
+            <p className="text-xs font-medium tracking-wide">{specialtyBadgeLabel}</p>
           </div>
         )}
 
+        {/* Subtitle — only shown before 5 cooks */}
         {subtitle && (
-          <p className="text-xs text-white/70 max-w-[240px] leading-relaxed mt-1">
+          <p className="text-[13px] text-white/65 max-w-[260px] leading-relaxed mt-4">
             {subtitle}
           </p>
         )}
@@ -145,13 +135,34 @@ function IdentityHero({
   );
 }
 
-// ─── Narrative card ───────────────────────────────────────────────────────────
+// ─── Stat card — big number as hero ──────────────────────────────────────────
+
+function StatCard({
+  value,
+  label,
+}: {
+  value: number;
+  label: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#FEF2EE] border border-[#F4623A]/20 shadow-sm px-6 py-5">
+      <p className="text-[52px] font-bold leading-none text-[#F4623A] tracking-tight">
+        {value}
+      </p>
+      <p className="text-[13px] text-[#6B7280] mt-2">{label}</p>
+    </div>
+  );
+}
+
+// ─── Narrative card — editorial label + bold headline ────────────────────────
 
 function NarrativeCard({
+  category,
   headline,
   sub,
   accent,
 }: {
+  category?: string;
   headline: string;
   sub?: string;
   accent?: "green" | "orange" | "default";
@@ -172,13 +183,18 @@ function NarrativeCard({
   return (
     <div className={`rounded-2xl border shadow-sm overflow-hidden ${containerBg}`}>
       <div className="flex">
-        <div className={`w-1 shrink-0 ${accentBar}`} />
-        <div className="px-4 py-4 min-w-0">
-          <p className="text-sm font-semibold text-[#1A1A1A] leading-snug">
+        <div className={`w-1.5 shrink-0 ${accentBar}`} />
+        <div className="px-5 py-4 min-w-0">
+          {category && (
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-1.5">
+              {category}
+            </p>
+          )}
+          <p className="text-[17px] font-bold text-[#1A1A1A] leading-snug">
             {headline}
           </p>
           {sub && (
-            <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed">{sub}</p>
+            <p className="text-[12px] text-[#6B7280] mt-1 leading-relaxed">{sub}</p>
           )}
         </div>
       </div>
@@ -186,21 +202,23 @@ function NarrativeCard({
   );
 }
 
-// ─── Badge row ────────────────────────────────────────────────────────────────
+// ─── Badge card ───────────────────────────────────────────────────────────────
 
 function BadgeCard({
   label,
-  sublabel,
+  category,
 }: {
   label: string;
-  sublabel: string;
+  category: string;
 }) {
   return (
     <div className="flex-1 rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
       <div className="h-1 bg-[#F4623A]" />
-      <div className="px-4 pt-3 pb-4 flex flex-col items-center gap-1.5 text-center">
-        <p className="text-sm font-semibold text-[#1A1A1A] leading-snug">{label}</p>
-        <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide">{sublabel}</p>
+      <div className="px-4 pt-3 pb-5 flex flex-col items-center gap-1 text-center">
+        <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF]">
+          {category}
+        </p>
+        <p className="text-[14px] font-bold text-[#1A1A1A] leading-snug">{label}</p>
       </div>
     </div>
   );
@@ -220,14 +238,14 @@ function LifetimeCounters({
   if (cookCount === 0 && shoppingCount === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-1.5">
+    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm px-5 py-4 space-y-1.5">
       {cookCount > 0 && (
-        <p className="text-sm text-[#6B7280]">
+        <p className="text-[13px] text-[#6B7280]">
           {t("flavorIdentity.lifetimeCooks", { count: cookCount })}
         </p>
       )}
       {shoppingCount > 0 && (
-        <p className="text-sm text-[#6B7280]">
+        <p className="text-[13px] text-[#6B7280]">
           {t("flavorIdentity.lifetimeShopping", { count: shoppingCount })}
         </p>
       )}
@@ -241,23 +259,13 @@ function ProfileSkeleton() {
   return (
     <div className="animate-pulse">
       <div
-        className="h-56"
+        className="h-60"
         style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
       />
-      <div className="px-4 py-6 space-y-3">
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="rounded-2xl bg-white border border-[#F0F0EE] p-4 h-[72px]"
-          >
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#F3F4F6] shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-[#F3F4F6] rounded-full w-3/4" />
-                <div className="h-3 bg-[#F3F4F6] rounded-full w-1/2" />
-              </div>
-            </div>
-          </div>
+      <div className="px-4 py-6 space-y-4">
+        <div className="rounded-2xl bg-[#FEF2EE] border border-[#F4623A]/20 h-28" />
+        {[1, 2].map((i) => (
+          <div key={i} className="rounded-2xl bg-white border border-[#F0F0EE] h-20" />
         ))}
       </div>
     </div>
@@ -319,11 +327,9 @@ function ProfilePage() {
   // ── Creator badge ──────────────────────────────────────────────────────────
   const creatorPoints = Number(cookProfile?.creator_points ?? 0);
   const creatorLevel = creatorPoints >= CREATOR_THRESHOLDS[0] ? getCreatorLevel(creatorPoints) : null;
-  const creatorTitle = creatorLevel
-    ? t(`flavorIdentity.titles.creator.${creatorLevel}`)
-    : null;
+  const creatorTitle = creatorLevel ? t(`flavorIdentity.titles.creator.${creatorLevel}`) : null;
 
-  // ── Hero subtitle: only shown before 5 cooks, gated on distinctCount ───────
+  // ── Hero subtitle — only at 0–4 distinct cooks ─────────────────────────────
   const heroSubtitle = distinctCount < 5 ? t("flavorIdentity.heroSubtitleNewCook") : "";
 
   // ── Unlock gates ───────────────────────────────────────────────────────────
@@ -331,14 +337,15 @@ function ProfilePage() {
   const showSignatureAndCuisine = distinctCount >= 10;
   const showTopProtein = distinctCount >= 15;
 
-  // ── Signature recipe (≥3 cooks same recipe, ≥10 distinct) ─────────────────
+  // ── Signature recipe (≥3 cooks same recipe AND ≥10 distinct) ──────────────
   const signatureRecipe =
-    showSignatureAndCuisine && cookSummary?.mostCookedRecipe?.count != null &&
+    showSignatureAndCuisine &&
+    cookSummary?.mostCookedRecipe?.count != null &&
     cookSummary.mostCookedRecipe.count >= 3
       ? cookSummary.mostCookedRecipe
       : null;
 
-  // ── Top protein (≥40% concentration) ──────────────────────────────────────
+  // ── Top protein ────────────────────────────────────────────────────────────
   const topProtein = showTopProtein && cookSummary?.topProtein ? cookSummary.topProtein : null;
 
   // ── Cuisine collection ─────────────────────────────────────────────────────
@@ -347,7 +354,7 @@ function ProfilePage() {
   // ── Badge row visibility ───────────────────────────────────────────────────
   const showBadgeRow = !!creatorTitle || !!specialtyBadgeLabel;
 
-  // ── Helper: translate a cuisine slug to a proper name ─────────────────────
+  // ── Translate a cuisine slug to a proper label ─────────────────────────────
   function cuisineLabel(slug: string): string {
     return t(`flavorIdentity.cuisineLabels.${slug}`, { defaultValue: slug });
   }
@@ -365,7 +372,7 @@ function ProfilePage() {
         specialtyBadgeLabel={specialtyBadgeLabel ?? undefined}
       />
 
-      <div className="max-w-md mx-auto px-4 py-6 space-y-3">
+      <div className="max-w-md mx-auto px-4 py-6 space-y-4">
 
         {/* Badge row — creator + specialty */}
         {showBadgeRow && (
@@ -373,45 +380,47 @@ function ProfilePage() {
             {creatorTitle && (
               <BadgeCard
                 label={creatorTitle}
-                sublabel={t("flavorIdentity.creatorBadge")}
+                category={t("flavorIdentity.creatorBadge")}
               />
             )}
             {specialtyBadgeLabel && (
               <BadgeCard
                 label={specialtyBadgeLabel}
-                sublabel={t("flavorIdentity.specialtyBadge.label", { defaultValue: "Especialidade" })}
+                category={t("flavorIdentity.specialtyBadgeCategory")}
               />
             )}
           </div>
         )}
 
-        {/* Cook count card (gate: 5+ cooks) */}
+        {/* Cook count — big number stat card */}
         {showCookCount && (
-          <NarrativeCard
-            headline={t("flavorIdentity.cookCountCard", { count: distinctCount })}
-            accent="orange"
+          <StatCard
+            value={distinctCount}
+            label={t("flavorIdentity.cookCountLabel")}
           />
         )}
 
-        {/* Cuisine discovery card (gate: 10+ cooks, first-time cuisine this month) */}
+        {/* Cuisine discovery — first time this month */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
           <NarrativeCard
-            headline={t("flavorIdentity.cuisineDiscoveryCard", {
+            category={t("flavorIdentity.cuisineFirstTimeLabel")}
+            headline={t("flavorIdentity.cuisineDiscoveryHeadline", {
               cuisine: cuisineLabel(cookSummary.firstTimeCuisine),
             })}
             accent="green"
           />
         )}
 
-        {/* Signature recipe card (gate: 10+ cooks, same recipe ≥3×) */}
+        {/* Signature recipe — recipe name is the hero */}
         {signatureRecipe && (
           <NarrativeCard
-            headline={t("flavorIdentity.signatureRecipe")}
-            sub={signatureRecipe.name}
+            category={t("flavorIdentity.signatureRecipe")}
+            headline={signatureRecipe.name}
+            sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
           />
         )}
 
-        {/* Top protein card (gate: 15+ cooks, ≥40% concentration) */}
+        {/* Top protein */}
         {topProtein && (
           <NarrativeCard
             headline={t("flavorIdentity.topProteinTitle", {
@@ -420,21 +429,23 @@ function ProfilePage() {
           />
         )}
 
-        {/* Cuisine collection */}
+        {/* Cuisine collection — horizontal scroll, warm-tinted chips */}
         {exploredCuisines.length > 0 && (
-          <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
-            <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest">
+          <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm px-5 py-4">
+            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-3">
               {t("flavorIdentity.cuisineCollectionTitle")}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {exploredCuisines.map((c) => (
-                <span
-                  key={c}
-                  className="text-xs px-3 py-1 rounded-full font-medium bg-[#F3F4F6] text-[#6B7280]"
-                >
-                  {cuisineLabel(c)}
-                </span>
-              ))}
+            <div className="-mx-1 overflow-x-auto">
+              <div className="flex gap-2 px-1 pb-0.5">
+                {exploredCuisines.map((c) => (
+                  <span
+                    key={c}
+                    className="text-[12px] px-3 py-1.5 rounded-full font-semibold whitespace-nowrap bg-[#FEF2EE] text-[#C23E22] border border-[#F4623A]/20 shrink-0"
+                  >
+                    {cuisineLabel(c)}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
