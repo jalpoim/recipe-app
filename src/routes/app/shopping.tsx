@@ -17,7 +17,6 @@ import {
   addCustomShoppingItem,
   deleteCustomShoppingItem,
   clearNonCustomChecks,
-  clearCustomItems,
   fetchCategoryOverrides,
   upsertCategoryOverride,
   recordShoppingCompletion,
@@ -25,7 +24,6 @@ import {
   confirmIngredientDislike,
   fetchIngredientDislikes,
 } from "../../lib/supabase/shopping-queries";
-import { archiveAndCreatePlan } from "../../lib/supabase/plan-queries";
 import {
   useIngredientCategory,
   CATEGORY_SLUG_MAP,
@@ -1141,7 +1139,6 @@ function ShoppingPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmClearChecks, setConfirmClearChecks] = useState(false);
-  const [confirmClearCustom, setConfirmClearCustom] = useState(false);
   const [confirmComplete, setConfirmComplete] = useState(false);
   const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
   const [dislikePrompt, setDislikePrompt] = useState<string | null>(null);
@@ -1161,7 +1158,6 @@ function ShoppingPage() {
     overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
   );
 
-  const hasCustomItems = customItems.length > 0;
   const checkedCount = [...checkMap.values()].filter(Boolean).length;
 
   function toggleKeys(keys: string[], next: boolean) {
@@ -1238,17 +1234,6 @@ function ShoppingPage() {
     );
   }
 
-  function handleClearCustomItems() {
-    setCustomItems([]);
-    const next = new Map(checkMap);
-    for (const [k] of next) {
-      if (k.startsWith("custom:")) next.delete(k);
-    }
-    setCheckMap(next);
-    clearCustomItems({ data: planId! }).catch(() =>
-      showToast("Erro ao limpar itens", "error"),
-    );
-  }
 
   function handleRemoveDerived(keys: string[], ingredientName: string) {
     setDeletedItemKeys((prev) => new Set([...prev, ...keys]));
@@ -1292,12 +1277,11 @@ function ShoppingPage() {
         },
       });
 
-      await archiveAndCreatePlan({ data: planId });
-      qc.invalidateQueries({ queryKey: ["active-plan"] });
-      qc.invalidateQueries({ queryKey: ["plan"] });
-      showToast(t("cookProfile.completedToast"), "success");
+      // Clear all checks without touching the plan
+      handleClearChecks();
       setDeletedItemKeys(new Set());
       setConfirmComplete(false);
+      showToast(t("cookProfile.completedToast"), "success");
 
       // Check for ingredient dislikes — names that appear in deleted across ≥3 completions
       checkDislikeSuggestions(deletedKeys, items);
@@ -1516,33 +1500,6 @@ function ShoppingPage() {
                     className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                   >
                     {t("shopping.clearChecks")}
-                  </button>
-                ))}
-              {hasCustomItems &&
-                (confirmClearCustom ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setConfirmClearCustom(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-                    >
-                      {t("common.cancel")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleClearCustomItems();
-                        setConfirmClearCustom(false);
-                      }}
-                      className="flex-1 py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] text-sm font-medium hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                    >
-                      {t("common.confirm")}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmClearCustom(true)}
-                    className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#9CA3AF] hover:text-[#DC2626] hover:border-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                  >
-                    {t("shopping.clearCustom")}
                   </button>
                 ))}
             </div>
