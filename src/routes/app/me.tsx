@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
-import { Settings, X, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Settings, X, ChevronRight, Share2 } from "lucide-react";
 import { Drawer } from "vaul";
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
 import {
@@ -12,6 +12,10 @@ import {
   getSavesSummary,
   getCuisineBadgeProgress,
 } from "../../lib/supabase/cook-log-queries";
+import {
+  getUserFlavorProfile,
+  generateFlavorNarrative,
+} from "../../lib/supabase/flavor-profile-queries";
 import type { UserCookProfile } from "../../types/db";
 
 export const Route = createFileRoute("/app/me")({
@@ -266,6 +270,150 @@ function BadgeCard({ label, category }: { label: string; category: string }) {
   );
 }
 
+// ─── Narrative card ───────────────────────────────────────────────────────────
+// AI-generated 2–3 sentence cooking identity description.
+
+function NarrativeAICard({ text }: { text: string }) {
+  return (
+    <div
+      className="rounded-2xl shadow-sm px-6 py-5"
+      style={{ background: "#FFF4F0", borderLeft: "3px solid #F4623A" }}
+    >
+      <p
+        className="text-[15px] leading-relaxed"
+        style={{ color: "#1C0F0C", fontStyle: "italic" }}
+      >
+        {text}
+      </p>
+    </div>
+  );
+}
+
+// ─── Signature ingredient card ────────────────────────────────────────────────
+
+function SignatureIngredientCard({
+  ingredient,
+  multiple,
+  flavorNotes,
+  label,
+  sub,
+}: {
+  ingredient: string;
+  multiple: number;
+  flavorNotes: string[];
+  label: string;
+  sub: string;
+}) {
+  const capitalised = ingredient.charAt(0).toUpperCase() + ingredient.slice(1);
+  return (
+    <div className="rounded-2xl shadow-sm px-6 py-5" style={{ background: "#FFF4F0" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "#9C6355" }}>
+        {label}
+      </p>
+      <p className="text-[22px] font-bold leading-tight mb-1" style={{ color: "#C23E22" }}>
+        {capitalised}
+      </p>
+      <p className="text-[12px] mb-3" style={{ color: "#9C6355" }}>
+        {sub.replace("{{multiple}}", String(multiple))}
+      </p>
+      {flavorNotes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {flavorNotes.map((note) => (
+            <span
+              key={note}
+              className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+              style={{ background: "#FFE8DE", color: "#7A2C18" }}
+            >
+              {note}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Share card ───────────────────────────────────────────────────────────────
+
+function ShareCard({
+  narrative,
+  flavorNotes,
+  title,
+  shareLabel,
+  copiedLabel,
+}: {
+  narrative: string;
+  flavorNotes: string[];
+  title: string;
+  shareLabel: string;
+  copiedLabel: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const now = new Date();
+  const monthYear = now.toLocaleString(undefined, { month: "long", year: "numeric" });
+
+  async function handleShare() {
+    const text = `${narrative}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // user cancelled
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        ref={cardRef}
+        className="rounded-2xl overflow-hidden"
+        style={{ background: "#2D1208" }}
+      >
+        <div className="h-1" style={{ background: "#F4623A" }} />
+        <div className="px-6 py-5">
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.4)" }}>
+            {title} · {monthYear}
+          </p>
+          <p className="text-[15px] leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.85)", fontStyle: "italic" }}>
+            {narrative}
+          </p>
+          {flavorNotes.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {flavorNotes.map((note) => (
+                <span
+                  key={note}
+                  className="text-[11px] px-2.5 py-1 rounded-full font-medium"
+                  style={{ background: "rgba(244,98,58,0.2)", color: "#F4A58A" }}
+                >
+                  {note}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="text-[10px]" style={{ color: "rgba(255,255,255,0.2)" }}>
+            mealprep.app
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={handleShare}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border text-sm font-medium transition-colors focus:outline-none"
+        style={{ borderColor: "#E5E7EB", color: "#6B7280" }}
+      >
+        <Share2 size={15} aria-hidden="true" />
+        {copied ? copiedLabel : shareLabel}
+      </button>
+    </div>
+  );
+}
+
 // ─── Cuisine badges ───────────────────────────────────────────────────────────
 
 const TARGET_CUISINES = [
@@ -399,6 +547,38 @@ function ProfilePage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const qc = useQueryClient();
+
+  // ── Flavor profile (Phase 2) ───────────────────────────────────────────────
+  const { data: flavorProfile } = useQuery({
+    queryKey: ["flavor-profile"],
+    queryFn: () => getUserFlavorProfile(),
+    staleTime: 30 * 60 * 1000,
+    enabled: distinctCount >= 5,
+  });
+
+  const narrativeMutation = useMutation({
+    mutationFn: () => generateFlavorNarrative(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["my-profile"] }),
+    onError: () => { /* silent — narrative is best-effort */ },
+  });
+
+  // Trigger narrative generation when profile is loaded and narrative is missing/stale
+  const narrativeTriggeredRef = useRef(false);
+  useEffect(() => {
+    if (narrativeTriggeredRef.current) return;
+    if (!profile || distinctCount < 5) return;
+    const raw = profile as unknown as Record<string, unknown>;
+    const generatedAt = raw["flavor_narrative_generated_at"] as string | null;
+    const narrative = raw["flavor_narrative"] as string | null;
+    if (narrative && generatedAt) {
+      const days = (Date.now() - new Date(generatedAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (days < 30) return;
+    }
+    narrativeTriggeredRef.current = true;
+    narrativeMutation.mutate();
+  }, [profile, distinctCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Sheet state ────────────────────────────────────────────────────────────
   type ProfileSheet =
     | { type: 'cook-history' }
@@ -500,6 +680,11 @@ function ProfilePage() {
     .map((c) => ({ cuisine: c, count: badgeMap.get(c) ?? 0 }))
     .filter(({ count }) => count >= 2); // earned (≥3) or teaser (2)
 
+  // ── Phase 2: narrative + flavor profile ───────────────────────────────────
+  const profileRaw = profile as unknown as Record<string, unknown>;
+  const savedNarrative = profileRaw["flavor_narrative"] as string | null;
+  const showNarrativeLoading = narrativeMutation.isPending && !savedNarrative;
+
   return (
     <div className="min-h-screen pb-24" style={{ background: "#FFFAF8" }}>
       <IdentityHero
@@ -564,6 +749,18 @@ function ProfilePage() {
           <BadgeCard label={creatorTitle!} category={t("flavorIdentity.creatorBadge")} />
         )}
 
+        {/* AI narrative — loading skeleton or generated text */}
+        {showNarrativeLoading && (
+          <div className="rounded-2xl px-6 py-5 motion-safe:animate-pulse" style={{ background: "#FFF4F0", borderLeft: "3px solid #FFE8DE" }}>
+            <p className="text-[13px]" style={{ color: "#C4A49C" }}>
+              {t("flavorIdentity.narrativeLoading")}
+            </p>
+          </div>
+        )}
+        {savedNarrative && !showNarrativeLoading && (
+          <NarrativeAICard text={savedNarrative} />
+        )}
+
         {/* Cook count — tappable: opens top recipes sheet */}
         {showCookCount && (
           <button
@@ -586,6 +783,17 @@ function ProfilePage() {
               sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
             />
           </button>
+        )}
+
+        {/* Signature ingredient (Phase 2) */}
+        {flavorProfile?.signatureIngredient && showSignatureAndCuisine && (
+          <SignatureIngredientCard
+            ingredient={flavorProfile.signatureIngredient}
+            multiple={flavorProfile.signatureIngredientPlatformMultiple}
+            flavorNotes={flavorProfile.topFlavorNotes}
+            label={t("flavorIdentity.signatureIngredientLabel")}
+            sub={t("flavorIdentity.signatureIngredientSub", { multiple: flavorProfile.signatureIngredientPlatformMultiple })}
+          />
         )}
 
         {/* Top protein — only if not already shown via specialty badge */}
@@ -636,6 +844,17 @@ function ProfilePage() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Share card (Phase 2) — when narrative is available */}
+        {savedNarrative && (
+          <ShareCard
+            narrative={savedNarrative}
+            flavorNotes={flavorProfile?.topFlavorNotes ?? []}
+            title={t("flavorIdentity.shareCardTitle")}
+            shareLabel={t("flavorIdentity.shareButton")}
+            copiedLabel={t("flavorIdentity.shareCopied")}
+          />
         )}
 
         {/* Lifetime counters — bare centered text, archive-level content */}

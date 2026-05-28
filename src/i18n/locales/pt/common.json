@@ -495,6 +495,12 @@
     "cookHistoryTitle": "As tuas favoritas",
     "cookHistoryEmpty": "Cozinha as tuas receitas preferidas 3 ou mais vezes para as ver aqui.",
     "viewRecipe": "Ver receita completa",
+    "narrativeLoading": "A construir o teu perfil...",
+    "signatureIngredientLabel": "A tua marca",
+    "signatureIngredientSub": "Aparece {{multiple}}x mais nas tuas receitas do que na maioria dos utilizadores",
+    "shareCardTitle": "A minha cozinha",
+    "shareButton": "Partilhar",
+    "shareCopied": "Copiado",
     "cuisineBadgeTeaser_one": "falta {{count}}",
     "cuisineBadgeTeaser_other": "faltam {{count}}",
     "titles": {
