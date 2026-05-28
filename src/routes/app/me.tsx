@@ -136,7 +136,7 @@ function IdentityHero({
         )}
 
         {subtitle && (
-          <p className="text-xs text-white/70 max-w-[240px] leading-relaxed">
+          <p className="text-xs text-white/70 max-w-[240px] leading-relaxed mt-1">
             {subtitle}
           </p>
         )}
@@ -148,35 +148,39 @@ function IdentityHero({
 // ─── Narrative card ───────────────────────────────────────────────────────────
 
 function NarrativeCard({
-  emoji,
   headline,
   sub,
   accent,
 }: {
-  emoji: string;
   headline: string;
   sub?: string;
   accent?: "green" | "orange" | "default";
 }) {
-  const bg =
+  const containerBg =
     accent === "green"
       ? "bg-[#f0fdf4] border-[#86efac]"
       : accent === "orange"
         ? "bg-[#FEF2EE] border-[#F4623A]/30"
         : "bg-white border-[#F0F0EE]";
+  const accentBar =
+    accent === "green"
+      ? "bg-[#16A34A]"
+      : accent === "orange"
+        ? "bg-[#F4623A]"
+        : "bg-[#D1D5DB]";
 
   return (
-    <div className={`rounded-2xl border p-4 flex gap-3 items-start shadow-sm ${bg}`}>
-      <span className="text-2xl leading-none shrink-0 mt-0.5" aria-hidden="true">
-        {emoji}
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-[#1A1A1A] leading-snug">
-          {headline}
-        </p>
-        {sub && (
-          <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed">{sub}</p>
-        )}
+    <div className={`rounded-2xl border shadow-sm overflow-hidden ${containerBg}`}>
+      <div className="flex">
+        <div className={`w-1 shrink-0 ${accentBar}`} />
+        <div className="px-4 py-4 min-w-0">
+          <p className="text-sm font-semibold text-[#1A1A1A] leading-snug">
+            {headline}
+          </p>
+          {sub && (
+            <p className="text-xs text-[#6B7280] mt-0.5 leading-relaxed">{sub}</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -187,17 +191,17 @@ function NarrativeCard({
 function BadgeCard({
   label,
   sublabel,
-  emoji,
 }: {
   label: string;
   sublabel: string;
-  emoji: string;
 }) {
   return (
-    <div className="flex-1 rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 flex flex-col items-center gap-2 text-center">
-      <span className="text-3xl leading-none" aria-hidden="true">{emoji}</span>
-      <p className="text-xs font-semibold text-[#1A1A1A] leading-snug">{label}</p>
-      <p className="text-[10px] text-[#6B7280]">{sublabel}</p>
+    <div className="flex-1 rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
+      <div className="h-1 bg-[#F4623A]" />
+      <div className="px-4 pt-3 pb-4 flex flex-col items-center gap-1.5 text-center">
+        <p className="text-sm font-semibold text-[#1A1A1A] leading-snug">{label}</p>
+        <p className="text-[10px] text-[#9CA3AF] uppercase tracking-wide">{sublabel}</p>
+      </div>
     </div>
   );
 }
@@ -219,12 +223,12 @@ function LifetimeCounters({
     <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-1.5">
       {cookCount > 0 && (
         <p className="text-sm text-[#6B7280]">
-          🍳 {t("flavorIdentity.lifetimeCooks", { count: cookCount })}
+          {t("flavorIdentity.lifetimeCooks", { count: cookCount })}
         </p>
       )}
       {shoppingCount > 0 && (
         <p className="text-sm text-[#6B7280]">
-          🛒 {t("flavorIdentity.lifetimeShopping", { count: shoppingCount })}
+          {t("flavorIdentity.lifetimeShopping", { count: shoppingCount })}
         </p>
       )}
     </div>
@@ -319,10 +323,8 @@ function ProfilePage() {
     ? t(`flavorIdentity.titles.creator.${creatorLevel}`)
     : null;
 
-  // ── Hero subtitle ──────────────────────────────────────────────────────────
-  const lifetimeCookCount = cookProfile?.lifetime_cook_count ?? 0;
-  const heroSubtitle =
-    lifetimeCookCount < 5 ? t("flavorIdentity.heroSubtitleNewCook") : "";
+  // ── Hero subtitle: only shown before 5 cooks, gated on distinctCount ───────
+  const heroSubtitle = distinctCount < 5 ? t("flavorIdentity.heroSubtitleNewCook") : "";
 
   // ── Unlock gates ───────────────────────────────────────────────────────────
   const showCookCount = distinctCount >= 5;
@@ -341,11 +343,16 @@ function ProfilePage() {
 
   // ── Cuisine collection ─────────────────────────────────────────────────────
   const exploredCuisines = cookProfile?.explored_cuisines ?? [];
-  // Badge earned = cooked ≥3 distinct recipes; for now we surface all explored as earned
-  const earnedCuisineBadges = exploredCuisines.length > 0 ? exploredCuisines : [];
 
   // ── Badge row visibility ───────────────────────────────────────────────────
   const showBadgeRow = !!creatorTitle || !!specialtyBadgeLabel;
+
+  // ── Helper: translate a cuisine slug to a proper name ─────────────────────
+  function cuisineLabel(slug: string): string {
+    return t(`flavorIdentity.cuisineLabels.${slug}`, { defaultValue: slug });
+  }
+
+  const lifetimeCookCount = cookProfile?.lifetime_cook_count ?? 0;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
@@ -365,36 +372,33 @@ function ProfilePage() {
           <div className="flex gap-3">
             {creatorTitle && (
               <BadgeCard
-                emoji="📓"
                 label={creatorTitle}
                 sublabel={t("flavorIdentity.creatorBadge")}
               />
             )}
             {specialtyBadgeLabel && (
               <BadgeCard
-                emoji="⭐"
                 label={specialtyBadgeLabel}
-                sublabel={t("flavorIdentity.specialtyBadge.label", { defaultValue: "Specialty" })}
+                sublabel={t("flavorIdentity.specialtyBadge.label", { defaultValue: "Especialidade" })}
               />
             )}
           </div>
         )}
 
         {/* Cook count card (gate: 5+ cooks) */}
-        {showCookCount && cookSummary && (
+        {showCookCount && (
           <NarrativeCard
-            emoji="🍳"
             headline={t("flavorIdentity.cookCountCard", { count: distinctCount })}
             accent="orange"
           />
         )}
 
-        {/* Cuisine discovery card (gate: 10+ cooks) */}
+        {/* Cuisine discovery card (gate: 10+ cooks, first-time cuisine this month) */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
           <NarrativeCard
-            emoji="🌍"
-            headline={t("flavorIdentity.cuisineDiscoveryTitle")}
-            sub={cookSummary.firstTimeCuisine}
+            headline={t("flavorIdentity.cuisineDiscoveryCard", {
+              cuisine: cuisineLabel(cookSummary.firstTimeCuisine),
+            })}
             accent="green"
           />
         )}
@@ -402,8 +406,7 @@ function ProfilePage() {
         {/* Signature recipe card (gate: 10+ cooks, same recipe ≥3×) */}
         {signatureRecipe && (
           <NarrativeCard
-            emoji="⭐"
-            headline={t("flavorIdentity.signatureCardTitle")}
+            headline={t("flavorIdentity.signatureRecipe")}
             sub={signatureRecipe.name}
           />
         )}
@@ -411,26 +414,25 @@ function ProfilePage() {
         {/* Top protein card (gate: 15+ cooks, ≥40% concentration) */}
         {topProtein && (
           <NarrativeCard
-            emoji="💪"
             headline={t("flavorIdentity.topProteinTitle", {
               protein: t(`proteins.${topProtein}`, { defaultValue: topProtein }),
             })}
           />
         )}
 
-        {/* Cuisine badge collection */}
-        {earnedCuisineBadges.length > 0 && (
+        {/* Cuisine collection */}
+        {exploredCuisines.length > 0 && (
           <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm p-4 space-y-3">
             <p className="text-xs font-semibold text-[#9CA3AF] uppercase tracking-widest">
-              {t("flavorIdentity.cuisineDiscoveryTitle")}
+              {t("flavorIdentity.cuisineCollectionTitle")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {earnedCuisineBadges.map((c) => (
+              {exploredCuisines.map((c) => (
                 <span
                   key={c}
                   className="text-xs px-3 py-1 rounded-full font-medium bg-[#F3F4F6] text-[#6B7280]"
                 >
-                  {c}
+                  {cuisineLabel(c)}
                 </span>
               ))}
             </div>
