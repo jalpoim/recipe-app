@@ -1253,9 +1253,7 @@ function ShoppingPage() {
 
   function handleClearChecks() {
     const next = new Map(checkMap);
-    for (const [k] of next) {
-      if (!k.startsWith("custom:")) next.set(k, false);
-    }
+    for (const [k] of next) next.set(k, false);
     setCheckMap(next);
     clearNonCustomChecks({ data: planId! }).catch(() =>
       showToast("Erro ao limpar marcações", "error"),
@@ -1289,6 +1287,7 @@ function ShoppingPage() {
     const visibleRecipeKeys = allRecipeKeys.filter(
       (k) => !deletedItemKeys.has(k),
     );
+    const customKeys = customItems.map((c) => c.item_key);
 
     // Build effective check state — optionally mark all remaining
     const effectiveMap = new Map(checkMap);
@@ -1296,10 +1295,10 @@ function ShoppingPage() {
       for (const k of allCheckableKeys) effectiveMap.set(k, true);
     }
 
-    const checkedKeys = visibleRecipeKeys.filter(
+    const checkedKeys = [...visibleRecipeKeys, ...customKeys].filter(
       (k) => effectiveMap.get(k) ?? false,
     );
-    const skippedKeys = visibleRecipeKeys.filter(
+    const skippedKeys = [...visibleRecipeKeys, ...customKeys].filter(
       (k) => !(effectiveMap.get(k) ?? false),
     );
 
@@ -1483,30 +1482,32 @@ function ShoppingPage() {
 
             {/* Bottom actions */}
             <div className="mt-4 flex flex-col gap-2">
-              {items.length > 0 && (
-                <>
+              {(uncheckedCount > 0 || checkedCount > 0) && (
+                <div className="flex gap-2">
                   {uncheckedCount > 0 && (
                     <button
                       onClick={handleCheckAll}
-                      className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
                       {t("shopping.checkAll")}
                     </button>
                   )}
-                  <button
-                    onClick={() => setShowCompleteDialog(true)}
-                    className="w-full py-3 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                  >
-                    {t("cookProfile.completeShoppingTrip")}
-                  </button>
-                </>
+                  {checkedCount > 0 && (
+                    <button
+                      onClick={handleClearChecks}
+                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                    >
+                      {t("shopping.clearChecks")}
+                    </button>
+                  )}
+                </div>
               )}
-              {checkedCount > 0 && (
+              {items.length > 0 && (
                 <button
-                  onClick={handleClearChecks}
-                  className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                  onClick={() => setShowCompleteDialog(true)}
+                  className="w-full py-3 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                 >
-                  {t("shopping.clearChecks")}
+                  {t("cookProfile.completeShoppingTrip")}
                 </button>
               )}
             </div>
