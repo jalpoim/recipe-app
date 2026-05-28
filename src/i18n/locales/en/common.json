@@ -224,6 +224,7 @@
     "itemCount_other": "{{count}} recipes"
   },
   "shopping": {
+    "completionBanner": "Shopping done 🎉",
     "title": "Shopping list",
     "perRecipe": "By recipe",
     "global": "All items",
@@ -484,7 +485,7 @@
     "masteredTitle": "Recipes you've mastered",
     "masteredHint": "Cooked 3 or more times",
     "settingsTitle": "Settings",
-    "cookLoggedToast": "Cooking logged ✓ · {{count}} meals cooked at home",
+    "cookLoggedToast": "Logged ✓",
     "cookLoggedUndo": "Undo",
     "levelUp": "New level!",
     "levelUpSubcopy": "Your cooking style is evolving based on your habits — keep it up!",

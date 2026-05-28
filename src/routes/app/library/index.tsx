@@ -1415,16 +1415,21 @@ function LibraryPage() {
     : undefined;
 
   const orderedChips = useMemo(() => {
-    const timeChipId = getTimeAwareChip();
-    const idx = STRIP_CHIPS.findIndex((c) => c.id === timeChipId);
+    // Persona chip takes precedence over time-aware default for strip ordering
+    const personaChipId: StripChipId | null =
+      profile?.cook_style === 'optimizer' ? 'alto-proteina' :
+      profile?.cook_style === 'time_crunched' ? 'rapido' :
+      profile?.cook_style === 'meal_prepper' ? 'meal-prep' :
+      null;
+    const preferredId = personaChipId ?? getTimeAwareChip();
+    const idx = STRIP_CHIPS.findIndex((c) => c.id === preferredId);
     if (idx <= 0) return STRIP_CHIPS;
     return [
       STRIP_CHIPS[idx],
       ...STRIP_CHIPS.slice(0, idx),
       ...STRIP_CHIPS.slice(idx + 1),
     ];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profile?.cook_style]);
 
   const effectiveSort: Sort = activeStripChip?.sort ?? search.sort ?? getPersonaSort(profile?.cook_style);
 

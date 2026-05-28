@@ -224,6 +224,7 @@
     "itemCount_other": "{{count}} receitas"
   },
   "shopping": {
+    "completionBanner": "Lista concluída 🎉",
     "title": "Lista de compras",
     "perRecipe": "Por receita",
     "global": "Lista global",
@@ -484,7 +485,7 @@
     "masteredTitle": "Receitas que dominaste",
     "masteredHint": "Cozinhada 3 ou mais vezes",
     "settingsTitle": "Definições",
-    "cookLoggedToast": "Receita registada ✓ · {{count}} receitas cozinhadas em casa",
+    "cookLoggedToast": "Registado ✓",
     "cookLoggedUndo": "Anular",
     "levelUp": "Novo nível!",
     "levelUpSubcopy": "O teu estilo de cozinha está a evoluir — continua assim!",

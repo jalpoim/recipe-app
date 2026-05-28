@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 type Variant = 'success' | 'error'
 
@@ -44,44 +45,47 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 function ToastDisplay({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
-  const bg = toast.variant === 'success' ? 'bg-[#F4623A]' : 'bg-[#DC2626]'
+  const bg = toast.variant === 'success' ? '#F4623A' : '#DC2626'
   const hasAction = !!toast.action
   const hasProgress = toast.progress != null
 
   return (
-    <div
-      aria-live="polite"
-      aria-atomic="true"
-      className={`fixed bottom-20 left-1/2 z-50 -translate-x-1/2 text-white text-sm font-medium shadow-lg transition-all duration-300 ${bg} ${
-        hasProgress ? 'rounded-2xl px-4 pt-2.5 pb-3 min-w-[240px]' : 'rounded-full px-4 py-2.5'
-      } ${
-        toast.visible && toast.message
-          ? 'opacity-100 translate-y-0'
-          : 'opacity-0 translate-y-2 pointer-events-none'
-      }`}
-    >
-      <div className={hasAction ? 'flex items-center gap-3' : ''}>
-        <span>{toast.message}</span>
-        {hasAction && toast.action && (
-          <button
-            onClick={() => {
-              toast.action!.onClick()
-              onDismiss()
-            }}
-            className="text-white/90 underline underline-offset-2 font-semibold shrink-0 hover:text-white focus:outline-none"
+    <div aria-live="polite" aria-atomic="true" className="pointer-events-none fixed bottom-20 left-0 right-0 z-50 flex justify-center">
+      <AnimatePresence>
+        {toast.visible && toast.message && (
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, scale: 0.88, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.88, y: 10 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            className={`pointer-events-auto text-white text-sm font-medium shadow-lg ${
+              hasProgress ? 'rounded-2xl px-4 pt-2.5 pb-3 min-w-[200px] max-w-[320px]' : 'rounded-full px-4 py-2.5 max-w-[300px]'
+            }`}
+            style={{ background: bg }}
           >
-            {toast.action.label}
-          </button>
+            <div className={hasAction ? 'flex items-center gap-3' : ''}>
+              <span className="leading-snug">{toast.message}</span>
+              {hasAction && toast.action && (
+                <button
+                  onClick={() => { toast.action!.onClick(); onDismiss() }}
+                  className="text-white/80 text-xs font-semibold shrink-0 underline underline-offset-2 hover:text-white focus:outline-none"
+                >
+                  {toast.action.label}
+                </button>
+              )}
+            </div>
+            {hasProgress && (
+              <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${toast.progress}%`, background: 'rgba(255,255,255,0.9)' }}
+                />
+              </div>
+            )}
+          </motion.div>
         )}
-      </div>
-      {hasProgress && (
-        <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.25)' }}>
-          <div
-            className="h-full rounded-full transition-all duration-700 ease-out"
-            style={{ width: `${toast.progress}%`, background: 'rgba(255,255,255,0.9)' }}
-          />
-        </div>
-      )}
+      </AnimatePresence>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { capture } from "../../lib/analytics";
 import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
 import { PullIndicator } from "../../components/PullIndicator";
@@ -1141,6 +1142,7 @@ function ShoppingPage() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
   const [dislikePrompt, setDislikePrompt] = useState<string | null>(null);
+  const [completionBanner, setCompletionBanner] = useState(false);
 
   const isLoading =
     isPlanLoading ||
@@ -1315,7 +1317,8 @@ function ShoppingPage() {
       handleClearChecks();
       setDeletedItemKeys(new Set());
       setShowCompleteDialog(false);
-      showToast(t("cookProfile.completedToast"), "success");
+      setCompletionBanner(true);
+      setTimeout(() => setCompletionBanner(false), 3500);
       checkDislikeSuggestions(deletedKeys, items);
     } catch {
       showToast(t("common.error"), "error");
@@ -1576,6 +1579,22 @@ function ShoppingPage() {
           </div>,
           document.body,
         )}
+
+      {/* Shopping completion banner — full-width, above nav */}
+      <AnimatePresence>
+        {completionBanner && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+            className="fixed bottom-16 left-0 right-0 z-50 mx-4 mb-2 rounded-2xl px-5 py-4 text-white text-center font-semibold shadow-lg"
+            style={{ background: '#16A34A' }}
+          >
+            {t("shopping.completionBanner")}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
