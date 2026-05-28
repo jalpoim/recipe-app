@@ -237,7 +237,12 @@
     "addExtra": "Adicionar item extra",
     "categoryPlaceholder": "Categoria…",
     "tapToMark": "Toca para marcar o que já tens",
-    "emptyHint": "Adiciona receitas ao plano para gerar a lista"
+    "emptyHint": "Adiciona receitas ao plano para gerar a lista",
+    "checkAll": "Marcar tudo",
+    "completeWithUnchecked": "Tens {{count}} {{count, plural, one{item} other{itens}}} por marcar. Queres registá-los como comprados?",
+    "completeAllChecked": "Todos os itens estão marcados. Concluir compras?",
+    "markAndComplete": "Marcar e concluir",
+    "completeWithoutMarking": "Concluir sem marcar"
   },
   "common": {
     "confirm": "Confirmar",

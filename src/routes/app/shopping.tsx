@@ -1139,7 +1139,7 @@ function ShoppingPage() {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [confirmClearChecks, setConfirmClearChecks] = useState(false);
-  const [confirmComplete, setConfirmComplete] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
   const [dislikePrompt, setDislikePrompt] = useState<string | null>(null);
 
@@ -1159,6 +1159,35 @@ function ShoppingPage() {
   );
 
   const checkedCount = [...checkMap.values()].filter(Boolean).length;
+
+  const allCheckableKeys = [
+    ...items.flatMap((item) =>
+      item.recipe.recipe_ingredients
+        .filter((ing) => !ing.is_pantry)
+        .map((ing) => `recipe:${item.id}:${ing.id}`),
+    ).filter((k) => !deletedItemKeys.has(k)),
+    ...customItems.map((c) => c.item_key),
+  ];
+  const uncheckedCount = allCheckableKeys.filter(
+    (k) => !(checkMap.get(k) ?? false),
+  ).length;
+
+  function handleCheckAll() {
+    const uncheckedKeys = allCheckableKeys.filter(
+      (k) => !(checkMap.get(k) ?? false),
+    );
+    if (uncheckedKeys.length === 0) return;
+    setCheckMap((prev) => {
+      const m = new Map(prev);
+      for (const k of uncheckedKeys) m.set(k, true);
+      return m;
+    });
+    for (const k of uncheckedKeys) {
+      upsertCheck({
+        data: { planId: planId!, itemKey: k, isChecked: true },
+      }).catch(() => {});
+    }
+  }
 
   function toggleKeys(keys: string[], next: boolean) {
     setCheckMap((prev) => {
@@ -1246,25 +1275,33 @@ function ShoppingPage() {
     void ingredientName; // used in dislike detection on completion
   }
 
-  async function handleCompleteShoppingTrip() {
+  async function handleCompleteShoppingTrip(markRemaining: boolean) {
     if (!planId) return;
 
-    // Gather all recipe-derived item keys that exist across all plan items
-    const allRecipeKeys: string[] = [];
-    for (const item of items) {
-      for (const ing of item.recipe.recipe_ingredients) {
-        if (!ing.is_pantry) {
-          allRecipeKeys.push(`recipe:${item.id}:${ing.id}`);
-        }
-      }
-    }
+    const allRecipeKeys = items.flatMap((item) =>
+      item.recipe.recipe_ingredients
+        .filter((ing) => !ing.is_pantry)
+        .map((ing) => `recipe:${item.id}:${ing.id}`),
+    );
 
-    const checkedKeys = allRecipeKeys.filter((k) => checkMap.get(k) ?? false);
     const deletedKeys = [...deletedItemKeys].filter((k) =>
       allRecipeKeys.includes(k),
     );
-    const skippedKeys = allRecipeKeys.filter(
-      (k) => !checkedKeys.includes(k) && !deletedKeys.includes(k),
+    const visibleRecipeKeys = allRecipeKeys.filter(
+      (k) => !deletedItemKeys.has(k),
+    );
+
+    // Build effective check state — optionally mark all remaining
+    const effectiveMap = new Map(checkMap);
+    if (markRemaining) {
+      for (const k of allCheckableKeys) effectiveMap.set(k, true);
+    }
+
+    const checkedKeys = visibleRecipeKeys.filter(
+      (k) => effectiveMap.get(k) ?? false,
+    );
+    const skippedKeys = visibleRecipeKeys.filter(
+      (k) => !(effectiveMap.get(k) ?? false),
     );
 
     try {
@@ -1277,17 +1314,14 @@ function ShoppingPage() {
         },
       });
 
-      // Clear all checks without touching the plan
       handleClearChecks();
       setDeletedItemKeys(new Set());
-      setConfirmComplete(false);
+      setShowCompleteDialog(false);
       showToast(t("cookProfile.completedToast"), "success");
-
-      // Check for ingredient dislikes — names that appear in deleted across ≥3 completions
       checkDislikeSuggestions(deletedKeys, items);
     } catch {
       showToast(t("common.error"), "error");
-      setConfirmComplete(false);
+      setShowCompleteDialog(false);
     }
   }
 
@@ -1450,31 +1484,24 @@ function ShoppingPage() {
 
             {/* Bottom actions */}
             <div className="mt-4 flex flex-col gap-2">
-              {/* Concluir compras */}
-              {items.length > 0 &&
-                (confirmComplete ? (
-                  <div className="flex gap-2">
+              {items.length > 0 && (
+                <>
+                  {uncheckedCount > 0 && (
                     <button
-                      onClick={() => setConfirmComplete(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                      onClick={handleCheckAll}
+                      className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:border-[#F4623A] hover:text-[#F4623A] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
                     >
-                      {t("common.cancel")}
+                      {t("shopping.checkAll")}
                     </button>
-                    <button
-                      onClick={handleCompleteShoppingTrip}
-                      className="flex-1 py-2.5 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
-                    >
-                      {t("common.confirm")}
-                    </button>
-                  </div>
-                ) : (
+                  )}
                   <button
-                    onClick={() => setConfirmComplete(true)}
+                    onClick={() => setShowCompleteDialog(true)}
                     className="w-full py-3 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 focus:outline-none"
                   >
                     {t("cookProfile.completeShoppingTrip")}
                   </button>
-                ))}
+                </>
+              )}
               {checkedCount > 0 &&
                 (confirmClearChecks ? (
                   <div className="flex gap-2">
@@ -1506,6 +1533,68 @@ function ShoppingPage() {
           </>
         )}
       </div>
+
+      {/* Complete shopping dialog */}
+      {showCompleteDialog &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          >
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setShowCompleteDialog(false)}
+              aria-hidden="true"
+            />
+            <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl p-6 space-y-4">
+              <div className="space-y-1">
+                <h2 className="text-base font-semibold text-[#1A1A1A]">
+                  {t("cookProfile.completeShoppingTrip")}
+                </h2>
+                {uncheckedCount > 0 ? (
+                  <p className="text-sm text-[#6B7280]">
+                    {t("shopping.completeWithUnchecked", { count: uncheckedCount })}
+                  </p>
+                ) : (
+                  <p className="text-sm text-[#6B7280]">
+                    {t("shopping.completeAllChecked")}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                {uncheckedCount > 0 && (
+                  <button
+                    onClick={() => handleCompleteShoppingTrip(true)}
+                    className="w-full py-2.5 rounded-xl bg-[#16A34A] text-white text-sm font-semibold hover:bg-[#15803d] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40"
+                  >
+                    {t("shopping.markAndComplete")}
+                  </button>
+                )}
+                <button
+                  onClick={() => handleCompleteShoppingTrip(false)}
+                  className={`w-full py-2.5 rounded-xl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16A34A]/40 ${
+                    uncheckedCount > 0
+                      ? "border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6]"
+                      : "bg-[#16A34A] text-white font-semibold hover:bg-[#15803d]"
+                  }`}
+                >
+                  {uncheckedCount > 0
+                    ? t("shopping.completeWithoutMarking")
+                    : t("common.confirm")}
+                </button>
+                <button
+                  onClick={() => setShowCompleteDialog(false)}
+                  className="w-full py-2.5 rounded-xl border border-[#E5E7EB] text-sm font-medium text-[#9CA3AF] hover:bg-[#F3F4F6] transition-colors focus:outline-none"
+                >
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

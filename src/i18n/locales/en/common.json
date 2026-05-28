@@ -237,7 +237,12 @@
     "addExtra": "Add extra item",
     "categoryPlaceholder": "Category…",
     "tapToMark": "Tap to mark what you already have",
-    "emptyHint": "Add recipes to your plan to generate the list"
+    "emptyHint": "Add recipes to your plan to generate the list",
+    "checkAll": "Mark all",
+    "completeWithUnchecked": "You have {{count}} unchecked {{count, plural, one{item} other{items}}}. Mark them as purchased?",
+    "completeAllChecked": "All items are checked. Complete shopping trip?",
+    "markAndComplete": "Mark and complete",
+    "completeWithoutMarking": "Complete without marking"
   },
   "common": {
     "confirm": "Confirm",
