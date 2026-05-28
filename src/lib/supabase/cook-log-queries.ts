@@ -41,6 +41,7 @@ export const logRecipeCooked = createServerFn({ method: "POST" })
       .select()
       .single();
     if (error) throw new Error(error.message);
+    _recomputeProfileForUser(supabase, user.id).catch(() => {});
     return row;
   });
 
@@ -72,6 +73,7 @@ export const deleteCookLogEntry = createServerFn({ method: "POST" })
       .eq("id", data.cookLogId)
       .eq("user_id", session.user.id);
     if (error) throw new Error(error.message);
+    _recomputeProfileForUser(supabase, session.user.id).catch(() => {});
     return { ok: true };
   });
 
@@ -200,62 +202,80 @@ export const getCookSummaryThisMonth = createServerFn({
   const countThisMonth = (thisMonthRows ?? []).length;
   const countLastMonth = (lastMonthRows ?? []).length;
 
-  // Top protein this month
-  const proteinCounts = new Map<string, number>();
-  for (const row of thisMonthRows ?? []) {
-    for (const p of row.recipes?.proteins ?? []) {
-      proteinCounts.set(p, (proteinCounts.get(p) ?? 0) + 1);
-    }
-  }
-  const topProtein =
-    proteinCounts.size > 0
-      ? [...proteinCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
-      : null;
-
-  // Most cooked recipe this month
-  const recipeCounts = new Map<string, { name: string; count: number }>();
-  for (const row of thisMonthRows ?? []) {
-    if (!row.recipes) continue;
-    const existing = recipeCounts.get(row.recipe_id);
-    if (existing) {
-      existing.count++;
-    } else {
-      recipeCounts.set(row.recipe_id, { name: row.recipes.name, count: 1 });
-    }
-  }
-  const mostCookedEntry =
-    recipeCounts.size > 0
-      ? [...recipeCounts.values()].sort((a, b) => b.count - a.count)[0]
-      : null;
-  const mostCookedRecipe = mostCookedEntry ?? null;
-
-  // Mastered recipes (cooked ≥ 3× all time)
+  // All-time aggregates: single fetch covers signature dish, top protein, first-time cuisine
   const { data: allCooks } = await supabase
     .from("cook_log")
-    .select("recipe_id, recipes(id, name)")
-    .eq("user_id", session.user.id) as unknown as {
+    .select("recipe_id, cooked_at, recipes(id, name, proteins, cuisine_tags)")
+    .eq("user_id", session.user.id)
+    .order("cooked_at", { ascending: true }) as unknown as {
     data:
-      | { recipe_id: string; recipes: { id: string; name: string } | null }[]
+      | {
+          recipe_id: string;
+          cooked_at: string;
+          recipes: {
+            id: string;
+            name: string;
+            proteins: string[];
+            cuisine_tags: string[];
+          } | null;
+        }[]
       | null;
   };
+
   const allTimeCounts = new Map<string, { id: string; name: string; count: number }>();
+  const allTimeProteinCounts = new Map<string, number>();
+  const cuisineFirstSeen = new Map<string, string>(); // cuisine → earliest cooked_at
+
   for (const row of allCooks ?? []) {
-    if (!row.recipes) continue;
+    const r = row.recipes;
+    if (!r) continue;
     const existing = allTimeCounts.get(row.recipe_id);
     if (existing) {
       existing.count++;
     } else {
-      allTimeCounts.set(row.recipe_id, { id: row.recipes.id, name: row.recipes.name, count: 1 });
+      allTimeCounts.set(row.recipe_id, { id: r.id, name: r.name, count: 1 });
+    }
+    for (const p of r.proteins ?? []) {
+      allTimeProteinCounts.set(p, (allTimeProteinCounts.get(p) ?? 0) + 1);
+    }
+    for (const c of r.cuisine_tags ?? []) {
+      if (!cuisineFirstSeen.has(c)) cuisineFirstSeen.set(c, row.cooked_at);
     }
   }
+
   const masteredRecipes = [...allTimeCounts.values()]
     .filter((r) => r.count >= 3)
     .map(({ id, name }) => ({ id, name }));
 
+  const topRecipeEntry = allTimeCounts.size > 0
+    ? [...allTimeCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0]
+    : null;
+  let mostCookedRecipe = topRecipeEntry
+    ? { name: topRecipeEntry[1].name, count: topRecipeEntry[1].count }
+    : null;
+
+  const topProtein = allTimeProteinCounts.size > 0
+    ? [...allTimeProteinCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+    : null;
+
+  // Cuisine you tried for the first time most recently (always present once any cuisine is cooked)
+  const firstTimeCuisine = cuisineFirstSeen.size > 0
+    ? [...cuisineFirstSeen.entries()].sort((a, b) => b[1].localeCompare(a[1]))[0][0]
+    : null;
+
+  // Cuisines this month (used for monthly activity tracking)
+  const cuisinesSet = new Set<string>();
+  for (const row of thisMonthRows ?? []) {
+    for (const c of (row.recipes as { cuisine_tags?: string[] } | null)?.cuisine_tags ?? []) {
+      cuisinesSet.add(c);
+    }
+  }
+  const cuisinesThisMonth = [...cuisinesSet];
+
   // Handle translations for recipe names if not PT
   if (lang !== "pt" && (mostCookedRecipe || masteredRecipes.length > 0)) {
     const idsToTranslate = [
-      ...(mostCookedEntry ? [recipeCounts.keys().next().value as string] : []),
+      ...(topRecipeEntry ? [topRecipeEntry[0]] : []),
       ...masteredRecipes.map((r) => r.id),
     ];
     if (idsToTranslate.length > 0) {
@@ -265,41 +285,14 @@ export const getCookSummaryThisMonth = createServerFn({
         .in("recipe_id", idsToTranslate)
         .eq("language", lang);
       const transMap = new Map((trans ?? []).map((t) => [t.recipe_id, t.name]));
-      if (mostCookedRecipe) {
-        const topId = [...recipeCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0]?.[0];
-        if (topId && transMap.has(topId)) mostCookedRecipe.name = transMap.get(topId)!;
+      if (mostCookedRecipe && topRecipeEntry && transMap.has(topRecipeEntry[0])) {
+        mostCookedRecipe.name = transMap.get(topRecipeEntry[0])!;
       }
       for (const r of masteredRecipes) {
         if (transMap.has(r.id)) r.name = transMap.get(r.id)!;
       }
     }
   }
-
-  // Cuisines this month
-  const cuisinesSet = new Set<string>();
-  for (const row of thisMonthRows ?? []) {
-    for (const c of row.recipes?.cuisine_tags ?? []) {
-      cuisinesSet.add(c);
-    }
-  }
-  const cuisinesThisMonth = [...cuisinesSet];
-
-  // First-time cuisine this month (not in any previous cook log)
-  const { data: prevCooks } = await supabase
-    .from("cook_log")
-    .select("recipes(cuisine_tags)")
-    .eq("user_id", session.user.id)
-    .lt("cooked_at", startOfMonth) as unknown as {
-    data: { recipes: { cuisine_tags: string[] } | null }[] | null;
-  };
-  const prevCuisines = new Set<string>();
-  for (const row of prevCooks ?? []) {
-    for (const c of row.recipes?.cuisine_tags ?? []) {
-      prevCuisines.add(c);
-    }
-  }
-  const firstTimeCuisine =
-    cuisinesThisMonth.find((c) => !prevCuisines.has(c)) ?? null;
 
   return {
     countThisMonth,
@@ -374,16 +367,11 @@ export const getCookProfile = createServerFn({ method: "GET" }).handler(
   },
 );
 
-// POST: recompute all axis scores from cook_log — pure SQL aggregates, no AI
-export const recomputeCookProfile = createServerFn({ method: "POST" }).handler(
-  async (): Promise<UserCookProfile> => {
-    const supabase = makeClient();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) throw new Error("Not authenticated");
-    const uid = session.user.id;
-
+// Internal helper — shared by logRecipeCooked and recomputeCookProfile
+async function _recomputeProfileForUser(
+  supabase: ReturnType<typeof makeClient>,
+  uid: string,
+): Promise<UserCookProfile> {
     // Fetch all cook log entries with recipe details for this user
     const { data: logs, error: logsError } = await supabase
       .from("cook_log")
@@ -561,6 +549,17 @@ export const recomputeCookProfile = createServerFn({ method: "POST" }).handler(
       .single();
     if (upsertError) throw new Error(upsertError.message);
     return upserted;
+}
+
+// POST: recompute all axis scores from cook_log — pure SQL aggregates, no AI
+export const recomputeCookProfile = createServerFn({ method: "POST" }).handler(
+  async (): Promise<UserCookProfile> => {
+    const supabase = makeClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    return _recomputeProfileForUser(supabase, session.user.id);
   },
 );
 
