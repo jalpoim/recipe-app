@@ -11,15 +11,36 @@ export const upsertInteraction = createServerFn({ method: 'POST' })
     if (!session) throw new Error('Not authenticated')
     const user = session.user
 
+    // Check if this is a new interaction (to avoid double-awarding on re-save)
+    const { data: existing } = await supabase
+      .from('user_recipe_interactions')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .eq('recipe_id', data.recipeId)
+      .eq('type', data.type)
+      .maybeSingle()
+
     const { error } = await supabase.from('user_recipe_interactions').upsert(
-      {
-        user_id: user.id,
-        recipe_id: data.recipeId,
-        type: data.type,
-      },
+      { user_id: user.id, recipe_id: data.recipeId, type: data.type },
       { onConflict: 'user_id,recipe_id,type' },
     )
     if (error) throw new Error(error.message)
+
+    // Award +5 creator points when another user saves a recipe for the first time
+    if (!existing && data.type === 'save') {
+      supabase
+        .from('recipes')
+        .select('owner_id')
+        .eq('id', data.recipeId)
+        .maybeSingle()
+        .then(({ data: recipe }) => {
+          if (recipe?.owner_id && recipe.owner_id !== user.id) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            void (supabase as any).rpc('increment_creator_points', { p_user_id: recipe.owner_id, p_points: 5 })
+          }
+        })
+    }
+
     return { ok: true }
   })
 

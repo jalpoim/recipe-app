@@ -125,6 +125,11 @@ export const createRecipe = createServerFn({ method: "POST" })
       if (stepErr) throw new Error(stepErr.message);
     }
 
+    // Award creator points: +3 for original creation, +0.5 for import
+    const creatorPoints = data.sourceUrl ? 0.5 : 3;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    void (supabase as any).rpc("increment_creator_points", { p_user_id: session.user.id, p_points: creatorPoints });
+
     return { id: recipeId };
   });
 
