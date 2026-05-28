@@ -1138,7 +1138,6 @@ function ShoppingPage() {
   });
 
   const [showAddForm, setShowAddForm] = useState(false);
-  const [confirmClearChecks, setConfirmClearChecks] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [deletedItemKeys, setDeletedItemKeys] = useState<Set<string>>(new Set());
   const [dislikePrompt, setDislikePrompt] = useState<string | null>(null);
@@ -1502,33 +1501,14 @@ function ShoppingPage() {
                   </button>
                 </>
               )}
-              {checkedCount > 0 &&
-                (confirmClearChecks ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setConfirmClearChecks(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-                    >
-                      {t("common.cancel")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleClearChecks();
-                        setConfirmClearChecks(false);
-                      }}
-                      className="flex-1 py-2.5 rounded-xl border border-[#fecaca] bg-[#fee2e2] text-[#DC2626] text-sm font-medium hover:bg-[#fecaca] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-                    >
-                      {t("common.confirm")}
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmClearChecks(true)}
-                    className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-                  >
-                    {t("shopping.clearChecks")}
-                  </button>
-                ))}
+              {checkedCount > 0 && (
+                <button
+                  onClick={handleClearChecks}
+                  className="w-full py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] hover:border-[#D1D5DB] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                >
+                  {t("shopping.clearChecks")}
+                </button>
+              )}
             </div>
           </>
         )}

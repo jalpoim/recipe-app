@@ -239,7 +239,8 @@
     "tapToMark": "Toca para marcar o que já tens",
     "emptyHint": "Adiciona receitas ao plano para gerar a lista",
     "checkAll": "Marcar tudo",
-    "completeWithUnchecked": "Tens {{count}} {{count, plural, one{item} other{itens}}} por marcar. Queres registá-los como comprados?",
+    "completeWithUnchecked_one": "Tens 1 item por marcar. Queres registá-lo como comprado?",
+    "completeWithUnchecked_other": "Tens {{count}} itens por marcar. Queres registá-los como comprados?",
     "completeAllChecked": "Todos os itens estão marcados. Concluir compras?",
     "markAndComplete": "Marcar e concluir",
     "completeWithoutMarking": "Concluir sem marcar"
