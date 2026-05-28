@@ -168,6 +168,8 @@ export const recordShoppingCompletion = createServerFn({ method: 'POST' })
       .select()
       .single()
     if (error) throw new Error(error.message)
+    void (supabase as unknown as { rpc: (fn: string, args: Record<string, unknown>) => Promise<unknown> })
+      .rpc('increment_shopping_trips', { p_user_id: session.user.id })
     return row as CookLogCompletion
   })
 

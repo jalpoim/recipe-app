@@ -47,7 +47,64 @@ import {
   removeInteraction,
   fetchInteractions,
 } from "../../../lib/supabase/interaction-queries";
-import type { RecipeIngredient, RecipeStep } from "../../../types/db";
+import type { RecipeIngredient, RecipeStep, UserCookProfile } from "../../../types/db";
+
+// ─── Cook profile level helpers (for level-up detection) ─────────────────────
+
+const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
+const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const;
+const PLANNER_THRESHOLDS = [3, 10, 20, 35, 50] as const;
+
+type Axis = "explorer" | "optimizer" | "planner" | "swift";
+
+function _getLevel(score: number, thresholds: readonly number[]): number {
+  if (score >= thresholds[4]) return 5;
+  if (score >= thresholds[3]) return 4;
+  if (score >= thresholds[2]) return 3;
+  if (score >= thresholds[1]) return 2;
+  return 1;
+}
+
+function _getAxisThresholds(axis: Axis) {
+  if (axis === "explorer") return EXPLORER_THRESHOLDS;
+  if (axis === "planner") return PLANNER_THRESHOLDS;
+  return PCT_THRESHOLDS;
+}
+
+function _getAxisScore(axis: Axis, cp: UserCookProfile): number {
+  if (axis === "explorer") return Number(cp.explorer_score);
+  if (axis === "optimizer") return Number(cp.optimizer_score);
+  if (axis === "planner") return Number(cp.planner_score);
+  return Number(cp.swift_score);
+}
+
+function _getPrimaryAxis(cp: UserCookProfile): Axis {
+  const scores: Record<Axis, number> = {
+    explorer: Number(cp.explorer_score),
+    optimizer: Number(cp.optimizer_score),
+    planner: Number(cp.planner_score),
+    swift: Number(cp.swift_score),
+  };
+  return Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis;
+}
+
+function _getPrimaryLevel(cp: UserCookProfile): number {
+  const axis = _getPrimaryAxis(cp);
+  return _getLevel(_getAxisScore(axis, cp), _getAxisThresholds(axis));
+}
+
+// Returns 0–100 pct toward the NEXT level on the primary axis.
+// Returns null if already at max level.
+function _progressToNextLevel(cp: UserCookProfile): number | null {
+  const axis = _getPrimaryAxis(cp);
+  const thresholds = _getAxisThresholds(axis);
+  const score = _getAxisScore(axis, cp);
+  const level = _getLevel(score, thresholds);
+  if (level >= 5) return null;
+  const lo = level === 1 ? 0 : thresholds[level - 1];
+  const hi = thresholds[level];
+  return Math.min(100, Math.round(((score - lo) / (hi - lo)) * 100));
+}
 
 // Muted pastel thumbnail gradients per protein
 const PROTEIN_COLORS: Record<string, string> = {
@@ -360,6 +417,7 @@ function RecipeDetailPage() {
   const [cookDebounced, setCookDebounced] = useState(false);
   const [cookIconBouncing, setCookIconBouncing] = useState(false);
   const [justCooked, setJustCooked] = useState(false);
+  const [levelUpTitle, setLevelUpTitle] = useState<string | null>(null);
   const { skip: reducedMotion } = useMotion();
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   const skipFirstSave = useRef(true);
@@ -481,12 +539,28 @@ function RecipeDetailPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => setCookDebounced(false), 3000);
 
-      // Recompute cook profile async — fire and forget
-      recomputeCookProfile().then(() => {
+      // Snapshot profile before recompute for level-up detection
+      const prevProfile = qc.getQueryData<UserCookProfile>(["cook-profile"]);
+      const prevLevel = prevProfile ? _getPrimaryLevel(prevProfile) : null;
+      const prevProgress = prevProfile ? _progressToNextLevel(prevProfile) : null;
+
+      // Recompute cook profile, then check for level-up
+      recomputeCookProfile().then((newProfile) => {
         qc.invalidateQueries({ queryKey: ["cook-profile"] });
         qc.invalidateQueries({ queryKey: ["cook-distinct-count"] });
         qc.invalidateQueries({ queryKey: ["cook-summary-this-month"] });
-      });
+        if (newProfile && prevLevel !== null) {
+          const newLevel = _getPrimaryLevel(newProfile);
+          if (newLevel > prevLevel) {
+            const axis = _getPrimaryAxis(newProfile);
+            setLevelUpTitle(t(`flavorIdentity.titles.${axis}.${newLevel}`));
+            setTimeout(() => setLevelUpTitle(null), 3500);
+          }
+        }
+      }).catch(() => {});
+
+      // Show progress bar in toast if ≥70% to next level (uses pre-cook snapshot)
+      const progressToShow = prevProgress != null && prevProgress >= 70 ? prevProgress : undefined;
 
       const cookLogId = row.id;
       showToast(
@@ -501,10 +575,11 @@ function RecipeDetailPage() {
                 qc.invalidateQueries({ queryKey: ["cook-profile"] });
                 qc.invalidateQueries({ queryKey: ["cook-distinct-count"] });
                 qc.invalidateQueries({ queryKey: ["cook-summary-this-month"] });
-              });
+              }).catch(() => {});
             });
           },
         },
+        progressToShow,
       );
     },
     onError: () => showToast(t("common.error"), "error"),
@@ -613,6 +688,38 @@ function RecipeDetailPage() {
 
   return (
     <div>
+      {/* Level-up overlay */}
+      <AnimatePresence>
+        {levelUpTitle && (
+          <motion.div
+            key="levelup"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center px-8 text-center"
+            style={{ background: 'rgba(20,6,2,0.88)' }}
+            onClick={() => setLevelUpTitle(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.85, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.85, y: 20 }}
+              transition={{ duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              <p className="text-[13px] font-semibold uppercase tracking-widest mb-3" style={{ color: 'rgba(244,98,58,0.8)' }}>
+                {t("flavorIdentity.levelUp")}
+              </p>
+              <p className="text-[38px] font-extrabold text-white leading-tight" style={{ textWrap: 'balance' } as React.CSSProperties}>
+                {levelUpTitle}
+              </p>
+              <p className="text-[14px] mt-4 max-w-[280px]" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                {t("flavorIdentity.levelUpSubcopy")}
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div
         className="min-h-screen bg-[#FAFAF8]"
         style={{

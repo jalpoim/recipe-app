@@ -478,6 +478,9 @@
     "settingsTitle": "Settings",
     "cookLoggedToast": "Cooking logged ✓ · {{count}} meals cooked at home",
     "cookLoggedUndo": "Undo",
+    "levelUp": "New level!",
+    "levelUpSubcopy": "Your cooking style is evolving based on your habits — keep it up!",
+    "badgeChanged": "Your flavour profile evolved — {{badge}}",
     "titles": {
       "explorer": {
         "1": "Curious",

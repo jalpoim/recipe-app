@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Settings } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, X } from "lucide-react";
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
 import {
   getCookProfile,
   getCookSummaryThisMonth,
   getDistinctCookedCount,
+  getSavesSummary,
 } from "../../lib/supabase/cook-log-queries";
 import type { UserCookProfile } from "../../types/db";
 
@@ -307,6 +309,35 @@ function ProfilePage() {
     enabled: distinctCount >= 5,
   });
 
+  const { data: savesSummary } = useQuery({
+    queryKey: ["saves-summary"],
+    queryFn: () => getSavesSummary(),
+    staleTime: 5 * 60 * 1000,
+    enabled: distinctCount === 0,
+  });
+
+  // ── Badge change banner — hooks must be before any early returns ───────────
+  const [badgeBanner, setBadgeBanner] = useState<string | null>(null);
+  const specialtyBadgeKeyRaw = cookProfile?.specialty_badge_key ?? null;
+
+  useEffect(() => {
+    if (!specialtyBadgeKeyRaw) return;
+    const lastSeen = typeof localStorage !== 'undefined'
+      ? localStorage.getItem('last_seen_badge_key')
+      : null;
+    if (lastSeen !== null && lastSeen !== specialtyBadgeKeyRaw) {
+      const label = t(`flavorIdentity.specialtyBadge.${specialtyBadgeKeyRaw}`, { defaultValue: '' });
+      if (label) {
+        setBadgeBanner(label);
+        const timer = setTimeout(() => setBadgeBanner(null), 3000);
+        return () => clearTimeout(timer);
+      }
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('last_seen_badge_key', specialtyBadgeKeyRaw);
+    }
+  }, [specialtyBadgeKeyRaw]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (countLoading || !profile) return <ProfileSkeleton />;
 
   const displayName = profile.display_name ?? "—";
@@ -324,7 +355,7 @@ function ProfilePage() {
   }
 
   // ── Specialty badge ────────────────────────────────────────────────────────
-  const specialtyBadgeKey = cookProfile?.specialty_badge_key ?? null;
+  const specialtyBadgeKey = specialtyBadgeKeyRaw; // already declared above
   const specialtyBadgeLabel = specialtyBadgeKey
     ? t(`flavorIdentity.specialtyBadge.${specialtyBadgeKey}`, { defaultValue: "" }) || null
     : null;
@@ -387,7 +418,53 @@ function ProfilePage() {
         specialtyBadgeLabel={specialtyBadgeLabel ?? undefined}
       />
 
+      {/* Badge change banner */}
+      {badgeBanner && (
+        <div
+          className="flex items-center justify-between px-4 py-3 text-white text-[13px] font-medium"
+          style={{ background: "#C23E22" }}
+        >
+          <span>{t("flavorIdentity.badgeChanged", { badge: badgeBanner })}</span>
+          <button
+            onClick={() => setBadgeBanner(null)}
+            aria-label={t("common.close")}
+            className="ml-3 shrink-0 opacity-70 hover:opacity-100 focus:outline-none"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
+        </div>
+      )}
+
       <div className="max-w-md mx-auto px-4 pt-4 pb-6 space-y-3">
+
+        {/* Tier 1 — progress bar for new users (0–4 distinct cooks) */}
+        {distinctCount < 5 && (
+          <div className="rounded-2xl shadow-sm px-6 py-5" style={{ background: "#FFF4F0" }}>
+            <p className="text-[13px] leading-relaxed mb-3" style={{ color: "#9C6355" }}>
+              {t("cookProfile.progressHint", { remaining: 5 - distinctCount })}
+            </p>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#FFE8DE" }}>
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{ width: `${Math.round((distinctCount / 5) * 100)}%`, background: "#F4623A" }}
+              />
+            </div>
+            <p className="text-[11px] mt-1.5 font-semibold tabular-nums" style={{ color: "#C4A49C" }}>
+              {distinctCount}/5
+            </p>
+          </div>
+        )}
+
+        {/* Tier 2 — browser message (0 cooks but has saves) */}
+        {distinctCount === 0 && savesSummary?.topCuisine && (
+          <NarrativeCard
+            headline={t("cookProfile.basedOnSaved", {
+              cuisine: t(`flavorIdentity.cuisineLabels.${savesSummary.topCuisine}`, { defaultValue: savesSummary.topCuisine }),
+              protein: savesSummary.topProtein ? t(`proteins.${savesSummary.topProtein}`, { defaultValue: savesSummary.topProtein }) : "",
+            })}
+            sub={t("cookProfile.browserHint")}
+          />
+        )}
 
         {/* Creator badge card — only when earned (specialty badge lives in hero pill) */}
         {showCreatorCard && (

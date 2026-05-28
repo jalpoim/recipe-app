@@ -478,6 +478,9 @@
     "settingsTitle": "Definições",
     "cookLoggedToast": "Receita registada ✓ · {{count}} receitas cozinhadas em casa",
     "cookLoggedUndo": "Anular",
+    "levelUp": "Novo nível!",
+    "levelUpSubcopy": "O teu estilo de cozinha está a evoluir — continua assim!",
+    "badgeChanged": "O teu perfil de sabor evoluiu — {{badge}}",
     "titles": {
       "explorer": {
         "1": "Curioso",
