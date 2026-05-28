@@ -9,6 +9,7 @@ import {
   getCookSummaryThisMonth,
   getDistinctCookedCount,
   getSavesSummary,
+  getCuisineBadgeProgress,
 } from "../../lib/supabase/cook-log-queries";
 import type { UserCookProfile } from "../../types/db";
 
@@ -264,6 +265,81 @@ function BadgeCard({ label, category }: { label: string; category: string }) {
   );
 }
 
+// ─── Cuisine badges ───────────────────────────────────────────────────────────
+
+const TARGET_CUISINES = [
+  "portuguese", "italian", "japanese", "mexican", "indian", "thai",
+  "chinese", "french", "greek", "moroccan", "korean", "spanish",
+  "middle-eastern", "american", "brazilian", "vietnamese", "turkish", "german",
+] as const;
+
+const BADGE_THRESHOLD = 3;
+
+// Warm, food-inspired per-cuisine accent colors
+const CUISINE_COLORS: Record<string, string> = {
+  portuguese:    "#2d6a4f",
+  italian:       "#c62828",
+  japanese:      "#1a237e",
+  mexican:       "#e65100",
+  indian:        "#f57f17",
+  thai:          "#1b5e20",
+  chinese:       "#b71c1c",
+  french:        "#283593",
+  greek:         "#0277bd",
+  moroccan:      "#bf360c",
+  korean:        "#880e4f",
+  spanish:       "#c62828",
+  "middle-eastern": "#e65100",
+  american:      "#283593",
+  brazilian:     "#1b5e20",
+  vietnamese:    "#004d40",
+  turkish:       "#880e4f",
+  german:        "#4e342e",
+};
+
+function CuisineBadge({
+  cuisine,
+  earned,
+  remaining,
+  label,
+}: {
+  cuisine: string;
+  earned: boolean;
+  remaining: number;
+  label: string;
+}) {
+  const { t } = useTranslation();
+  const color = CUISINE_COLORS[cuisine] ?? "#C23E22";
+  const initial = label.charAt(0).toUpperCase();
+
+  return (
+    <div className="flex flex-col items-center gap-1.5 shrink-0" style={{ width: 68 }}>
+      <div
+        className="w-14 h-14 rounded-2xl flex items-center justify-center text-[20px] font-extrabold"
+        style={{
+          background: earned ? color : "#FFE8DE",
+          color: earned ? "#fff" : color,
+          border: earned ? `2px solid ${color}` : "2px dashed #F4A58A",
+          opacity: earned ? 1 : 0.65,
+        }}
+      >
+        {initial}
+      </div>
+      <p
+        className="text-[10px] font-medium text-center leading-tight"
+        style={{ color: earned ? "#1C0F0C" : "#9C6355" }}
+      >
+        {label}
+      </p>
+      {!earned && (
+        <p className="text-[9px] font-medium" style={{ color: "#C4A49C" }}>
+          {t("flavorIdentity.cuisineBadgeTeaser", { count: remaining })}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function ProfileSkeleton() {
@@ -314,6 +390,12 @@ function ProfilePage() {
     queryFn: () => getSavesSummary(),
     staleTime: 5 * 60 * 1000,
     enabled: distinctCount === 0,
+  });
+
+  const { data: badgeProgress = [] } = useQuery({
+    queryKey: ["cuisine-badge-progress"],
+    queryFn: () => getCuisineBadgeProgress(),
+    staleTime: 5 * 60 * 1000,
   });
 
   // ── Badge change banner — hooks must be before any early returns ───────────
@@ -406,6 +488,13 @@ function ProfilePage() {
   }
 
   const lifetimeCookCount = cookProfile?.lifetime_cook_count ?? 0;
+
+  // ── Cuisine badges ─────────────────────────────────────────────────────────
+  const badgeMap = new Map(badgeProgress.map((b) => [b.cuisine, b.distinctRecipes]));
+  const visibleBadges = TARGET_CUISINES
+    .map((c) => ({ cuisine: c, count: badgeMap.get(c) ?? 0 }))
+    .filter(({ count }) => count >= 2); // earned (≥3) or teaser (2)
+  const hasAnyBadge = visibleBadges.some(({ count }) => count >= BADGE_THRESHOLD);
 
   return (
     <div className="min-h-screen pb-24" style={{ background: "#FFFAF8" }}>
@@ -509,9 +598,34 @@ function ProfilePage() {
           </Link>
         )}
 
-        {/* Cuisine collection — horizontal scroll, warm chips */}
-        {exploredCuisines.length > 0 && (
+        {/* Cuisine badge collection — hidden until first earned or teaser */}
+        {(hasAnyBadge || visibleBadges.length > 0) && (
           <div className="space-y-3 pt-1">
+            <p
+              className="text-[10px] font-semibold uppercase tracking-widest px-1"
+              style={{ color: "#9C6355" }}
+            >
+              {t("flavorIdentity.cuisineBadgesTitle")}
+            </p>
+            <div className="-mx-4 overflow-x-auto" style={{ overscrollBehaviorX: "contain" }}>
+              <div className="flex gap-3 px-4 pb-1">
+                {visibleBadges.map(({ cuisine, count }) => (
+                  <CuisineBadge
+                    key={cuisine}
+                    cuisine={cuisine}
+                    earned={count >= BADGE_THRESHOLD}
+                    remaining={BADGE_THRESHOLD - count}
+                    label={cuisineLabel(cuisine)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Explored cuisine chips — breadth indicator, all cuisines cooked at least once */}
+        {exploredCuisines.length > 0 && (
+          <div className="space-y-2 pt-1">
             <p
               className="text-[10px] font-semibold uppercase tracking-widest px-1"
               style={{ color: "#9C6355" }}

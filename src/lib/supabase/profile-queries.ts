@@ -79,7 +79,7 @@ export const saveDietaryPreferences = createServerFn({ method: 'POST' })
   })
 
 export const completeOnboarding = createServerFn({ method: 'POST' })
-  .inputValidator((input: { measurementUnit: MeasurementUnit; dietaryMode: DietaryMode; intolerances: string[]; cookStyle: CookStyle | null }) => input)
+  .inputValidator((input: { measurementUnit: MeasurementUnit; dietaryMode: DietaryMode; intolerances: string[]; cookStyle: CookStyle | null; heatPreference: number | null }) => input)
   .handler(async ({ data }) => {
     const supabase = makeClient()
     const { data: { session } } = await supabase.auth.getSession()
@@ -92,6 +92,8 @@ export const completeOnboarding = createServerFn({ method: 'POST' })
         dietary_mode: data.dietaryMode,
         intolerances: data.intolerances,
         cook_style: data.cookStyle,
+        // heat_preference not yet in generated types — cast required
+        ...({ heat_preference: data.heatPreference } as object),
         onboarding_completed: true,
       })
       .eq('user_id', session.user.id)

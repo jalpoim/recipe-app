@@ -574,6 +574,34 @@ export const recomputeCookProfile = createServerFn({ method: "POST" }).handler(
   },
 );
 
+// GET: distinct recipe count per cuisine tag for badge progress
+export const getCuisineBadgeProgress = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ cuisine: string; distinctRecipes: number }[]> => {
+    const supabase = makeClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data: logs } = await supabase
+      .from("cook_log")
+      .select("recipe_id, recipes(cuisine_tags)")
+      .eq("user_id", session.user.id) as unknown as {
+        data: { recipe_id: string; recipes: { cuisine_tags: string[] } | null }[] | null;
+      };
+
+    const cuisineRecipes = new Map<string, Set<string>>();
+    for (const log of logs ?? []) {
+      for (const tag of log.recipes?.cuisine_tags ?? []) {
+        if (!cuisineRecipes.has(tag)) cuisineRecipes.set(tag, new Set());
+        cuisineRecipes.get(tag)!.add(log.recipe_id);
+      }
+    }
+
+    return [...cuisineRecipes.entries()]
+      .map(([cuisine, recipes]) => ({ cuisine, distinctRecipes: recipes.size }))
+      .filter(({ distinctRecipes }) => distinctRecipes >= 2);
+  },
+);
+
 // GET: fetch cook counts per recipe for the current user — DB GROUP BY via RPC
 export const fetchRecipeCookCounts = createServerFn({ method: "GET" })
   .inputValidator((recipeIds: string[]) => recipeIds)

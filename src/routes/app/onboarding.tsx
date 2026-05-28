@@ -35,11 +35,17 @@ const COOK_STYLES: { value: CookStyle; labelKey: string; subKey: string }[] = [
   { value: "meal_prepper", labelKey: "onboarding.cookStyleMealPrepper", subKey: "onboarding.cookStyleMealPrepperSub" },
 ];
 
+const HEAT_OPTIONS: { value: 0 | 1 | 2; labelKey: string; subKey: string }[] = [
+  { value: 0, labelKey: "onboarding.heatNone", subKey: "onboarding.heatNoneSub" },
+  { value: 1, labelKey: "onboarding.heatSometimes", subKey: "onboarding.heatSometimesSub" },
+  { value: 2, labelKey: "onboarding.heatYes", subKey: "onboarding.heatYesSub" },
+];
+
 function OnboardingPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [cookStyle, setCookStyle] = useState<CookStyle | null>(null);
   const [lang, setLang] = useState<Lang>(() =>
     i18n.language.startsWith("en") ? "en" : "pt",
@@ -47,6 +53,7 @@ function OnboardingPage() {
   const [unit, setUnit] = useState<MeasurementUnit>("metric");
   const [dietMode, setDietMode] = useState<DietaryMode>("none");
   const [intolerances, setIntolerances] = useState<string[]>([]);
+  const [heatPreference, setHeatPreference] = useState<0 | 1 | 2 | null>(null);
 
   const mutation = useMutation({
     mutationFn: (vars: {
@@ -54,6 +61,7 @@ function OnboardingPage() {
       dietaryMode: DietaryMode;
       intolerances: string[];
       cookStyle: CookStyle | null;
+      heatPreference: number | null;
     }) => completeOnboarding({ data: vars }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
@@ -78,6 +86,7 @@ function OnboardingPage() {
       dietaryMode: dietMode,
       intolerances,
       cookStyle,
+      heatPreference,
     });
   }
 
@@ -85,7 +94,7 @@ function OnboardingPage() {
     <div className="min-h-screen bg-[#FAFAF8] flex flex-col px-5 py-8 max-w-md mx-auto">
       {/* Progress dots */}
       <div className="flex items-center gap-2 mb-8">
-        {([1, 2, 3, 4] as const).map((s) => (
+        {([1, 2, 3, 4, 5] as const).map((s) => (
           <div
             key={s}
             className={`h-1.5 rounded-full transition-all ${
@@ -308,13 +317,62 @@ function OnboardingPage() {
             })}
           </div>
 
-          <p className="text-xs text-[#9CA3AF] text-center mb-6 px-4 leading-relaxed">
+          <div className="flex gap-3 mt-auto">
+            <button
+              onClick={() => setStep(3)}
+              className="flex-1 rounded-2xl border border-[#E5E7EB] py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {t("onboarding.back")}
+            </button>
+            <button
+              onClick={() => setStep(5)}
+              className="flex-[2] rounded-2xl bg-[#F4623A] py-4 text-sm font-semibold text-white hover:bg-[#D94F2B] active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {t("onboarding.continue")}
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Step 5 — Heat preference */}
+      {step === 5 && (
+        <>
+          <h1 className="text-2xl font-bold text-[#1A1A1A] mb-1">
+            {t("onboarding.heatTitle")}
+          </h1>
+          <p className="text-sm text-[#6B7280] mb-8">
+            {t("onboarding.heatSubtitle")}
+          </p>
+
+          <div className="space-y-3 flex-1">
+            {HEAT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setHeatPreference(opt.value)}
+                className={`w-full flex items-center justify-between rounded-2xl border-2 px-4 py-4 text-left transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none ${
+                  heatPreference === opt.value
+                    ? "border-[#F4623A] bg-[#FFF5F2]"
+                    : "border-[#E5E7EB] bg-white hover:border-[#D1D5DB]"
+                }`}
+              >
+                <div>
+                  <p className="font-semibold text-[#1A1A1A]">{t(opt.labelKey)}</p>
+                  <p className="text-xs text-[#6B7280] mt-0.5">{t(opt.subKey)}</p>
+                </div>
+                {heatPreference === opt.value && (
+                  <Check size={20} className="text-[#F4623A] shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-[#9CA3AF] text-center mt-6 px-4 leading-relaxed">
             {t("onboarding.closingSentence")}
           </p>
 
-          <div className="flex gap-3">
+          <div className="mt-6 flex gap-3">
             <button
-              onClick={() => setStep(3)}
+              onClick={() => setStep(4)}
               className="flex-1 rounded-2xl border border-[#E5E7EB] py-4 text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {t("onboarding.back")}
@@ -324,9 +382,7 @@ function OnboardingPage() {
               disabled={mutation.isPending}
               className="flex-[2] rounded-2xl bg-[#F4623A] py-4 text-sm font-semibold text-white hover:bg-[#D94F2B] disabled:opacity-50 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
-              {mutation.isPending
-                ? t("common.loading")
-                : t("onboarding.finish")}
+              {mutation.isPending ? t("common.loading") : t("onboarding.finish")}
             </button>
           </div>
         </>
