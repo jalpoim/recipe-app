@@ -5162,24 +5162,6 @@ Share button: native share sheet (`navigator.share`) with the card image + a cap
 
 ---
 
-### 6. Monthly evolution notification
-
-After each monthly profile regeneration, compare the new `flavor_profile_data` with the previous one. If any of these changed:
-- A new cuisine appeared for the first time
-- Signature ingredient changed
-- Top protein changed
-- Adventurousness percentile moved by ≥ 15 points
-
-→ Send an in-app notification (not push, not email — just a badge on the Kitchen tab and a card at the top of the profile page):
-
-> "Algo mudou na tua cozinha este mês →"
-
-On tap: scroll to the narrative section. The new narrative explains what changed.
-
-Implementation: a `profile_notifications` table with a `dismissed_at` field. The badge clears on tap.
-
----
-
 ### 7. Onboarding: heat/spice preference
 
 Add a single question to the existing onboarding flow, between dietary preferences and the finish screen:
@@ -5220,8 +5202,7 @@ Narrative generation uses Claude Sonnet which costs more than Haiku. Add a serve
   "heatIndex": "Gostas mais de picante que {{pct}}% dos utilizadores",
   "adventurousness": "Mais aventureiro que {{pct}}% dos utilizadores",
   "shareCard": "Partilhar perfil",
-  "shareCaption": "A minha cozinha em {{month}} {{year}} 🍳",
-  "evolutionNotification": "Algo mudou na tua cozinha este mês →",
+  "shareCaption": "A minha cozinha em {{month}} {{year}}",
   "onboardingHeatTitle": "Gostas de comida picante?",
   "heatNone": "Não muito",
   "heatSometimes": "Às vezes",
