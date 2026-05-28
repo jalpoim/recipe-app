@@ -2,14 +2,20 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect } f
 
 type Variant = 'success' | 'error'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastState {
   message: string
   variant: Variant
   visible: boolean
+  action?: ToastAction
 }
 
 interface ToastContextValue {
-  showToast: (message: string, variant?: Variant) => void
+  showToast: (message: string, variant?: Variant, action?: ToastAction) => void
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null)
@@ -18,12 +24,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastState>({ message: '', variant: 'success', visible: false })
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const showToast = useCallback((message: string, variant: Variant = 'success') => {
+  const showToast = useCallback((message: string, variant: Variant = 'success', action?: ToastAction) => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    setToast({ message, variant, visible: true })
+    setToast({ message, variant, visible: true, action })
     timerRef.current = setTimeout(() => {
-      setToast((prev) => ({ ...prev, visible: false }))
-    }, 2500)
+      setToast((prev) => ({ ...prev, visible: false, action: undefined }))
+    }, action ? 5000 : 2500)
   }, [])
 
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current) }, [])
@@ -31,24 +37,37 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <ToastDisplay toast={toast} />
+      <ToastDisplay toast={toast} onDismiss={() => setToast((prev) => ({ ...prev, visible: false, action: undefined }))} />
     </ToastContext.Provider>
   )
 }
 
-function ToastDisplay({ toast }: { toast: ToastState }) {
+function ToastDisplay({ toast, onDismiss }: { toast: ToastState; onDismiss: () => void }) {
   const bg = toast.variant === 'success' ? 'bg-[#F4623A]' : 'bg-[#DC2626]'
+  const hasAction = !!toast.action
+
   return (
     <div
       aria-live="polite"
       aria-atomic="true"
-      className={`fixed bottom-20 left-1/2 z-50 -translate-x-1/2 px-4 py-2.5 rounded-full text-white text-sm font-medium shadow-lg pointer-events-none transition-all duration-300 ${bg} ${
+      className={`fixed bottom-20 left-1/2 z-50 -translate-x-1/2 px-4 py-2.5 rounded-full text-white text-sm font-medium shadow-lg transition-all duration-300 ${bg} ${
         toast.visible && toast.message
           ? 'opacity-100 translate-y-0'
-          : 'opacity-0 translate-y-2'
-      }`}
+          : 'opacity-0 translate-y-2 pointer-events-none'
+      } ${hasAction ? 'flex items-center gap-3' : ''}`}
     >
-      {toast.message}
+      <span>{toast.message}</span>
+      {hasAction && toast.action && (
+        <button
+          onClick={() => {
+            toast.action!.onClick()
+            onDismiss()
+          }}
+          className="text-white/90 underline underline-offset-2 font-semibold shrink-0 hover:text-white focus:outline-none"
+        >
+          {toast.action.label}
+        </button>
+      )}
     </div>
   )
 }

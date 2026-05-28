@@ -39,6 +39,8 @@ import {
 import {
   logRecipeCooked,
   fetchRecipeCookCounts,
+  deleteCookLogEntry,
+  recomputeCookProfile,
 } from "../../../lib/supabase/cook-log-queries";
 import {
   upsertInteraction,
@@ -475,10 +477,35 @@ function RecipeDetailPage() {
         setTimeout(() => setJustCooked(false), 1500);
       }
       qc.invalidateQueries({ queryKey: ["cook-counts", recipe.id] });
-      showToast(t("recipe.logCookedSuccess"), "success");
       setCookDebounced(true);
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => setCookDebounced(false), 3000);
+
+      // Recompute cook profile async — fire and forget
+      recomputeCookProfile().then(() => {
+        qc.invalidateQueries({ queryKey: ["cook-profile"] });
+        qc.invalidateQueries({ queryKey: ["cook-distinct-count"] });
+        qc.invalidateQueries({ queryKey: ["cook-summary-this-month"] });
+      });
+
+      const cookLogId = row.id;
+      showToast(
+        t("flavorIdentity.cookLoggedToast", { count: (myCookCount ?? 0) + 1 }),
+        "success",
+        {
+          label: t("flavorIdentity.cookLoggedUndo"),
+          onClick: () => {
+            deleteCookLogEntry({ data: { cookLogId } }).then(() => {
+              qc.invalidateQueries({ queryKey: ["cook-counts", recipe.id] });
+              recomputeCookProfile().then(() => {
+                qc.invalidateQueries({ queryKey: ["cook-profile"] });
+                qc.invalidateQueries({ queryKey: ["cook-distinct-count"] });
+                qc.invalidateQueries({ queryKey: ["cook-summary-this-month"] });
+              });
+            });
+          },
+        },
+      );
     },
     onError: () => showToast(t("common.error"), "error"),
   });
