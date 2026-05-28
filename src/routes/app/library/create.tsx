@@ -545,6 +545,7 @@ function CreateRecipePage() {
       });
     },
     onSuccess: ({ id }) => {
+      showToast(t("create.recipeCreated"));
       queryClient.invalidateQueries({ queryKey: ["library"] });
       navigate({
         to: "/app/library/$recipeId",
