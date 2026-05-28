@@ -79,7 +79,7 @@ function IdentityHero({
 
   return (
     <div
-      className="relative px-5 pt-12 pb-10 text-white overflow-hidden"
+      className="relative px-5 pt-12 pb-10 text-white"
       style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
     >
       <Link
@@ -91,7 +91,6 @@ function IdentityHero({
       </Link>
 
       <div className="flex flex-col items-center text-center">
-        {/* Avatar */}
         {avatarUrl ? (
           <img
             src={avatarUrl}
@@ -108,23 +107,19 @@ function IdentityHero({
           </div>
         )}
 
-        {/* Name */}
         <p className="text-xl font-bold leading-tight">{displayName}</p>
         {username && (
           <p className="text-sm text-white/60 mt-0.5">@{username}</p>
         )}
 
-        {/* Title — the identity statement, dominant element */}
         <p className="text-[26px] font-bold leading-tight mt-4">{primaryTitle}</p>
 
-        {/* Specialty badge chip — only when earned */}
         {specialtyBadgeLabel && (
           <div className="mt-2 px-3 py-1 rounded-full bg-white/15 border border-white/25">
             <p className="text-xs font-medium tracking-wide">{specialtyBadgeLabel}</p>
           </div>
         )}
 
-        {/* Subtitle — only shown before 5 cooks */}
         {subtitle && (
           <p className="text-[13px] text-white/65 max-w-[260px] leading-relaxed mt-4">
             {subtitle}
@@ -135,120 +130,92 @@ function IdentityHero({
   );
 }
 
-// ─── Stat card — big number as hero ──────────────────────────────────────────
+// ─── Stat card — number as the hero ──────────────────────────────────────────
 
-function StatCard({
-  value,
-  label,
-}: {
-  value: number;
-  label: string;
-}) {
+function StatCard({ value, label }: { value: number; label: string }) {
   return (
-    <div className="rounded-2xl bg-[#FEF2EE] border border-[#F4623A]/20 shadow-sm px-6 py-5">
-      <p className="text-[52px] font-bold leading-none text-[#F4623A] tracking-tight">
+    <div className="rounded-2xl bg-white shadow-sm px-7 py-6">
+      <p className="text-[64px] font-extrabold leading-none text-[#F4623A] tracking-tight">
         {value}
       </p>
-      <p className="text-[13px] text-[#6B7280] mt-2">{label}</p>
+      <p className="text-[13px] text-[#9CA3AF] mt-2 leading-snug">{label}</p>
     </div>
   );
 }
 
-// ─── Narrative card — editorial label + bold headline ────────────────────────
+// ─── Discovery card — full-color, celebratory ─────────────────────────────────
+
+function DiscoveryCard({ category, headline }: { category: string; headline: string }) {
+  return (
+    <div className="rounded-2xl bg-[#16A34A] shadow-sm px-6 py-5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/60 mb-1.5">
+        {category}
+      </p>
+      <p className="text-[20px] font-bold text-white leading-snug">{headline}</p>
+    </div>
+  );
+}
+
+// ─── Signature card — dark, earned ───────────────────────────────────────────
+
+function SignatureCard({
+  category,
+  headline,
+  sub,
+}: {
+  category: string;
+  headline: string;
+  sub: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#1A1A1A] shadow-md px-6 py-5">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-1.5">
+        {category}
+      </p>
+      <p className="text-[18px] font-bold text-white leading-snug">{headline}</p>
+      <p className="text-[12px] text-[#F4623A] mt-2 font-medium">{sub}</p>
+    </div>
+  );
+}
+
+// ─── Narrative card — clean white, for general content ───────────────────────
 
 function NarrativeCard({
   category,
   headline,
   sub,
-  accent,
 }: {
   category?: string;
   headline: string;
   sub?: string;
-  accent?: "green" | "orange" | "default";
 }) {
-  const containerBg =
-    accent === "green"
-      ? "bg-[#f0fdf4] border-[#86efac]"
-      : accent === "orange"
-        ? "bg-[#FEF2EE] border-[#F4623A]/30"
-        : "bg-white border-[#F0F0EE]";
-  const accentBar =
-    accent === "green"
-      ? "bg-[#16A34A]"
-      : accent === "orange"
-        ? "bg-[#F4623A]"
-        : "bg-[#D1D5DB]";
-
   return (
-    <div className={`rounded-2xl border shadow-sm overflow-hidden ${containerBg}`}>
-      <div className="flex">
-        <div className={`w-1.5 shrink-0 ${accentBar}`} />
-        <div className="px-5 py-4 min-w-0">
-          {category && (
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-1.5">
-              {category}
-            </p>
-          )}
-          <p className="text-[17px] font-bold text-[#1A1A1A] leading-snug">
-            {headline}
-          </p>
-          {sub && (
-            <p className="text-[12px] text-[#6B7280] mt-1 leading-relaxed">{sub}</p>
-          )}
-        </div>
-      </div>
+    <div className="rounded-2xl bg-white shadow-sm px-6 py-5">
+      {category && (
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-1.5">
+          {category}
+        </p>
+      )}
+      <p className="text-[17px] font-bold text-[#1A1A1A] leading-snug">{headline}</p>
+      {sub && (
+        <p className="text-[12px] text-[#6B7280] mt-1 leading-relaxed">{sub}</p>
+      )}
     </div>
   );
 }
 
 // ─── Badge card ───────────────────────────────────────────────────────────────
 
-function BadgeCard({
-  label,
-  category,
-}: {
-  label: string;
-  category: string;
-}) {
+function BadgeCard({ label, category }: { label: string; category: string }) {
   return (
-    <div className="flex-1 rounded-2xl bg-white border border-[#F0F0EE] shadow-sm overflow-hidden">
-      <div className="h-1 bg-[#F4623A]" />
+    <div className="flex-1 rounded-2xl bg-white shadow-sm overflow-hidden">
+      <div className="h-0.5 bg-[#F4623A]" />
       <div className="px-4 pt-3 pb-5 flex flex-col items-center gap-1 text-center">
         <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF]">
           {category}
         </p>
         <p className="text-[14px] font-bold text-[#1A1A1A] leading-snug">{label}</p>
       </div>
-    </div>
-  );
-}
-
-// ─── Lifetime counters ────────────────────────────────────────────────────────
-
-function LifetimeCounters({
-  cookCount,
-  shoppingCount,
-}: {
-  cookCount: number;
-  shoppingCount: number;
-}) {
-  const { t } = useTranslation();
-
-  if (cookCount === 0 && shoppingCount === 0) return null;
-
-  return (
-    <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm px-5 py-4 space-y-1.5">
-      {cookCount > 0 && (
-        <p className="text-[13px] text-[#6B7280]">
-          {t("flavorIdentity.lifetimeCooks", { count: cookCount })}
-        </p>
-      )}
-      {shoppingCount > 0 && (
-        <p className="text-[13px] text-[#6B7280]">
-          {t("flavorIdentity.lifetimeShopping", { count: shoppingCount })}
-        </p>
-      )}
     </div>
   );
 }
@@ -263,10 +230,9 @@ function ProfileSkeleton() {
         style={{ background: "linear-gradient(145deg, #F4623A 0%, #C23E22 100%)" }}
       />
       <div className="px-4 py-6 space-y-4">
-        <div className="rounded-2xl bg-[#FEF2EE] border border-[#F4623A]/20 h-28" />
-        {[1, 2].map((i) => (
-          <div key={i} className="rounded-2xl bg-white border border-[#F0F0EE] h-20" />
-        ))}
+        <div className="rounded-2xl bg-white shadow-sm h-32" />
+        <div className="rounded-2xl bg-[#16A34A] opacity-20 h-20" />
+        <div className="rounded-2xl bg-[#1A1A1A] opacity-10 h-20" />
       </div>
     </div>
   );
@@ -326,8 +292,11 @@ function ProfilePage() {
 
   // ── Creator badge ──────────────────────────────────────────────────────────
   const creatorPoints = Number(cookProfile?.creator_points ?? 0);
-  const creatorLevel = creatorPoints >= CREATOR_THRESHOLDS[0] ? getCreatorLevel(creatorPoints) : null;
-  const creatorTitle = creatorLevel ? t(`flavorIdentity.titles.creator.${creatorLevel}`) : null;
+  const creatorLevel =
+    creatorPoints >= CREATOR_THRESHOLDS[0] ? getCreatorLevel(creatorPoints) : null;
+  const creatorTitle = creatorLevel
+    ? t(`flavorIdentity.titles.creator.${creatorLevel}`)
+    : null;
 
   // ── Hero subtitle — only at 0–4 distinct cooks ─────────────────────────────
   const heroSubtitle = distinctCount < 5 ? t("flavorIdentity.heroSubtitleNewCook") : "";
@@ -346,7 +315,8 @@ function ProfilePage() {
       : null;
 
   // ── Top protein ────────────────────────────────────────────────────────────
-  const topProtein = showTopProtein && cookSummary?.topProtein ? cookSummary.topProtein : null;
+  const topProtein =
+    showTopProtein && cookSummary?.topProtein ? cookSummary.topProtein : null;
 
   // ── Cuisine collection ─────────────────────────────────────────────────────
   const exploredCuisines = cookProfile?.explored_cuisines ?? [];
@@ -374,7 +344,7 @@ function ProfilePage() {
 
       <div className="max-w-md mx-auto px-4 py-6 space-y-4">
 
-        {/* Badge row — creator + specialty */}
+        {/* Badge row — appears only when earned */}
         {showBadgeRow && (
           <div className="flex gap-3">
             {creatorTitle && (
@@ -392,7 +362,7 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Cook count — big number stat card */}
+        {/* Cook count — number as the statement */}
         {showCookCount && (
           <StatCard
             value={distinctCount}
@@ -400,20 +370,19 @@ function ProfilePage() {
           />
         )}
 
-        {/* Cuisine discovery — first time this month */}
+        {/* First-time cuisine this month — celebratory full-green */}
         {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
-          <NarrativeCard
+          <DiscoveryCard
             category={t("flavorIdentity.cuisineFirstTimeLabel")}
             headline={t("flavorIdentity.cuisineDiscoveryHeadline", {
               cuisine: cuisineLabel(cookSummary.firstTimeCuisine),
             })}
-            accent="green"
           />
         )}
 
-        {/* Signature recipe — recipe name is the hero */}
+        {/* Signature recipe — dark card, recipe name is the hero */}
         {signatureRecipe && (
-          <NarrativeCard
+          <SignatureCard
             category={t("flavorIdentity.signatureRecipe")}
             headline={signatureRecipe.name}
             sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
@@ -429,18 +398,18 @@ function ProfilePage() {
           />
         )}
 
-        {/* Cuisine collection — horizontal scroll, warm-tinted chips */}
+        {/* Cuisine collection — label + horizontal scroll, no card container */}
         {exploredCuisines.length > 0 && (
-          <div className="rounded-2xl bg-white border border-[#F0F0EE] shadow-sm px-5 py-4">
-            <p className="text-[9px] font-semibold uppercase tracking-widest text-[#9CA3AF] mb-3">
+          <div className="space-y-3 pt-2">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#9CA3AF] px-1">
               {t("flavorIdentity.cuisineCollectionTitle")}
             </p>
             <div className="-mx-1 overflow-x-auto">
-              <div className="flex gap-2 px-1 pb-0.5">
+              <div className="flex gap-2 px-1 pb-1">
                 {exploredCuisines.map((c) => (
                   <span
                     key={c}
-                    className="text-[12px] px-3 py-1.5 rounded-full font-semibold whitespace-nowrap bg-[#FEF2EE] text-[#C23E22] border border-[#F4623A]/20 shrink-0"
+                    className="text-[12px] px-3.5 py-1.5 rounded-full font-semibold whitespace-nowrap bg-[#FEF2EE] text-[#C23E22] shrink-0"
                   >
                     {cuisineLabel(c)}
                   </span>
@@ -450,11 +419,23 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Lifetime counters */}
-        <LifetimeCounters
-          cookCount={lifetimeCookCount}
-          shoppingCount={cookProfile?.shopping_trip_count ?? 0}
-        />
+        {/* Lifetime counters — bare text, no container */}
+        {(lifetimeCookCount > 0 || (cookProfile?.shopping_trip_count ?? 0) > 0) && (
+          <div className="pt-2 pb-1 space-y-1 text-center">
+            {lifetimeCookCount > 0 && (
+              <p className="text-[13px] text-[#B0B3B8]">
+                {t("flavorIdentity.lifetimeCooks", { count: lifetimeCookCount })}
+              </p>
+            )}
+            {(cookProfile?.shopping_trip_count ?? 0) > 0 && (
+              <p className="text-[13px] text-[#B0B3B8]">
+                {t("flavorIdentity.lifetimeShopping", {
+                  count: cookProfile!.shopping_trip_count,
+                })}
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
