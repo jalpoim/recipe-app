@@ -556,6 +556,7 @@
     "cuisineDiscoveryCard": "Estreaste-te na cozinha {{cuisine}}",
     "cuisineDiscoveryHeadline": "Cozinha {{cuisine}}",
     "cuisineFirstTimeLabel": "Primeira vez",
+    "cuisineRecentLabel": "Recém explorada",
     "cuisineCollectionTitle": "As tuas cozinhas",
     "specialtyBadgeCategory": "Especialidade",
     "topProteinTitle": "Os teus pratos são frequentemente ricos em {{protein}}",

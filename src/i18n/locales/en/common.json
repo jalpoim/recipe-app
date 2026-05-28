@@ -556,6 +556,7 @@
     "cuisineDiscoveryCard": "You cooked {{cuisine}} cuisine for the first time",
     "cuisineDiscoveryHeadline": "{{cuisine}} cuisine",
     "cuisineFirstTimeLabel": "First time",
+    "cuisineRecentLabel": "Recently explored",
     "cuisineCollectionTitle": "Your cuisines",
     "specialtyBadgeCategory": "Specialty",
     "topProteinTitle": "Your dishes are often high in {{protein}}",

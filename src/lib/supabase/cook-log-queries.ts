@@ -6,10 +6,10 @@ export type CookSummary = {
   countThisMonth: number;
   countLastMonth: number;
   topProtein: string | null;
-  mostCookedRecipe: { name: string; count: number } | null;
+  mostCookedRecipe: { id: string; name: string; count: number } | null;
   masteredRecipes: { id: string; name: string }[];
   cuisinesThisMonth: string[];
-  firstTimeCuisine: string | null;
+  firstTimeCuisine: { cuisine: string; recipeName: string; recipeId: string } | null;
 };
 
 export type CookLogWithRecipe = CookLog & { recipe_name: string };
@@ -157,15 +157,7 @@ export const getCookSummaryThisMonth = createServerFn({
     data: { session },
   } = await supabase.auth.getSession();
   if (!session) {
-    return {
-      countThisMonth: 0,
-      countLastMonth: 0,
-      topProtein: null,
-      mostCookedRecipe: null,
-      masteredRecipes: [],
-      cuisinesThisMonth: [],
-      firstTimeCuisine: null,
-    };
+    return { countThisMonth: 0, countLastMonth: 0, topProtein: null, mostCookedRecipe: null, masteredRecipes: [], cuisinesThisMonth: [], firstTimeCuisine: null };
   }
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -224,7 +216,7 @@ export const getCookSummaryThisMonth = createServerFn({
 
   const allTimeCounts = new Map<string, { id: string; name: string; count: number }>();
   const allTimeProteinCounts = new Map<string, number>();
-  const cuisineFirstSeen = new Map<string, string>(); // cuisine → earliest cooked_at
+  const cuisineFirstSeen = new Map<string, { date: string; recipeName: string; recipeId: string }>();
 
   for (const row of allCooks ?? []) {
     const r = row.recipes;
@@ -239,7 +231,9 @@ export const getCookSummaryThisMonth = createServerFn({
       allTimeProteinCounts.set(p, (allTimeProteinCounts.get(p) ?? 0) + 1);
     }
     for (const c of r.cuisine_tags ?? []) {
-      if (!cuisineFirstSeen.has(c)) cuisineFirstSeen.set(c, row.cooked_at);
+      if (!cuisineFirstSeen.has(c)) {
+        cuisineFirstSeen.set(c, { date: row.cooked_at, recipeName: r.name, recipeId: r.id });
+      }
     }
   }
 
@@ -251,16 +245,19 @@ export const getCookSummaryThisMonth = createServerFn({
     ? [...allTimeCounts.entries()].sort((a, b) => b[1].count - a[1].count)[0]
     : null;
   let mostCookedRecipe = topRecipeEntry
-    ? { name: topRecipeEntry[1].name, count: topRecipeEntry[1].count }
+    ? { id: topRecipeEntry[0], name: topRecipeEntry[1].name, count: topRecipeEntry[1].count }
     : null;
 
   const topProtein = allTimeProteinCounts.size > 0
     ? [...allTimeProteinCounts.entries()].sort((a, b) => b[1] - a[1])[0][0]
     : null;
 
-  // Cuisine you tried for the first time most recently (always present once any cuisine is cooked)
-  const firstTimeCuisine = cuisineFirstSeen.size > 0
-    ? [...cuisineFirstSeen.entries()].sort((a, b) => b[1].localeCompare(a[1]))[0][0]
+  // Cuisine tried for the first time most recently — always present once any cuisine-tagged recipe is cooked
+  const mostRecentCuisineEntry = cuisineFirstSeen.size > 0
+    ? [...cuisineFirstSeen.entries()].sort((a, b) => b[1].date.localeCompare(a[1].date))[0]
+    : null;
+  const firstTimeCuisine = mostRecentCuisineEntry
+    ? { cuisine: mostRecentCuisineEntry[0], recipeName: mostRecentCuisineEntry[1].recipeName, recipeId: mostRecentCuisineEntry[1].recipeId }
     : null;
 
   // Cuisines this month (used for monthly activity tracking)
@@ -275,7 +272,7 @@ export const getCookSummaryThisMonth = createServerFn({
   // Handle translations for recipe names if not PT
   if (lang !== "pt" && (mostCookedRecipe || masteredRecipes.length > 0)) {
     const idsToTranslate = [
-      ...(topRecipeEntry ? [topRecipeEntry[0]] : []),
+      ...(mostCookedRecipe ? [mostCookedRecipe.id] : []),
       ...masteredRecipes.map((r) => r.id),
     ];
     if (idsToTranslate.length > 0) {
@@ -285,8 +282,8 @@ export const getCookSummaryThisMonth = createServerFn({
         .in("recipe_id", idsToTranslate)
         .eq("language", lang);
       const transMap = new Map((trans ?? []).map((t) => [t.recipe_id, t.name]));
-      if (mostCookedRecipe && topRecipeEntry && transMap.has(topRecipeEntry[0])) {
-        mostCookedRecipe.name = transMap.get(topRecipeEntry[0])!;
+      if (mostCookedRecipe && transMap.has(mostCookedRecipe.id)) {
+        mostCookedRecipe.name = transMap.get(mostCookedRecipe.id)!;
       }
       for (const r of masteredRecipes) {
         if (transMap.has(r.id)) r.name = transMap.get(r.id)!;

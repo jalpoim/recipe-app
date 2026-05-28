@@ -174,7 +174,7 @@ function StatCard({ value, label }: { value: number; label: string }) {
 // ─── Discovery card ───────────────────────────────────────────────────────────
 // Full brand coral — echoes the hero, signals celebration.
 
-function DiscoveryCard({ category, headline }: { category: string; headline: string }) {
+function DiscoveryCard({ category, headline, sub }: { category: string; headline: string; sub?: string }) {
   return (
     <div className="rounded-2xl shadow-sm px-6 py-5" style={{ background: "#F4623A" }}>
       <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -186,6 +186,11 @@ function DiscoveryCard({ category, headline }: { category: string; headline: str
       >
         {headline}
       </p>
+      {sub && (
+        <p className="text-[12px] font-medium mt-1.5" style={{ color: "rgba(255,255,255,0.72)" }}>
+          {sub}
+        </p>
+      )}
     </div>
   );
 }
@@ -348,15 +353,22 @@ function ProfilePage() {
       ? cookSummary.mostCookedRecipe
       : null;
 
-  // ── Top protein ────────────────────────────────────────────────────────────
+  // ── Top protein — suppress if already conveyed by specialty badge ──────────
+  const specialtyProteinSlug = specialtyBadgeKey?.startsWith("protein:")
+    ? specialtyBadgeKey.slice("protein:".length)
+    : null;
   const topProtein =
-    showTopProtein && cookSummary?.topProtein ? cookSummary.topProtein : null;
+    showTopProtein &&
+    cookSummary?.topProtein &&
+    cookSummary.topProtein !== specialtyProteinSlug
+      ? cookSummary.topProtein
+      : null;
 
   // ── Cuisine collection ─────────────────────────────────────────────────────
   const exploredCuisines = cookProfile?.explored_cuisines ?? [];
 
-  // ── Badge row visibility ───────────────────────────────────────────────────
-  const showBadgeRow = !!creatorTitle || !!specialtyBadgeLabel;
+  // ── Creator badge — shown as a card only (separate from specialty in hero) ─
+  const showCreatorCard = !!creatorTitle;
 
   function cuisineLabel(slug: string): string {
     return t(`flavorIdentity.cuisineLabels.${slug}`, { defaultValue: slug });
@@ -377,49 +389,47 @@ function ProfilePage() {
 
       <div className="max-w-md mx-auto px-4 pt-4 pb-6 space-y-3">
 
-        {/* Badge row — appears only when earned */}
-        {showBadgeRow && (
-          <div className="flex gap-3">
-            {creatorTitle && (
-              <BadgeCard label={creatorTitle} category={t("flavorIdentity.creatorBadge")} />
-            )}
-            {specialtyBadgeLabel && (
-              <BadgeCard label={specialtyBadgeLabel} category={t("flavorIdentity.specialtyBadgeCategory")} />
-            )}
-          </div>
+        {/* Creator badge card — only when earned (specialty badge lives in hero pill) */}
+        {showCreatorCard && (
+          <BadgeCard label={creatorTitle!} category={t("flavorIdentity.creatorBadge")} />
         )}
 
-        {/* Cook count — number + label inline */}
+        {/* Cook count */}
         {showCookCount && (
           <StatCard value={distinctCount} label={t("flavorIdentity.cookCountLabel")} />
         )}
 
-        {/* First-time cuisine — full brand coral, celebratory */}
-        {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
-          <DiscoveryCard
-            category={t("flavorIdentity.cuisineFirstTimeLabel")}
-            headline={t("flavorIdentity.cuisineDiscoveryHeadline", {
-              cuisine: cuisineLabel(cookSummary.firstTimeCuisine),
-            })}
-          />
-        )}
-
         {/* Signature recipe — dark warm card, most earned moment */}
         {signatureRecipe && (
-          <SignatureCard
-            category={t("flavorIdentity.signatureRecipe")}
-            headline={signatureRecipe.name}
-            sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
-          />
+          <Link to="/app/library/$recipeId" params={{ recipeId: signatureRecipe.id }} search={{ from: undefined, planItemId: undefined }}>
+            <SignatureCard
+              category={t("flavorIdentity.signatureRecipe")}
+              headline={signatureRecipe.name}
+              sub={t("flavorIdentity.signatureTimes", { count: signatureRecipe.count })}
+            />
+          </Link>
         )}
 
-        {/* Top protein */}
+        {/* Top protein — only if not already shown via specialty badge */}
         {topProtein && (
           <NarrativeCard
             headline={t("flavorIdentity.topProteinTitle", {
               protein: t(`proteins.${topProtein}`, { defaultValue: topProtein }),
             })}
           />
+        )}
+
+        {/* Recently explored cuisine — full brand coral */}
+        {showSignatureAndCuisine && cookSummary?.firstTimeCuisine && (
+          <Link to="/app/library/$recipeId" params={{ recipeId: cookSummary.firstTimeCuisine.recipeId }} search={{ from: undefined, planItemId: undefined }}>
+            <DiscoveryCard
+              category={t("flavorIdentity.cuisineRecentLabel")}
+              headline={t("flavorIdentity.cuisineDiscoveryHeadline", {
+                cuisine: cuisineLabel(cookSummary.firstTimeCuisine.cuisine),
+              })}
+              sub={cookSummary.firstTimeCuisine.recipeName}
+            />
+          </Link>
         )}
 
         {/* Cuisine collection — horizontal scroll, warm chips */}
