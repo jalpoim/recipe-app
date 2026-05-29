@@ -5344,3 +5344,22 @@ The flavor-identity feature (titles, badges, signature ingredient, narrative) is
 
 ### Open decisions still needing user input
 - None outstanding — recipe-data-quality + flavor-identity design fully specced. Ready for an implementation chat.
+
+---
+
+## Next phase: Recipe-level signal derivation (in progress 2026-05-29)
+
+**Why:** the ingredient re-audit is done, but RECIPE-level signals are still sparse — `recipes.cuisine_tags` ~44%, `flavor_notes` 0%, `dietary_flags` 0%. These power the flavor-identity profile (cuisine badges, signature, Explorer axis, narrative) and recipe-level dietary display. `createRecipe` does NOT derive them; recipe cuisine is only set when a user manually picks a cuisine chip.
+
+**Approach (mirrors the ingredient pipeline):**
+- **Tier-1 (deterministic, free), per recipe from its linked ingredients (~91% linked on system recipes):**
+  - `cuisine_tags`: distinctiveness-weighted vote over ingredient `cuisine_signals` (staples now carry no cuisine noise post-re-audit); tag when a cuisine clears a confidence bar; ≤2 tags; EMPTY when nothing clears (generic dishes stay untagged — correct).
+  - `flavor_notes`: top-3 aggregated canonical notes from ingredients.
+  - `dietary_flags` (recipe-level, for display/identity): derive from the union of ingredient `contains_allergens` → "-free" inverse + vegan/vegetarian veto. (Allergen *filtering* already works via the ingredient join; this is display.)
+  - `cooking_method`: from step text (extend existing auto-tag method detection).
+- **Tier-2 (Haiku, only when Tier-1 cuisine is weak OR the name has a strong hint):** classify cuisine from **name + ingredients + steps** with the validated prompt (language≠cuisine; EMPTY for generic). Validated 9/9.
+- **Backfill** all system recipes (~209 — cheap), then **wire derivation into create/edit save** (manual cuisine selection overrides).
+
+**Guardrails:** cuisine is never a hard filter; prefer null over a wrong tag; the AI is primary for cuisine (ingredient-vote is a weak prior — the Caldo Verde→"american" failure).
+
+**Verify:** `cuisine_tags` coverage jumps from 44%; `flavor_notes`/`dietary_flags` from 0%; spot-check iconic dishes (Caldo Verde→portuguese, Shakshuka→middle-eastern, generic→empty).
