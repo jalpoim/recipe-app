@@ -225,6 +225,94 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 ---
 
+# Part 2 — Meal-Prep & Discovery Flow Deep Dive (2026-05-29)
+
+**Lens:** a regular user trying to plan a week, vs. the realistic alternative of *asking ChatGPT for a meal plan + shopping list*.
+
+**Competitive thesis.** AI produces a full week + list from one sentence, instantly. The app's *durable* edges over AI are: **verified stored macros** (not hallucinated), an **in-store checkbox shopping list** (per-recipe + global, pantry-excluded, shareable), correct **portion math**, and **week-over-week reuse**. Where the app currently *loses* to AI is **speed to a first usable week** — the plan starts as a blank canvas filled one recipe at a time. Most findings below attack that blank canvas.
+
+### What's already strong (🟢 — do not regress)
+- **Quick add-to-plan from the list** with a flying-thumbnail animation (`library/index.tsx:616-644, 1808+`) — adding is one tap, no need to open each recipe.
+- **Fast discovery**: virtualized infinite list, debounced search, `preload="intent"`, chip strip (popular/quick/high-protein/proteins/tags) (`library/index.tsx`).
+- **Shopping is genuinely better than AI**: per-recipe + global views, pantry exclusion, checkbox persistence, custom items, share/copy, "Concluir compras" trip completion, even dislike-detection on completion (`shopping.tsx`).
+- **Trust**: macros are stored & per-serving math is correct (`plan.tsx:91-97`) — beats AI hallucination.
+- **Context-aware recipe detail**: `?from=plan` flips the CTA to remove/replace (`$recipeId.tsx:1135-1172`).
+
+---
+
+## Finding 10 — 🔴 No "build my week for me" (the #1 gap vs AI)
+
+**Severity:** 🔴 (this is the single biggest reason AI feels faster)
+**Where:** Plan empty state dumps the user into the full library (`plan.tsx:624-634`); there is no generate/suggest path.
+
+**Problem:** The plan starts empty and must be filled recipe-by-recipe. AI fills a week from one sentence. You already hold every signal needed to beat it — `cook_style`, `dietary_mode`/`intolerances`, `proteins`, stored macros, popularity. A one-tap **"Plano sugerido"** that pre-fills N persona-matched recipes would turn the blank canvas into an instant, editable week — faster *and* more trustworthy than AI.
+
+**Decision:** PENDING — see questions. Full generator vs. lightweight protein-first starter vs. keep manual.
+
+**Action (proposed):** Add a "Sugerir plano" action on the empty (and non-empty) plan that calls a server fn selecting recipes by persona default sort + dietary filter + protein spread, inserts them as plan items, and lets the user edit/swap. No AI needed — pure query over existing data.
+
+**Status:** `pending-decision`
+
+---
+
+## Finding 11 — 🔴 No reuse across weeks (kills the weekly-tool retention thesis)
+
+**Severity:** 🔴
+**Where:** "Clear plan" archives + creates a fresh empty plan (`plan.tsx:580-592`, `archiveAndCreatePlan`). Archived plans exist but are never re-surfaced.
+
+**Problem:** Meal prep is weekly and repetitive, but every Sunday the user rebuilds from zero. AI you'd just re-prompt. The app should one-tap **"Repetir semana passada"** (or save named templates) — archived plans already exist, so the data is right there. This is the second-biggest gap after Finding 10 and trivial to leverage.
+
+**Decision:** PENDING — repeat-last-week / named templates / both / no.
+
+**Action (proposed):** "Repetir semana passada" copies the most recent archived plan's items into the new plan. Optionally "Guardar como modelo" for named templates.
+
+**Status:** `pending-decision`
+
+---
+
+## Finding 12 — 🟠 No sense of plan completeness ("is this enough food?")
+
+**Severity:** 🟠
+**Where:** Plan is a flat list with only an item count (`plan.tsx:600-613`); no total servings, no weekly target.
+
+**Problem:** A meal prepper thinks in *meals covered* (e.g. 5 lunches + 5 dinners), not "recipes." There's no finish line, so the user never knows when the plan is "done." AI says "here are 5 dinners." Surfacing **total servings = Σ(servings × multiplier)** answers "cook once, eat N" (also addresses Finding 3's batch visibility) and, optionally, a **weekly meals target with progress** gives the blank plan a goal. Stays non-macro, so it respects F9's "not a calorie counter" stance.
+
+**Decision:** PENDING — target + progress vs. just show total servings vs. no.
+
+**Action (proposed):** Compute and show "X doses · ~Y refeições" on the plan header. Optionally a settable weekly target with a progress bar.
+
+**Status:** `pending-decision`
+
+---
+
+## Finding 13 — 🟡 Protein-first paradigm is muted; entry is library-first
+
+**Severity:** 🟡 (dilutes the core differentiator)
+**Where:** `/app` redirects straight to the library list (`app/index.tsx`); protein is just one chip among many (`library/index.tsx:235-265`). The plan empty state links to the unfiltered library (`plan.tsx:627-633`).
+
+**Problem:** The product plan declares protein-first the *single entry point* to meal prep, with the library as the escape hatch (`meal-prep-app-v1-plan.md:20-24`). In practice the funnel is flattened into a filterable list and the opinion is barely felt. Not necessarily wrong — the list is excellent — but the differentiating *opinion* is muted, and the empty plan offers no guided start (worsening Finding 10's blank canvas).
+
+**Decision:** PENDING — re-assert protein-first guided entry / keep library-first / hybrid.
+
+**Action (proposed):** Make the empty-plan state protein-first: "Escolhe uma proteína" → curated picks for that protein → add. Keeps the library as the browse escape hatch.
+
+**Status:** `pending-decision`
+
+---
+
+## Finding 14 — 🟡 Smaller flow friction (documented, low-debate)
+
+**Severity:** 🟡
+- **No "add more recipes" affordance on a non-empty plan** — once items exist, the only way to add is the bottom nav (`plan.tsx:635-695` has no add button). Add an "+ Adicionar receitas" link at the bottom of the list.
+- **Onboarding doesn't seed a first plan** — right after the user states their persona (`onboarding.tsx`), the best activation moment, they land on an empty plan/library. Offer "Queres um plano para começar?" (ties to Finding 10).
+- **"Cook from what I have"** — AI excels at "I have chicken + broccoli, what can I make?" The ingredient combobox (AND logic) covers this but is buried in the filter sheet. Consider surfacing an ingredient-led quick path. (Lower priority.)
+- **No total active cook-time for the week** — meal preppers care about "can I cook it all Sunday in 2h." Summing `time_min` is cheap, non-macro, useful. (Lower priority.)
+- **F2 bug is duplicated** — `_getPrimaryAxis` also lives in `$recipeId.tsx:81-89` with the same raw-score flaw; the F2 fix must touch both `me.tsx` and `$recipeId.tsx`.
+
+**Status:** `documented` (mostly low-debate; implement alongside related findings)
+
+---
+
 ## Gamification depth recommendations (expert view)
 
 **Overarching principle: the biggest risk now is _over_-gamifying.** This is a calm, weekly, paid tool — its restraint is a feature. Do **not** add daily mechanics, visible point counters, leaderboards, or Duolingo-style nags. The right move is **depth on the few loops you have**, not more loops. In priority order:
