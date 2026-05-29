@@ -5227,3 +5227,94 @@ Narrative generation uses Claude Sonnet which costs more than Haiku. Add a serve
 - Rate limiting: second generation attempt within 25 days returns cached version
 - No TypeScript errors
 - All strings go through `t()`
+
+---
+
+## Recipe Data Quality, Derivation & Allergen Safety — Session Plan (2026-05-29)
+
+### How to use this section
+This is a self-contained work plan produced from a design/grilling + live-DB-testing session. It captures (a) decisions that are **locked**, (b) **findings** from testing the current system, and (c) an **ordered task list** detailed enough to execute in a fresh chat. Supabase project: `kgvycfrvxzkfhvuazzle`. Test using MCP `execute_sql` and `npx tsx` scripts.
+
+### Why this exists
+The flavor-identity feature (titles, badges, signature ingredient, narrative) is shipped, but its **data foundation is incomplete and partly wrong**. Live audit (2026-05-29):
+- System recipes: `cuisine_tags` 44% populated, `dietary_flags` **0%**, `flavor_notes` **0%**.
+- Ingredients enriched 3,920/3,920, but with **vocabulary drift** (flavor notes) and **dietary-flag errors** (e.g. `tofu` and `gochujang` flagged `soy-free`; `Bacalhau` missing `gluten-free`).
+- Derivation from ingredients to recipes was **never wired into create/edit**.
+- The AI macro-estimation feature was **silently broken** in production.
+
+### Decisions locked (from grilling)
+1. **Flavor vocabulary = canonical 12**: `sweet, sour, salty, bitter, umami, smoky, earthy, fresh, rich, spicy, nutty, aromatic`.
+   - Merges: drop generic `savory` as noise; `tart`/`citrusy`→`sour`/`fresh`; `creamy`/`buttery`→`rich`; `slightly X`→`X`; `fruity`/`tropical`/`warm`/`pungent`/`peppery`→ nearest canonical or drop.
+   - **`spicy` is DERIVED from `heat_level > 0` at display time**, not stored as a free token.
+   - Translate via i18n keys `flavorNotes.*` (closed enum, like `proteins.*`) — **client-side, not DB translation tables**. Slugs stay English. Fix `me.tsx` (`SignatureIngredientCard`, `ShareCard`) to render notes through `t()` instead of raw `{note}`.
+2. **Household cook identity = tapper only** (current behaviour). `cook_log.user_id` is the identity owner; `household_id` is stored but ignored by profile queries. No change. (Optional later: household-level lifetime counter.)
+3. **Planner axis scoring = plan-driven only**: planned-source cook `+1`, shopping completion `+2`, "meal-prep week" (active plan + ≥3 planned cooks in the week) `+3`. Manual/off-plan cooks contribute **0** to Planner (they still feed lifetime counter + other axes). Replaces the hardcoded `plannerScore = 0` in `cook-log-queries.ts`.
+4. **Dietary/allergen logic = presence-based, never positive-aggregation.** A recipe is *unsafe* for an allergen if it **contains** a known-allergen ingredient (via the ingredient link). Positive AND-aggregation ("vegan iff all flagged vegan") is abandoned — it never fires.
+5. **Three-bucket dietary classification:** *confirmed-safe* (all ingredients resolved, none violate) → show normally; *couldn't-verify* (≥1 unresolved/compound/substitution ingredient, no resolved violation) → **show with a per-ingredient marker**; *confirmed-unsafe* (a resolved ingredient violates) → **hide**. Marker severity is louder for declared `intolerances` than for lifestyle preferences. **Cuisine and dietary are never hard-exclusion filters that hide a recipe except on a *proven* allergen violation.**
+6. **Ingredient resolution pipeline (create/edit):** deterministic exact+alias match first (conservative — **never fuzzy-guess**, a wrong match can hide an allergen) → async Haiku Tier-2 for compound/substitution/ambiguous lines → otherwise leave unmatched + log to an `unmatched_ingredients` table for periodic catalog growth. Run the same resolver as a one-time **backfill** over existing rows.
+7. **One consolidated async Haiku Tier-2 call per recipe**, not several — same input (name + ingredient lines), returns resolved ingredients + cuisine_tags + flavor/dietary gap-fills. Fires only when Tier-1 leaves gaps. Server-initiated; must **not** count against the user's 10/day `daily_ai_usage` macro budget.
+8. **Cuisine is a discovery aid, never a hard filter, and "uncategorized" is a valid state.** When confidence is low, **leave `cuisine_tags` empty** rather than guess. Multi-tag allowed.
+
+### Findings from testing (current state)
+- **[FIXED] AI macro estimation was broken.** Haiku (`claude-haiku-4-5-20251001`) wraps its JSON in ` ```json ` fences despite the "no markdown" instruction; shipped `estimateMacros` did `JSON.parse(text)` directly → threw `"Failed to parse macro estimate response"` every call (reproduced 3/3). **Fix applied** in `src/lib/supabase/recipe-queries.ts` (strip fences before parse). After stripping, outputs are sane (e.g. chicken+rice 425cal/45gP per serving). **Needs redeploy.**
+- **`auto-tag.ts` is correct** for fit/protein/rápido/meal-prep/picante/fumado/cooking-method. **One deviation:** `5-ingredientes` counts *all* ingredient names; spec says *non-pantry* count → over-fires when pantry items present. Fix: exclude pantry from the count.
+- **Cuisine derivation by ingredient-signal vote is UNRELIABLE.** Tested on 6 real recipes: "Caldo Verde com Chouriço" (iconic Portuguese) → derived **`american`** (potato/onion carry `american` signals that outvote chouriço→portuguese); "Ovos Estilo Shakshuka" → **`french`**; rice-paper rolls → **null**. Root causes: (a) generic staples carry cuisine signals (noise), (b) recipe **name** holds the signal ingredients dilute. → Ingredient vote is only a weak prior; name + Haiku required; strip signals from staples.
+- **Dietary positive AND-aggregation NEVER fires.** All 6 test recipes derived `gluten_free=false` and `vegan=false`; `gf_coverage` was 7/8, 3/6, 2/5, 4/5 — never 100% (one unflagged staple breaks it). Confirms presence-based logic is the only viable path.
+- **Flavor/heat derivation works mechanically** (heat = max level; flavor = top-3 by frequency) but flavor still surfaces `savory`/`creamy` → needs the canonical-12 normalization.
+- **`suggestRecipeName()` is dead code** — computed in `create.tsx` (only when ≥2 ingredients) but never rendered. The name input uses a static placeholder.
+- **Macro button visibility:** the Haiku "Estimar macros restantes" button renders only when `!allCovered` (some ingredient lacks DB nutrition). Loading spinner + manual editing already implemented and working.
+- **`dietary_flags` data errors** confirmed: soy products flagged `soy-free` (`tofu`, `gochujang`); naturally-GF items missing `gluten-free` (`Bacalhau`). The enrichment did not enforce the closed dietary vocabulary or correctness.
+
+### Ordered implementation tasks
+1. **[DONE] Macro fence fix** — `recipe-queries.ts`. Redeploy after the rest of this batch lands.
+2. **Flavor vocabulary normalization.** SQL data migration mapping `ingredients.flavor_notes` → canonical 12 (drop `savory`, fold synonyms). Tighten the enrichment prompt in `scripts/seed-ingredient-signals.ts` to the closed set (excluding `spicy`). Add `flavorNotes.*` keys to `pt`/`en` locales. Fix `me.tsx` to `t()` the chips. Derive the displayed `spicy` chip from `heat_level > 0`.
+3. **Clean ingredient `cuisine_signals` for staples.** Audit + strip cuisine signals from generic/base ingredients (potato, onion, common produce, plain proteins) that currently carry noise like `american`. This is the single biggest lever for cuisine accuracy. Re-run the spot-check queries in the "Pre-Implementation Checklist" Step 3.
+4. **Implement Tier-1 derivation at save time** (deterministic, free), in a new `deriveRecipeSignals()` called on create + edit:
+   - `cuisine_tags`: weighted vote over ingredient `cuisine_signals`, **weighted by distinctiveness** (rare signals outweigh common ones — TF-IDF-style), with a **confidence gate**: if no cuisine clears the bar, leave empty. Multi-tag allowed.
+   - `flavor_notes`: top aggregated canonical notes.
+   - `heat_level`: max over ingredients (recipe-level), feeding the `spicy` chip.
+   - `dietary_flags`: presence-based — derive "contains gluten/dairy/nut/soy/egg" markers from a curated allergen-ingredient set, not positive aggregation.
+   - Manual user cuisine selection always overrides derivation.
+5. **Consolidated async Haiku Tier-2** pass (non-blocking, server-initiated): resolves compound/substitution/ambiguous ingredient lines, infers cuisine using **name + ingredients + steps**, fills flavor/dietary gaps. Tracked separately from `daily_ai_usage`.
+   - **VALIDATED 2026-05-29 (9/9 edge cases).** The cuisine classifier prompt MUST include: (a) an explicit **"the recipe text is Portuguese because that's the app's interface language — this is NOT evidence of Portuguese cuisine; judge only by signature ingredients + technique"** rule (without it, Haiku spuriously tagged `portuguese` on Shakshuka, pasta, and plain chicken because the text was Portuguese); (b) **"return an EMPTY array for generic/international dishes — when unsure, empty; do not force a tag"**; (c) only tag when a signature ingredient/technique justifies it, max 2, no padding.
+   - Steps are essential: the *same* base (chicken/rice/onion/garlic) correctly resolved to `portuguese` with piri-piri in the steps vs `indian` with garam masala. Ingredients alone cannot do this.
+   - Generic dishes (chicken+rice+broccoli, smoothie, scrambled eggs) correctly returned `[]`.
+6. **Ingredient linking on create + `unmatched_ingredients` log + backfill.** Server-side resolver (exact + `aliases`, normalized, conservative) sets `ingredient_id` even when the user free-types (today it's only set from autocomplete → user recipes are 0% linked). Split compound lines on delimiters where every part matches; otherwise hand to Haiku. Backfill over the 175 unlinked system rows + all user recipes.
+7. **Rewrite dietary/allergen filtering** in `src/lib/supabase/queries.ts` to use the ingredient links (presence-based), replacing the stale protein-slug-primary logic (its comment wrongly claims system recipes aren't linked — they are 91%). Implement the three-bucket model + per-ingredient "couldn't verify" marker + intolerance-vs-preference severity.
+8. **Planner axis scoring** in `cook-log-queries.ts` `_recomputeProfileForUser` — replace `plannerScore = 0` with the plan-driven formula (decision #3). Needs a `cook_log`↔plan-by-week join + `cook_log_completions` count.
+9. **Macro button + recipe-name suggestion decisions** (need user ruling — see open list): whether to always show the AI macro button; whether to wire or delete `suggestRecipeName`.
+10. **`5-ingredientes` fix** — count non-pantry ingredients only.
+11. **`dietary_flags` correctness audit** — fix soy-free-on-soy and missing-GF errors; re-run with the closed dietary vocabulary; for allergen-grade flags consider a verification/disclaimer boundary (auto-derived flags are best-effort, not medical guarantees).
+
+### Cuisine tagging guardrails (how to not hinder users)
+- **Never hide a recipe for lacking/mismatching a cuisine.** Cuisine powers optional browse facets + recommendations only. Protein/time/name/ingredient search must always reach every recipe regardless of cuisine.
+- **Prefer null over wrong.** Genuinely international items (basic breakfasts, smoothies, grilled protein + veg) should stay untagged — that's correct, not a gap.
+- **How peer apps do it:** consumer recipe apps (NYT Cooking, Yummly, Samsung Food/Whisk, Mealime) treat cuisine as an optional, often editorially/ML-assigned facet, allow "uncategorized," and never gate findability on it. Match that posture.
+- **The ingredients DB is the source of truth for ingredient *facts* (nutrition, dietary, flavor, heat) — and those derive well.** Cuisine is *underdetermined* by ingredients (chicken+rice+onion could be Portuguese, Indian, Mexican, Chinese); it needs name + technique + AI, so treat ingredient-vote as a prior, not an answer.
+
+### Decisions resolved 2026-05-29
+- **Macro AI button:** keep current behaviour — show only when deterministic coverage is incomplete (`!allCovered`), to avoid AI cost when ingredient nutrition data already covers the recipe. Manual editing of the auto-filled values already works, so users can still override without an AI call.
+- **`suggestRecipeName`:** wire it up (currently dead code). Trigger at **≥2 ingredients** (e.g. "Frango com brócolos"). Fix the hardcoded PT `" com "` to use `t()` so it works in EN.
+- **Cuisine for ambiguous bases** (chicken/rice/onion/garlic): **no tag by default**; only tag when name or steps reveal a signature. Generic = empty, by design.
+
+### Flavor-identity design rulings (2026-05-29)
+- **Specialty badge = all-time dominant, preserved in collection.** Computed from all-time cook history (consistent with Section 9), surfaced = current strongest signal. Earning a new badge never removes a previous one — the previous stays in the cuisine-badge collection; only the spotlight moves. **Never blanks once earned** (keep last-earned if nothing currently clears threshold). Frame transitions additively ("agora também és…"), never as loss. Update spec Section 6 wording from "snapshot of the present."
+- **No emojis or icons in copy, anywhere.** Emoji read unprofessional. Strip all emoji from the flavor-identity spec copy and toasts. Icons must be custom (pre-commissioned or AI-generated), never emoji. Flavor-note chips: no icons for now; if wanted later, AI-generate a consistent reviewed set first.
+- **Optimizer ladder acceptable as-is** — descriptive (mirrors self-chosen habits), not prescriptive. Guardrails to keep: never show raw protein/calorie math, never frame a recipe/day as a miss, celebratory only. Any future recommendations must be goal-aligned.
+- **Revised title ladders (APPROVED + APPLIED 2026-05-29** to `pt`/`en` `common.json` — replaced Engenheiro Nutricional, Chef de Alta Performance, Ninja da Cozinha, Arquiteto de Refeições, etc.). Final PT/EN:
+  - Explorer: Curioso · Aventureiro · Explorador · Caçador de Sabores · Sem Fronteiras
+  - Optimizer: Consciente · Equilibrado · Afinado · Preciso · Mestre dos Macros
+  - Planner: Organizado · Planeador · Sempre a Postos · Rei da Marmita · Maestro da Semana
+  - Swift: Ágil · Veloz · Relâmpago · Chef Expresso · Mestre do Tempo
+  - ("Rei da Marmita" is the playful pick — fall back to "Chef de Semana" if too jokey.)
+
+### Allergen / dietary approach — RESOLVED 2026-05-29
+- **Full re-audit of all ~3,920 ingredients** in one improved enrichment pass that also applies the canonical-12 flavor vocab, staple cuisine-signal cleanup, and dietary fixes.
+- **Improved enrichment prompt** to prevent the false-flag class (e.g. `tofu`/`gochujang` → `soy-free`): reason about **composition first** ("what is this made from?"), include explicit anti-pattern rules ("soy products contain soy and are NEVER soy-free"; common dairy/gluten traps), add a **self-verification second pass**, and use **Sonnet (not Haiku) for the dietary/allergen pass** (higher stakes, trivial extra cost on the allergen subset).
+- **Deterministic allergen net** (the key safety layer AI-checking-AI can't provide): a rule layer over ingredient names/composition that marks allergen containment (soy/gluten/dairy/nut/egg/shellfish) and **overrides/flags any AI output that contradicts it**. Would have caught `tofu`→`soy-free` automatically.
+- **Containment, not suitability:** derive "contains gluten/soy/…" (presence-based) rather than positive "gluten-free" flags. Allergen filtering = exclude recipes that *contain* the allergen.
+- **Three data sources, one filter UX:** allergens (ingredient containment + net, can hide confidently), ingredient diets like vegan/vegetarian/dairy-free (ingredient composition, best-effort), macro diets like keto/low-carb (recipe **macros**, not ingredient flags).
+- **Hiding is governed by the three-bucket model** (confirmed-unsafe hides; couldn't-verify shows with marker; safe shows). No separate decision needed.
+
+### Open decisions still needing user input
+- None outstanding — recipe-data-quality + flavor-identity design fully specced. Ready for an implementation chat.

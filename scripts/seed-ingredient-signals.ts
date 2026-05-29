@@ -141,26 +141,40 @@ async function enrichBatch(
 async function main() {
   console.log("Fetching system ingredients...");
 
-  // Fetch all system ingredients with their current signals
-  const { data: ingredients, error } = await supabase
-    .from("ingredients")
-    .select("id, name, cuisine_signals")
-    .is("owner_id", null)
-    .order("name");
-
-  if (error) {
-    console.error("Failed to fetch ingredients:", error.message);
-    process.exit(1);
+  // Paginate — Supabase caps select() at 1000 rows by default.
+  // Idempotency: only fetch rows not yet enriched (signals_enriched_at IS NULL).
+  const PAGE = 1000;
+  const toProcess: { id: string; name: string }[] = [];
+  for (let offset = 0; ; offset += PAGE) {
+    const { data, error } = await supabase
+      .from("ingredients")
+      .select("id, name")
+      .is("owner_id", null)
+      .is("signals_enriched_at", null)
+      .order("name")
+      .range(offset, offset + PAGE - 1);
+    if (error) {
+      console.error("Failed to fetch ingredients:", error.message);
+      process.exit(1);
+    }
+    if (!data || data.length === 0) break;
+    toProcess.push(...data);
+    if (data.length < PAGE) break;
   }
 
-  // Only process those with no signals yet
-  const toProcess = (ingredients ?? []).filter(
-    (i) => !i.cuisine_signals || i.cuisine_signals.length === 0,
-  );
+  // Optional cap for test runs: MAX_INGREDIENTS=20 npx tsx scripts/...
+  const max = process.env["MAX_INGREDIENTS"];
+  if (max) toProcess.splice(parseInt(max, 10));
+
+  const { count: alreadyEnriched } = await supabase
+    .from("ingredients")
+    .select("id", { count: "exact", head: true })
+    .is("owner_id", null)
+    .not("signals_enriched_at", "is", null);
 
   const total = toProcess.length;
   console.log(
-    `Found ${total} ingredients to enrich (${(ingredients ?? []).length - total} already enriched).`,
+    `Found ${total} ingredients to enrich (${alreadyEnriched ?? 0} already enriched).`,
   );
 
   if (total === 0) {
@@ -187,6 +201,7 @@ async function main() {
             flavor_notes: sig.flavor_notes,
             heat_level: sig.heat_level,
             dietary_flags: sig.dietary_flags,
+            signals_enriched_at: new Date().toISOString(),
           })
           .eq("id", sig.id);
 
