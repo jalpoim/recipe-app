@@ -91,6 +91,7 @@
     "editTitle": "Edit recipe",
     "namePlaceholder": "Recipe name",
     "suggestionLabel": "Suggestion:",
+    "dismissSuggestion": "Dismiss suggestion",
     "nameWith": "with",
     "nameAnd": "and",
     "servingsLabel": "Servings",

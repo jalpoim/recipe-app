@@ -787,7 +787,7 @@ function CreateRecipePage() {
                 {autoNameSuggestion}
                 <span
                   role="button"
-                  aria-label="Dispensar sugestão"
+                  aria-label={t("create.dismissSuggestion")}
                   onClick={(e) => {
                     e.stopPropagation();
                     setDismissedSuggestion(autoNameSuggestion);

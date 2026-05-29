@@ -44,6 +44,59 @@ const SMOKE_SIGNALS = [
   'pancetta',
 ]
 
+// Pantry / seasoning signals — ingredients that should NOT count toward "5-ingredientes"
+// (spices, herbs, condiments, oils, leaveners, sweeteners, basics), PT + EN. Matched on
+// word boundaries (see matchesPantry) so short tokens don't false-match ("sal" must not
+// hit "salmão", "mel" must not hit "melão").
+const PANTRY_SIGNALS = [
+  // basics
+  'sal', 'salt', 'pimenta', 'pepper', 'agua', 'water', 'acucar', 'sugar', 'adocante',
+  'sweetener', 'stevia', 'eritritol', 'xilitol', 'mel', 'honey',
+  // oils & fats
+  'azeite', 'olive oil', 'oleo', 'oil', 'oleo de coco', 'coconut oil', 'spray', 'banha',
+  'lard', 'ghee',
+  // acids
+  'vinagre', 'vinegar', 'sumo de limao', 'lemon juice', 'sumo de lima', 'lime juice',
+  // leaveners
+  'fermento', 'yeast', 'levedura', 'bicarbonato', 'baking soda', 'baking powder',
+  // dried spices
+  'colorau', 'paprika', 'paprica', 'cominhos', 'cumin', 'caril', 'curry', 'curcuma',
+  'acafrao', 'turmeric', 'saffron', 'canela', 'cinnamon', 'noz-moscada', 'noz moscada',
+  'nutmeg', 'cravinho', 'cravo', 'clove', 'cardamomo', 'cardamom', 'anis', 'funcho',
+  'cayena', 'cayenne', 'sumagre', 'sumac', 'garam masala', 'chili em po', 'chili powder',
+  'piri-piri', 'malagueta seca',
+  // herbs
+  'oregaos', 'oregano', 'manjericao', 'basil', 'salsa', 'parsley', 'coentros', 'cilantro',
+  'coriander', 'tomilho', 'thyme', 'alecrim', 'rosemary', 'louro', 'bay leaf', 'hortela',
+  'mint', 'cebolinho', 'chives', 'endro', 'dill', 'manjerona', 'marjoram', 'segurelha',
+  'estragao', 'tarragon', 'ervas aromaticas',
+  // condiments
+  'mostarda', 'mustard', 'ketchup', 'molho de soja', 'soy sauce', 'molho ingles',
+  'worcestershire', 'molho de peixe', 'fish sauce', 'tabasco',
+]
+
+function normalizeName(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function matchesPantry(name: string): boolean {
+  const s = normalizeName(name)
+  return PANTRY_SIGNALS.some((term) => {
+    const t = normalizeName(term)
+    if (!t) return false
+    const re = new RegExp(
+      `(?:^|[^a-z0-9])${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[^a-z0-9]|$)`,
+    )
+    return re.test(s)
+  })
+}
+
 export function autoTagRecipe(input: AutoTagInput): string[] {
   const existing = new Set(input.tags)
   const add = (tag: string) => existing.add(tag)
@@ -77,9 +130,11 @@ export function autoTagRecipe(input: AutoTagInput): string[] {
     add('meal-prep')
   }
 
-  // 5-ingredientes
-  const ingredientCount = (input.ingredientNames ?? []).length
-  if (ingredientCount > 0 && ingredientCount <= 5) {
+  // 5-ingredientes — count NON-pantry ingredients only (see PANTRY_SIGNALS / matchesPantry)
+  const nonPantryCount = (input.ingredientNames ?? []).filter(
+    (n) => !matchesPantry(n),
+  ).length
+  if (nonPantryCount > 0 && nonPantryCount <= 5) {
     add('5-ingredientes')
   }
 
