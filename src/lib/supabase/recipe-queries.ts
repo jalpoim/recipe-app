@@ -14,6 +14,7 @@ import {
   deriveRecipeDietaryFlags,
   deriveCookingMethod,
 } from "../recipe-derivation";
+import { isOwnerId } from "../owner";
 
 // Derive recipe-level signals from linked ingredients + steps after a save (Tier-1,
 // deterministic, free). flavor_notes/dietary_flags only when we have linked-ingredient
@@ -352,6 +353,8 @@ export const estimateMacros = createServerFn({ method: "POST" })
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Unauthorized");
+    // Early access: AI macro estimation limited to the owner account (cost/abuse guard).
+    if (!isOwnerId(user.id)) throw new Error("AI_OWNER_ONLY");
 
     const today = new Date().toISOString().split("T")[0]!;
     const { data: usage } = await supabase

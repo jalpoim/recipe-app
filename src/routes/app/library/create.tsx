@@ -38,6 +38,7 @@ import { ProteinPicker } from "../../../components/ProteinPicker";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
 import { getSuggestedTags } from "../../../lib/auto-tag";
+import { isOwnerId } from "../../../lib/owner";
 
 export const Route = createFileRoute("/app/library/create")({
   component: CreateRecipePage,
@@ -198,6 +199,10 @@ function suggestRecipeName(
 
 function CreateRecipePage() {
   const { t, i18n } = useTranslation();
+  // Early access: AI macro estimation is owner-only (cost/abuse guard).
+  const isOwner = isOwnerId(
+    (Route.useRouteContext() as { user?: { id?: string } }).user?.id,
+  );
   const navigate = useNavigate();
   const router = useRouter();
   const { showToast } = useToast();
@@ -1081,8 +1086,9 @@ function CreateRecipePage() {
               )}
             </div>
 
-            {/* Haiku estimate button — only when some ingredients lack DB data */}
-            {!allCovered && (
+            {/* Haiku estimate button — owner-only during early access, and only when
+                some ingredients lack DB data (count units / unlinked) */}
+            {!allCovered && isOwner && (
               <button
                 type="button"
                 onClick={() => estimateMutation.mutate()}
