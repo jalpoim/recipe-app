@@ -514,6 +514,16 @@ function RecipeDetailPage() {
   const measurementSystem = (profile?.measurement_unit ?? "metric") as
     | "metric"
     | "imperial";
+  // "Couldn't verify" marker (#8): when the user has dietary intolerances set, a non-pantry
+  // ingredient that isn't linked to the catalog can't be checked for allergens — flag it
+  // (the allergen FILTER already hides confirmed-unsafe; this is the honest uncertain middle).
+  const hasIntolerances =
+    ((profile?.intolerances as string[] | undefined)?.length ?? 0) > 0;
+  const isUnverifiable = (ing: { ingredient_id?: string | null; is_pantry?: boolean }) =>
+    hasIntolerances && !ing.ingredient_id && !ing.is_pantry;
+  const anyUnverifiable = recipe.recipe_ingredients.some((i) =>
+    isUnverifiable(i as { ingredient_id?: string | null; is_pantry?: boolean }),
+  );
 
   // Cook counts
   const { data: cookCounts } = useQuery({
@@ -844,6 +854,11 @@ function RecipeDetailPage() {
                 <h2 className="text-base font-semibold text-[#1A1A1A] mb-3">
                   {t("recipe.ingredients")}
                 </h2>
+                {anyUnverifiable && (
+                  <p className="text-xs text-[#B45309] bg-[#fef3c7] rounded-xl px-3 py-2 mb-3">
+                    {t("recipe.unverifiedNote")}
+                  </p>
+                )}
                 <div className="space-y-3">
                   {ingredientSections.map(({ label, items }) => (
                     <div
@@ -876,11 +891,18 @@ function RecipeDetailPage() {
                                 measurementSystem,
                               )}
                             </span>
-                            {ing.is_optional && !label && (
-                              <span className="shrink-0 text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">
-                                {t("recipe.optional")}
-                              </span>
-                            )}
+                            <span className="flex items-center gap-1.5 shrink-0">
+                              {isUnverifiable(ing) && (
+                                <span className="text-[10px] font-medium text-[#B45309] bg-[#fef3c7] rounded-full px-2 py-0.5 whitespace-nowrap">
+                                  {t("recipe.unverified")}
+                                </span>
+                              )}
+                              {ing.is_optional && !label && (
+                                <span className="text-[10px] text-[#9CA3AF] border border-[#E5E7EB] rounded-full px-1.5 py-0.5 whitespace-nowrap">
+                                  {t("recipe.optional")}
+                                </span>
+                              )}
+                            </span>
                           </div>
                         ))}
                       </div>

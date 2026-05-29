@@ -194,6 +194,8 @@
     "carbsAbbr": "C",
     "fatAbbr": "G",
     "optional": "opcional",
+    "unverified": "não verificado",
+    "unverifiedNote": "Alguns ingredientes não puderam ser verificados para as tuas restrições — confirma os marcados.",
     "like": "Gosto",
     "unlike": "Remover gosto",
     "save": "Guardar",

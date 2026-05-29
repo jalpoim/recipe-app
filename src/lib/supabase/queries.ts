@@ -49,7 +49,7 @@ const RECIPE_FIELDS =
   "id, name, name_language, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, image_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at, source_url";
 
 const INGREDIENT_FIELDS =
-  "id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
+  "id, recipe_id, ingredient_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
 
 // Maps dietary exclusion flags → protein slugs on the recipes.proteins column.
 // This is the primary exclusion mechanism because recipe_ingredients.ingredient_id

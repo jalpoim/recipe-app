@@ -194,6 +194,8 @@
     "carbsAbbr": "C",
     "fatAbbr": "F",
     "optional": "optional",
+    "unverified": "unverified",
+    "unverifiedNote": "Some ingredients couldn't be verified against your restrictions — check the marked ones.",
     "like": "Like",
     "unlike": "Unlike",
     "save": "Save",
