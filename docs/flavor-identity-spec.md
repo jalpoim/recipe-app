@@ -1,7 +1,18 @@
 # Flavor Identity & Cook Profile — Full Design Spec
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 Status: In progress — grilling session with João
+
+> **⚡ 2026-05-29 updates (these SUPERSEDE the inline content below):**
+> - **Heat scale is 0–3** (DB constraint), not 0–5.
+> - **Title ladders renamed** (no more "Engenheiro Nutricional" / "Ninja da Cozinha" / "Arquiteto de Refeições") — final wording is live in i18n; see implementation plan.
+> - **Specialty badge = all-time dominant, preserved in the cuisine-badge collection, never blanks once earned.** Section 6's "snapshot of the present" wording is superseded.
+> - **No emojis or icons in copy anywhere** (custom icons only). Strip the emoji used in copy below.
+> - **Dietary/allergen = containment model.** Ingredients carry positive `contains_allergens` (gluten/dairy/soy/egg/peanut/tree_nut/shellfish/fish); the `-free` flags are DERIVED from "does not contain X"; the library intolerance filter matches on `contains_allergens`. Section 11's positive AND-aggregation is replaced.
+> - **Flavor notes = canonical 12** (`spicy` derived from `heat_level`): sweet, sour, salty, bitter, umami, smoky, earthy, fresh, rich, spicy, nutty, aromatic.
+> - **Planner axis** scores plan-driven activity only (planned cook +1, shopping completion +2, meal-prep week +3).
+>
+> Full detail + live status: `docs/claude-code-implementation-plan.md` → "Recipe Data Quality, Derivation & Allergen Safety — Session Plan (2026-05-29)".
 
 ---
 

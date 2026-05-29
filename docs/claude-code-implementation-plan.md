@@ -5232,6 +5232,23 @@ Narrative generation uses Claude Sonnet which costs more than Haiku. Add a serve
 
 ## Recipe Data Quality, Derivation & Allergen Safety — Session Plan (2026-05-29)
 
+### ⚡ CURRENT STATUS — handoff (2026-05-29)
+
+**Shipped & deployed (on `main`, live on Vercel):**
+- Batch 1: macro-AI fence fix; flavor vocab (ingredients normalized to canonical 11 + i18n render + `spicy` derived from `heat_level`); title ladders renamed; recipe-name-suggestion i18n.
+- Batch 2: Planner axis scoring (planned cook +1 / shopping +2 / meal-prep week +3) + `shopping_trip_count`.
+
+**Done in the DB but NOT yet committed/deployed (staged locally):**
+- Added `ingredients.contains_allergens text[]` (+ GIN index).
+- **Full ingredient re-audit** via `scripts/reaudit-ingredient-signals.draft.ts` (Sonnet + deterministic allergen net, word-boundary matching, prompt caching; gated `WRITE=1` sample / `WRITE=1 FULL=1` full). Writes `contains_allergens` + derived `dietary_flags` + canonical `cuisine_signals`/`flavor_notes`/`heat_level` to all 3,920 system ingredients. Verified fixes: tofu/gochujang → contain soy (were wrongly `soy-free`); bacalhau → fish + `gluten-free`; buckwheat/eggplant → no false flags.
+- **Library intolerance-filter repoint** (`src/lib/supabase/queries.ts`): `.overlaps` now reads `contains_allergens` (positive tokens) instead of `dietary_flags`. Fixes a CONFIRMED production bug — intolerance filtering for gluten/dairy/soy/nuts matched **nothing** (the filter expected positive tokens the column never held). Regenerated `src/types/db.ts`. **MUST NOT deploy until the re-audit is 100% complete** — a half-populated `contains_allergens` would under-filter allergens (unsafe).
+
+**Pending (ready-to-build, code-only):** count-unit macros (eggs/cans currently → 0); per-serving macro label + visible servings; auto-tag `macros_total` double-division; `5-ingredientes` non-pantry; ingredient-alias backfill + add `cabrito`; one hardcoded aria-label i18n. (See "Additional findings 2026-05-29" below.)
+
+**Open product decisions:** none blocking.
+
+**Key safety confirmation:** the re-audit NEVER touches USDA nutrition (`calories/protein/carbs/fat_per_100g`) or `classification_source` — only AI-derived signal columns are rewritten.
+
 ### How to use this section
 This is a self-contained work plan produced from a design/grilling + live-DB-testing session. It captures (a) decisions that are **locked**, (b) **findings** from testing the current system, and (c) an **ordered task list** detailed enough to execute in a fresh chat. Supabase project: `kgvycfrvxzkfhvuazzle`. Test using MCP `execute_sql` and `npx tsx` scripts.
 
@@ -5285,6 +5302,14 @@ The flavor-identity feature (titles, badges, signature ingredient, narrative) is
 9. **Macro button + recipe-name suggestion decisions** (need user ruling — see open list): whether to always show the AI macro button; whether to wire or delete `suggestRecipeName`.
 10. **`5-ingredientes` fix** — count non-pantry ingredients only.
 11. **`dietary_flags` correctness audit** — fix soy-free-on-soy and missing-GF errors; re-run with the closed dietary vocabulary; for allergen-grade flags consider a verification/disclaimer boundary (auto-derived flags are best-effort, not medical guarantees).
+
+### Additional findings 2026-05-29 (macro estimation, units, linking)
+- **Count-unit macros = 0.** `convertToGrams` (src/lib/units.ts) returns null for count units (`unit/slice/clove/pinch/can/sachet/bunch/handful/sheet`) → `estimateMacrosFromIngredients` skips them; if >50% of ingredients are count units the whole estimate returns null. Eggs/cans/slices contribute nothing. Fix: add a grams-per-unit to count-sold ingredients (1 egg ≈ 50g, etc.) and/or AI fallback. Volume units (`tbsp/tsp/cup`) use water-density gram approximations — off for oil/flour.
+- **Macro card shows per-serving but isn't labeled.** Servings defaults to 2 and is hidden under "Mais detalhes"; 100g goat shows 55 (=109/2). Add a "(por dose)" label + surface the servings control. Storage is consistent (saved per-serving; `macros_total` defaults false) — no double-count on the recipe itself.
+- **auto-tag double-division.** `getSuggestedTags` in create.tsx passes `macros_total: true`, but `effCalories` is already per-serving → `fit`/`alto-proteína` are computed on half the per-serving calories and under-fire. Pass `macros_total: false`.
+- **Ingredient catalog language:** base `name` = English (USDA); PT via `ingredient_translations` (99.3%) + `aliases` (97.6%). ~96 missing aliases, ~26 missing PT translation — backfill in the re-audit. Add `"cabrito"` alias to `goat`.
+- **Homonym mis-pick risk:** "cabra" surfaces goat meat (top) but also goat milk/cheese — linking UX should make the distinction clear.
+- Minor: `aria-label="Dispensar sugestão"` (create.tsx) hardcoded PT — i18n it.
 
 ### Cuisine tagging guardrails (how to not hinder users)
 - **Never hide a recipe for lacking/mismatching a cuisine.** Cuisine powers optional browse facets + recommendations only. Protein/time/name/ingredient search must always reach every recipe regardless of cuisine.
