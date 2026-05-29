@@ -91,8 +91,21 @@ export const logRecipeCooked = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     _recomputeProfileForUser(supabase, user.id).catch(() => {});
 
-    // Award +8 creator points when cooking someone else's recipe
+    // Award +8 creator points when cooking someone else's recipe.
+    // Anti-exploit dedupe: award only once per distinct (cooker, recipe) pair, so a
+    // repeat-tapping friend or a creator's own re-cooks can't farm Creator level.
+    // (Sockpuppet farming via distinct accounts is a known residual risk — see
+    //  docs/meal-prep-gamification-review.md Finding 4.)
     void (async () => {
+      // First cook of this recipe by this user? The row we just inserted is included,
+      // so a count of exactly 1 means this is the first-ever (cooker, recipe) pairing.
+      const { count: cookerRecipeCount } = await supabase
+        .from("cook_log")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("recipe_id", data.recipeId);
+      if ((cookerRecipeCount ?? 0) > 1) return; // repeat cook — no creator award
+
       const { data: recipe } = await supabase
         .from("recipes")
         .select("owner_id")

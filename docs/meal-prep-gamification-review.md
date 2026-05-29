@@ -85,15 +85,42 @@ Each finding has:
 
 **Problem:** The natural moment to log is *while/after cooking* — phone not in hand. If logging adoption is low, every profile is empty, which is the worst outcome for a paid feature.
 
-**Decision:** ✅ Add a one-tap **"mark as cooked" at the end of the cooking session** (cooking companion final step). **Do not** add plan-tab "did you cook this?" nag prompts — keep it otherwise manual and non-naggy.
+**Decision:** ✅ Provide explicit, undoable "mark as cooked" entry points (no passive "did you cook this?" nags). Three entry points:
+1. **End of cooking session** — button on the cooking companion's final step.
+2. **Plan page** — a quick-access "mark as cooked" button directly on each plan item, for users who don't open the step-by-step flow.
+3. **Recipe card** — the existing button handles ad-hoc / off-plan cooks.
+
+**Cooked-state UX:** once a plan item is marked cooked, the card **collapses to just its title + a "cooked" marker**, and is **expandable** if the user wants to see the recipe again. All marks are **undoable**.
 
 **Action:**
-1. In the cooking companion flow, on the **final step**, surface a prominent one-tap "Marcar como cozinhada" / "Mark as cooked" action that calls `logRecipeCooked` with `source: "planned"` when the recipe came from the plan, else `"manual"`.
-2. Reuse the existing toast + `[Anular]` undo pattern (`flavor-identity-spec.md:314`) so an accidental tap is cheap to reverse.
-3. Be idempotent / guard against double-logging if the user reaches the final step twice in one session (e.g. don't auto-log; require the explicit tap, and debounce).
-4. Explicitly **out of scope:** plan-tab past-item prompts. Document that we chose the cooking-flow moment over passive nags to protect the "not a naggy app" feel.
+1. Add a one-tap "Marcar como cozinhada" / "Mark as cooked" on the cooking companion **final step**; calls `logRecipeCooked` with `source: "planned"` if the recipe came from the plan, else `"manual"`.
+2. Add the same one-tap action to each **plan item** on the plan page (`source: "planned"`).
+3. On success, collapse the plan item to title + cooked marker; keep it expandable to re-open the recipe.
+4. Reuse the toast + `[Anular]` undo pattern (`flavor-identity-spec.md:314`); marks are reversible.
+5. Idempotency: require an explicit tap (no auto-log), debounce, and dedupe re-marks of the same recipe within a short window so one batch ≠ many cooks.
+6. Explicitly **out of scope:** passive plan-tab prompts asking "did you cook this?" — we chose explicit buttons + the cooking-flow moment to protect the "not a naggy app" feel.
 
-**Status:** `decided`
+### Anti-exploitation (raised in review)
+
+**Framing:** there is no leaderboard / prize, so faking one's *own* cook log only produces a hollow self-portrait — not worth policing, and policing would harm honest-logging UX. The scoring shape already resists self-inflation:
+- Optimizer / Swift are **percentages** (`cook-log-queries.ts:508, 523`) — spamming one recipe can't move a %.
+- Explorer rewards **distinct** recipes/cuisines (`:488-490`) — re-marking the same recipe yields nothing.
+- Only `lifetime_cook_count` (`:626`) and Planner (`:552`) are raw-additive — and these are deliberately low-status "autobiography" numbers, not the title.
+
+**The real surface = the Creator track**, because cooking confers value to *another* user's **public** profile (`/app/profile/$username`). Today `logRecipeCooked` awards **+8 creator points to the owner on every cook by anyone else, with no dedupe** (`cook-log-queries.ts:94-105`). A creator (via sockpuppets or a repeat-tapping friend) can farm Creator level.
+
+**Defenses (creator-points-focused):**
+1. Award the **+8 only once per distinct `(cooker, recipe)` pair** (or once/day) — count distinct cookers, not cook events.
+2. Light global guard: dedupe re-marks of the same recipe within a short window for scoring + creator purposes (the collapse UX already discourages re-tapping).
+3. **Sockpuppet farming via distinct fake accounts** is the residual risk. Full defense (account-age gates, requiring the cooker to have their own real cook history) is over-engineering pre-scale — **document as a known limitation; revisit if the Creator track becomes competitive / public-facing.**
+
+**Decision (anti-exploit scope):** ✅ **Implement dedupe now** (#1 + the spirit of #2). Sockpuppet heuristics (#3) deferred as a documented known limitation.
+
+**Implemented:** `logRecipeCooked` now awards the +8 creator points only on the cooker's **first** cook of a given recipe (distinct `(cooker, recipe)` pair) — `cook-log-queries.ts:94-117`. Repeat cooks of the same recipe by the same user award nothing, so a repeat-tapping friend or a creator's own re-cooks cannot farm Creator level. Sockpuppet farming via distinct accounts remains the residual, documented risk.
+
+> The plan-page / cooking-session "mark as cooked" buttons + collapse-to-cooked UX (items 1–6 above) are **not yet implemented** — they remain a decided action for a later build pass.
+
+**Status:** `decided` (UX, not yet built) · `done` (creator-points dedupe)
 
 ---
 
