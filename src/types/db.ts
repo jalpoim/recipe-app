@@ -257,6 +257,7 @@ export type Database = {
           carbs_per_100g: number | null;
           category: string | null;
           classification_source: string | null;
+          contains_allergens: string[];
           created_at: string | null;
           cuisine_signals: string[];
           default_unit: string | null;
@@ -275,6 +276,7 @@ export type Database = {
           carbs_per_100g?: number | null;
           category?: string | null;
           classification_source?: string | null;
+          contains_allergens?: string[];
           created_at?: string | null;
           cuisine_signals?: string[];
           default_unit?: string | null;
@@ -293,6 +295,7 @@ export type Database = {
           carbs_per_100g?: number | null;
           category?: string | null;
           classification_source?: string | null;
+          contains_allergens?: string[];
           created_at?: string | null;
           cuisine_signals?: string[];
           default_unit?: string | null;

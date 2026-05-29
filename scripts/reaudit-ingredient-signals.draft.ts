@@ -283,6 +283,15 @@ function allergenNet(rawName: string): NetVerdict {
     }
   };
 
+  // Imitation / substitute / free-from / shaped products are DEFINED by not containing
+  // the thing their name references. Keyword matching over-flags them (e.g. "imitation
+  // crab", "fish-shaped crackers", "sour cream substitute", "pasta without egg") — defer
+  // entirely to the composition-aware AI.
+  if (has(s, "imitation", "substitute", "alternative", "without", "non-dairy",
+          "non-soy", "shaped", "mock", "eggless", "meatless")) {
+    return { contains, notes: ["net deferred to AI — imitation/substitute/shaped/free-from"] };
+  }
+
   // --- SOY ---
   if (has(s, "soja", "soy", "tofu", "edamame", "miso", "tempeh", "gochujang",
           "gochugaru", "natto", "tamari", "shoyu", "molho de soja", "soybean", "edamame")) {
@@ -300,46 +309,35 @@ function allergenNet(rawName: string): NetVerdict {
   }
 
   // --- GLUTEN ---
-  const glutenFlourExempt =
-    has(s, "rice flour", "farinha de arroz", "corn flour", "cornflour",
-        "farinha de milho", "maize", "almond flour", "farinha de amendoa",
-        "coconut flour", "farinha de coco", "chickpea flour", "gram flour",
-        "farinha de grao", "buckwheat", "trigo sarraceno", "gluten-free", "gluten free");
-  // Buckwheat ("trigo sarraceno") is gluten-free despite containing the substrings
-  // "wheat"/"trigo" — guard the first branch so it isn't falsely flagged.
+  // Buckwheat ("trigo sarraceno") is gluten-free despite containing "wheat"/"trigo".
   const isBuckwheat = has(s, "buckwheat", "trigo sarraceno");
-  if (has(s, "trigo", "wheat", "pao", "bread", "massa", "pasta", "esparguete",
+  if (has(s, "trigo", "wheat", "pao", "bread", "pasta", "esparguete",
           "noodle", "cevada", "barley", "centeio", "rye", "malte", "malt",
           "bulgur", "cuscuz", "couscous", "seitan", "semola", "semolina",
           "durum", "farro", "spelt") &&
       !isBuckwheat &&
       !(has(s, "gluten-free", "gluten free", "rice noodle", "noodle de arroz"))) {
     add("gluten", "name indicates a wheat/barley/rye/gluten grain product");
-  } else if (has(s, "farinha", "flour") && !glutenFlourExempt) {
-    // Bare "flour"/"farinha" defaults to wheat unless an exempt flour is named.
-    add("gluten", "unqualified flour assumed wheat-based (gluten)");
   }
+  // NOTE: bare "flour"/"farinha" and "massa" are NOT assumed wheat — too many naturally
+  // gluten-free flours (almond, rice, oat, chickpea, amaranth, sorghum, teff, soy…).
+  // The AI decides for unqualified flour.
 
   // --- DAIRY ---
   const plantMilk = has(s, "leite de coco", "coconut milk", "leite de amendoa",
     "almond milk", "leite de soja", "soy milk", "leite de aveia", "oat milk",
-    "leite de arroz", "rice milk", "leite vegetal");
-  const nutButter = has(s, "manteiga de amendoim", "peanut butter",
-    "manteiga de amendoa", "almond butter", "manteiga de caju", "cashew butter",
-    "manteiga de pistac", "pistachio butter", "nut butter");
-  const tofuYogurt = has(s, "tofu") || has(s, "tofu-based", "tofu based"); // plant yogurt/mayo
+    "leite de arroz", "rice milk", "leite vegetal", "cashew milk", "leite de caju",
+    "hemp milk", "pea milk", "flax milk", "macadamia milk", "tigernut milk");
   if (has(s, "leite", "milk") && !plantMilk) {
     add("dairy", "name indicates milk (animal)");
   }
-  if (has(s, "queijo", "cheese", "nata", "natas", "cream", "iogurte", "yogurt",
-          "whey", "soro de leite", "requeijao", "ghee", "caseina", "casein",
-          "manteiga", "butter") && !nutButter && !plantMilk && !tofuYogurt) {
-    // Guard butter -> nut/plant; cream -> plant; yogurt -> tofu-based handled above.
-    if (has(s, "manteiga", "butter") && (nutButter)) {
-      // already excluded
-    } else {
-      add("dairy", "name indicates a dairy product (cheese/cream/butter/yogurt/whey)");
-    }
+  // Only UNAMBIGUOUS dairy words. "butter"/"cream" are intentionally dropped — too many
+  // non-dairy uses (apple/cocoa/nut butter; cream of tartar, cream soda, coconut cream,
+  // whipped/sour cream substitutes). The AI handles genuine dairy butter/cream.
+  if (has(s, "queijo", "cheese", "iogurte", "yogurt", "whey", "soro de leite",
+          "requeijao", "ghee", "caseina", "casein") &&
+      !has(s, "liver cheese", "head cheese", "hog head cheese")) {
+    add("dairy", "name indicates a dairy product (cheese/yogurt/whey)");
   }
 
   // --- EGG ---
@@ -373,10 +371,11 @@ function allergenNet(rawName: string): NetVerdict {
   }
 
   // --- SHELLFISH ---
+  // "oyster"/"scallop"/"ostra" dropped — common non-shellfish homonyms (oyster mushroom,
+  // king oyster mushroom, beef oyster blade, scallop squash). Real oysters/scallops → AI.
   if (has(s, "camarao", "shrimp", "gambas", "prawn", "caranguejo", "crab",
-          "lagosta", "lobster", "am_ijoa", "ameijoa", "clam", "mexilhao",
-          "mussel", "lula", "squid", "calamari", "polvo", "octopus", "vieira",
-          "scallop", "marisco", "ostra", "oyster")) {
+          "lagosta", "lobster", "ameijoa", "clam", "mexilhao",
+          "mussel", "lula", "squid", "calamari", "polvo", "octopus", "marisco")) {
     add("shellfish", "name indicates shellfish/mollusc");
   }
 
@@ -540,7 +539,10 @@ async function main() {
   const mode = FULL ? "FULL WRITE" : WRITE ? "SAMPLE WRITE" : "SAMPLE READ-ONLY";
   console.log(`Re-audit — ${mode} (model=${MODEL}, batch=${BATCH_SIZE})\n`);
 
-  const rows = FULL ? await fetchAllSystemRows() : await fetchRows(SAMPLE_IDS);
+  const envIds = process.env["IDS"]?.split(",").map((x) => x.trim()).filter(Boolean);
+  const rows = FULL
+    ? await fetchAllSystemRows()
+    : await fetchRows(envIds && envIds.length ? envIds : SAMPLE_IDS);
   console.log(`Loaded ${rows.length} ingredients.\n`);
 
   const reportRows: Array<Record<string, unknown>> = [];

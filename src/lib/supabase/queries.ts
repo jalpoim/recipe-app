@@ -64,7 +64,7 @@ const FLAG_TO_PROTEIN_SLUGS: Record<string, string[]> = {
   honey: [],
 };
 
-// UI stores 'nuts'; DB dietary_flags uses 'tree_nut' and 'peanut'
+// UI stores 'nuts'; contains_allergens uses 'tree_nut' and 'peanut'
 const FLAG_ALIASES: Record<string, string[]> = {
   nuts: ["tree_nut", "peanut"],
 };
@@ -126,9 +126,10 @@ export const fetchLibrary = createServerFn({ method: "GET" })
       ...new Set(expandedFlags.flatMap((f) => FLAG_TO_PROTEIN_SLUGS[f] ?? [])),
     ];
 
-    // --- Secondary exclusion: ingredient_id join (covers user-uploaded recipes) ---
-    // recipe_ingredients.ingredient_id is only populated for ~44% of rows (user recipes).
-    // System recipes have ingredient_id = null, so this path only supplements the above.
+    // --- Ingredient-level exclusion via contains_allergens (positive containment tokens) ---
+    // System-recipe ingredients are ~91% linked, so this is a primary path, not just a
+    // supplement. expandedFlags are positive tokens (gluten/dairy/soy/egg/tree_nut/peanut),
+    // matched against ingredients.contains_allergens (NOT the derived "-free" dietary_flags).
     let excludedRecipeIds: string[] = [];
     if (expandedFlags.length > 0 || excludedIngredientIds.length > 0) {
       let flaggedIngIds: string[] = [];
@@ -136,7 +137,7 @@ export const fetchLibrary = createServerFn({ method: "GET" })
         const { data: flaggedIngs } = await supabase
           .from("ingredients")
           .select("id")
-          .overlaps("dietary_flags", expandedFlags);
+          .overlaps("contains_allergens", expandedFlags);
         flaggedIngIds = (flaggedIngs ?? []).map((i) => i.id);
       }
       const allExcludedIngIds = [
