@@ -46,6 +46,46 @@ async function applyDerivedRecipeSignals(
   await supabase.from("recipes").update(update).eq("id", recipeId);
 }
 
+// Resolve free-typed ingredients to the canonical catalog on save (deterministic — no AI).
+// For each ingredient missing an ingredient_id, fuzzy-match (name/alias/translation via
+// search_ingredients_fuzzy); link only on a STRONG match (>= LINK_THRESHOLD ~ exact/alias),
+// else leave unlinked and return it for the unmatched_ingredients log (catalog growth).
+// AI fallback for the rest is the periodic batch script (scripts/link-recipe-ingredients.ts),
+// kept off the save critical path. Conservative threshold: a wrong link mis-states
+// macros/allergens, so prefer "unmatched" over a guess.
+const LINK_THRESHOLD = 1.0;
+async function resolveIngredientLinks(
+  supabase: ReturnType<typeof makeClient>,
+  ingredients: { ingredientId?: string | null; name: string | null; rawText: string }[],
+): Promise<{ resolved: (string | null)[]; unmatched: string[] }> {
+  const resolved: (string | null)[] = [];
+  const unmatched: string[] = [];
+  for (const ing of ingredients) {
+    if (ing.ingredientId) {
+      resolved.push(ing.ingredientId);
+      continue;
+    }
+    const term = (ing.name ?? ing.rawText ?? "").trim();
+    if (!term) {
+      resolved.push(null);
+      continue;
+    }
+    const { data } = await supabase.rpc("search_ingredients_fuzzy", {
+      search_term: term,
+      result_limit: 1,
+      lang: "pt",
+    });
+    const top = (data as { id: string; similarity: number }[] | null)?.[0];
+    if (top && top.similarity >= LINK_THRESHOLD) {
+      resolved.push(top.id);
+    } else {
+      resolved.push(null);
+      unmatched.push(term);
+    }
+  }
+  return { resolved, unmatched };
+}
+
 export type IngredientRow = {
   position: number;
   rawText: string;
@@ -128,9 +168,13 @@ export const createRecipe = createServerFn({ method: "POST" })
 
     const recipeId = recipe.id;
 
-    // Insert ingredients
+    // Insert ingredients — resolve unlinked names to the catalog first.
     if (data.ingredients.length > 0) {
-      const ingRows: RecipeIngredientInsert[] = data.ingredients.map((ing) => ({
+      const { resolved, unmatched } = await resolveIngredientLinks(
+        supabase,
+        data.ingredients,
+      );
+      const ingRows: RecipeIngredientInsert[] = data.ingredients.map((ing, idx) => ({
         recipe_id: recipeId,
         position: ing.position,
         raw_text: ing.rawText,
@@ -138,13 +182,24 @@ export const createRecipe = createServerFn({ method: "POST" })
         unit: ing.unit,
         name: ing.name,
         is_optional: ing.isOptional,
-        ingredient_id: ing.ingredientId ?? null,
+        ingredient_id: resolved[idx] ?? null,
         category: ing.category ?? null,
       }));
       const { error: ingErr } = await supabase
         .from("recipe_ingredients")
         .insert(ingRows);
       if (ingErr) throw new Error(ingErr.message);
+      if (unmatched.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("unmatched_ingredients").insert(
+          unmatched.map((n) => ({
+            name: n,
+            normalized_name: n.toLowerCase(),
+            user_id: session.user.id,
+            recipe_id: recipeId,
+          })),
+        );
+      }
     }
 
     // Insert steps
@@ -222,8 +277,12 @@ export const updateRecipe = createServerFn({ method: "POST" })
     await supabase.from("recipe_steps").delete().eq("recipe_id", data.recipeId);
 
     if (data.ingredients.length > 0) {
+      const { resolved, unmatched } = await resolveIngredientLinks(
+        supabase,
+        data.ingredients,
+      );
       await supabase.from("recipe_ingredients").insert(
-        data.ingredients.map((ing) => ({
+        data.ingredients.map((ing, idx) => ({
           recipe_id: data.recipeId,
           position: ing.position,
           raw_text: ing.rawText,
@@ -231,10 +290,21 @@ export const updateRecipe = createServerFn({ method: "POST" })
           unit: ing.unit,
           name: ing.name,
           is_optional: ing.isOptional,
-          ingredient_id: ing.ingredientId ?? null,
+          ingredient_id: resolved[idx] ?? null,
           category: ing.category ?? null,
         })),
       );
+      if (unmatched.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabase as any).from("unmatched_ingredients").insert(
+          unmatched.map((n) => ({
+            name: n,
+            normalized_name: n.toLowerCase(),
+            user_id: session.user.id,
+            recipe_id: data.recipeId,
+          })),
+        );
+      }
     }
 
     if (data.steps.length > 0) {
