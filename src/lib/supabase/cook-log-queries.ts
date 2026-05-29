@@ -436,12 +436,14 @@ async function _recomputeProfileForUser(
     const { data: logs, error: logsError } = await supabase
       .from("cook_log")
       .select(
-        "recipe_id, recipes(cuisine_tags, proteins, time_min, calories, protein, servings, macros_total, dietary_flags, cooking_method)",
+        "recipe_id, source, cooked_at, recipes(cuisine_tags, proteins, time_min, calories, protein, servings, macros_total, dietary_flags, cooking_method)",
       )
       .eq("user_id", uid) as unknown as {
       data:
         | {
             recipe_id: string;
+            source: string | null;
+            cooked_at: string;
             recipes: {
               cuisine_tags: string[];
               proteins: string[];
@@ -522,10 +524,33 @@ async function _recomputeProfileForUser(
       swiftTotal > 0 ? Math.round((swiftMet / swiftTotal) * 100) : 0;
 
     // ── Planner axis ───────────────────────────────────────────────────────────
-    // Approximation without plan data: each log from source='planned' in a unique week
-    // Full planner scoring (weeks with active plan + 3 cooks) requires plan join —
-    // simplified here to planned-source logs as a reasonable proxy
-    const plannerScore = 0; // updated via plan-aware recompute (Phase 2)
+    // Plan-driven only: planned-source cook +1, shopping completion +2,
+    // "meal-prep week" (a week with >=3 planned cooks) +3. Manual cooks score 0.
+    const plannedRows = rows.filter((row) => row.source === "planned");
+    const plannedCount = plannedRows.length;
+
+    // Shopping trips completed (lifetime) from cook_log_completions
+    const { count: shoppingCompletions } = await supabase
+      .from("cook_log_completions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid);
+    const shoppingTripCount = shoppingCompletions ?? 0;
+
+    // Meal-prep weeks: Monday-bucketed weeks with >=3 planned cooks
+    const weekCounts = new Map<string, number>();
+    for (const row of plannedRows) {
+      if (!row.cooked_at) continue;
+      const d = new Date(row.cooked_at);
+      const dow = (d.getUTCDay() + 6) % 7; // 0 = Monday
+      d.setUTCDate(d.getUTCDate() - dow);
+      const wk = d.toISOString().slice(0, 10);
+      weekCounts.set(wk, (weekCounts.get(wk) ?? 0) + 1);
+    }
+    let mealPrepWeeks = 0;
+    for (const n of weekCounts.values()) if (n >= 3) mealPrepWeeks++;
+
+    const plannerScore =
+      plannedCount * 1 + shoppingTripCount * 2 + mealPrepWeeks * 3;
 
     // ── Specialty badge ─────────────────────────────────────────────────────────
     // Hierarchy: cuisine (≥5 cooks) → dietary pattern → cooking method → protein
@@ -599,6 +624,7 @@ async function _recomputeProfileForUser(
       swift_score: swiftScore,
       specialty_badge_key: specialtyBadgeKey,
       lifetime_cook_count: rows.length,
+      shopping_trip_count: shoppingTripCount,
       // Only store canonical cuisines in explored_cuisines (unmapped tags dropped)
       explored_cuisines: [...seenCuisines].filter((c) => canonicaliseCuisine(c) !== null || [
         "portuguese","italian","japanese","mexican","indian","thai","chinese",
