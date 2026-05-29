@@ -9,6 +9,41 @@ import {
   extractRecipeFromHtml,
   type ParsedRecipeImport,
 } from "../parse-recipe-url";
+import {
+  deriveRecipeFlavorNotes,
+  deriveRecipeDietaryFlags,
+  deriveCookingMethod,
+} from "../recipe-derivation";
+
+// Derive recipe-level signals from linked ingredients + steps after a save (Tier-1,
+// deterministic, free). flavor_notes/dietary_flags only when we have linked-ingredient
+// signals (avoid over-claiming "-free" from unlinked items); cooking_method always.
+// cuisine_tags is left to the periodic Haiku backfill (scripts/derive-recipe-signals.ts).
+async function applyDerivedRecipeSignals(
+  supabase: ReturnType<typeof makeClient>,
+  recipeId: string,
+  ingredientIds: (string | null | undefined)[],
+  proteins: string[],
+  stepTexts: string[],
+): Promise<void> {
+  const linkedIds = ingredientIds.filter(Boolean) as string[];
+  const update: {
+    cooking_method: string | null;
+    flavor_notes?: string[];
+    dietary_flags?: string[];
+  } = { cooking_method: deriveCookingMethod(stepTexts) };
+  if (linkedIds.length > 0) {
+    const { data: sigs } = await supabase
+      .from("ingredients")
+      .select("flavor_notes, contains_allergens")
+      .in("id", linkedIds);
+    if (sigs && sigs.length > 0) {
+      update.flavor_notes = deriveRecipeFlavorNotes(sigs);
+      update.dietary_flags = deriveRecipeDietaryFlags(sigs, proteins);
+    }
+  }
+  await supabase.from("recipes").update(update).eq("id", recipeId);
+}
 
 export type IngredientRow = {
   position: number;
@@ -125,6 +160,14 @@ export const createRecipe = createServerFn({ method: "POST" })
       if (stepErr) throw new Error(stepErr.message);
     }
 
+    await applyDerivedRecipeSignals(
+      supabase,
+      recipeId,
+      data.ingredients.map((i) => i.ingredientId),
+      data.proteins,
+      data.steps.map((s) => s.text),
+    );
+
     // Award creator points: +3 for original creation, +0.5 for import
     const creatorPoints = data.sourceUrl ? 0.5 : 3;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -203,6 +246,14 @@ export const updateRecipe = createServerFn({ method: "POST" })
         })),
       );
     }
+
+    await applyDerivedRecipeSignals(
+      supabase,
+      data.recipeId,
+      data.ingredients.map((i) => i.ingredientId),
+      data.proteins,
+      data.steps.map((s) => s.text),
+    );
 
     return { id: data.recipeId };
   });
