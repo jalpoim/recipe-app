@@ -131,11 +131,14 @@ Each finding has:
 
 **Problem:** A pure Optimizer/Swift/Explorer gets **zero** reward for shopping through the app — the opposite of the stated "every user has a reason to complete shopping."
 
-**Decision:** PENDING — confirm in next round: implement the spec's `+0.5 to highest axis for non-planners`, or drop the universal-incentive idea and accept shopping only feeds Planner?
+**Decision:** ✅ **Implement the spec** — every user gets a reason to complete shopping in-app.
 
-**Action (proposed, pending decision):** After Finding 2's normalization exists, add `+0.5` to whichever axis is currently the user's normalized highest (for non-planners), keeping Planner's `+2`. Caveat: this couples shopping into a normalized axis, so apply it carefully so it doesn't re-introduce a scale skew.
+**Action:** Add `+0.5` to the user's **highest (normalized) axis** for non-planners, keeping Planner's `+2`.
+- **Sequencing:** depends on Finding 2 — "highest axis" must use the *normalized* comparison, not raw scores, or this re-introduces a scale skew. Build **after / together with** F2.
+- Apply the `+0.5` to the resolved highest axis's stored score in `_recomputeProfileForUser` (the shopping completion count already exists via `cook_log_completions`, `cook-log-queries.ts:533-537`).
+- Guard against the `+0.5` itself flipping which axis is "highest" on each recompute (compute the target axis from the pre-bonus scores).
 
-**Status:** `pending-decision`
+**Status:** `decided` (build after F2)
 
 ---
 
@@ -146,14 +149,14 @@ Each finding has:
 
 **Problem:** Garbage-in: recipes without good `cuisine_tags` mean badges silently never appear. The data-quality pass is a hard prerequisite for the badge layer, not a follow-up.
 
-**Decision:** PENDING — confirm sequencing: gate the badge layer on completing the ingredient re-audit + recipe re-derivation first?
+**Decision:** ✅ **Fix data first (in progress).** The audit/enrichment script is currently running, so coverage + the buckwheat bug should be resolved shortly. Badge layer is treated as "live" once the audit completes and coverage is verified.
 
-**Action (proposed, pending decision):**
-1. Fix the buckwheat / `trigo sarraceno` net bug in the first gluten branch before any full enrichment run (`reaudit-test-report.md:182`).
-2. Run the enrichment + Tier-1 re-derivation, then verify cuisine-tag coverage clears the ≥70% bar (`claude-code-implementation-plan.md` Step 4).
-3. Only then treat the badge layer as "live." Until coverage is healthy, badges are best-effort.
+**Action:**
+1. ✅ (in progress) Audit/enrichment script running — should close the coverage gap.
+2. **Verify the buckwheat / `trigo sarraceno` net bug is actually fixed in the running script** before the full write run (`reaudit-test-report.md:182`) — if the running script is the old draft, the buckwheat exemption in the *first* gluten branch must be confirmed present, or all 8 buckwheat rows regress to "contains gluten."
+3. After the run: verify cuisine-tag coverage clears ≥70% (`claude-code-implementation-plan.md` Step 4), then treat badges as live.
 
-**Status:** `pending-decision`
+**Status:** `decided` · data fix `in-progress` (verify buckwheat fix landed)
 
 ---
 
@@ -164,11 +167,16 @@ Each finding has:
 
 **Problem:** For a weekly tool, a user may go months with no visible progression signal and forget the ladder exists. The cuisine collection is the only repeatable loop — and it's gated on Finding 6's data quality.
 
-**Decision:** PENDING — now that gamification is a core pillar (Finding 1), do we want a richer, more frequent feedback loop?
+**Decision:** ✅ Keep the profile page restrained: **show the cuisine badges as the profile's repeatable loop**, and keep the ≥70% progress bar as a **post-action** reveal only (not an always-on profile element). Cuisine-collection tiers (bronze/silver/gold) are the primary repeatable celebration.
 
-**Action (proposed, pending decision):** Consider surfacing the ≥70% progress bar on the profile page (not only in the toast), and lean into the cuisine-collection tiers (bronze/silver/gold per `flavor-identity-spec.md:310`) as the primary repeatable celebration. Revisit after Finding 6.
+**Action:**
+1. Profile page: cuisine badge collection is the visible progression surface; no always-on progress bar.
+2. Keep the ≥70% progress bar firing after relevant actions (cook toast) as today.
+3. Build out the bronze/silver/gold cuisine tiers (`flavor-identity-spec.md:310`) once F6 data lands.
 
-**Status:** `pending-decision`
+**Additional gamification recommendations (expert view — depth over breadth):** see the "Gamification depth recommendations" section below. Headline: the biggest risk now is *over*-gamifying; the highest-leverage moves are (a) a once-a-year **Wrapped-style recap**, (b) surfacing **"weeks cooked this year"** as a never-reset counter (streak benefits, zero grief), and (c) making the **share card a first-class, beautiful artifact** for organic growth. Pending which of these to pursue.
+
+**Status:** `decided` (profile cadence) · `pending-decision` (which extra ideas to pursue)
 
 ---
 
@@ -179,11 +187,26 @@ Each finding has:
 
 **Problem:** If recompute fails, the profile silently drifts from reality with no retry and no signal.
 
-**Decision:** PENDING — acceptable to at least log/observe these failures?
+**Decision:** ✅ **Log + staleness flag.** Use `last_computed_at` (already a column) to detect drift. Monitoring approach (admin page vs. self-healing) — see recommendation below; final call pending.
 
-**Action (proposed, pending decision):** Replace the empty `.catch(() => {})` with at least an error log (and consider a lightweight retry or a "stale profile" flag via `last_computed_at`). Low effort, meaningful for a paid pillar.
+**Action:**
+1. Replace the empty `.catch(() => {})` (`cook-log-queries.ts:92,138`) with an error log so failures are observable in server logs.
+2. **Self-heal (recommended primary fix):** on profile-page load, if the profile is stale — i.e. `max(cook_log.cooked_at) > last_computed_at`, or `last_computed_at IS NULL` while cooks exist — trigger a recompute. This auto-corrects drift without needing anyone to watch a dashboard.
+3. **Admin visibility (optional):** extend the existing admin route (`src/routes/admin.tsx`, currently content moderation) with a small "profile health" panel listing stale profiles + a manual "recompute" button. For hard failures, optionally log to a tiny `profile_recompute_errors` table the panel can read.
 
-**Status:** `pending-decision`
+**Recommendation:** prioritize #2 (self-healing) — for a paid pillar, a profile that fixes itself on next view beats a dashboard someone has to remember to check. The admin panel (#3) then becomes informational, not load-bearing.
+
+### Cost & performance clarification (raised in review)
+
+**Recompute is pure SQL — it does NOT cost AI** (`flavor-identity-spec.md:1148`). AI spend touching the profile is isolated to:
+- the **flavor narrative** (`generateFlavorNarrative`), already throttled to **once per 30 days per user** (`me.tsx:574-577`) — this is the "once a month" cost; and
+- recipe **tag inference** at creation time (separate Haiku flow).
+
+So recompute frequency is decoupled from AI cost. The page stays fast because it reads the **cached `user_cook_profile` row**, not a live aggregation. Self-healing is therefore effectively free: read the cache instantly, and only when stale kick a **background, non-blocking** SQL recompute, then refetch. The chosen F7 features (weeks-cooked counter, share card) add **zero** AI cost.
+
+**Decision (monitoring depth):** ✅ **Self-heal only** — recompute-on-read when stale (background, non-blocking) + error logging. No cron, no admin panel, no AI. Admin panel deferred (revisit only if drift becomes a real operational problem).
+
+**Status:** `decided` (log + staleness + self-heal only)
 
 ---
 
@@ -194,13 +217,26 @@ Each finding has:
 
 **Problem:** The Optimizer persona is under-served without any macro feedback, but you don't want to become MyFitnessPal.
 
-**Decision:** PENDING — add a per-plan weekly macro summary (read-only, no targets/warnings), or keep macros out of the plan view entirely?
+**Decision:** ✅ **Keep macros out.** Stay strictly "not a calorie counter." The Optimizer persona is served only through the gamification axis (Optimizer title/score), not a macro readout on the plan.
 
-**Action (proposed, pending decision):** A read-only weekly macro total on the plan view serves the Optimizer without daily-logging mechanics. Decide deliberately.
+**Action:** No macro summary on the plan view. The "Macro Optimizer ↔ not a calorie counter" tension is resolved in favor of the product's no-tracking stance; the Optimizer axis title is the persona's reward.
 
-**Status:** `pending-decision`
+**Status:** `decided` (no change to build — explicitly out of scope)
 
 ---
+
+## Gamification depth recommendations (expert view)
+
+**Overarching principle: the biggest risk now is _over_-gamifying.** This is a calm, weekly, paid tool — its restraint is a feature. Do **not** add daily mechanics, visible point counters, leaderboards, or Duolingo-style nags. The right move is **depth on the few loops you have**, not more loops. In priority order:
+
+1. **Annual / seasonal "Wrapped" recap (highest leverage).** Already on the roadmap (`flavor-identity-spec.md:305`). A once-a-year big narrative payoff is *perfectly* aligned with a weekly tool — it's a retention + re-activation beat that doesn't require daily engagement. Prioritize building it before adding any new in-app loop.
+2. **Surface "weeks cooked this year" as a never-reset counter.** You already compute meal-prep weeks internally (`cook-log-queries.ts:549`). Showing it as an accumulating, never-lost stat gives the dopamine of a streak with **none of the grief** — a week off doesn't erase anything. This is the single best streak-substitute for this product.
+3. **Make the share card a first-class, beautiful artifact.** `ShareCard` exists (`me.tsx:336`). For an identity app, shareable identity = the #1 organic growth lever. Invest in the visual (Wrapped-style) so users *want* to post it.
+4. **Lean into the cuisine-collection tiers** (bronze/silver/gold) as the repeatable collectible loop (already decided in F7).
+
+**Explicitly cautioned against:** visible XP/points, leaderboards, daily streaks, push-notification engagement loops, goal/quest systems that nag. Each would erode the "tool not nag" trust that makes this product calm.
+
+**Decision (which to pursue):** ✅ **Weeks-cooked counter** + **first-class share card.** Annual Wrapped recap **not** selected for now (remains roadmap, not committed). Neither chosen feature incurs AI cost — the weeks-cooked counter is SQL (`cook-log-queries.ts:549`), and the share card reuses the already-generated narrative text.
 
 ## Strengths to preserve (🟢)
 
@@ -225,10 +261,27 @@ These are working and reflect genuine gamification literacy — do not regress t
 
 ---
 
-## Pending decisions checklist (next rounds)
+## Decisions resolved (all findings)
 
-- [ ] **F5** — implement universal shopping `+0.5`-to-highest-axis, or drop it?
-- [ ] **F6** — gate badge layer on completing the ingredient re-audit + re-derivation?
-- [ ] **F7** — richer/more-frequent celebration loop now that gamification is a pillar?
-- [ ] **F8** — add logging/retry to silent recompute failures?
-- [ ] **F9** — read-only weekly macro summary on the plan view, yes/no?
+- [x] **F1** — Fully embrace gamification as a core pillar; update plan + `CLAUDE.md`.
+- [x] **F2** — Normalize axis comparison so all four are equally winnable (build pending).
+- [x] **F3** — Fix incentives only; leftover/portion modeling = roadmap.
+- [x] **F4** — Three mark-as-cooked entry points + collapse UX (build pending); creator-points dedupe **done**.
+- [x] **F5** — Implement universal shopping `+0.5`-to-highest-axis (build after F2).
+- [x] **F6** — Fix data first; audit script in progress (verify buckwheat fix landed).
+- [x] **F7** — Profile shows cuisine badges; progress bar stays post-action. Pursue **weeks-cooked counter** + **first-class share card**.
+- [x] **F8** — Log + staleness + **self-heal only** (recompute-on-read, background, non-blocking). No admin panel.
+- [x] **F9** — Keep macros out (strictly not a calorie counter).
+
+## Build backlog (decided, not yet implemented)
+
+In recommended order:
+1. **F2** — primary-title normalization (unblocks F3 verification + F5).
+2. **F5** — universal shopping `+0.5` (after F2).
+3. **F4 UX** — three mark-as-cooked entry points + collapse-to-cooked plan cards.
+4. **F8** — error logging + self-heal-on-read for stale profiles.
+5. **F7** — weeks-cooked counter + first-class share card.
+6. **F1** — plan + `CLAUDE.md` direction-change entries.
+7. **F6** — verify buckwheat fix + coverage post-audit; then build cuisine tiers.
+
+**Already done:** F4 creator-points dedupe (`cook-log-queries.ts:94-117`).
