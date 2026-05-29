@@ -192,7 +192,7 @@ function suggestRecipeName(
     .slice(0, 2);
   if (!proteinLabel) return names.slice(0, 3).join(", ");
   if (others.length === 0) return proteinLabel;
-  return `${proteinLabel} com ${others.join(" e ")}`;
+  return `${proteinLabel} ${t("create.nameWith")} ${others.join(` ${t("create.nameAnd")} `)}`;
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -771,7 +771,7 @@ function CreateRecipePage() {
           {/* Auto-name suggestion chip */}
           {autoNameSuggestion && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-[#9CA3AF]">Sugestão:</span>
+              <span className="text-xs text-[#9CA3AF]">{t("create.suggestionLabel")}</span>
               <button
                 type="button"
                 onClick={() => setName(autoNameSuggestion)}

@@ -90,6 +90,9 @@
     "title": "New recipe",
     "editTitle": "Edit recipe",
     "namePlaceholder": "Recipe name",
+    "suggestionLabel": "Suggestion:",
+    "nameWith": "with",
+    "nameAnd": "and",
     "servingsLabel": "Servings",
     "timeLabel": "Time (min)",
     "proteinsLabel": "Proteins",
@@ -503,32 +506,46 @@
     "shareCopied": "Copied",
     "cuisineBadgeTeaser_one": "{{count}} to go",
     "cuisineBadgeTeaser_other": "{{count}} to go",
+    "flavorNotes": {
+      "sweet": "Sweet",
+      "sour": "Sour",
+      "salty": "Salty",
+      "bitter": "Bitter",
+      "umami": "Umami",
+      "smoky": "Smoky",
+      "earthy": "Earthy",
+      "fresh": "Fresh",
+      "rich": "Rich",
+      "spicy": "Spicy",
+      "nutty": "Nutty",
+      "aromatic": "Aromatic"
+    },
     "titles": {
       "explorer": {
         "1": "Curious",
-        "2": "Wanderer",
+        "2": "Adventurer",
         "3": "Explorer",
-        "4": "Flavour Ambassador",
-        "5": "Gastronomic Nomad"
+        "4": "Flavour Hunter",
+        "5": "No Borders"
       },
       "optimizer": {
         "1": "Mindful",
-        "2": "Precise",
-        "3": "Kitchen Athlete",
-        "4": "Nutritional Engineer",
-        "5": "High Performance Chef"
+        "2": "Balanced",
+        "3": "Dialled-In",
+        "4": "Precise",
+        "5": "Macro Master"
       },
       "planner": {
         "1": "Organised",
         "2": "Planner",
-        "3": "Weekly Chef",
-        "4": "Meal Prep Master",
-        "5": "Meal Architect"
+        "3": "Always Ready",
+        "4": "Meal-Prep Royalty",
+        "5": "Master of the Week"
       },
       "swift": {
         "1": "Agile",
         "2": "Swift",
-        "3": "Kitchen Ninja",
+        "3": "Lightning",
         "4": "Express Chef",
         "5": "Time Master"
       },

@@ -179,12 +179,15 @@ async function _computeFlavorProfile(
     }
   }
 
-  const topFlavorNotes = [...flavorNoteCounts.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([note]) => note);
-
   const avgHeatLevel = heatCount > 0 ? heatSum / heatCount : 0;
+
+  const baseFlavorNotes = [...flavorNoteCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([note]) => note);
+  // 'spicy' is derived from heat_level (not stored as a flavor note): surface it
+  // as the lead chip when the user's cooking carries real, repeated heat.
+  const isSpicy = heatCount >= 2 && avgHeatLevel >= 1;
+  const topFlavorNotes = (isSpicy ? ["spicy", ...baseFlavorNotes] : baseFlavorNotes).slice(0, 3);
 
   // Platform averages (table not in generated types — cast required)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

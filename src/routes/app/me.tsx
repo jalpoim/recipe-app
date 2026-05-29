@@ -790,7 +790,7 @@ function ProfilePage() {
           <SignatureIngredientCard
             ingredient={flavorProfile.signatureIngredient}
             multiple={flavorProfile.signatureIngredientPlatformMultiple}
-            flavorNotes={flavorProfile.topFlavorNotes}
+            flavorNotes={flavorProfile.topFlavorNotes.map((n) => t(`flavorIdentity.flavorNotes.${n}`, { defaultValue: n }))}
             label={t("flavorIdentity.signatureIngredientLabel")}
             sub={t("flavorIdentity.signatureIngredientSub", { multiple: flavorProfile.signatureIngredientPlatformMultiple })}
           />
@@ -850,7 +850,7 @@ function ProfilePage() {
         {savedNarrative && (
           <ShareCard
             narrative={savedNarrative}
-            flavorNotes={flavorProfile?.topFlavorNotes ?? []}
+            flavorNotes={(flavorProfile?.topFlavorNotes ?? []).map((n) => t(`flavorIdentity.flavorNotes.${n}`, { defaultValue: n }))}
             title={t("flavorIdentity.shareCardTitle")}
             shareLabel={t("flavorIdentity.shareButton")}
             copiedLabel={t("flavorIdentity.shareCopied")}

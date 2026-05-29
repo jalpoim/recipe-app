@@ -343,7 +343,12 @@ Values should be per serving, rounded to the nearest integer. Use 0 if truly zer
     const json = (await response.json()) as {
       content: Array<{ text: string }>;
     };
-    const text = json.content?.[0]?.text?.trim() ?? "{}";
+    let text = json.content?.[0]?.text?.trim() ?? "{}";
+    // Haiku wraps JSON in ```json fences despite the "no markdown" instruction — strip them.
+    text = text
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "")
+      .trim();
 
     try {
       const parsed = JSON.parse(text) as Record<string, unknown>;

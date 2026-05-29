@@ -90,6 +90,9 @@
     "title": "Nova receita",
     "editTitle": "Editar receita",
     "namePlaceholder": "Nome da receita",
+    "suggestionLabel": "Sugestão:",
+    "nameWith": "com",
+    "nameAnd": "e",
     "servingsLabel": "Porções",
     "timeLabel": "Tempo (min)",
     "proteinsLabel": "Proteínas",
@@ -503,32 +506,46 @@
     "shareCopied": "Copiado",
     "cuisineBadgeTeaser_one": "falta {{count}}",
     "cuisineBadgeTeaser_other": "faltam {{count}}",
+    "flavorNotes": {
+      "sweet": "Doce",
+      "sour": "Ácido",
+      "salty": "Salgado",
+      "bitter": "Amargo",
+      "umami": "Umami",
+      "smoky": "Fumado",
+      "earthy": "Terroso",
+      "fresh": "Fresco",
+      "rich": "Rico",
+      "spicy": "Picante",
+      "nutty": "Frutos secos",
+      "aromatic": "Aromático"
+    },
     "titles": {
       "explorer": {
         "1": "Curioso",
-        "2": "Viajante",
+        "2": "Aventureiro",
         "3": "Explorador",
-        "4": "Embaixador dos Sabores",
-        "5": "Nómada Gastronómico"
+        "4": "Caçador de Sabores",
+        "5": "Sem Fronteiras"
       },
       "optimizer": {
         "1": "Consciente",
-        "2": "Preciso",
-        "3": "Atleta de Cozinha",
-        "4": "Engenheiro Nutricional",
-        "5": "Chef de Alta Performance"
+        "2": "Equilibrado",
+        "3": "Afinado",
+        "4": "Preciso",
+        "5": "Mestre dos Macros"
       },
       "planner": {
         "1": "Organizado",
         "2": "Planeador",
-        "3": "Chef de Semana",
-        "4": "Mestre do Meal Prep",
-        "5": "Arquiteto de Refeições"
+        "3": "Sempre a Postos",
+        "4": "Rei da Marmita",
+        "5": "Maestro da Semana"
       },
       "swift": {
         "1": "Ágil",
         "2": "Veloz",
-        "3": "Ninja da Cozinha",
+        "3": "Relâmpago",
         "4": "Chef Expresso",
         "5": "Mestre do Tempo"
       },
