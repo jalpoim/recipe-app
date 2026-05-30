@@ -56,11 +56,7 @@ Each finding has:
 
 > Note: keep the stored raw scores as-is (they're still correct per-axis); only the *comparison* across axes changes. This is a contained ~15–20 line edit in `me.tsx` plus a shared helper if `getPrimaryAxis` is reused elsewhere.
 
-**Status:** `decided`
-
----
-
-## Finding 3 — 🔴 Mechanics reward the opposite of meal prep
+**Status:** ✅ `done` — shipped on `claude/meal-prep-app-review-u7xkE`. Implemented as a shared module `src/lib/cook-profile.ts` (rank = `level + fractionalProgress`, deterministic tie-break with Explorer demoted from default winner), wired into both `me.tsx` and `$recipeId.tsx` (removing the duplicate). Regression covered in `src/lib/cook-profile.test.ts` (8 tests, all pass) — including the canonical case where a higher *raw* score (explorer 96) loses to a higher *level* (optimizer 95 = L5).
 
 **Severity:** 🔴 (the named core behavior is structurally under-rewarded)
 **Where:** `lifetime_cook_count = rows.length` (`cook-log-queries.ts:626`); Explorer rewards *distinct* recipes (`:488-490`); Planner "meal-prep week" needs ≥3 planned cooks/week (`:549-550`).
@@ -138,7 +134,7 @@ Each finding has:
 - Apply the `+0.5` to the resolved highest axis's stored score in `_recomputeProfileForUser` (the shopping completion count already exists via `cook_log_completions`, `cook-log-queries.ts:533-537`).
 - Guard against the `+0.5` itself flipping which axis is "highest" on each recompute (compute the target axis from the pre-bonus scores).
 
-**Status:** `decided` (build after F2)
+**Status:** ✅ `done` — shipped on `claude/meal-prep-app-review-u7xkE`. `highestNonPlannerAxis()` (shared in `cook-profile.ts`, same normalized rank as F2) chooses the target from pre-bonus scores; `_recomputeProfileForUser` adds `+0.5 × shoppingTripCount` to it (percentage axes clamped at 100, planner keeps `+2`). Covered by tests.
 
 ---
 
@@ -330,10 +326,10 @@ Starting ratios (tune with real usage data):
 - ✅ **Chip strip is already persona-reordered** (`library/index.tsx:1417-1432`): optimizer leads with `alto-proteina`, time_crunched with `rapido`, meal_prepper with `meal-prep`.
 
 **Remaining fixes (small):**
-1. **Sort-button "active" highlight is hardcoded to `pcal`** (`library/index.tsx:1684`: `effectiveSort !== "pcal"`). A non-optimizer's true default is `popular`, so they see the Sort button highlighted on first load as if a non-default sort is active. Fix: compare against the user's persona default, not `pcal`.
-2. **Explorer & dietary personas have no leading persona chip** (`library/index.tsx:1419-1423` covers only 3 of 5) — they fall back to the time-aware chip. Decide: Explorer could lead with `em-alta` (popular); dietary has no obvious chip (acceptable to leave on time-aware).
+1. ✅ **BUILT** — Sort-button highlight now compares against the persona default sort (`personaDefaultSort`) instead of hardcoded `pcal`, so non-optimizers no longer see it highlighted on first load.
+2. ✅ **BUILT** — Explorer now leads with `em-alta` (popular). Dietary intentionally left on the time-aware default (no obvious dietary chip).
 
-**Status:** `decided` (pivot confirmed; persona defaults already live) · two small fixes pending build
+**Status:** ✅ `done` (both fixes shipped on `claude/meal-prep-app-review-u7xkE`). Persona sort + chip order confirmed already live; the two highlight/chip gaps are now closed. Plan-doc pivot note still TODO (low priority).
 
 ---
 
@@ -389,10 +385,10 @@ These are working and reflect genuine gamification literacy — do not regress t
 ## Decisions resolved (all findings)
 
 - [x] **F1** — Fully embrace gamification as a core pillar; update plan + `CLAUDE.md`.
-- [x] **F2** — Normalize axis comparison so all four are equally winnable (build pending).
+- [x] **F2** — Normalize axis comparison so all four are equally winnable. ✅ **BUILT** (`src/lib/cook-profile.ts` + tests; wired into `me.tsx` & `$recipeId.tsx`).
 - [x] **F3** — Fix incentives only; leftover/portion modeling = roadmap.
 - [x] **F4** — Three mark-as-cooked entry points + collapse UX (build pending); creator-points dedupe **done**.
-- [x] **F5** — Implement universal shopping `+0.5`-to-highest-axis (build after F2).
+- [x] **F5** — Implement universal shopping `+0.5`-to-highest-axis. ✅ **BUILT** (`highestNonPlannerAxis` in `cook-profile.ts`, applied in `cook-log-queries.ts`).
 - [x] **F6** — Fix data first; audit script in progress (verify buckwheat fix landed).
 - [x] **F7** — Profile shows cuisine badges; progress bar stays post-action. Pursue **weeks-cooked counter** + **first-class share card**.
 - [x] **F8** — Log + staleness + **self-heal only** (recompute-on-read, background, non-blocking). No admin panel.
