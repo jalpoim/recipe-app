@@ -16,10 +16,10 @@ Comprehensive performance optimization guide for Postgres, maintained by Supabas
 
 ## When to Apply
 
-Reference these guidelines when:
+When the task involves any of the following, you MUST open the relevant `references/*.md` rule files and check the code against them BEFORE responding — and cite the rule IDs you applied:
 - Writing SQL queries or designing schemas
 - Implementing indexes or query optimization
-- Reviewing database performance issues
+- Reviewing database performance issues, including any "why is this slow / make it faster" question that touches a query, server function, or the data layer
 - Configuring connection pooling or scaling
 - Optimizing for Postgres-specific features
 - Working with Row-Level Security (RLS)

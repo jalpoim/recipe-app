@@ -4,6 +4,14 @@
 @.claude/skills/supabase-postgres-best-practices/SKILL.md
 @.claude/skills/web-design-guidelines/SKILL.md
 
+## Skill routing (mandatory)
+Before answering, classify the task and apply the matching skill(s). Applying a skill means actually reading its referenced files and checking against them — not just knowing it exists.
+- **DB queries, indexes, RLS predicates, or any "make it faster / why is this slow" question touching the data layer (`*-queries.ts`, server fns, SQL)** → READ the relevant `references/*.md` in `supabase-postgres-best-practices` (e.g. `query-*`, `conn-*`) and cite the rule IDs you applied.
+- **Supabase auth, RLS, views, functions, triggers, storage, or user data** → run the `supabase` skill Security Checklist; verify changes with a real query.
+- **Reviewing UI components/pages/CSS for correctness or accessibility** → fetch + apply `web-design-guidelines`.
+- **Designing, scoping, or pressure-testing a plan/spec** → `grill-me`.
+End every substantive response with a one-line **Skills applied:** note listing which fired, or `none — <why>`. This declaration is mandatory; it forces the classification step.
+
 # Project: Meal Prep App
 
 This is a meal prep planning web app built around a protein-first paradigm. The user picks a protein, then sees recipes for that protein, then builds a weekly plan.
