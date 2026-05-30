@@ -6,14 +6,14 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { motion, useAnimationControls, AnimatePresence } from "framer-motion";
 import { useMotion } from "../lib/use-reduced-motion";
 import { BookOpen, ChefHat, ClipboardList, ShoppingCart, User } from "lucide-react";
 
 import { useTranslation } from "react-i18next";
-import { fetchActivePlanWithCount } from "../lib/supabase/plan-queries";
+import { fetchActivePlanWithCount, fetchPlanItems } from "../lib/supabase/plan-queries";
 import { acceptInvite } from "../lib/supabase/household-queries";
 import {
   saveMeasurementUnit,
@@ -74,6 +74,23 @@ function BottomNav() {
   });
 
   const itemCount = plan?.item_count ?? 0;
+
+  // Warm the Plano/Lista item list shortly after load so the first tab switch is
+  // cache-instant (active-plan is already warm via this badge query).
+  const qc = useQueryClient();
+  useEffect(() => {
+    const planId = (plan as { id?: string } | undefined)?.id;
+    if (!planId) return;
+    const id = setTimeout(() => {
+      void qc.prefetchQuery({
+        queryKey: ["plan-items", planId],
+        queryFn: () => fetchPlanItems({ data: planId }),
+        staleTime: 2 * 60_000,
+      });
+    }, 1000);
+    return () => clearTimeout(id);
+  }, [plan, qc]);
+
   const badgeControls = useAnimationControls();
   const { skip: reducedMotion } = useMotion();
   const prevCountRef = useRef(itemCount);

@@ -16,7 +16,14 @@ import appCss from "../styles.css?url";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false },
+    queries: {
+      staleTime: 30_000,
+      // Keep cached query data ~30min so switching back to a tab renders from cache.
+      // (Default gcTime is 5min, which drops the cache and forces a cold refetch.)
+      gcTime: 30 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
   },
 });
 
