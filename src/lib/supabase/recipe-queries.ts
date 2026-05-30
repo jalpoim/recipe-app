@@ -190,8 +190,7 @@ export const createRecipe = createServerFn({ method: "POST" })
         .insert(ingRows);
       if (ingErr) throw new Error(ingErr.message);
       if (unmatched.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("unmatched_ingredients").insert(
+        await supabase.from("unmatched_ingredients").insert(
           unmatched.map((n) => ({
             name: n,
             normalized_name: n.toLowerCase(),
@@ -295,8 +294,7 @@ export const updateRecipe = createServerFn({ method: "POST" })
         })),
       );
       if (unmatched.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (supabase as any).from("unmatched_ingredients").insert(
+        await supabase.from("unmatched_ingredients").insert(
           unmatched.map((n) => ({
             name: n,
             normalized_name: n.toLowerCase(),

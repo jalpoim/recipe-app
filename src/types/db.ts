@@ -269,6 +269,7 @@ export type Database = {
           name: string;
           owner_id: string | null;
           protein_per_100g: number | null;
+          signals_enriched_at: string | null;
         };
         Insert: {
           aliases?: string[];
@@ -288,6 +289,7 @@ export type Database = {
           name: string;
           owner_id?: string | null;
           protein_per_100g?: number | null;
+          signals_enriched_at?: string | null;
         };
         Update: {
           aliases?: string[];
@@ -307,6 +309,7 @@ export type Database = {
           name?: string;
           owner_id?: string | null;
           protein_per_100g?: number | null;
+          signals_enriched_at?: string | null;
         };
         Relationships: [];
       };
@@ -411,6 +414,63 @@ export type Database = {
           },
         ];
       };
+      platform_averages: {
+        Row: {
+          avg_cooking_time_min: number | null;
+          avg_distinct_cuisines: number | null;
+          avg_heat_level: number | null;
+          avg_new_recipe_ratio: number | null;
+          id: number;
+          top_10_ingredients: string[];
+          updated_at: string | null;
+        };
+        Insert: {
+          avg_cooking_time_min?: number | null;
+          avg_distinct_cuisines?: number | null;
+          avg_heat_level?: number | null;
+          avg_new_recipe_ratio?: number | null;
+          id?: number;
+          top_10_ingredients?: string[];
+          updated_at?: string | null;
+        };
+        Update: {
+          avg_cooking_time_min?: number | null;
+          avg_distinct_cuisines?: number | null;
+          avg_heat_level?: number | null;
+          avg_new_recipe_ratio?: number | null;
+          id?: number;
+          top_10_ingredients?: string[];
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      unmatched_ingredients: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          normalized_name: string | null;
+          recipe_id: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          normalized_name?: string | null;
+          recipe_id?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          normalized_name?: string | null;
+          recipe_id?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -420,6 +480,11 @@ export type Database = {
           dietary_mode: string;
           display_name: string;
           email: string | null;
+          flavor_narrative: string | null;
+          flavor_narrative_generated_at: string | null;
+          flavor_narrative_lang: string | null;
+          flavor_profile_data: Json | null;
+          heat_preference: number | null;
           intolerances: string[];
           measurement_unit: string;
           onboarding_completed: boolean;
@@ -434,6 +499,11 @@ export type Database = {
           dietary_mode?: string;
           display_name: string;
           email?: string | null;
+          flavor_narrative?: string | null;
+          flavor_narrative_generated_at?: string | null;
+          flavor_narrative_lang?: string | null;
+          flavor_profile_data?: Json | null;
+          heat_preference?: number | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;
@@ -448,6 +518,11 @@ export type Database = {
           dietary_mode?: string;
           display_name?: string;
           email?: string | null;
+          flavor_narrative?: string | null;
+          flavor_narrative_generated_at?: string | null;
+          flavor_narrative_lang?: string | null;
+          flavor_profile_data?: Json | null;
+          heat_preference?: number | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;

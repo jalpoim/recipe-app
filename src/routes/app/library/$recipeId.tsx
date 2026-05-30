@@ -517,8 +517,7 @@ function RecipeDetailPage() {
   // "Couldn't verify" marker (#8): when the user has dietary intolerances set, a non-pantry
   // ingredient that isn't linked to the catalog can't be checked for allergens — flag it
   // (the allergen FILTER already hides confirmed-unsafe; this is the honest uncertain middle).
-  const hasIntolerances =
-    ((profile?.intolerances as string[] | undefined)?.length ?? 0) > 0;
+  const hasIntolerances = (profile?.intolerances?.length ?? 0) > 0;
   const isUnverifiable = (ing: { ingredient_id?: string | null; is_pantry?: boolean }) =>
     hasIntolerances && !ing.ingredient_id && !ing.is_pantry;
   const anyUnverifiable = recipe.recipe_ingredients.some((i) =>
