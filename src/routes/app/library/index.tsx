@@ -1408,22 +1408,31 @@ function LibraryPage() {
     ? STRIP_CHIPS.find((c) => c.id === stripChip)
     : undefined;
 
+  // The chip that's selected on open leads the strip, so the active filter is
+  // always the first (visible) chip — never stranded off-screen at the end. Frozen
+  // at mount (the initial stripChip default) so manual taps highlight in place
+  // instead of reshuffling the strip on every tap.
+  const leadChipRef = useRef<StripChipId | null>(stripChip);
+
   const orderedChips = useMemo(() => {
-    // Persona chip takes precedence over time-aware default for strip ordering
+    // Persona chip stays prominent (second), preserving the persona reordering —
+    // but the active/default chip always wins the first slot for visibility.
     const personaChipId: StripChipId | null =
       profile?.cook_style === 'optimizer' ? 'alto-proteina' :
       profile?.cook_style === 'time_crunched' ? 'rapido' :
       profile?.cook_style === 'meal_prepper' ? 'meal-prep' :
       profile?.cook_style === 'explorer' ? 'em-alta' :
       null;
-    const preferredId = personaChipId ?? getTimeAwareChip();
-    const idx = STRIP_CHIPS.findIndex((c) => c.id === preferredId);
-    if (idx <= 0) return STRIP_CHIPS;
-    return [
-      STRIP_CHIPS[idx],
-      ...STRIP_CHIPS.slice(0, idx),
-      ...STRIP_CHIPS.slice(idx + 1),
-    ];
+    const frontIds: StripChipId[] = [];
+    if (leadChipRef.current) frontIds.push(leadChipRef.current);
+    if (personaChipId && personaChipId !== leadChipRef.current)
+      frontIds.push(personaChipId);
+    if (frontIds.length === 0) return STRIP_CHIPS;
+    const frontChips = frontIds
+      .map((id) => STRIP_CHIPS.find((c) => c.id === id))
+      .filter((c): c is StripChipDef => !!c);
+    const rest = STRIP_CHIPS.filter((c) => !frontIds.includes(c.id));
+    return [...frontChips, ...rest];
   }, [profile?.cook_style]);
 
   const personaDefaultSort: Sort = getPersonaSort(profile?.cook_style);
