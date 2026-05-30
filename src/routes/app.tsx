@@ -79,7 +79,7 @@ function BottomNav() {
   // cache-instant (active-plan is already warm via this badge query).
   const qc = useQueryClient();
   useEffect(() => {
-    const planId = (plan as { id?: string } | undefined)?.id;
+    const planId = plan?.id;
     if (!planId) return;
     const id = setTimeout(() => {
       void qc.prefetchQuery({
