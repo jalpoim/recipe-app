@@ -253,9 +253,10 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 1. Server fn that selects N recipes weighted by: persona default sort, dietary filter, protein spread, and the user's `user_cook_profile` signals (liked flavor notes, explored/preferred cuisines, signature ingredient). Insert as editable plan items.
 2. Surface as "Sugerir plano" on the empty plan (and as "Sugerir mais" on a non-empty plan).
 3. Output is fully editable (swap/remove/adjust servings) — it's a starting point, not a lock-in.
-4. Synergy: the generator should weight the user's most-liked / most-cooked recipes (see Finding 11).
 
-**Status:** `decided` (build, no AI)
+**Familiar : novel blend (evidence-driven — see Finding 11 research note).** The generator must mix the user's **repertoire/favourites** (most-liked, most-cooked, saved — familiar = fast + trustworthy) with a **controlled dose of taste-matched novelty** (recipes that fit their flavor profile / cuisines but they haven't cooked — breaks the documented "rut," feeds the Explorer / "Novo para mim" gamification moment). Open knob: the familiar:novel ratio and whether it's persona-tuned and/or user-controllable — see chat decision. This blend IS the differentiator vs AI (AI can't know the user's repertoire).
+
+**Status:** `decided` (build, no AI) · `pending-decision` (familiar:novel blend knob)
 
 ---
 
@@ -268,7 +269,12 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 **Decision:** ⚠️ **Do NOT build whole-plan repetition / templates** (insufficient evidence users want to repeat an identical week). **Instead: quick-add the user's most-liked / most-cooked recipes** so they can re-add favourites individually.
 
-**Research note (honest, uncertain):** What's well-established is a *limited food repertoire* — households rotate a small set of meals and repeat **individual** dishes heavily (the oft-cited "~9 dinners on rotation" figure circulates from market surveys; not rigorously peer-reviewed, treat as directional). What is **not** well-evidenced is that users want to replay an *identical full week*. Grocery/meal-kit behaviour supports **item/basket reorder** and **variety rotation** more than whole-plan repeat. So the instinct to favour individual-favourite re-add over plan repetition is sound. *Recommend verifying with a quick web search before committing if a firmer basis is wanted (offered in chat).*
+**Research note (verified 2026-05-29 via web search):**
+- **Limited repertoire is well-supported.** People "know ~15 recipes by heart" (HelloFresh/OnePoll survey, studyfinds.org); home cooks draw "mostly from their personal recipe repertoire" (French NutriNet-Santé, PMC5288891 / PMC4589128); parents build "set meals" and resist variation (qualitative family-meals study, PMC4784502). → Re-adding **individual favourites** is the evidenced behaviour.
+- **No evidence found that users want to replay an identical full week.** Confirms the decision to NOT build whole-plan repetition.
+- **BUT variety is genuinely wanted AND a health win.** Meal planning correlates with *higher* food variety + better diet quality (PMC5288891); consumers "fall into a rut of planning the same meals over and over, and suggestions that incorporate variety would be welcomed," and will pay more for new flavours (Innova); variety disrupts sensory-specific satiety (BMC Public Health).
+
+**Design conclusion (drives F10 too):** The repertoire/rut tension means the generator must be **mostly-familiar + a controlled dose of taste-matched novelty** — not "favourites again" (induces the rut) and not "all new" (loses trust/speed). The novel pick doubles as the Explorer / "Novo para mim" gamification moment. This is the core differentiator vs AI: **AI gives generic recipes; the app gives the user's own repertoire + smart, taste-profile-matched novelty.** See Finding 10 for the familiar:novel blend.
 
 **Action:**
 1. A "Os teus favoritos" quick-add row (on the empty plan and/or as a generator input) listing the user's most-liked / most-cooked / saved recipes for one-tap add.
