@@ -16,7 +16,12 @@ import {
   getUserFlavorProfile,
   generateFlavorNarrative,
 } from "../../lib/supabase/flavor-profile-queries";
-import type { UserCookProfile } from "../../types/db";
+import {
+  getAxisLevel,
+  getPrimaryAxis,
+  getCreatorLevel,
+  CREATOR_THRESHOLDS,
+} from "../../lib/cook-profile";
 
 export const Route = createFileRoute("/app/me")({
   component: ProfilePage,
@@ -34,50 +39,6 @@ export const Route = createFileRoute("/app/me")({
 // text-lo:     #9C6355  labels, sub-lines on light surfaces
 // chip-bg:     #FFE8DE  cuisine collection chips
 // chip-text:   #7A2C18  text on chips
-
-// ─── Level thresholds ────────────────────────────────────────────────────────
-
-const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
-const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const;
-const PLANNER_THRESHOLDS = [3, 10, 20, 35, 50] as const;
-const CREATOR_THRESHOLDS = [5, 15, 30, 55, 90] as const;
-
-type Axis = "explorer" | "optimizer" | "planner" | "swift";
-
-function getLevel(score: number, thresholds: readonly number[]): 1 | 2 | 3 | 4 | 5 {
-  if (score >= thresholds[4]) return 5;
-  if (score >= thresholds[3]) return 4;
-  if (score >= thresholds[2]) return 3;
-  if (score >= thresholds[1]) return 2;
-  return 1;
-}
-
-function getCreatorLevel(points: number): 1 | 2 | 3 | 4 | 5 {
-  return getLevel(points, CREATOR_THRESHOLDS);
-}
-
-function getAxisLevel(axis: Axis, cp: UserCookProfile): 1 | 2 | 3 | 4 | 5 {
-  switch (axis) {
-    case "explorer":
-      return getLevel(Number(cp.explorer_score), EXPLORER_THRESHOLDS);
-    case "optimizer":
-      return getLevel(Number(cp.optimizer_score), PCT_THRESHOLDS);
-    case "planner":
-      return getLevel(Number(cp.planner_score), PLANNER_THRESHOLDS);
-    case "swift":
-      return getLevel(Number(cp.swift_score), PCT_THRESHOLDS);
-  }
-}
-
-function getPrimaryAxis(cp: UserCookProfile): Axis {
-  const scores: Record<Axis, number> = {
-    explorer: Number(cp.explorer_score),
-    optimizer: Number(cp.optimizer_score),
-    planner: Number(cp.planner_score),
-    swift: Number(cp.swift_score),
-  };
-  return Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis;
-}
 
 // ─── Hero ────────────────────────────────────────────────────────────────────
 

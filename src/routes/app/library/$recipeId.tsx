@@ -48,63 +48,11 @@ import {
   fetchInteractions,
 } from "../../../lib/supabase/interaction-queries";
 import type { RecipeIngredient, RecipeStep, UserCookProfile } from "../../../types/db";
-
-// ─── Cook profile level helpers (for level-up detection) ─────────────────────
-
-const EXPLORER_THRESHOLDS = [10, 25, 50, 75, 100] as const;
-const PCT_THRESHOLDS = [20, 40, 60, 80, 95] as const;
-const PLANNER_THRESHOLDS = [3, 10, 20, 35, 50] as const;
-
-type Axis = "explorer" | "optimizer" | "planner" | "swift";
-
-function _getLevel(score: number, thresholds: readonly number[]): number {
-  if (score >= thresholds[4]) return 5;
-  if (score >= thresholds[3]) return 4;
-  if (score >= thresholds[2]) return 3;
-  if (score >= thresholds[1]) return 2;
-  return 1;
-}
-
-function _getAxisThresholds(axis: Axis) {
-  if (axis === "explorer") return EXPLORER_THRESHOLDS;
-  if (axis === "planner") return PLANNER_THRESHOLDS;
-  return PCT_THRESHOLDS;
-}
-
-function _getAxisScore(axis: Axis, cp: UserCookProfile): number {
-  if (axis === "explorer") return Number(cp.explorer_score);
-  if (axis === "optimizer") return Number(cp.optimizer_score);
-  if (axis === "planner") return Number(cp.planner_score);
-  return Number(cp.swift_score);
-}
-
-function _getPrimaryAxis(cp: UserCookProfile): Axis {
-  const scores: Record<Axis, number> = {
-    explorer: Number(cp.explorer_score),
-    optimizer: Number(cp.optimizer_score),
-    planner: Number(cp.planner_score),
-    swift: Number(cp.swift_score),
-  };
-  return Object.entries(scores).sort(([, a], [, b]) => b - a)[0][0] as Axis;
-}
-
-function _getPrimaryLevel(cp: UserCookProfile): number {
-  const axis = _getPrimaryAxis(cp);
-  return _getLevel(_getAxisScore(axis, cp), _getAxisThresholds(axis));
-}
-
-// Returns 0–100 pct toward the NEXT level on the primary axis.
-// Returns null if already at max level.
-function _progressToNextLevel(cp: UserCookProfile): number | null {
-  const axis = _getPrimaryAxis(cp);
-  const thresholds = _getAxisThresholds(axis);
-  const score = _getAxisScore(axis, cp);
-  const level = _getLevel(score, thresholds);
-  if (level >= 5) return null;
-  const lo = level === 1 ? 0 : thresholds[level - 1];
-  const hi = thresholds[level];
-  return Math.min(100, Math.round(((score - lo) / (hi - lo)) * 100));
-}
+import {
+  getPrimaryAxis,
+  getPrimaryLevel,
+  progressToNextLevelPct,
+} from "../../../lib/cook-profile";
 
 // Muted pastel thumbnail gradients per protein
 const PROTEIN_COLORS: Record<string, string> = {
@@ -541,8 +489,8 @@ function RecipeDetailPage() {
 
       // Snapshot profile before recompute for level-up detection
       const prevProfile = qc.getQueryData<UserCookProfile>(["cook-profile"]);
-      const prevLevel = prevProfile ? _getPrimaryLevel(prevProfile) : null;
-      const prevProgress = prevProfile ? _progressToNextLevel(prevProfile) : null;
+      const prevLevel = prevProfile ? getPrimaryLevel(prevProfile) : null;
+      const prevProgress = prevProfile ? progressToNextLevelPct(prevProfile) : null;
 
       // Recompute cook profile, then check for level-up
       recomputeCookProfile().then((newProfile) => {
@@ -550,9 +498,9 @@ function RecipeDetailPage() {
         qc.invalidateQueries({ queryKey: ["cook-distinct-count"] });
         qc.invalidateQueries({ queryKey: ["cook-summary-this-month"] });
         if (newProfile && prevLevel !== null) {
-          const newLevel = _getPrimaryLevel(newProfile);
+          const newLevel = getPrimaryLevel(newProfile);
           if (newLevel > prevLevel) {
-            const axis = _getPrimaryAxis(newProfile);
+            const axis = getPrimaryAxis(newProfile);
             setLevelUpTitle(t(`flavorIdentity.titles.${axis}.${newLevel}`));
             setTimeout(() => setLevelUpTitle(null), 3500);
           }
