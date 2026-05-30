@@ -1125,7 +1125,16 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      public_profiles: {
+        Row: {
+          avatar_url: string | null;
+          bio: string | null;
+          display_name: string | null;
+          user_id: string | null;
+          username: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       compute_popularity_score: {
@@ -1343,6 +1352,13 @@ export type RecipeStepTranslation =
   Database["public"]["Tables"]["recipe_step_translations"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
+// Public-safe projection of profiles (no email / dietary / flavor data).
+// Backed by the `public_profiles` view, which is the only profile data
+// readable by anon and across users.
+export type PublicProfile = Pick<
+  Profile,
+  "user_id" | "username" | "display_name" | "avatar_url" | "bio"
+>;
 export type Plan = Database["public"]["Tables"]["plans"]["Row"];
 export type PlanInsert = Database["public"]["Tables"]["plans"]["Insert"];
 export type PlanItem = Database["public"]["Tables"]["plan_items"]["Row"];

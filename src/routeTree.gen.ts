@@ -13,6 +13,7 @@ import { Route as AppRouteImport } from './routes/app'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as RRecipeIdRouteImport } from './routes/r/$recipeId'
 import { Route as JoinTokenRouteImport } from './routes/join/$token'
 import { Route as AuthCallbackRouteImport } from './routes/auth/callback'
 import { Route as AppShoppingRouteImport } from './routes/app/shopping'
@@ -46,6 +47,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRoute,
+} as any)
+const RRecipeIdRoute = RRecipeIdRouteImport.update({
+  id: '/r/$recipeId',
+  path: '/r/$recipeId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const JoinTokenRoute = JoinTokenRouteImport.update({
   id: '/join/$token',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$recipeId': typeof RRecipeIdRoute
   '/app/': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
   '/app/library/create': typeof AppLibraryCreateRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$recipeId': typeof RRecipeIdRoute
   '/app': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
   '/app/library/create': typeof AppLibraryCreateRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/app/shopping': typeof AppShoppingRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/join/$token': typeof JoinTokenRoute
+  '/r/$recipeId': typeof RRecipeIdRoute
   '/app/': typeof AppIndexRoute
   '/app/library/$recipeId': typeof AppLibraryRecipeIdRoute
   '/app/library/create': typeof AppLibraryCreateRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/app/shopping'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$recipeId'
     | '/app/'
     | '/app/library/$recipeId'
     | '/app/library/create'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/app/shopping'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$recipeId'
     | '/app'
     | '/app/library/$recipeId'
     | '/app/library/create'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/app/shopping'
     | '/auth/callback'
     | '/join/$token'
+    | '/r/$recipeId'
     | '/app/'
     | '/app/library/$recipeId'
     | '/app/library/create'
@@ -235,6 +247,7 @@ export interface RootRouteChildren {
   AppRoute: typeof AppRouteWithChildren
   AuthCallbackRoute: typeof AuthCallbackRoute
   JoinTokenRoute: typeof JoinTokenRoute
+  RRecipeIdRoute: typeof RRecipeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/app/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/r/$recipeId': {
+      id: '/r/$recipeId'
+      path: '/r/$recipeId'
+      fullPath: '/r/$recipeId'
+      preLoaderRoute: typeof RRecipeIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/join/$token': {
       id: '/join/$token'
@@ -399,7 +419,17 @@ const rootRouteChildren: RootRouteChildren = {
   AppRoute: AppRouteWithChildren,
   AuthCallbackRoute: AuthCallbackRoute,
   JoinTokenRoute: JoinTokenRoute,
+  RRecipeIdRoute: RRecipeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

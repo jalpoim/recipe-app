@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
 import { makeClient } from './client-server'
 import type { DietaryMode, CookStyle } from '../../types/db'
-import type { Profile } from '../../types/db'
+import type { Profile, PublicProfile } from '../../types/db'
 import type { MeasurementUnit } from '../detect-locale'
 
 export const fetchMyProfile = createServerFn({ method: 'GET' }).handler(
@@ -22,15 +22,18 @@ export const fetchMyProfile = createServerFn({ method: 'GET' }).handler(
 
 export const fetchProfileByUsername = createServerFn({ method: 'GET' })
   .inputValidator((username: string) => username)
-  .handler(async ({ data: username }): Promise<Profile | null> => {
+  .handler(async ({ data: username }): Promise<PublicProfile | null> => {
     const supabase = makeClient()
+    // Read from the public-safe view, not the base table — the base table's
+    // RLS restricts SELECT to the user's own row, and email/dietary/flavor data
+    // must never be exposed across users or to anon.
     const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
+      .from('public_profiles')
+      .select('user_id, username, display_name, avatar_url, bio')
       .eq('username', username)
       .maybeSingle()
     if (error) throw new Error(error.message)
-    return data
+    return data as PublicProfile | null
   })
 
 export const updateProfile = createServerFn({ method: 'POST' })

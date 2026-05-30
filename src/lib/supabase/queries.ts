@@ -437,10 +437,12 @@ export const fetchRecipeById = createServerFn({ method: "GET" })
     recipe.recipe_ingredients.sort((a, b) => a.position - b.position);
     recipe.recipe_steps.sort((a, b) => a.position - b.position);
 
-    // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id)
+    // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id).
+    // Use the public-safe view: the base profiles table is own-row-only, so a
+    // cross-user read of the author's name must go through public_profiles.
     if (recipe.owner_id) {
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("display_name, username")
         .eq("user_id", recipe.owner_id)
         .maybeSingle();
