@@ -13,7 +13,6 @@ import {
   Minus,
   Plus,
   CalendarDays,
-  Sparkles,
   Star,
   Check,
 } from "lucide-react";
@@ -888,7 +887,6 @@ function PlanPage() {
                 aria-label={t("plan.suggestMore")}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
               >
-                <Sparkles size={14} aria-hidden="true" />
                 {suggestMutation.isPending
                   ? t("plan.suggesting")
                   : t("plan.suggestMore")}
@@ -934,7 +932,6 @@ function PlanPage() {
               disabled={suggestMutation.isPending}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
-              <Sparkles size={16} aria-hidden="true" />
               {suggestMutation.isPending
                 ? t("plan.suggesting")
                 : t("plan.suggest")}
