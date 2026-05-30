@@ -719,6 +719,113 @@ export const getCuisineBadgeProgress = createServerFn({ method: "GET" }).handler
   },
 );
 
+// ─── F11 — Favourites quick-add ──────────────────────────────────────────────
+
+export type TopCookedRecipe = {
+  id: string;
+  name: string; // translated, pt fallback
+  imageThumbUrl: string | null;
+  proteins: string[]; // for the protein-gradient thumbnail fallback
+  cookCount: number; // lifetime count for this user
+  timeMin: number | null;
+  calories: number | null; // per-serving (respects macros_total)
+};
+
+// GET: the current user's most-cooked recipes, for the favourites quick-add sheet.
+// Single filtered scan of cook_log (cook_log_user_id_idx) + one translation query
+// when non-pt — no per-recipe round-trips (query-missing-indexes / no N+1).
+export const fetchTopCookedRecipes = createServerFn({ method: "GET" })
+  .inputValidator((limit: number) => limit)
+  .handler(async ({ data: limit }): Promise<TopCookedRecipe[]> => {
+    const supabase = makeClient();
+    const lang = getLang();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    type TopRecipeRow = {
+      id: string;
+      name: string;
+      image_thumb_url: string | null;
+      image_url: string | null;
+      proteins: string[];
+      time_min: number | null;
+      calories: number | null;
+      servings: number;
+      macros_total: boolean;
+      deleted_at: string | null;
+    };
+
+    const { data: rows } = (await supabase
+      .from("cook_log")
+      .select(
+        "recipe_id, cooked_at, recipes(id, name, image_thumb_url, image_url, proteins, time_min, calories, servings, macros_total, deleted_at)",
+      )
+      .eq("user_id", session.user.id)) as unknown as {
+      data:
+        | {
+            recipe_id: string;
+            cooked_at: string;
+            recipes: TopRecipeRow | null;
+          }[]
+        | null;
+    };
+
+    // Aggregate count + latest cook per recipe (supabase-js has no COUNT…GROUP BY;
+    // mirror getCookSummaryThisMonth's in-JS aggregation). Skip deleted recipes.
+    const agg = new Map<
+      string,
+      { recipe: TopRecipeRow; count: number; lastCookedAt: string }
+    >();
+    for (const row of rows ?? []) {
+      const r = row.recipes;
+      if (!r || r.deleted_at) continue;
+      const existing = agg.get(row.recipe_id);
+      if (existing) {
+        existing.count++;
+        if (row.cooked_at > existing.lastCookedAt) existing.lastCookedAt = row.cooked_at;
+      } else {
+        agg.set(row.recipe_id, { recipe: r, count: 1, lastCookedAt: row.cooked_at });
+      }
+    }
+
+    const top = [...agg.values()]
+      .sort(
+        (a, b) =>
+          b.count - a.count || b.lastCookedAt.localeCompare(a.lastCookedAt),
+      )
+      .slice(0, limit);
+
+    // Translate names for non-pt users (one batched query).
+    let nameById = new Map<string, string>();
+    if (lang !== "pt" && top.length > 0) {
+      const ids = top.map((t) => t.recipe.id);
+      const { data: trans } = await supabase
+        .from("recipe_translations")
+        .select("recipe_id, name")
+        .in("recipe_id", ids)
+        .eq("language", lang);
+      nameById = new Map((trans ?? []).map((t) => [t.recipe_id, t.name]));
+    }
+
+    return top.map(({ recipe: r, count }) => {
+      const calories =
+        r.calories != null
+          ? Math.round(r.macros_total ? r.calories / (r.servings || 1) : r.calories)
+          : null;
+      return {
+        id: r.id,
+        name: nameById.get(r.id) ?? r.name,
+        imageThumbUrl: r.image_thumb_url ?? r.image_url ?? null,
+        proteins: r.proteins ?? [],
+        cookCount: count,
+        timeMin: r.time_min,
+        calories,
+      };
+    });
+  });
+
 // GET: fetch cook counts per recipe for the current user — DB GROUP BY via RPC
 export const fetchRecipeCookCounts = createServerFn({ method: "GET" })
   .inputValidator((recipeIds: string[]) => recipeIds)
