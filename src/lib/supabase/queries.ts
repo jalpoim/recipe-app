@@ -250,40 +250,63 @@ export const fetchLibrary = createServerFn({ method: "GET" })
     // Pre-fetch recipe IDs so the filter applies before LIMIT (cursor-safe).
     // Searches PT names + raw_text on recipe_ingredients, and translations for non-PT users.
     if (ingredients.length > 0) {
-      const idSets = await Promise.all(
-        ingredients.map(async (ing) => {
-          const matched = new Set<string>();
+      const lowered = ingredients.map((i) => i.toLowerCase());
+      // term index → set of recipe ids that contain that term
+      const perTerm: Set<string>[] = lowered.map(() => new Set<string>());
 
-          const { data: ptMatches } = await supabase
+      // Single query for ALL terms (OR), then intersect in memory for AND logic.
+      // Previously this fired 1–3 queries *per term* (an N+1); now it's a fixed
+      // ≤3 queries regardless of how many ingredients are selected.
+      const ptOr = ingredients
+        .flatMap((ing) => [`name.ilike.%${ing}%`, `raw_text.ilike.%${ing}%`])
+        .join(",");
+      const { data: ptMatches } = await supabase
+        .from("recipe_ingredients")
+        .select("recipe_id, name, raw_text")
+        .or(ptOr);
+      for (const row of ptMatches ?? []) {
+        const hay = `${row.name ?? ""} ${row.raw_text ?? ""}`.toLowerCase();
+        lowered.forEach((term, i) => {
+          if (hay.includes(term)) perTerm[i].add(row.recipe_id);
+        });
+      }
+
+      if (lang !== "pt") {
+        const transOr = ingredients
+          .map((ing) => `name.ilike.%${ing}%`)
+          .join(",");
+        const { data: transMatches } = await supabase
+          .from("recipe_ingredient_translations")
+          .select("ingredient_id, name")
+          .eq("language", lang)
+          .or(transOr);
+        const transIds = (transMatches ?? []).map((t) => t.ingredient_id);
+        if (transIds.length > 0) {
+          const { data: riRows } = await supabase
             .from("recipe_ingredients")
-            .select("recipe_id")
-            .or(`name.ilike.%${ing}%,raw_text.ilike.%${ing}%`);
-          (ptMatches ?? []).forEach((r) => matched.add(r.recipe_id));
-
-          if (lang !== "pt") {
-            const { data: transMatches } = await supabase
-              .from("recipe_ingredient_translations")
-              .select("ingredient_id")
-              .ilike("name", `%${ing}%`)
-              .eq("language", lang);
-            if ((transMatches ?? []).length > 0) {
-              const riIds = transMatches!.map((t) => t.ingredient_id);
-              const { data: riMatches } = await supabase
-                .from("recipe_ingredients")
-                .select("recipe_id")
-                .in("id", riIds);
-              (riMatches ?? []).forEach((r) => matched.add(r.recipe_id));
-            }
+            .select("id, recipe_id")
+            .in("id", transIds);
+          const idToRecipe = new Map(
+            (riRows ?? []).map((r) => [r.id, r.recipe_id]),
+          );
+          for (const tm of transMatches ?? []) {
+            const rid = idToRecipe.get(tm.ingredient_id);
+            if (!rid) continue;
+            const name = (tm.name ?? "").toLowerCase();
+            lowered.forEach((term, i) => {
+              if (name.includes(term)) perTerm[i].add(rid);
+            });
           }
-
-          return matched;
-        }),
-      );
+        }
+      }
 
       // AND logic: recipe must match every ingredient term
-      const matchingIds = idSets.reduce(
-        (acc, set) => new Set([...acc].filter((x) => set.has(x))),
-      );
+      let matchingIds = perTerm[0] ?? new Set<string>();
+      for (let i = 1; i < perTerm.length; i++) {
+        matchingIds = new Set(
+          [...matchingIds].filter((x) => perTerm[i].has(x)),
+        );
+      }
       if (matchingIds.size === 0) return { data: [], nextCursor: null };
       query = query.in("id", [...matchingIds]);
     }

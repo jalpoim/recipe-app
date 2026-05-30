@@ -14,6 +14,7 @@ import { BookOpen, ChefHat, ClipboardList, ShoppingCart, User } from "lucide-rea
 
 import { useTranslation } from "react-i18next";
 import { fetchActivePlanWithCount, fetchPlanItems } from "../lib/supabase/plan-queries";
+import { fetchShoppingChecks } from "../lib/supabase/shopping-queries";
 import { acceptInvite } from "../lib/supabase/household-queries";
 import {
   saveMeasurementUnit,
@@ -86,6 +87,12 @@ function BottomNav() {
         queryKey: ["plan-items", planId],
         queryFn: () => fetchPlanItems({ data: planId }),
         staleTime: 2 * 60_000,
+      });
+      // Warm the shopping checks too so the Lista tab is cache-instant like Plano.
+      void qc.prefetchQuery({
+        queryKey: ["shopping-checks", planId],
+        queryFn: () => fetchShoppingChecks({ data: planId }),
+        staleTime: 30_000,
       });
     }, 1000);
     return () => clearTimeout(id);

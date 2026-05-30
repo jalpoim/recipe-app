@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { capture } from "../../lib/analytics";
@@ -14,7 +14,7 @@ import {
 } from "../../lib/supabase/plan-queries";
 import {
   fetchShoppingChecks,
-  upsertCheck,
+  upsertChecks,
   addCustomShoppingItem,
   deleteCustomShoppingItem,
   clearNonCustomChecks,
@@ -608,21 +608,19 @@ function buildRecipeShareText(groups: RecipeGroup[]): string {
 }
 
 function RecipeView({
-  items,
+  groups,
   checkMap,
   deletedItemKeys,
   onToggle,
   onRemoveDerived,
 }: {
-  items: PlanItemWithRecipe[];
+  groups: RecipeGroup[];
   checkMap: Map<string, boolean>;
   deletedItemKeys: Set<string>;
   onToggle: (keys: string[], next: boolean) => void;
   onRemoveDerived: (keys: string[], name: string) => void;
 }) {
-  if (items.length === 0) return null;
-
-  const groups = buildRecipeGroups(items);
+  if (groups.length === 0) return null;
 
   return (
     <>
@@ -833,20 +831,14 @@ function ShareButton({ text }: { text: string }) {
 }
 
 function GlobalView({
-  items,
+  grouped,
   checkMap,
-  customItems,
-  categoryOverrides,
   onToggle,
-  onRemoveCustom,
   onCategoryChange,
 }: {
-  items: PlanItemWithRecipe[];
+  grouped: Map<string, AggItem[]>;
   checkMap: Map<string, boolean>;
-  customItems: ShoppingCheckState[];
-  categoryOverrides: Record<string, string>;
   onToggle: (keys: string[], next: boolean) => void;
-  onRemoveCustom: (key: string) => void;
   onCategoryChange: (ingredientName: string, cat: Category) => void;
 }) {
   const [editingCategory, setEditingCategory] = useState<{
@@ -854,12 +846,6 @@ function GlobalView({
     current: string;
   } | null>(null);
 
-  const grouped = buildGlobalList(
-    items,
-    categoryOverrides,
-    customItems,
-    onRemoveCustom,
-  );
   return (
     <>
       <div className="space-y-3">
@@ -1089,7 +1075,10 @@ function ShoppingPage() {
     queryKey: ["shopping-checks", planId],
     queryFn: () => fetchShoppingChecks({ data: planId! }),
     enabled: !!planId,
-    staleTime: 0,
+    // Used only to hydrate local checkMap once per plan; local state is the
+    // source of truth thereafter. A small staleTime lets the Lista tab render
+    // from cache on return instead of gating on a refetch every time.
+    staleTime: 30_000,
   });
 
   // Local check state — initialized from server once per plan, then mutated optimistically
@@ -1155,8 +1144,12 @@ function ShoppingPage() {
     void navigate({ search: { view: v }, replace: true });
   }
 
-  const categoryOverrides: Record<string, string> = Object.fromEntries(
-    overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
+  const categoryOverrides: Record<string, string> = useMemo(
+    () =>
+      Object.fromEntries(
+        overridesData.map((r) => [r.ingredient_name.toLowerCase(), r.category]),
+      ),
+    [overridesData],
   );
 
   const checkedCount = [...checkMap.values()].filter(Boolean).length;
@@ -1183,11 +1176,12 @@ function ShoppingPage() {
       for (const k of uncheckedKeys) m.set(k, true);
       return m;
     });
-    for (const k of uncheckedKeys) {
-      upsertCheck({
-        data: { planId: planId!, itemKey: k, isChecked: true },
-      }).catch(() => {});
-    }
+    upsertChecks({
+      data: {
+        planId: planId!,
+        items: uncheckedKeys.map((k) => ({ itemKey: k, isChecked: true })),
+      },
+    }).catch(() => {});
   }
 
   function toggleKeys(keys: string[], next: boolean) {
@@ -1196,11 +1190,12 @@ function ShoppingPage() {
       for (const k of keys) m.set(k, next);
       return m;
     });
-    for (const k of keys) {
-      upsertCheck({
-        data: { planId: planId!, itemKey: k, isChecked: next },
-      }).catch(() => showToast("Erro ao guardar", "error"));
-    }
+    upsertChecks({
+      data: {
+        planId: planId!,
+        items: keys.map((k) => ({ itemKey: k, isChecked: next })),
+      },
+    }).catch(() => showToast("Erro ao guardar", "error"));
   }
 
   function handleCategoryChange(ingredientName: string, cat: Category) {
@@ -1241,17 +1236,37 @@ function ShoppingPage() {
       .catch(() => showToast("Erro ao adicionar item", "error"));
   }
 
-  function handleRemoveCustom(itemKey: string) {
-    setCustomItems((prev) => prev.filter((c) => c.item_key !== itemKey));
-    setCheckMap((prev) => {
-      const n = new Map(prev);
-      n.delete(itemKey);
-      return n;
-    });
-    deleteCustomShoppingItem({ data: { planId: planId!, itemKey } }).catch(() =>
-      showToast("Erro ao remover item", "error"),
-    );
-  }
+  const handleRemoveCustom = useCallback(
+    (itemKey: string) => {
+      setCustomItems((prev) => prev.filter((c) => c.item_key !== itemKey));
+      setCheckMap((prev) => {
+        const n = new Map(prev);
+        n.delete(itemKey);
+        return n;
+      });
+      deleteCustomShoppingItem({ data: { planId: planId!, itemKey } }).catch(
+        () => showToast("Erro ao remover item", "error"),
+      );
+    },
+    [planId, showToast],
+  );
+
+  // Heavy list aggregations — keyed only on the data they read (items / overrides
+  // / customItems), NOT on checkMap. This keeps every checkbox tap from rebuilding
+  // the whole list, which was the dominant per-interaction cost on this page.
+  const recipeGroups = useMemo(() => buildRecipeGroups(items), [items]);
+  const globalGrouped = useMemo(
+    () =>
+      buildGlobalList(items, categoryOverrides, customItems, handleRemoveCustom),
+    [items, categoryOverrides, customItems, handleRemoveCustom],
+  );
+  const shareText = useMemo(
+    () =>
+      view === "recipe"
+        ? buildRecipeShareText(recipeGroups)
+        : buildShareText(globalGrouped),
+    [view, recipeGroups, globalGrouped],
+  );
 
   function handleClearChecks() {
     const next = new Map(checkMap);
@@ -1419,15 +1434,7 @@ function ShoppingPage() {
                   {t("shopping.addExtra")}
                 </button>
               )}
-              <ShareButton
-                text={
-                  view === "recipe"
-                    ? buildRecipeShareText(buildRecipeGroups(items))
-                    : buildShareText(
-                        buildGlobalList(items, categoryOverrides, customItems, () => {}),
-                      )
-                }
-              />
+              <ShareButton text={shareText} />
             </div>
             {showAddForm && (
               <div className="mb-4">
@@ -1441,7 +1448,7 @@ function ShoppingPage() {
             {/* Content — both always mounted so checkMap stays in sync */}
             <div className={view !== "recipe" ? "hidden" : ""}>
               <RecipeView
-                items={items}
+                groups={recipeGroups}
                 checkMap={checkMap}
                 deletedItemKeys={deletedItemKeys}
                 onToggle={toggleKeys}
@@ -1450,12 +1457,9 @@ function ShoppingPage() {
             </div>
             <div className={view !== "global" ? "hidden" : ""}>
               <GlobalView
-                items={items}
+                grouped={globalGrouped}
                 checkMap={checkMap}
-                customItems={customItems}
-                categoryOverrides={categoryOverrides}
                 onToggle={toggleKeys}
-                onRemoveCustom={handleRemoveCustom}
                 onCategoryChange={handleCategoryChange}
               />
             </div>
