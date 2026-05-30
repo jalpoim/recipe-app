@@ -254,9 +254,22 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 2. Surface as "Sugerir plano" on the empty plan (and as "Sugerir mais" on a non-empty plan).
 3. Output is fully editable (swap/remove/adjust servings) — it's a starting point, not a lock-in.
 
-**Familiar : novel blend (evidence-driven — see Finding 11 research note).** The generator must mix the user's **repertoire/favourites** (most-liked, most-cooked, saved — familiar = fast + trustworthy) with a **controlled dose of taste-matched novelty** (recipes that fit their flavor profile / cuisines but they haven't cooked — breaks the documented "rut," feeds the Explorer / "Novo para mim" gamification moment). Open knob: the familiar:novel ratio and whether it's persona-tuned and/or user-controllable — see chat decision. This blend IS the differentiator vs AI (AI can't know the user's repertoire).
+**Familiar : novel blend — ✅ persona-tuned, automatic (decided).** The generator mixes the user's **repertoire/favourites** (most-liked, most-cooked, saved — familiar = fast + trustworthy) with a **controlled dose of taste-matched novelty** (recipes fitting their flavor profile / cuisines but not yet cooked — breaks the documented "rut," doubles as the Explorer / "Novo para mim" gamification moment). The ratio is set by persona, no user effort. This blend IS the differentiator vs AI (AI can't know the user's repertoire).
 
-**Status:** `decided` (build, no AI) · `pending-decision` (familiar:novel blend knob)
+Starting ratios (tune with real usage data):
+
+| Persona | Familiar : Novel | Rationale |
+|---|---|---|
+| Explorer (routine breaker) | ~50 : 50 | Novelty *is* the reward |
+| Optimizer | ~70 : 30 | Proven macro-fit recipes + some new high-protein |
+| Dietary | ~70 : 30 | "Variety within constraints" is the identity reward |
+| Casual Meal Prepper | ~80 : 20 | Stability/control valued; light novelty |
+| Time Crunched | ~85 : 15 | Least bandwidth for experimentation |
+| null / new user | popularity-led | No repertoire yet — see cold-start |
+
+**Cold-start (important):** a new user has no cook log / favourites, so the "familiar" pool is empty. For these users the generator leans on **popularity + onboarding persona + dietary** (familiar ≈ popular/highly-rated). As the user cooks and saves, the familiar pool fills and the persona ratio takes over naturally. The generator must degrade gracefully when the favourites pool is smaller than the familiar quota (top up from popular within persona/dietary).
+
+**Status:** `decided` (build, no AI; persona-tuned blend + cold-start handling)
 
 ---
 
