@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { CookLog, UserCookProfile } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
+import { highestNonPlannerAxis } from "../cook-profile";
 
 // ─── Canonical cuisine normalisation ─────────────────────────────────────────
 // Maps any non-canonical or regional tag to one of the 18 target cuisine slugs.
@@ -518,7 +519,7 @@ async function _recomputeProfileForUser(
       optimizerTotal++;
       if ((protPerServing * 4) / calPerServing >= 0.25) optimizerMet++;
     }
-    const optimizerScore =
+    let optimizerScore =
       optimizerTotal > 0
         ? Math.round((optimizerMet / optimizerTotal) * 100)
         : 0;
@@ -533,7 +534,7 @@ async function _recomputeProfileForUser(
       swiftTotal++;
       if (r.time_min <= 30) swiftMet++;
     }
-    const swiftScore =
+    let swiftScore =
       swiftTotal > 0 ? Math.round((swiftMet / swiftTotal) * 100) : 0;
 
     // ── Planner axis ───────────────────────────────────────────────────────────
@@ -564,6 +565,24 @@ async function _recomputeProfileForUser(
 
     const plannerScore =
       plannedCount * 1 + shoppingTripCount * 2 + mealPrepWeeks * 3;
+
+    // ── Universal shopping incentive (Finding 5) ────────────────────────────────
+    // Planners already earn +2/trip on planner_score above. So that every other
+    // identity also has a reason to complete shopping in-app, add +0.5/completed
+    // trip to the user's highest NON-planner axis. The target is chosen from the
+    // pre-bonus scores so the bonus can never flip which axis it lands on.
+    if (shoppingTripCount > 0) {
+      const bonus = shoppingTripCount * 0.5;
+      const bonusAxis = highestNonPlannerAxis({
+        explorer: explorerScore,
+        optimizer: optimizerScore,
+        swift: swiftScore,
+      });
+      if (bonusAxis === "explorer") explorerScore += bonus;
+      else if (bonusAxis === "optimizer")
+        optimizerScore = Math.min(100, optimizerScore + bonus);
+      else swiftScore = Math.min(100, swiftScore + bonus);
+    }
 
     // ── Specialty badge ─────────────────────────────────────────────────────────
     // Hierarchy: cuisine (≥5 cooks) → dietary pattern → cooking method → protein

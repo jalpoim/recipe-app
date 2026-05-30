@@ -6,6 +6,7 @@ import {
   getAxisLevel,
   axisProgressPct,
   progressToNextLevelPct,
+  highestNonPlannerAxis,
 } from "./cook-profile";
 
 // Build a UserCookProfile with only the score fields that matter; the rest are
@@ -72,5 +73,30 @@ describe("level + progress helpers", () => {
   it("getAxisLevel matches the threshold tables", () => {
     expect(getAxisLevel("explorer", cp({ explorer: 50 }))).toBe(3);
     expect(getAxisLevel("planner", cp({ planner: 20 }))).toBe(3);
+  });
+});
+
+describe("highestNonPlannerAxis — shopping incentive target (Finding 5)", () => {
+  it("picks the higher-level non-planner axis, ignoring planner", () => {
+    expect(
+      highestNonPlannerAxis({ explorer: 96, optimizer: 95, swift: 0 }),
+    ).toBe("optimizer");
+    expect(
+      highestNonPlannerAxis({ explorer: 50, optimizer: 10, swift: 0 }),
+    ).toBe("explorer");
+  });
+
+  it("never returns planner even when planner would dominate", () => {
+    // planner isn't even an input — a heavy planner with low other axes still
+    // gets the nudge on their best non-planner axis.
+    const axis = highestNonPlannerAxis({ explorer: 5, optimizer: 0, swift: 0 });
+    expect(["explorer", "optimizer", "swift"]).toContain(axis);
+    expect(axis).toBe("explorer");
+  });
+
+  it("tie-breaks a flat profile to optimizer (not explorer)", () => {
+    expect(highestNonPlannerAxis({ explorer: 0, optimizer: 0, swift: 0 })).toBe(
+      "optimizer",
+    );
   });
 });

@@ -73,10 +73,18 @@ export function axisProgressPct(
 // SAME per-level scale, so the unbounded axes (explorer/planner) no longer beat
 // the capped percentage axes (optimizer/swift) merely because their raw numbers
 // grow larger. This is the Finding 2 fix — all four axes are equally winnable.
+export function axisRankFromScore(axis: Axis, score: number): number {
+  const thresholds = axisThresholds(axis);
+  const level = getLevel(score, thresholds);
+  if (level >= 5) return level + 1;
+  const lo = level === 1 ? 0 : thresholds[level - 1];
+  const hi = thresholds[level];
+  const frac = hi <= lo ? 0 : Math.min(1, Math.max(0, (score - lo) / (hi - lo)));
+  return level + frac;
+}
+
 function axisRank(axis: Axis, cp: UserCookProfile): number {
-  const level = getAxisLevel(axis, cp);
-  const pct = axisProgressPct(axis, cp);
-  return level + (pct === null ? 1 : pct / 100);
+  return axisRankFromScore(axis, axisScore(axis, cp));
 }
 
 // Tie-breaker for exact equality only (rare — e.g. a brand-new all-zero profile).
@@ -105,4 +113,25 @@ export function getPrimaryLevel(cp: UserCookProfile): 1 | 2 | 3 | 4 | 5 {
 
 export function progressToNextLevelPct(cp: UserCookProfile): number | null {
   return axisProgressPct(getPrimaryAxis(cp), cp);
+}
+
+// Highest of the three non-planner axes by normalised rank. Used by the
+// universal shopping incentive (Finding 5): planners already earn from shopping
+// via planner_score, so every other identity gets the +0.5 nudge on whichever
+// of explorer/optimizer/swift they lead. Ties: optimizer > swift > explorer.
+export type NonPlannerAxis = "explorer" | "optimizer" | "swift";
+
+export function highestNonPlannerAxis(scores: {
+  explorer: number;
+  optimizer: number;
+  swift: number;
+}): NonPlannerAxis {
+  const candidates: NonPlannerAxis[] = ["explorer", "optimizer", "swift"];
+  return candidates
+    .map((axis) => ({
+      axis,
+      rank: axisRankFromScore(axis, scores[axis]),
+      tie: TIE_PRIORITY[axis],
+    }))
+    .sort((a, b) => b.rank - a.rank || b.tie - a.tie)[0].axis;
 }
