@@ -5363,3 +5363,34 @@ The flavor-identity feature (titles, badges, signature ingredient, narrative) is
 **Guardrails:** cuisine is never a hard filter; prefer null over a wrong tag; the AI is primary for cuisine (ingredient-vote is a weak prior — the Caldo Verde→"american" failure).
 
 **Verify:** `cuisine_tags` coverage jumps from 44%; `flavor_notes`/`dietary_flags` from 0%; spot-check iconic dishes (Caldo Verde→portuguese, Shakshuka→middle-eastern, generic→empty).
+
+## Public Recipe Pages, SEO & Sharing — Phase 1 ✅ COMPLETE (2026-05-30)
+
+**Goal:** acquire users via SEO and word-of-mouth by exposing recipe content to anonymous visitors, without leaking user data. Industry-standard pattern: a public, server-rendered, crawlable, read-only surface in front of the authenticated app, sharing the same data via two projections (slim public DTO vs. full logged-in view). The "Add to plan / save" actions become the signup funnel.
+
+### Architecture (locked)
+- **Public vs. private surface.** Public + indexable: system recipe detail pages (the launch SEO catalog), approved `public`-visibility user recipes, public creator profiles, future category/protein landing pages, marketing/home. Never public (auth-gated + `noindex`): plans, shopping lists, cook logs, flavor identity, saved/liked sets, settings, onboarding, household, `/join`, `/auth`, `/admin`, all mutations, and per-user state on a public page. Drafts/private/pending/rejected recipes are never exposed (even to the owner) on the public URL.
+- **Two query projections.** A public page reads a curated DTO with an **explicit visibility filter in the query** (system OR public+approved, not deleted) on top of RLS — defense in depth — and returns 404 on miss so private-recipe existence never leaks.
+- **Author/profile data** is read only through the `public_profiles` view (public columns: user_id, username, display_name, avatar_url, bio). The base `profiles` table is own-row-only; `email`/dietary/flavor data is never world-readable.
+
+### Shipped (commit 8078c05)
+- **DB security hardening** (migrations `20260530091309_public_recipe_security_hardening`, `20260530171113_public_recipe_child_table_rls`):
+  - `profiles`: replaced the `USING(true)` public SELECT with own-row-only; added the `public_profiles` view (SELECT-only to anon/authenticated) for cross-user author + profile reads.
+  - anon is read-only on recipe/profile tables; `EXECUTE` revoked on trigger + RLS-helper functions from anon; `search_path` set on flagged functions; dropped the unrestricted `households` INSERT policy.
+  - recipe-children SELECT (ingredients/steps/translations) opened to anon, scoped to system / public+approved / own (mirrors `recipes_select`).
+- **Public route `/r/$recipeId`** (`src/routes/r/$recipeId.tsx`, `src/lib/supabase/public-queries.ts`): SSR, no auth, read-only render (hero, macros, ingredients, steps, author). Dynamic `<title>`/description, Open Graph + Twitter meta, `<link rel=canonical>`, and JSON-LD `Recipe` structured data. Sign-in CTA exposes the invitation, not the gated action.
+- Verified: `tsc` clean; runtime 200 (system recipe) / 404 (miss); SSR meta + JSON-LD present in HTML; anon RLS confirmed (209 system recipes/ingredients/steps visible, 0 private, `profiles` base table denied).
+
+### Open follow-ups (Phase 2)
+1. **Production domain (blocker for crawl):** canonical/OG URLs in `/r/$recipeId` are hardcoded to `https://mealprep.app`. Confirm the real Vercel domain and move to a `VITE_SITE_URL` env var — wrong canonical otherwise.
+2. `robots.txt` + `sitemap.xml` — allow `/r`, disallow `/app`,`/join`,`/auth`,`/admin`; sitemap of public recipe (and later category) URLs.
+3. Share button in-app → copies the canonical `/r/$id` URL (the word-of-mouth loop).
+4. Category/protein landing pages (`/recipes/chicken`, `/recipes/high-protein`) — the long-tail SEO volume; crawlable internal links into recipe pages.
+5. Add `publicRecipe.openApp` / `publicRecipe.signInCta` to `pt`/`en` locale files (currently inline `t()` fallbacks).
+6. Public exposure of user-published recipes requires trusted moderation (only `moderation_status='approved'`; `rel="nofollow ugc"` on user `source_url` links).
+
+### Known accepted trade-off
+The security advisor flags `public_profiles` as `security_definer_view` (lint 0010, ERROR). Deliberate, documented exception: `security_invoker = true` would hit the own-row base policy and break cross-user reads. The view is default-deny (explicit public-column list, no write path). The lint-clean alternative — splitting `profiles` into public + private tables — is a deferred refactor (touches ~8 query sites + the email-sync trigger).
+
+### Future: MCP server
+Worth doing **after** the public web surface matures, not now. A read-only MCP exposing the public catalog (same `system`/`public`+approved boundary, same safe-projection discipline as `public_profiles`) is the AI-assistant / answer-engine discovery channel alongside classic SEO. It's a thin wrapper on the public data layer; never expose authenticated or mutating endpoints through it.
