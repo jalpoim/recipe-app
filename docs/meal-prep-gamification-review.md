@@ -247,11 +247,15 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 **Problem:** The plan starts empty and must be filled recipe-by-recipe. AI fills a week from one sentence. You already hold every signal needed to beat it — `cook_style`, `dietary_mode`/`intolerances`, `proteins`, stored macros, popularity. A one-tap **"Plano sugerido"** that pre-fills N persona-matched recipes would turn the blank canvas into an instant, editable week — faster *and* more trustworthy than AI.
 
-**Decision:** PENDING — see questions. Full generator vs. lightweight protein-first starter vs. keep manual.
+**Decision:** ✅ **Build a persona-driven plan generator (no AI).** Leverage the new profile/identity signals — `cook_style` persona, signature dish, flavor profile, recently explored foods, most-liked flavors, dietary mode/intolerances — to recommend a full editable week. Pure SQL over existing data; no AI. Test it, then ship.
 
-**Action (proposed):** Add a "Sugerir plano" action on the empty (and non-empty) plan that calls a server fn selecting recipes by persona default sort + dietary filter + protein spread, inserts them as plan items, and lets the user edit/swap. No AI needed — pure query over existing data.
+**Action:**
+1. Server fn that selects N recipes weighted by: persona default sort, dietary filter, protein spread, and the user's `user_cook_profile` signals (liked flavor notes, explored/preferred cuisines, signature ingredient). Insert as editable plan items.
+2. Surface as "Sugerir plano" on the empty plan (and as "Sugerir mais" on a non-empty plan).
+3. Output is fully editable (swap/remove/adjust servings) — it's a starting point, not a lock-in.
+4. Synergy: the generator should weight the user's most-liked / most-cooked recipes (see Finding 11).
 
-**Status:** `pending-decision`
+**Status:** `decided` (build, no AI)
 
 ---
 
@@ -262,11 +266,16 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 **Problem:** Meal prep is weekly and repetitive, but every Sunday the user rebuilds from zero. AI you'd just re-prompt. The app should one-tap **"Repetir semana passada"** (or save named templates) — archived plans already exist, so the data is right there. This is the second-biggest gap after Finding 10 and trivial to leverage.
 
-**Decision:** PENDING — repeat-last-week / named templates / both / no.
+**Decision:** ⚠️ **Do NOT build whole-plan repetition / templates** (insufficient evidence users want to repeat an identical week). **Instead: quick-add the user's most-liked / most-cooked recipes** so they can re-add favourites individually.
 
-**Action (proposed):** "Repetir semana passada" copies the most recent archived plan's items into the new plan. Optionally "Guardar como modelo" for named templates.
+**Research note (honest, uncertain):** What's well-established is a *limited food repertoire* — households rotate a small set of meals and repeat **individual** dishes heavily (the oft-cited "~9 dinners on rotation" figure circulates from market surveys; not rigorously peer-reviewed, treat as directional). What is **not** well-evidenced is that users want to replay an *identical full week*. Grocery/meal-kit behaviour supports **item/basket reorder** and **variety rotation** more than whole-plan repeat. So the instinct to favour individual-favourite re-add over plan repetition is sound. *Recommend verifying with a quick web search before committing if a firmer basis is wanted (offered in chat).*
 
-**Status:** `pending-decision`
+**Action:**
+1. A "Os teus favoritos" quick-add row (on the empty plan and/or as a generator input) listing the user's most-liked / most-cooked / saved recipes for one-tap add.
+2. Feed the same favourites signal into the Finding 10 generator's weighting.
+3. No "repeat last week" button, no named templates — revisit only if research/usage data later supports whole-plan repetition.
+
+**Status:** `decided` (favourites quick-add, not plan repetition) · research verification optional
 
 ---
 
@@ -277,11 +286,14 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 **Problem:** A meal prepper thinks in *meals covered* (e.g. 5 lunches + 5 dinners), not "recipes." There's no finish line, so the user never knows when the plan is "done." AI says "here are 5 dinners." Surfacing **total servings = Σ(servings × multiplier)** answers "cook once, eat N" (also addresses Finding 3's batch visibility) and, optionally, a **weekly meals target with progress** gives the blank plan a goal. Stays non-macro, so it respects F9's "not a calorie counter" stance.
 
-**Decision:** PENDING — target + progress vs. just show total servings vs. no.
+**Decision:** ✅ **Target + progress.** Show total servings/meals covered AND a settable weekly meals target with a progress bar, giving the plan a finish line.
 
-**Action (proposed):** Compute and show "X doses · ~Y refeições" on the plan header. Optionally a settable weekly target with a progress bar.
+**Action:**
+1. Compute total servings = Σ(`servings` × `portion_multiplier`) across plan items; render "X doses · ~Y refeições" on the plan header.
+2. Add a settable weekly meals target (stored on profile or plan) with a progress bar toward it.
+3. Stays non-macro — respects F9's "not a calorie counter" stance.
 
-**Status:** `pending-decision`
+**Status:** `decided`
 
 ---
 
@@ -292,11 +304,17 @@ So recompute frequency is decoupled from AI cost. The page stays fast because it
 
 **Problem:** The product plan declares protein-first the *single entry point* to meal prep, with the library as the escape hatch (`meal-prep-app-v1-plan.md:20-24`). In practice the funnel is flattened into a filterable list and the opinion is barely felt. Not necessarily wrong — the list is excellent — but the differentiating *opinion* is muted, and the empty plan offers no guided start (worsening Finding 10's blank canvas).
 
-**Decision:** PENDING — re-assert protein-first guided entry / keep library-first / hybrid.
+**Decision:** ✅ **Pivot to persona-driven library-first** (formal, intentional). Onboarding captures persona + preferences; the library's **default sort and chip order already adapt to `cook_style`**. The guided protein-first funnel is NOT re-introduced. Update `meal-prep-app-v1-plan.md` to record this pivot.
 
-**Action (proposed):** Make the empty-plan state protein-first: "Escolhe uma proteína" → curated picks for that protein → add. Keeps the library as the browse escape hatch.
+**Verification of current state (confirmed in code):**
+- ✅ **Default sort is already persona-based, NOT pcal-for-everyone** — `getPersonaSort` (`library/index.tsx:307-310`): optimizer→`pcal`, time_crunched→`time`, all others (explorer/meal_prepper/dietary/null)→`popular`. Matches the spec's persona→sort table.
+- ✅ **Chip strip is already persona-reordered** (`library/index.tsx:1417-1432`): optimizer leads with `alto-proteina`, time_crunched with `rapido`, meal_prepper with `meal-prep`.
 
-**Status:** `pending-decision`
+**Remaining fixes (small):**
+1. **Sort-button "active" highlight is hardcoded to `pcal`** (`library/index.tsx:1684`: `effectiveSort !== "pcal"`). A non-optimizer's true default is `popular`, so they see the Sort button highlighted on first load as if a non-default sort is active. Fix: compare against the user's persona default, not `pcal`.
+2. **Explorer & dietary personas have no leading persona chip** (`library/index.tsx:1419-1423` covers only 3 of 5) — they fall back to the time-aware chip. Decide: Explorer could lead with `em-alta` (popular); dietary has no obvious chip (acceptable to leave on time-aware).
+
+**Status:** `decided` (pivot confirmed; persona defaults already live) · two small fixes pending build
 
 ---
 
@@ -360,6 +378,11 @@ These are working and reflect genuine gamification literacy — do not regress t
 - [x] **F7** — Profile shows cuisine badges; progress bar stays post-action. Pursue **weeks-cooked counter** + **first-class share card**.
 - [x] **F8** — Log + staleness + **self-heal only** (recompute-on-read, background, non-blocking). No admin panel.
 - [x] **F9** — Keep macros out (strictly not a calorie counter).
+- [x] **F10** — Build a persona-driven plan generator (no AI), leveraging cook-profile signals; editable output.
+- [x] **F11** — No whole-plan repetition/templates; instead quick-add the user's most-liked/most-cooked recipes (research-verify optional).
+- [x] **F12** — Total servings/meals + settable weekly target with progress bar (non-macro).
+- [x] **F13** — Formal pivot to persona-driven library-first; persona sort + chip order already live; fix Sort-button highlight baseline + explorer/dietary chip gap.
+- [x] **F14** — Documented small frictions (add-more button on non-empty plan, seed plan post-onboarding, surface "cook from what I have", F2 bug duplicated in `$recipeId.tsx`).
 
 ## Build backlog (decided, not yet implemented)
 
@@ -373,3 +396,13 @@ In recommended order:
 7. **F6** — verify buckwheat fix + coverage post-audit; then build cuisine tiers.
 
 **Already done:** F4 creator-points dedupe (`cook-log-queries.ts:94-117`).
+
+### Part 2 build backlog (meal-prep & discovery)
+
+1. **F10** — persona-driven plan generator (no AI) + "Sugerir plano" on empty/non-empty plan. *Highest-leverage vs AI.*
+2. **F11** — "Os teus favoritos" quick-add (most-liked/most-cooked); feed into F10 weighting.
+3. **F12** — total servings/meals + settable weekly target + progress bar.
+4. **F13** — fix Sort-button highlight baseline (`library/index.tsx:1684`); consider Explorer leading chip; update plan doc with the library-first pivot.
+5. **F14** — add-more button on non-empty plan; seed first plan post-onboarding (ties to F10); surface ingredient-led "cook from what I have"; sum weekly cook-time (optional).
+
+**Note:** F10/F11/F12 all reinforce each other — the generator, the favourites quick-add, and the completeness target together turn the blank-canvas plan into a fast, goal-oriented week that beats AI on speed *and* trust.
