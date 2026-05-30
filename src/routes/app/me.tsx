@@ -529,9 +529,8 @@ function ProfilePage() {
   useEffect(() => {
     if (narrativeTriggeredRef.current) return;
     if (!profile || distinctCount < 5) return;
-    const raw = profile as unknown as Record<string, unknown>;
-    const generatedAt = raw["flavor_narrative_generated_at"] as string | null;
-    const narrative = raw["flavor_narrative"] as string | null;
+    const generatedAt = profile.flavor_narrative_generated_at;
+    const narrative = profile.flavor_narrative;
     if (narrative && generatedAt) {
       const days = (Date.now() - new Date(generatedAt).getTime()) / (1000 * 60 * 60 * 24);
       if (days < 30) return;
@@ -642,8 +641,7 @@ function ProfilePage() {
     .filter(({ count }) => count >= 2); // earned (≥3) or teaser (2)
 
   // ── Phase 2: narrative + flavor profile ───────────────────────────────────
-  const profileRaw = profile as unknown as Record<string, unknown>;
-  const savedNarrative = profileRaw["flavor_narrative"] as string | null;
+  const savedNarrative = profile?.flavor_narrative ?? null;
   const showNarrativeLoading = narrativeMutation.isPending && !savedNarrative;
 
   return (

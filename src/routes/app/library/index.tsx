@@ -524,12 +524,12 @@ export type ThumbInfo = {
   rect: DOMRect;
 };
 
-function RecipeCard({
+const RecipeCard = memo(function RecipeCard({
   recipe,
   onAddToPlan,
 }: {
   recipe: RecipeWithIngredients;
-  onAddToPlan?: (thumb: ThumbInfo) => void;
+  onAddToPlan?: (recipeId: string, thumb: ThumbInfo) => void;
 }) {
   const { t } = useTranslation();
   const cal = perServing(recipe, "calories");
@@ -626,7 +626,7 @@ function RecipeCard({
               });
             }
             const rect = thumbRef.current?.getBoundingClientRect();
-            onAddToPlan({
+            onAddToPlan(recipe.id, {
               src: recipeThumbnail,
               background: thumbnailBg ?? null,
               rect: rect ?? new DOMRect(0, 0, 96, 136),
@@ -644,7 +644,7 @@ function RecipeCard({
       )}
     </div>
   );
-}
+});
 
 // ---------- FilterSheet ----------
 
@@ -1502,46 +1502,17 @@ function LibraryPage() {
     [infiniteData],
   );
 
-  const sortedRecipes = useMemo(() => {
-    const copy = [...allRecipes];
-    switch (effectiveSort) {
-      case "protein":
-        return copy.sort((a, b) => (b.protein ?? 0) - (a.protein ?? 0));
-      case "calories":
-        return copy.sort((a, b) => (a.calories ?? 0) - (b.calories ?? 0));
-      case "time":
-        return copy.sort((a, b) => (a.time_min ?? 999) - (b.time_min ?? 999));
-      case "popular":
-        return copy.sort(
-          (a, b) => (b.popularity_score ?? 0) - (a.popularity_score ?? 0),
-        );
-      case "cooked":
-        return copy.sort((a, b) => (b.cook_count ?? 0) - (a.cook_count ?? 0));
-      case "pcal":
-      default: {
-        const ratio = (r: Recipe) => {
-          const cal = perServing(r, "calories");
-          const pro = perServing(r, "protein");
-          if (!cal) return 0;
-          return (pro * 10) / cal;
-        };
-        return copy.sort((a, b) => ratio(b) - ratio(a));
-      }
-    }
-  }, [allRecipes, effectiveSort]);
+  // The server already returns rows in keyset order for effectiveSort (see
+  // fetchLibrary's SORT_COL ordering), and pages accumulate in that same order.
+  // Re-sorting client-side was redundant work that could also reorder rows
+  // mid-pagination, so we trust the server order directly.
+  const sortedRecipes = allRecipes;
 
   const { data: meta } = useQuery({
     queryKey: ["libraryMeta", lang],
     queryFn: () => fetchLibraryMeta({ data: { lang } }),
     staleTime: Infinity,
   });
-
-  useEffect(() => {
-    queryClient.prefetchQuery({
-      queryKey: ["libraryMeta", lang],
-      queryFn: () => fetchLibraryMeta({ data: { lang } }),
-    });
-  }, [queryClient, lang]);
 
   const addToPlanMutation = useMutation({
     mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
@@ -1571,6 +1542,41 @@ function LibraryPage() {
       queryClient.invalidateQueries({ queryKey: ["plan-items"] });
     },
   });
+
+  // Stable handler so RecipeCard's memo isn't defeated by a fresh callback per
+  // item each render. mutation.mutate is referentially stable across renders.
+  const addToPlanMutate = addToPlanMutation.mutate;
+  const handleAddToPlan = useCallback(
+    (recipeId: string, thumb: ThumbInfo) => {
+      if (!reducedMotion) {
+        const planTabEl =
+          document.getElementById("nav-plan-tab") ??
+          document.querySelector('[data-tab="plan"]');
+        const toRect = planTabEl?.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const to = toRect
+          ? {
+              x: toRect.left + toRect.width / 2 - 10,
+              y: toRect.top + toRect.height / 2 - 10,
+            }
+          : { x: vw * 0.625 - 10, y: vh - 36 };
+        setFlyingThumb({
+          src: thumb.src,
+          background: thumb.background,
+          from: {
+            x: thumb.rect.left,
+            y: thumb.rect.top,
+            w: thumb.rect.width,
+            h: thumb.rect.height,
+          },
+          to,
+        });
+      }
+      addToPlanMutate(recipeId);
+    },
+    [reducedMotion, addToPlanMutate],
+  );
 
   const virtualCount = hasNextPage
     ? sortedRecipes.length + 1
@@ -1809,35 +1815,7 @@ function LibraryPage() {
                       >
                         <RecipeCard
                           recipe={sortedRecipes[virtualItem.index]}
-                          onAddToPlan={(thumb) => {
-                            const r = sortedRecipes[virtualItem.index];
-                            if (!reducedMotion) {
-                              const planTabEl =
-                                document.getElementById("nav-plan-tab") ??
-                                document.querySelector('[data-tab="plan"]');
-                              const toRect = planTabEl?.getBoundingClientRect();
-                              const vw = window.innerWidth;
-                              const vh = window.innerHeight;
-                              const to = toRect
-                                ? {
-                                    x: toRect.left + toRect.width / 2 - 10,
-                                    y: toRect.top + toRect.height / 2 - 10,
-                                  }
-                                : { x: vw * 0.625 - 10, y: vh - 36 };
-                              setFlyingThumb({
-                                src: thumb.src,
-                                background: thumb.background,
-                                from: {
-                                  x: thumb.rect.left,
-                                  y: thumb.rect.top,
-                                  w: thumb.rect.width,
-                                  h: thumb.rect.height,
-                                },
-                                to,
-                              });
-                            }
-                            addToPlanMutation.mutate(r.id);
-                          }}
+                          onAddToPlan={handleAddToPlan}
                         />
                       </motion.div>
                     )}

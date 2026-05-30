@@ -18,3 +18,4 @@ todos.json
 docs/usda/
 scripts/*.progress.json
 supabase/.temp/
+reaudit-disagreements.txt

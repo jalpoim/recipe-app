@@ -44,6 +44,32 @@ export const upsertCheck = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+// POST: upsert many check rows in a single round trip (batch).
+// Replaces per-item upsertCheck loops for "check all" and multi-key toggles.
+export const upsertChecks = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (input: {
+      planId: string
+      items: { itemKey: string; isChecked: boolean }[]
+    }) => input,
+  )
+  .handler(async ({ data }) => {
+    if (data.items.length === 0) return { ok: true }
+    const supabase = makeClient()
+    const now = new Date().toISOString()
+    const rows = data.items.map((it) => ({
+      plan_id: data.planId,
+      item_key: it.itemKey,
+      is_checked: it.isChecked,
+      updated_at: now,
+    }))
+    const { error } = await supabase
+      .from('shopping_check_state')
+      .upsert(rows as never, { onConflict: 'plan_id,item_key' })
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
 // POST: add a custom shopping item
 export const addCustomShoppingItem = createServerFn({ method: 'POST' })
   .inputValidator((input: { planId: string; label: string; category: string }) => input)

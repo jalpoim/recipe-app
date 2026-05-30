@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { makeClient, getLang } from "./client-server";
+import type { Json } from "../../types/db";
 
 export type FlavorProfile = {
   signatureIngredient: string | null;
@@ -189,9 +190,8 @@ async function _computeFlavorProfile(
   const isSpicy = heatCount >= 2 && avgHeatLevel >= 1;
   const topFlavorNotes = (isSpicy ? ["spicy", ...baseFlavorNotes] : baseFlavorNotes).slice(0, 3);
 
-  // Platform averages (table not in generated types — cast required)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: pa } = await (supabase as any)
+  // Platform averages (single cached row).
+  const { data: pa } = await supabase
     .from("platform_averages")
     .select("top_10_ingredients, avg_heat_level, avg_distinct_cuisines, avg_cooking_time_min")
     .eq("id", 1)
@@ -329,17 +329,13 @@ export const generateFlavorNarrative = createServerFn({
   if (!narrative) return null;
 
   // Persist to profiles
-  await (supabase as unknown as {
-    from: (t: string) => {
-      update: (d: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<unknown> };
-    };
-  })
+  await supabase
     .from("profiles")
     .update({
       flavor_narrative: narrative,
       flavor_narrative_generated_at: new Date().toISOString(),
       flavor_narrative_lang: lang,
-      flavor_profile_data: fp,
+      flavor_profile_data: fp as unknown as Json,
     })
     .eq("user_id", uid);
 

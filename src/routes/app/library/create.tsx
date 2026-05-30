@@ -38,6 +38,7 @@ import { ProteinPicker } from "../../../components/ProteinPicker";
 import { fetchMyProfile } from "../../../lib/supabase/profile-queries";
 import { IngredientCombobox } from "../../../components/IngredientCombobox";
 import { getSuggestedTags } from "../../../lib/auto-tag";
+import { isOwnerId } from "../../../lib/owner";
 
 export const Route = createFileRoute("/app/library/create")({
   component: CreateRecipePage,
@@ -126,20 +127,20 @@ const SYSTEM_TAG_SLUGS = TAG_SECTIONS.flatMap((s) => s.tags);
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
+// Whole-recipe TOTAL macros from ingredients with a convertible weight/volume quantity
+// + per-100g data. NOT divided by servings (we show/store the recipe total). Count-unit
+// or unlinked ingredients are surfaced by the caller as "uncovered" -> AI fallback, so a
+// recipe is never shown an undercounted total. Returns null if nothing is computable.
 function estimateMacrosFromIngredients(
   ingredients: IngredientRow[],
-  servings: number,
 ): { calories: number; protein: number; carbs: number; fat: number } | null {
-  const active = ingredients.filter((i) => i.rawText.trim());
-  if (active.length === 0) return null;
   let calories = 0,
     protein = 0,
     carbs = 0,
     fat = 0,
-    covered = 0;
-  for (const ing of active) {
-    if (ing.caloriesPer100g == null) continue;
-    if (!ing.quantity) continue;
+    counted = 0;
+  for (const ing of ingredients) {
+    if (!ing.rawText.trim() || ing.caloriesPer100g == null || !ing.quantity) continue;
     const g = convertToGrams(ing.quantity, ing.unit ?? "g");
     if (g == null || g === 0) continue;
     const f = g / 100;
@@ -147,15 +148,14 @@ function estimateMacrosFromIngredients(
     protein += (ing.proteinPer100g ?? 0) * f;
     carbs += (ing.carbsPer100g ?? 0) * f;
     fat += (ing.fatPer100g ?? 0) * f;
-    covered++;
+    counted++;
   }
-  if (covered < active.length * 0.5) return null;
-  const s = Math.max(1, servings);
+  if (counted === 0) return null;
   return {
-    calories: Math.round(calories / s),
-    protein: Math.round((protein / s) * 10) / 10,
-    carbs: Math.round((carbs / s) * 10) / 10,
-    fat: Math.round((fat / s) * 10) / 10,
+    calories: Math.round(calories),
+    protein: Math.round(protein * 10) / 10,
+    carbs: Math.round(carbs * 10) / 10,
+    fat: Math.round(fat * 10) / 10,
   };
 }
 
@@ -199,6 +199,10 @@ function suggestRecipeName(
 
 function CreateRecipePage() {
   const { t, i18n } = useTranslation();
+  // Early access: AI macro estimation is owner-only (cost/abuse guard).
+  const isOwner = isOwnerId(
+    (Route.useRouteContext() as { user?: { id?: string } }).user?.id,
+  );
   const navigate = useNavigate();
   const router = useRouter();
   const { showToast } = useToast();
@@ -288,19 +292,27 @@ function CreateRecipePage() {
     ? selectedProteins
     : derivedProteins;
 
-  const estimatedMacros = useMemo(
-    () => estimateMacrosFromIngredients(ingredients, servings),
-    [ingredients, servings],
-  );
-
   const hasIngredients = ingredients.some((i) => i.rawText.trim());
+  // "Uncovered" = can't be deterministically computed: no nutrition data, OR a quantified
+  // count-unit (slice/unit/can) with no gram conversion. Such recipes fall back to the AI
+  // estimate rather than showing a wrong, undercounted total.
   const uncoveredCount = useMemo(
     () =>
-      ingredients.filter((i) => i.rawText.trim() && i.caloriesPer100g == null)
-        .length,
+      ingredients.filter((i) => {
+        if (!i.rawText.trim()) return false;
+        if (i.caloriesPer100g == null) return true;
+        if (i.quantity != null && convertToGrams(i.quantity, i.unit ?? "g") == null) return true;
+        return false;
+      }).length,
     [ingredients],
   );
   const allCovered = hasIngredients && uncoveredCount === 0;
+
+  // Whole-recipe TOTAL macros — shown only when every quantified ingredient is covered.
+  const estimatedMacros = useMemo(
+    () => (allCovered ? estimateMacrosFromIngredients(ingredients) : null),
+    [ingredients, allCovered],
+  );
 
   // Effective macro display values (auto or manual)
   const effCalories =
@@ -780,7 +792,7 @@ function CreateRecipePage() {
                 {autoNameSuggestion}
                 <span
                   role="button"
-                  aria-label="Dispensar sugestão"
+                  aria-label={t("create.dismissSuggestion")}
                   onClick={(e) => {
                     e.stopPropagation();
                     setDismissedSuggestion(autoNameSuggestion);
@@ -1074,8 +1086,9 @@ function CreateRecipePage() {
               )}
             </div>
 
-            {/* Haiku estimate button — only when some ingredients lack DB data */}
-            {!allCovered && (
+            {/* Haiku estimate button — owner-only during early access, and only when
+                some ingredients lack DB data (count units / unlinked) */}
+            {!allCovered && isOwner && (
               <button
                 type="button"
                 onClick={() => estimateMutation.mutate()}

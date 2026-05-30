@@ -257,6 +257,7 @@ export type Database = {
           carbs_per_100g: number | null;
           category: string | null;
           classification_source: string | null;
+          contains_allergens: string[];
           created_at: string | null;
           cuisine_signals: string[];
           default_unit: string | null;
@@ -268,6 +269,7 @@ export type Database = {
           name: string;
           owner_id: string | null;
           protein_per_100g: number | null;
+          signals_enriched_at: string | null;
         };
         Insert: {
           aliases?: string[];
@@ -275,6 +277,7 @@ export type Database = {
           carbs_per_100g?: number | null;
           category?: string | null;
           classification_source?: string | null;
+          contains_allergens?: string[];
           created_at?: string | null;
           cuisine_signals?: string[];
           default_unit?: string | null;
@@ -286,6 +289,7 @@ export type Database = {
           name: string;
           owner_id?: string | null;
           protein_per_100g?: number | null;
+          signals_enriched_at?: string | null;
         };
         Update: {
           aliases?: string[];
@@ -293,6 +297,7 @@ export type Database = {
           carbs_per_100g?: number | null;
           category?: string | null;
           classification_source?: string | null;
+          contains_allergens?: string[];
           created_at?: string | null;
           cuisine_signals?: string[];
           default_unit?: string | null;
@@ -304,6 +309,7 @@ export type Database = {
           name?: string;
           owner_id?: string | null;
           protein_per_100g?: number | null;
+          signals_enriched_at?: string | null;
         };
         Relationships: [];
       };
@@ -408,6 +414,63 @@ export type Database = {
           },
         ];
       };
+      platform_averages: {
+        Row: {
+          avg_cooking_time_min: number | null;
+          avg_distinct_cuisines: number | null;
+          avg_heat_level: number | null;
+          avg_new_recipe_ratio: number | null;
+          id: number;
+          top_10_ingredients: string[];
+          updated_at: string | null;
+        };
+        Insert: {
+          avg_cooking_time_min?: number | null;
+          avg_distinct_cuisines?: number | null;
+          avg_heat_level?: number | null;
+          avg_new_recipe_ratio?: number | null;
+          id?: number;
+          top_10_ingredients?: string[];
+          updated_at?: string | null;
+        };
+        Update: {
+          avg_cooking_time_min?: number | null;
+          avg_distinct_cuisines?: number | null;
+          avg_heat_level?: number | null;
+          avg_new_recipe_ratio?: number | null;
+          id?: number;
+          top_10_ingredients?: string[];
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      unmatched_ingredients: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          normalized_name: string | null;
+          recipe_id: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          normalized_name?: string | null;
+          recipe_id?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          normalized_name?: string | null;
+          recipe_id?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -417,6 +480,11 @@ export type Database = {
           dietary_mode: string;
           display_name: string;
           email: string | null;
+          flavor_narrative: string | null;
+          flavor_narrative_generated_at: string | null;
+          flavor_narrative_lang: string | null;
+          flavor_profile_data: Json | null;
+          heat_preference: number | null;
           intolerances: string[];
           measurement_unit: string;
           onboarding_completed: boolean;
@@ -431,6 +499,11 @@ export type Database = {
           dietary_mode?: string;
           display_name: string;
           email?: string | null;
+          flavor_narrative?: string | null;
+          flavor_narrative_generated_at?: string | null;
+          flavor_narrative_lang?: string | null;
+          flavor_profile_data?: Json | null;
+          heat_preference?: number | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;
@@ -445,6 +518,11 @@ export type Database = {
           dietary_mode?: string;
           display_name?: string;
           email?: string | null;
+          flavor_narrative?: string | null;
+          flavor_narrative_generated_at?: string | null;
+          flavor_narrative_lang?: string | null;
+          flavor_profile_data?: Json | null;
+          heat_preference?: number | null;
           intolerances?: string[];
           measurement_unit?: string;
           onboarding_completed?: boolean;
@@ -1047,7 +1125,16 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      public_profiles: {
+        Row: {
+          avatar_url: string | null;
+          bio: string | null;
+          display_name: string | null;
+          user_id: string | null;
+          username: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       compute_popularity_score: {
@@ -1265,6 +1352,13 @@ export type RecipeStepTranslation =
   Database["public"]["Tables"]["recipe_step_translations"]["Row"];
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
+// Public-safe projection of profiles (no email / dietary / flavor data).
+// Backed by the `public_profiles` view, which is the only profile data
+// readable by anon and across users.
+export type PublicProfile = Pick<
+  Profile,
+  "user_id" | "username" | "display_name" | "avatar_url" | "bio"
+>;
 export type Plan = Database["public"]["Tables"]["plans"]["Row"];
 export type PlanInsert = Database["public"]["Tables"]["plans"]["Insert"];
 export type PlanItem = Database["public"]["Tables"]["plan_items"]["Row"];

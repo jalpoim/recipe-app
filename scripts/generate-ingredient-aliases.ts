@@ -6,8 +6,12 @@
  * Usage: npx tsx scripts/generate-ingredient-aliases.ts
  */
 
+import * as dotenv from 'dotenv'
+import { resolve } from 'path'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../src/types/db'
+
+dotenv.config({ path: resolve(process.cwd(), '.env.local') })
 
 const supabase = createClient<Database>(
   process.env['VITE_SUPABASE_URL']!,

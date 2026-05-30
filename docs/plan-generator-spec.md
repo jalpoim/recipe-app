@@ -242,3 +242,80 @@ Run with a **seeded rng** for determinism. Cover:
 - **N = 6** default suggestion size (a week's dinners-ish); quick-add shows **12** most-cooked.
 - Scoring **weights** in §3.4 are first-pass; tune with real data. They live in a named const for easy adjustment.
 - Variety caps **≤ 2 per cuisine / per protein**; relax only to reach N.
+
+> **Several of the choices in §8 were revised in §9 below — §9 overrides this section where they conflict.**
+
+---
+
+## 9. Grill amendments (authoritative — overrides earlier sections on conflict)
+
+These nine amendments came out of a design grill on 2026-05-30. Where they conflict with §3–§8, **§9 wins**. Rationale is summarised inline so the implementing agent understands *why*, not just *what*.
+
+### 9.1 Add a `repertoireScore` — the actual differentiator (revises §3.4–§3.5)
+Binary FAMILIAR-set membership wasn't enough: the spec named `cooked_at` ("Recency from `cooked_at`") but **never used it in any formula**, so a recipe cooked weekly and one cooked once eight months ago ranked identically. The whole "your own repertoire" promise (§0) was missing from the math.
+
+- Add `repertoireScore = min(1, cookCount / 5) · recencyDecay(daysSinceLastCook)` (e.g. exponential or linear decay over ~90 days; tune in the named weights const).
+- Fold it into `baseScore` **for FAMILIAR recipes only**, at weight **≥ 0.25**, so go-to meals float to the top of the familiar half.
+- Reuse the most-cooked aggregation built for F11 (§2.1) — same `cook_log` GROUP BY signal.
+
+### 9.2 Loosen the cuisine cap (revises §3.5)
+A hard `≤ 2/cuisine` with N=6 forced **3+ cuisines into every week**, actively diluting the "lean on favourite cuisines" promise (§0, AC 7b) for focused cooks. MMR (λ=0.4) already provides the *smooth* diversity gradient, so the hard cap was double-enforcing.
+
+- **Cuisine cap = `≤ 3` by default; tighten to `≤ 2` only for `explorer`.**
+- **Protein cap stays `≤ 2`.**
+- Keep MMR for the smooth penalty; the cap is just the backstop. Relax caps before returning a partial result (unchanged from §3.5).
+
+### 9.3 Real repeat-freshness, not jitter (revises §3.1, §3.4)
+`±0.05` jitter cannot reorder a focused user's top picks (their score gaps exceed 0.1), so "Sugerir mais" after an undo would return near-identical sets. Jitter "freshness" was theatre.
+
+- Keep a **client-side "recently suggested ids" set** (last 1–2 batches) and pass it into `suggestPlan` as **additional excludes**.
+- Jitter stays a small **tiebreaker only** — not the freshness engine.
+- This composes with the in-plan dedupe already in §3.5.
+
+### 9.4 Dietary precedence is explicit and unconditional (revises §3.3)
+The "**also** always include every cook_log/liked/saved recipe regardless of popularity" line could be misread as bypassing dietary filters — a real hazard for a user who recently went vegetarian/vegan or added an intolerance but still has the old recipes in `cook_log`.
+
+- **Hard filters (dietary mode, intolerances, exclusions, hidden) apply first and unconditionally.** The familiar override only beats the **popularity/pool-size truncation**, never the hard filter: `candidatePool = hardFilter(allRecipes); familiarInPool = candidatePool ∩ familiarIds`.
+- **Intolerances are a safety filter — never relaxed**, not even to reach N.
+
+### 9.5 Count = Model C, incremental (revises §3.9, §8)
+A fixed N=6 over-serves batch-cookers (the defining meal-prep behaviour is cook-once-eat-several, encoded by `portion_multiplier`, not 6 distinct dinners), and an upfront numeric picker asks users to choose a count before they've seen any output. Chosen model:
+
+- **First tap** generates a **persona-adaptive default**: `meal_prepper`/`time_crunched` → **4**, others → **5**, `explorer` → **6** (derived from the same persona table as §3.2).
+- **"Sugerir mais" adds +3 per tap**, excluding in-plan items **and** the recent-suggestion set (§9.3).
+- Everything stays fully editable/removable; the ≥14 ceiling remains the runaway guard. **No upfront numeric picker.**
+
+### 9.6 Keep protein weak, but de-duplicate the protein-spread mechanisms (revises §3.4–§3.5)
+For a protein-first app, three mechanisms were stacking into a net *anti-protein* bias: weak `proteinScore` (0.06 effective spread), the `≤2` protein cap, **and** the protein term in MMR `sim()`.
+
+- Keep `proteinScore` at weight **0.10** (the familiar pool + `repertoireScore` from §9.1 already surfaces the user's dominant proteins).
+- Protein **spread** is handled by the `≤2` cap **alone**.
+- **Drop (or halve) the `0.4·sharesPrimaryProtein` term in MMR `sim()`** so cap + MMR + score don't compound.
+
+### 9.7 Household: union dietary, tapper's taste (new — §3 was silent on households)
+Every generator signal is per-individual, but output lands in the **shared household plan**. A shared plan must never suggest food a member can't eat.
+
+- **Dietary/intolerance hard filters = the UNION of both household members.** A recipe must pass *both* members' filters to be eligible. (Read both members' `profiles` via `household_id` — confirm `household-queries.ts` exposes member profiles or add a query.)
+- **Taste signals (repertoire / flavor / persona / explored proteins) come from the tapping user** for v1.
+- Full taste-blend (merge both repertoires, alternate familiar picks) is deferred to v2.
+
+### 9.8 F11 mirrors the library, not the generator (new)
+F11 is a **manual, deliberate pick from your own history** — the same gesture as adding from the library, which is *not* dietary-filtered by the partner. Hiding your own go-to recipe from "your favourites" would also be confusing.
+
+- **F11 shows the tapping user's most-cooked, unfiltered by the partner's diet.**
+- The dietary **union (§9.7) is exclusive to the F10 automated generator**, where the user isn't vetting each pick.
+
+### 9.9 Atomic undo + symmetric API + set-based lookups (revises §3.8–§3.9)
+`removePlanItem` is single-id, so undoing a generated week = N sequential, non-atomic deletes. The batch insert is also asymmetric and N+1-prone.
+
+- Add a batch **`removePlanItems(ids: string[])`** (`.delete().in("id", ids)`) — one round-trip, atomic at the DB; wire **Undo** to it. Delete **by id** (safe under a concurrent household edit).
+- In the batch **insert**, resolve each recipe's `portion_multiplier`/`preferred_servings` with **set-based `IN (...)` lookups** (one query for `user_recipe_preferences WHERE recipe_id IN (...)`, one for `recipes WHERE id IN (...)`) — **not** per-recipe queries. (Postgres best-practice: avoid per-row round-trips.)
+
+### 9.10 Verified data facts (no action — corrections to §1 assumptions)
+- All recipe columns §1/§3.3 name exist (`popularity_score`, `cook_count`, `pcal_ratio`, `flavor_notes`, `dietary_flags`, `cuisine_tags`, `image_thumb_url`, `moderation_status`, `visibility`, `proteins`). ✅
+- **`explored_proteins` lives on `user_cook_profile`**, not the flavor profile. So §3.8 "gather signals" spans **`profiles` (cook_style/dietary_mode/intolerances) + `user_cook_profile` (explored_proteins) + computed flavor profile + both members' `profiles` (§9.7)** — heavier than the one bullet implies.
+- `profiles.cook_style` is populated in onboarding and already trusted (library default sort); null only for pre-onboarding users → cold-start path. ✅
+- Plan is a flat ordered `plan_items` list (no day slots); `portion_multiplier` is the batch-size knob — reinforces the smaller persona-adaptive N in §9.5. ✅
+
+### 9.11 Pre-launch data check (not a design decision)
+Validate **cold-start catalog coverage for strict diets** with a count query before launch: a brand-new vegan user's first "Sugerir plano" depends on enough `approved` vegan recipes across cuisines. §3.5's "relax caps before partial" self-heals variety, but a genuinely thin catalog still yields `suggestPartial` on a first impression.

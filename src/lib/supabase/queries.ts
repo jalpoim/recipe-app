@@ -49,7 +49,7 @@ const RECIPE_FIELDS =
   "id, name, name_language, time_min, servings, macros_total, calories, protein, carbs, fat, proteins, tags, pcal_ratio, owner_id, visibility, image_thumb_url, image_url, like_count, cook_count, save_count, is_featured, popularity_score, moderation_status, deleted_at, source_url";
 
 const INGREDIENT_FIELDS =
-  "id, recipe_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
+  "id, recipe_id, ingredient_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
 
 // Maps dietary exclusion flags → protein slugs on the recipes.proteins column.
 // This is the primary exclusion mechanism because recipe_ingredients.ingredient_id
@@ -64,7 +64,7 @@ const FLAG_TO_PROTEIN_SLUGS: Record<string, string[]> = {
   honey: [],
 };
 
-// UI stores 'nuts'; DB dietary_flags uses 'tree_nut' and 'peanut'
+// UI stores 'nuts'; contains_allergens uses 'tree_nut' and 'peanut'
 const FLAG_ALIASES: Record<string, string[]> = {
   nuts: ["tree_nut", "peanut"],
 };
@@ -126,9 +126,10 @@ export const fetchLibrary = createServerFn({ method: "GET" })
       ...new Set(expandedFlags.flatMap((f) => FLAG_TO_PROTEIN_SLUGS[f] ?? [])),
     ];
 
-    // --- Secondary exclusion: ingredient_id join (covers user-uploaded recipes) ---
-    // recipe_ingredients.ingredient_id is only populated for ~44% of rows (user recipes).
-    // System recipes have ingredient_id = null, so this path only supplements the above.
+    // --- Ingredient-level exclusion via contains_allergens (positive containment tokens) ---
+    // System-recipe ingredients are ~91% linked, so this is a primary path, not just a
+    // supplement. expandedFlags are positive tokens (gluten/dairy/soy/egg/tree_nut/peanut),
+    // matched against ingredients.contains_allergens (NOT the derived "-free" dietary_flags).
     let excludedRecipeIds: string[] = [];
     if (expandedFlags.length > 0 || excludedIngredientIds.length > 0) {
       let flaggedIngIds: string[] = [];
@@ -136,7 +137,7 @@ export const fetchLibrary = createServerFn({ method: "GET" })
         const { data: flaggedIngs } = await supabase
           .from("ingredients")
           .select("id")
-          .overlaps("dietary_flags", expandedFlags);
+          .overlaps("contains_allergens", expandedFlags);
         flaggedIngIds = (flaggedIngs ?? []).map((i) => i.id);
       }
       const allExcludedIngIds = [
@@ -249,40 +250,63 @@ export const fetchLibrary = createServerFn({ method: "GET" })
     // Pre-fetch recipe IDs so the filter applies before LIMIT (cursor-safe).
     // Searches PT names + raw_text on recipe_ingredients, and translations for non-PT users.
     if (ingredients.length > 0) {
-      const idSets = await Promise.all(
-        ingredients.map(async (ing) => {
-          const matched = new Set<string>();
+      const lowered = ingredients.map((i) => i.toLowerCase());
+      // term index → set of recipe ids that contain that term
+      const perTerm: Set<string>[] = lowered.map(() => new Set<string>());
 
-          const { data: ptMatches } = await supabase
+      // Single query for ALL terms (OR), then intersect in memory for AND logic.
+      // Previously this fired 1–3 queries *per term* (an N+1); now it's a fixed
+      // ≤3 queries regardless of how many ingredients are selected.
+      const ptOr = ingredients
+        .flatMap((ing) => [`name.ilike.%${ing}%`, `raw_text.ilike.%${ing}%`])
+        .join(",");
+      const { data: ptMatches } = await supabase
+        .from("recipe_ingredients")
+        .select("recipe_id, name, raw_text")
+        .or(ptOr);
+      for (const row of ptMatches ?? []) {
+        const hay = `${row.name ?? ""} ${row.raw_text ?? ""}`.toLowerCase();
+        lowered.forEach((term, i) => {
+          if (hay.includes(term)) perTerm[i].add(row.recipe_id);
+        });
+      }
+
+      if (lang !== "pt") {
+        const transOr = ingredients
+          .map((ing) => `name.ilike.%${ing}%`)
+          .join(",");
+        const { data: transMatches } = await supabase
+          .from("recipe_ingredient_translations")
+          .select("ingredient_id, name")
+          .eq("language", lang)
+          .or(transOr);
+        const transIds = (transMatches ?? []).map((t) => t.ingredient_id);
+        if (transIds.length > 0) {
+          const { data: riRows } = await supabase
             .from("recipe_ingredients")
-            .select("recipe_id")
-            .or(`name.ilike.%${ing}%,raw_text.ilike.%${ing}%`);
-          (ptMatches ?? []).forEach((r) => matched.add(r.recipe_id));
-
-          if (lang !== "pt") {
-            const { data: transMatches } = await supabase
-              .from("recipe_ingredient_translations")
-              .select("ingredient_id")
-              .ilike("name", `%${ing}%`)
-              .eq("language", lang);
-            if ((transMatches ?? []).length > 0) {
-              const riIds = transMatches!.map((t) => t.ingredient_id);
-              const { data: riMatches } = await supabase
-                .from("recipe_ingredients")
-                .select("recipe_id")
-                .in("id", riIds);
-              (riMatches ?? []).forEach((r) => matched.add(r.recipe_id));
-            }
+            .select("id, recipe_id")
+            .in("id", transIds);
+          const idToRecipe = new Map(
+            (riRows ?? []).map((r) => [r.id, r.recipe_id]),
+          );
+          for (const tm of transMatches ?? []) {
+            const rid = idToRecipe.get(tm.ingredient_id);
+            if (!rid) continue;
+            const name = (tm.name ?? "").toLowerCase();
+            lowered.forEach((term, i) => {
+              if (name.includes(term)) perTerm[i].add(rid);
+            });
           }
-
-          return matched;
-        }),
-      );
+        }
+      }
 
       // AND logic: recipe must match every ingredient term
-      const matchingIds = idSets.reduce(
-        (acc, set) => new Set([...acc].filter((x) => set.has(x))),
-      );
+      let matchingIds = perTerm[0] ?? new Set<string>();
+      for (let i = 1; i < perTerm.length; i++) {
+        matchingIds = new Set(
+          [...matchingIds].filter((x) => perTerm[i].has(x)),
+        );
+      }
       if (matchingIds.size === 0) return { data: [], nextCursor: null };
       query = query.in("id", [...matchingIds]);
     }
@@ -413,10 +437,12 @@ export const fetchRecipeById = createServerFn({ method: "GET" })
     recipe.recipe_ingredients.sort((a, b) => a.position - b.position);
     recipe.recipe_steps.sort((a, b) => a.position - b.position);
 
-    // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id)
+    // Fetch author profile separately (no FK from recipes.owner_id → profiles.user_id).
+    // Use the public-safe view: the base profiles table is own-row-only, so a
+    // cross-user read of the author's name must go through public_profiles.
     if (recipe.owner_id) {
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("public_profiles")
         .select("display_name, username")
         .eq("user_id", recipe.owner_id)
         .maybeSingle();

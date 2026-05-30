@@ -5238,10 +5238,11 @@ Narrative generation uses Claude Sonnet which costs more than Haiku. Add a serve
 - Batch 1: macro-AI fence fix; flavor vocab (ingredients normalized to canonical 11 + i18n render + `spicy` derived from `heat_level`); title ladders renamed; recipe-name-suggestion i18n.
 - Batch 2: Planner axis scoring (planned cook +1 / shopping +2 / meal-prep week +3) + `shopping_trip_count`.
 
-**Done in the DB but NOT yet committed/deployed (staged locally):**
-- Added `ingredients.contains_allergens text[]` (+ GIN index).
-- **Full ingredient re-audit** via `scripts/reaudit-ingredient-signals.draft.ts` (Sonnet + deterministic allergen net, word-boundary matching, prompt caching; gated `WRITE=1` sample / `WRITE=1 FULL=1` full). Writes `contains_allergens` + derived `dietary_flags` + canonical `cuisine_signals`/`flavor_notes`/`heat_level` to all 3,920 system ingredients. Verified fixes: tofu/gochujang → contain soy (were wrongly `soy-free`); bacalhau → fish + `gluten-free`; buckwheat/eggplant → no false flags.
-- **Library intolerance-filter repoint** (`src/lib/supabase/queries.ts`): `.overlaps` now reads `contains_allergens` (positive tokens) instead of `dietary_flags`. Fixes a CONFIRMED production bug — intolerance filtering for gluten/dairy/soy/nuts matched **nothing** (the filter expected positive tokens the column never held). Regenerated `src/types/db.ts`. **MUST NOT deploy until the re-audit is 100% complete** — a half-populated `contains_allergens` would under-filter allergens (unsafe).
+**Re-audit COMPLETE + deployed (2026-05-29):**
+- Added `ingredients.contains_allergens text[]` (+ GIN index; migration `20260529161220_add_contains_allergens.sql`).
+- **Full ingredient re-audit** (`scripts/reaudit-ingredient-signals.draft.ts` — Sonnet composition-first + deterministic net, word-boundary matching, prompt caching; gated `WRITE=1` sample / `WRITE=1 FULL=1` full / `IDS=…` targeted). All 3,920 system ingredients carry `contains_allergens` + derived `dietary_flags` + canonical `cuisine_signals`/`flavor_notes`/`heat_level`. USDA macros + `classification_source` untouched. Verified: tofu/gochujang→soy, bacalhau→fish+gluten-free, buckwheat/eggplant→no false flags.
+- **Net post-mortem (important lesson):** the net's *heuristic* rules (bare "flour"→gluten, "butter"/"cream"→dairy, "oyster"/"scallop"→shellfish, "mayonnaise"→egg, "fish-shaped"→fish) over-flagged **78 rows** and overrode a CORRECT AI in essentially every case. Keyword guards are whack-a-mole; the composition-aware AI is the reliable signal. Fixed by demoting the net to unambiguous-identity rules only + a blanket "defer to AI for imitation/substitute/shaped/free-from" guard, then re-running the 78. Net now yields 0 disagreements; genuine catches preserved (soy flour→soy, cashew milk→tree_nut, salvadoran cheese bread→dairy+egg+gluten).
+- **Library intolerance-filter repoint** (`src/lib/supabase/queries.ts`): `.overlaps` now reads `contains_allergens` (positive tokens) instead of `dietary_flags` (+ regenerated `src/types/db.ts`). Fixes a CONFIRMED production bug — intolerance filtering for gluten/dairy/soy/nuts matched **nothing** before. Deployed now that the catalog is fully + correctly populated.
 
 **Pending (ready-to-build, code-only):** count-unit macros (eggs/cans currently → 0); per-serving macro label + visible servings; auto-tag `macros_total` double-division; `5-ingredientes` non-pantry; ingredient-alias backfill + add `cabrito`; one hardcoded aria-label i18n. (See "Additional findings 2026-05-29" below.)
 
@@ -5343,3 +5344,53 @@ The flavor-identity feature (titles, badges, signature ingredient, narrative) is
 
 ### Open decisions still needing user input
 - None outstanding — recipe-data-quality + flavor-identity design fully specced. Ready for an implementation chat.
+
+---
+
+## Next phase: Recipe-level signal derivation (in progress 2026-05-29)
+
+**Why:** the ingredient re-audit is done, but RECIPE-level signals are still sparse — `recipes.cuisine_tags` ~44%, `flavor_notes` 0%, `dietary_flags` 0%. These power the flavor-identity profile (cuisine badges, signature, Explorer axis, narrative) and recipe-level dietary display. `createRecipe` does NOT derive them; recipe cuisine is only set when a user manually picks a cuisine chip.
+
+**Approach (mirrors the ingredient pipeline):**
+- **Tier-1 (deterministic, free), per recipe from its linked ingredients (~91% linked on system recipes):**
+  - `cuisine_tags`: distinctiveness-weighted vote over ingredient `cuisine_signals` (staples now carry no cuisine noise post-re-audit); tag when a cuisine clears a confidence bar; ≤2 tags; EMPTY when nothing clears (generic dishes stay untagged — correct).
+  - `flavor_notes`: top-3 aggregated canonical notes from ingredients.
+  - `dietary_flags` (recipe-level, for display/identity): derive from the union of ingredient `contains_allergens` → "-free" inverse + vegan/vegetarian veto. (Allergen *filtering* already works via the ingredient join; this is display.)
+  - `cooking_method`: from step text (extend existing auto-tag method detection).
+- **Tier-2 (Haiku, only when Tier-1 cuisine is weak OR the name has a strong hint):** classify cuisine from **name + ingredients + steps** with the validated prompt (language≠cuisine; EMPTY for generic). Validated 9/9.
+- **Backfill** all system recipes (~209 — cheap), then **wire derivation into create/edit save** (manual cuisine selection overrides).
+
+**Guardrails:** cuisine is never a hard filter; prefer null over a wrong tag; the AI is primary for cuisine (ingredient-vote is a weak prior — the Caldo Verde→"american" failure).
+
+**Verify:** `cuisine_tags` coverage jumps from 44%; `flavor_notes`/`dietary_flags` from 0%; spot-check iconic dishes (Caldo Verde→portuguese, Shakshuka→middle-eastern, generic→empty).
+
+## Public Recipe Pages, SEO & Sharing — Phase 1 ✅ COMPLETE (2026-05-30)
+
+**Goal:** acquire users via SEO and word-of-mouth by exposing recipe content to anonymous visitors, without leaking user data. Industry-standard pattern: a public, server-rendered, crawlable, read-only surface in front of the authenticated app, sharing the same data via two projections (slim public DTO vs. full logged-in view). The "Add to plan / save" actions become the signup funnel.
+
+### Architecture (locked)
+- **Public vs. private surface.** Public + indexable: system recipe detail pages (the launch SEO catalog), approved `public`-visibility user recipes, public creator profiles, future category/protein landing pages, marketing/home. Never public (auth-gated + `noindex`): plans, shopping lists, cook logs, flavor identity, saved/liked sets, settings, onboarding, household, `/join`, `/auth`, `/admin`, all mutations, and per-user state on a public page. Drafts/private/pending/rejected recipes are never exposed (even to the owner) on the public URL.
+- **Two query projections.** A public page reads a curated DTO with an **explicit visibility filter in the query** (system OR public+approved, not deleted) on top of RLS — defense in depth — and returns 404 on miss so private-recipe existence never leaks.
+- **Author/profile data** is read only through the `public_profiles` view (public columns: user_id, username, display_name, avatar_url, bio). The base `profiles` table is own-row-only; `email`/dietary/flavor data is never world-readable.
+
+### Shipped (commit 8078c05)
+- **DB security hardening** (migrations `20260530091309_public_recipe_security_hardening`, `20260530171113_public_recipe_child_table_rls`):
+  - `profiles`: replaced the `USING(true)` public SELECT with own-row-only; added the `public_profiles` view (SELECT-only to anon/authenticated) for cross-user author + profile reads.
+  - anon is read-only on recipe/profile tables; `EXECUTE` revoked on trigger + RLS-helper functions from anon; `search_path` set on flagged functions; dropped the unrestricted `households` INSERT policy.
+  - recipe-children SELECT (ingredients/steps/translations) opened to anon, scoped to system / public+approved / own (mirrors `recipes_select`).
+- **Public route `/r/$recipeId`** (`src/routes/r/$recipeId.tsx`, `src/lib/supabase/public-queries.ts`): SSR, no auth, read-only render (hero, macros, ingredients, steps, author). Dynamic `<title>`/description, Open Graph + Twitter meta, `<link rel=canonical>`, and JSON-LD `Recipe` structured data. Sign-in CTA exposes the invitation, not the gated action.
+- Verified: `tsc` clean; runtime 200 (system recipe) / 404 (miss); SSR meta + JSON-LD present in HTML; anon RLS confirmed (209 system recipes/ingredients/steps visible, 0 private, `profiles` base table denied).
+
+### Open follow-ups (Phase 2)
+1. **Production domain (blocker for crawl):** canonical/OG URLs in `/r/$recipeId` are hardcoded to `https://mealprep.app`. Confirm the real Vercel domain and move to a `VITE_SITE_URL` env var — wrong canonical otherwise.
+2. `robots.txt` + `sitemap.xml` — allow `/r`, disallow `/app`,`/join`,`/auth`,`/admin`; sitemap of public recipe (and later category) URLs.
+3. Share button in-app → copies the canonical `/r/$id` URL (the word-of-mouth loop).
+4. Category/protein landing pages (`/recipes/chicken`, `/recipes/high-protein`) — the long-tail SEO volume; crawlable internal links into recipe pages.
+5. Add `publicRecipe.openApp` / `publicRecipe.signInCta` to `pt`/`en` locale files (currently inline `t()` fallbacks).
+6. Public exposure of user-published recipes requires trusted moderation (only `moderation_status='approved'`; `rel="nofollow ugc"` on user `source_url` links).
+
+### Known accepted trade-off
+The security advisor flags `public_profiles` as `security_definer_view` (lint 0010, ERROR). Deliberate, documented exception: `security_invoker = true` would hit the own-row base policy and break cross-user reads. The view is default-deny (explicit public-column list, no write path). The lint-clean alternative — splitting `profiles` into public + private tables — is a deferred refactor (touches ~8 query sites + the email-sync trigger).
+
+### Future: MCP server
+Worth doing **after** the public web surface matures, not now. A read-only MCP exposing the public catalog (same `system`/`public`+approved boundary, same safe-projection discipline as `public_profiles`) is the AI-assistant / answer-engine discovery channel alongside classic SEO. It's a thin wrapper on the public data layer; never expose authenticated or mutating endpoints through it.
