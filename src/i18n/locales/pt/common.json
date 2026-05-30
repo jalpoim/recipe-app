@@ -228,7 +228,20 @@
     "multiplier": "Porções",
     "addedToast": "Adicionado ao plano",
     "itemCount_one": "{{count}} receita",
-    "itemCount_other": "{{count}} receitas"
+    "itemCount_other": "{{count}} receitas",
+    "quickAdd": "Os teus favoritos",
+    "quickAddTitle": "Os teus favoritos",
+    "quickAddEmpty": "Ainda não cozinhaste nada. Explora as receitas e marca-as como cozinhadas para as veres aqui.",
+    "alreadyInPlan": "Já no plano",
+    "cookedNTimes_one": "cozinhado {{count}}×",
+    "cookedNTimes_other": "cozinhado {{count}}×",
+    "suggest": "Sugerir plano",
+    "suggestMore": "Sugerir mais",
+    "suggesting": "A sugerir…",
+    "suggestDone": "{{count}} receitas adicionadas",
+    "suggestPartial": "Adicionámos {{count}} — não encontrámos mais que encaixem",
+    "suggestNone": "Sem sugestões de momento. Experimenta a biblioteca.",
+    "suggestUndo": "Anular"
   },
   "shopping": {
     "completionBanner": "Lista concluída",

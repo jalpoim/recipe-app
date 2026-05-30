@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../lib/use-reduced-motion";
 import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
@@ -9,11 +9,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   X,
   Clock,
-  ChevronRight,
   ChevronLeft,
   Minus,
   Plus,
   CalendarDays,
+  Sparkles,
+  Star,
+  Check,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../components/Toast";
@@ -22,20 +24,33 @@ import {
   fetchPlanItems,
   fetchActivePlanWithCount,
   removePlanItem,
+  removePlanItems,
   updatePlanItemMultiplier,
   upsertUserRecipePreference,
   archiveAndCreatePlan,
+  addRecipeToPlan,
+  suggestPlan,
 } from "../../lib/supabase/plan-queries";
 import {
   fetchCookLog,
   deleteCookLogEntry,
+  fetchTopCookedRecipes,
 } from "../../lib/supabase/cook-log-queries";
-import type { CookLogWithRecipe } from "../../lib/supabase/cook-log-queries";
 import type {
+  CookLogWithRecipe,
+  TopCookedRecipe,
+} from "../../lib/supabase/cook-log-queries";
+import { fetchMyProfile } from "../../lib/supabase/profile-queries";
+import { defaultSuggestionCount } from "../../lib/plan-generator";
+import type {
+  PlanItem,
   PlanItemWithRecipe,
   ActivePlanWithCount,
   Recipe,
 } from "../../types/db";
+
+// Plan size beyond which the generator buttons are disabled, to avoid runaway (§3.9).
+const PLAN_MAX_ITEMS = 14;
 
 function PlanSkeleton() {
   return (
@@ -479,6 +494,205 @@ function CookHistorySheet({
   );
 }
 
+// ---------- FavouritesSheet (F11 quick-add) ----------
+
+function FavouritesSheet({
+  open,
+  onOpenChange,
+  planId,
+  planRecipeIds,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  planId: string | undefined;
+  planRecipeIds: Set<string>;
+}) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const { showToast } = useToast();
+  // Recipes the user added during this session (so rows mark as added immediately,
+  // even before the plan-items query refetches).
+  const [justAdded, setJustAdded] = useState<Set<string>>(new Set());
+  const [addingId, setAddingId] = useState<string | null>(null);
+
+  const { data: favourites = [], isLoading } = useQuery({
+    queryKey: ["top-cooked"],
+    queryFn: () => fetchTopCookedRecipes({ data: 12 }),
+    enabled: open,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const addMutation = useMutation({
+    mutationFn: (recipeId: string) => addRecipeToPlan({ data: recipeId }),
+    onMutate: (recipeId) => {
+      setAddingId(recipeId);
+      setJustAdded((prev) => new Set(prev).add(recipeId));
+    },
+    onError: (_err, recipeId) => {
+      setJustAdded((prev) => {
+        const next = new Set(prev);
+        next.delete(recipeId);
+        return next;
+      });
+      showToast(t("recipe.addedToPlanError"), "error");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["plan-items", planId] });
+      qc.invalidateQueries({ queryKey: ["active-plan"] });
+      showToast(t("recipe.addedToPlan"), "success");
+    },
+    onSettled: () => setAddingId(null),
+  });
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-[20px] bg-[#FAFAF8] outline-none"
+          aria-label={t("plan.quickAddTitle")}
+        >
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div
+              className="h-1 w-10 rounded-full bg-[#E5E7EB]"
+              aria-hidden="true"
+            />
+          </div>
+
+          <div
+            className="px-4 pb-4"
+            style={{ maxHeight: "80dvh", overflowY: "auto" }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between py-3">
+              <h2 className="text-base font-bold text-[#1A1A1A]">
+                {t("plan.quickAddTitle")}
+              </h2>
+              <button
+                onClick={() => onOpenChange(false)}
+                aria-label={t("common.close")}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#1A1A1A] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            {isLoading ? (
+              <div className="space-y-2">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="h-16 rounded-xl bg-[#F3F4F6] animate-pulse motion-reduce:animate-none"
+                  />
+                ))}
+              </div>
+            ) : favourites.length === 0 ? (
+              <div className="py-10 text-center">
+                <p className="text-sm text-[#6B7280] mb-4">
+                  {t("plan.quickAddEmpty")}
+                </p>
+                <Link
+                  to="/app/library"
+                  search={{} as never}
+                  className="inline-block px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                >
+                  {t("plan.addRecipe")}
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {favourites.map((fav) => {
+                  const added =
+                    planRecipeIds.has(fav.id) || justAdded.has(fav.id);
+                  return (
+                    <FavouriteRow
+                      key={fav.id}
+                      fav={fav}
+                      added={added}
+                      busy={addingId === fav.id}
+                      onAdd={() => addMutation.mutate(fav.id)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
+function FavouriteRow({
+  fav,
+  added,
+  busy,
+  onAdd,
+}: {
+  fav: TopCookedRecipe;
+  added: boolean;
+  busy: boolean;
+  onAdd: () => void;
+}) {
+  const { t } = useTranslation();
+  const thumbBg = fav.imageThumbUrl
+    ? undefined
+    : (PROTEIN_COLORS[fav.proteins[0]] ??
+      "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
+
+  return (
+    <div className="rounded-xl bg-white border border-[#F0F0EE] flex items-center gap-3 pr-2.5 overflow-hidden">
+      <div className="w-14 h-16 shrink-0">
+        {fav.imageThumbUrl ? (
+          <img
+            src={fav.imageThumbUrl}
+            alt=""
+            width={56}
+            height={64}
+            className="w-full h-full object-cover object-top"
+            loading="lazy"
+          />
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{ background: thumbBg }}
+            aria-hidden="true"
+          />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 py-2">
+        <p className="text-sm font-semibold text-[#1A1A1A] leading-snug line-clamp-2">
+          {fav.name}
+        </p>
+        <p className="mt-0.5 text-[11px] text-[#9CA3AF]">
+          {t("plan.cookedNTimes", { count: fav.cookCount })}
+        </p>
+      </div>
+      <button
+        onClick={onAdd}
+        disabled={added || busy}
+        aria-label={
+          added
+            ? t("plan.alreadyInPlan")
+            : `${t("plan.addRecipe")}: ${fav.name}`
+        }
+        className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 disabled:cursor-default ${
+          added
+            ? "bg-[#dcfce7] text-[#15803d]"
+            : "bg-[#F4623A] text-white hover:bg-[#D94F2B] disabled:opacity-50"
+        }`}
+      >
+        {added ? (
+          <Check size={16} aria-hidden="true" />
+        ) : (
+          <Plus size={18} aria-hidden="true" />
+        )}
+      </button>
+    </div>
+  );
+}
+
 // ---------- PlanPage ----------
 
 function PlanPage() {
@@ -488,6 +702,10 @@ function PlanPage() {
   const { skip: reducedMotion } = useMotion();
   const [confirmClear, setConfirmClear] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [favouritesOpen, setFavouritesOpen] = useState(false);
+  // Last 1–2 generated batches of recipe ids — passed back to suggestPlan as extra
+  // excludes so "Sugerir mais" yields a fresh set, not the same top picks (§9.3).
+  const recentBatchesRef = useRef<string[][]>([]);
 
   const { pullY: planPullY, isRefreshing: isPlanPtrRefreshing } =
     usePullToRefresh({
@@ -591,28 +809,115 @@ function PlanPage() {
     },
   });
 
+  // Persona → first-tap suggestion count (§9.5). Reuses the same query key as the
+  // library so it's already warm; falls back to the null-persona default.
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile"],
+    queryFn: () => fetchMyProfile(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const firstTapCount = defaultSuggestionCount(profile?.cook_style ?? null);
+
+  const planRecipeIds = useMemo(
+    () => new Set(items.map((i) => i.recipe_id)),
+    [items],
+  );
+  const atMax = items.length >= PLAN_MAX_ITEMS;
+
+  // Generate / "Sugerir mais" — direct insert + undo toast (§3.9).
+  const suggestMutation = useMutation({
+    mutationFn: (requested: number) =>
+      suggestPlan({
+        data: {
+          count: requested,
+          excludeRecipeIds: recentBatchesRef.current.flat(),
+        },
+      }),
+    onSuccess: (newItems: PlanItem[], requested) => {
+      if (newItems.length === 0) {
+        showToast(t("plan.suggestNone"), "error");
+        return;
+      }
+      capture("plan_suggested", { count: newItems.length, requested });
+      const batch = newItems.map((i) => i.recipe_id);
+      recentBatchesRef.current = [...recentBatchesRef.current, batch].slice(-2);
+      const insertedIds = newItems.map((i) => i.id);
+      qc.invalidateQueries({ queryKey: ["plan-items", planId] });
+      qc.invalidateQueries({ queryKey: ["active-plan"] });
+      const partial = newItems.length < requested;
+      showToast(
+        partial
+          ? t("plan.suggestPartial", { count: newItems.length })
+          : t("plan.suggestDone", { count: newItems.length }),
+        "success",
+        {
+          label: t("plan.suggestUndo"),
+          onClick: () => {
+            // Atomic batch delete (§9.9) + free the ids for re-suggestion.
+            recentBatchesRef.current = recentBatchesRef.current.filter(
+              (b) => b !== batch,
+            );
+            removePlanItems({ data: insertedIds }).then(() => {
+              qc.invalidateQueries({ queryKey: ["plan-items", planId] });
+              qc.invalidateQueries({ queryKey: ["active-plan"] });
+            });
+          },
+        },
+      );
+    },
+    onError: () => showToast(t("common.error"), "error"),
+  });
+
   if (isPlanLoading || isItemsLoading) return <PlanSkeleton />;
 
   return (
     <div className="min-h-screen bg-[#FAFAF8] pb-24">
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
-        <div className="pt-4 pb-3 flex items-center justify-between">
+        <div className="pt-4 pb-3 flex items-center justify-between gap-2">
           <span className="text-xs text-[#9CA3AF]">
             {items.length === 0
               ? t("plan.noItems")
               : t("plan.itemCount", { count: items.length })}
           </span>
-          <button
-            onClick={() => setHistoryOpen(true)}
-            aria-label={t("cookHistory.title")}
-            className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-          >
-            <CalendarDays size={20} aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-1">
+            {items.length > 0 && (
+              <button
+                onClick={() => suggestMutation.mutate(3)}
+                disabled={suggestMutation.isPending || atMax}
+                aria-label={t("plan.suggestMore")}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+              >
+                <Sparkles size={14} aria-hidden="true" />
+                {suggestMutation.isPending
+                  ? t("plan.suggesting")
+                  : t("plan.suggestMore")}
+              </button>
+            )}
+            <button
+              onClick={() => setFavouritesOpen(true)}
+              aria-label={t("plan.quickAdd")}
+              className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+            >
+              <Star size={20} aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setHistoryOpen(true)}
+              aria-label={t("cookHistory.title")}
+              className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+            >
+              <CalendarDays size={20} aria-hidden="true" />
+            </button>
+          </div>
         </div>
 
         <CookHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
+        <FavouritesSheet
+          open={favouritesOpen}
+          onOpenChange={setFavouritesOpen}
+          planId={planId}
+          planRecipeIds={planRecipeIds}
+        />
 
         <PullIndicator
           pullY={planPullY}
@@ -623,14 +928,26 @@ function PlanPage() {
         {/* Empty state */}
         {items.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-[#6B7280] text-sm mb-4">{t("plan.empty")}</p>
-            <Link
-              to="/app/library"
-              search={{} as never}
-              className="inline-block px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            <p className="text-[#6B7280] text-sm mb-5">{t("plan.empty")}</p>
+            <button
+              onClick={() => suggestMutation.mutate(firstTapCount)}
+              disabled={suggestMutation.isPending}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
-              {t("plan.addRecipe")}
-            </Link>
+              <Sparkles size={16} aria-hidden="true" />
+              {suggestMutation.isPending
+                ? t("plan.suggesting")
+                : t("plan.suggest")}
+            </button>
+            <div className="mt-3">
+              <Link
+                to="/app/library"
+                search={{} as never}
+                className="text-sm font-medium text-[#6B7280] hover:text-[#1A1A1A] underline underline-offset-2 transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
+              >
+                {t("plan.addRecipe")}
+              </Link>
+            </div>
           </div>
         ) : (
           <>

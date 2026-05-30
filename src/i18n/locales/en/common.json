@@ -228,7 +228,20 @@
     "multiplier": "Servings",
     "addedToast": "Added to plan",
     "itemCount_one": "{{count}} recipe",
-    "itemCount_other": "{{count}} recipes"
+    "itemCount_other": "{{count}} recipes",
+    "quickAdd": "Your favourites",
+    "quickAddTitle": "Your favourites",
+    "quickAddEmpty": "You haven't cooked anything yet. Explore recipes and mark them cooked to see them here.",
+    "alreadyInPlan": "Already in plan",
+    "cookedNTimes_one": "cooked {{count}}×",
+    "cookedNTimes_other": "cooked {{count}}×",
+    "suggest": "Suggest a plan",
+    "suggestMore": "Suggest more",
+    "suggesting": "Suggesting…",
+    "suggestDone": "{{count}} recipes added",
+    "suggestPartial": "Added {{count}} — couldn't find more that fit",
+    "suggestNone": "No suggestions right now. Try the library.",
+    "suggestUndo": "Undo"
   },
   "shopping": {
     "completionBanner": "Shopping done",
