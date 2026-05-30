@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import type { Recipe, RecipeIngredient, RecipeStep } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
+import { computeRecipeExclusions } from "./dietary-filter";
 
 export type RecipeWithIngredients = Recipe & {
   recipe_ingredients: RecipeIngredient[];
@@ -51,24 +52,6 @@ const RECIPE_FIELDS =
 const INGREDIENT_FIELDS =
   "id, recipe_id, ingredient_id, name, raw_text, unit, position, is_pantry, is_optional, section_label";
 
-// Maps dietary exclusion flags → protein slugs on the recipes.proteins column.
-// This is the primary exclusion mechanism because recipe_ingredients.ingredient_id
-// is only populated for user-uploaded recipes, not system recipes.
-const FLAG_TO_PROTEIN_SLUGS: Record<string, string[]> = {
-  meat: ["beef", "pork", "lamb", "veal"],
-  poultry: ["chicken", "turkey", "duck"],
-  fish: ["tuna", "salmon", "fish"],
-  shellfish: ["seafood"],
-  dairy: ["whey"],
-  egg: ["eggs"],
-  honey: [],
-};
-
-// UI stores 'nuts'; contains_allergens uses 'tree_nut' and 'peanut'
-const FLAG_ALIASES: Record<string, string[]> = {
-  nuts: ["tree_nut", "peanut"],
-};
-
 const SORT_COL: Record<Sort, string> = {
   pcal: "pcal_ratio",
   protein: "protein",
@@ -114,45 +97,15 @@ export const fetchLibrary = createServerFn({ method: "GET" })
     // Filter out 'all' token — empty array means show everything
     const activeModes = modes.filter((m) => m !== "all");
 
-    // Expand flag aliases (e.g. 'nuts' → ['tree_nut', 'peanut'])
-    const expandedFlags = [
-      ...new Set(
-        excludedFlags.flatMap((f) => (FLAG_ALIASES[f] ? FLAG_ALIASES[f] : [f])),
-      ),
-    ];
-
-    // --- Primary exclusion: proteins array (covers all system recipes) ---
-    const excludedProteinSlugs = [
-      ...new Set(expandedFlags.flatMap((f) => FLAG_TO_PROTEIN_SLUGS[f] ?? [])),
-    ];
-
-    // --- Ingredient-level exclusion via contains_allergens (positive containment tokens) ---
-    // System-recipe ingredients are ~91% linked, so this is a primary path, not just a
-    // supplement. expandedFlags are positive tokens (gluten/dairy/soy/egg/tree_nut/peanut),
-    // matched against ingredients.contains_allergens (NOT the derived "-free" dietary_flags).
-    let excludedRecipeIds: string[] = [];
-    if (expandedFlags.length > 0 || excludedIngredientIds.length > 0) {
-      let flaggedIngIds: string[] = [];
-      if (expandedFlags.length > 0) {
-        const { data: flaggedIngs } = await supabase
-          .from("ingredients")
-          .select("id")
-          .overlaps("contains_allergens", expandedFlags);
-        flaggedIngIds = (flaggedIngs ?? []).map((i) => i.id);
-      }
-      const allExcludedIngIds = [
-        ...new Set([...flaggedIngIds, ...excludedIngredientIds]),
-      ];
-      if (allExcludedIngIds.length > 0) {
-        const { data: excludedRis } = await supabase
-          .from("recipe_ingredients")
-          .select("recipe_id")
-          .in("ingredient_id", allExcludedIngIds);
-        excludedRecipeIds = [
-          ...new Set((excludedRis ?? []).map((r) => r.recipe_id)),
-        ];
-      }
-    }
+    // --- Dietary / allergen exclusions (shared with the plan generator) ---
+    // System-recipe ingredients are ~91% linked, so the ingredient-level path is a
+    // primary mechanism, not just a supplement. See dietary-filter.ts.
+    const { excludedProteinSlugs, excludedRecipeIds } =
+      await computeRecipeExclusions(
+        supabase,
+        excludedFlags,
+        excludedIngredientIds,
+      );
 
     // Get session for mode-specific filters
     let userId: string | null = null;

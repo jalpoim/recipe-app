@@ -76,7 +76,7 @@ Write the description now.`;
 
 // ─── Internal computation ─────────────────────────────────────────────────────
 
-async function _computeFlavorProfile(
+export async function _computeFlavorProfile(
   supabase: ReturnType<typeof makeClient>,
   uid: string,
 ): Promise<FlavorProfile | null> {

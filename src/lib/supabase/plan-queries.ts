@@ -1,4 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import type {
   Plan,
   PlanItem,
@@ -7,6 +9,83 @@ import type {
   RecipeIngredient,
 } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
+import { _computeFlavorProfile } from "./flavor-profile-queries";
+import {
+  computeRecipeExclusions,
+  dietaryFlagsForProfile,
+} from "./dietary-filter";
+import {
+  selectPlanRecipes,
+  defaultSuggestionCount,
+  type GeneratorRecipe,
+  type Repertoire,
+} from "../plan-generator";
+
+// Service client for the household dietary-union read (§9.7): a member's profile
+// and ingredient exclusions are RLS-locked to their own row, so reading the
+// partner's dietary constraints requires service-role. Used only for that read.
+function makeServiceClient() {
+  const url = process.env.VITE_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key, { auth: { persistSession: false } });
+}
+
+// Resolve the caller's active plan id, creating the plan if missing. Household-
+// aware: a household shares one plan; otherwise the user's newest personal plan.
+// Extracted from addRecipeToPlan so the single-add, batch-add, and generate paths
+// all resolve plan context identically.
+async function resolveActivePlanId(
+  supabase: ReturnType<typeof makeClient>,
+  session: Session,
+): Promise<string> {
+  const householdId =
+    (session.user.app_metadata?.household_id as string | undefined) ?? null;
+
+  if (householdId) {
+    const { data: householdPlan } = await supabase
+      .from("plans")
+      .select("id")
+      .eq("household_id", householdId)
+      .is("archived_at", null)
+      .maybeSingle();
+    if (householdPlan) return householdPlan.id;
+
+    const { data: newPlan, error } = await supabase
+      .from("plans")
+      .insert({
+        owner_id: session.user.id,
+        household_id: householdId,
+        name: "Current plan",
+      })
+      .select("id")
+      .single();
+    if (error) throw new Error(error.message);
+    return newPlan.id;
+  }
+
+  const { data: existing } = await supabase
+    .from("plans")
+    .select("id")
+    .eq("owner_id", session.user.id)
+    .is("archived_at", null)
+    .is("household_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (existing) return existing.id;
+
+  const { data: newPlan, error } = await supabase
+    .from("plans")
+    .insert({
+      owner_id: session.user.id,
+      name: "Current plan",
+      default_multiplier: 1,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+  return newPlan.id;
+}
 
 // GET: active plan with item count — single RPC call, no sequential queries
 export const fetchActivePlanWithCount = createServerFn({
@@ -285,60 +364,7 @@ export const addRecipeToPlan = createServerFn({ method: "POST" })
     } = await supabase.auth.getSession();
     if (!session) throw new Error("Not authenticated");
 
-    const householdId =
-      (session.user.app_metadata?.household_id as string | undefined) ?? null;
-
-    let planId: string;
-
-    if (householdId) {
-      const { data: householdPlan } = await supabase
-        .from("plans")
-        .select("id")
-        .eq("household_id", householdId)
-        .is("archived_at", null)
-        .maybeSingle();
-      if (householdPlan) {
-        planId = householdPlan.id;
-      } else {
-        const { data: newPlan, error } = await supabase
-          .from("plans")
-          .insert({
-            owner_id: session.user.id,
-            household_id: householdId,
-            name: "Current plan",
-          })
-          .select("id")
-          .single();
-        if (error) throw new Error(error.message);
-        planId = newPlan.id;
-      }
-    } else {
-      const { data: existing } = await supabase
-        .from("plans")
-        .select("id")
-        .eq("owner_id", session.user.id)
-        .is("archived_at", null)
-        .is("household_id", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (existing) {
-        planId = existing.id;
-      } else {
-        const { data: newPlan, error } = await supabase
-          .from("plans")
-          .insert({
-            owner_id: session.user.id,
-            name: "Current plan",
-            default_multiplier: 1,
-          })
-          .select("id")
-          .single();
-        if (error) throw new Error(error.message);
-        planId = newPlan.id;
-      }
-    }
+    const planId = await resolveActivePlanId(supabase, session);
 
     // Look up user preference + recipe default in parallel
     const [{ data: maxRow }, { data: pref }, { data: recipeRow }] =
@@ -415,6 +441,312 @@ export const removePlanItem = createServerFn({ method: "POST" })
     const { error } = await supabase.from("plan_items").delete().eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// POST: remove several plan items in one atomic round-trip (§9.9). Wired to the
+// "Sugerir plano" Undo so undoing a generated batch is a single DELETE, not N
+// sequential ones. Deletes by id (safe under a concurrent household edit).
+export const removePlanItems = createServerFn({ method: "POST" })
+  .inputValidator((ids: string[]) => ids)
+  .handler(async ({ data: ids }) => {
+    if (ids.length === 0) return { ok: true };
+    const supabase = makeClient();
+    const { error } = await supabase.from("plan_items").delete().in("id", ids);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Shared batch-insert: append recipeIds (in order) to the resolved active plan.
+// Resolves each recipe's preferred/default servings with set-based IN(...) lookups
+// — one query for user_recipe_preferences, one for recipes — not per-recipe (§9.9).
+async function insertRecipesIntoPlan(
+  supabase: ReturnType<typeof makeClient>,
+  session: Session,
+  recipeIds: string[],
+): Promise<PlanItem[]> {
+  if (recipeIds.length === 0) return [];
+  const planId = await resolveActivePlanId(supabase, session);
+
+  const [{ data: maxRow }, { data: prefs }, { data: recipes }] =
+    await Promise.all([
+      supabase
+        .from("plan_items")
+        .select("position")
+        .eq("plan_id", planId)
+        .order("position", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("user_recipe_preferences")
+        .select("recipe_id, preferred_servings")
+        .eq("user_id", session.user.id)
+        .in("recipe_id", recipeIds),
+      supabase.from("recipes").select("id, servings").in("id", recipeIds),
+    ]);
+
+  const prefById = new Map(
+    (prefs ?? []).map((p) => [p.recipe_id, p.preferred_servings]),
+  );
+  const servingsById = new Map((recipes ?? []).map((r) => [r.id, r.servings]));
+  const startPosition = maxRow ? maxRow.position + 1 : 0;
+
+  const rows = recipeIds.map((recipeId, i) => ({
+    plan_id: planId,
+    recipe_id: recipeId,
+    position: startPosition + i,
+    portion_multiplier:
+      prefById.get(recipeId) ?? servingsById.get(recipeId) ?? 1,
+  }));
+
+  const { data: items, error } = await supabase
+    .from("plan_items")
+    .insert(rows)
+    .select();
+  if (error) throw new Error(error.message);
+  return items ?? [];
+}
+
+// POST: add several recipes to the active plan in one insert (§3.8 / §9.9).
+export const addRecipesToPlan = createServerFn({ method: "POST" })
+  .inputValidator((recipeIds: string[]) => recipeIds)
+  .handler(async ({ data: recipeIds }): Promise<PlanItem[]> => {
+    const supabase = makeClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    return insertRecipesIntoPlan(supabase, session, recipeIds);
+  });
+
+// Gather the household dietary UNION (§9.7): a generated plan lands in the shared
+// plan, so a recipe must pass BOTH members' dietary mode + intolerances + ingredient
+// exclusions. Union of exclusion sets == "passes both". Returns the tapping user's
+// own constraints when not in a household. Partner rows are RLS-locked → service read.
+async function gatherDietaryUnion(
+  supabase: ReturnType<typeof makeClient>,
+  session: Session,
+): Promise<{ excludedFlags: string[]; excludedIngredientIds: string[] }> {
+  const uid = session.user.id;
+  const householdId =
+    (session.user.app_metadata?.household_id as string | undefined) ?? null;
+
+  if (!householdId) {
+    const [{ data: profile }, { data: exclusions }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("dietary_mode, intolerances")
+        .eq("user_id", uid)
+        .maybeSingle(),
+      supabase
+        .from("user_ingredient_exclusions")
+        .select("ingredient_id")
+        .eq("user_id", uid),
+    ]);
+    return {
+      excludedFlags: dietaryFlagsForProfile(
+        profile?.dietary_mode ?? null,
+        profile?.intolerances ?? [],
+      ),
+      excludedIngredientIds: (exclusions ?? []).map((e) => e.ingredient_id),
+    };
+  }
+
+  // Household: union both members. household_members / profiles / exclusions are
+  // each RLS-scoped to the caller's own row, so read them with the service client.
+  const service = makeServiceClient();
+  const { data: members } = await service
+    .from("household_members")
+    .select("user_id")
+    .eq("household_id", householdId);
+  const memberIds = [...new Set((members ?? []).map((m) => m.user_id))];
+  if (memberIds.length === 0) memberIds.push(uid);
+
+  const [{ data: profiles }, { data: exclusions }] = await Promise.all([
+    service
+      .from("profiles")
+      .select("dietary_mode, intolerances")
+      .in("user_id", memberIds),
+    service
+      .from("user_ingredient_exclusions")
+      .select("ingredient_id")
+      .in("user_id", memberIds),
+  ]);
+
+  const flags = new Set<string>();
+  for (const p of profiles ?? []) {
+    for (const f of dietaryFlagsForProfile(p.dietary_mode, p.intolerances ?? []))
+      flags.add(f);
+  }
+  const ingIds = new Set<string>(
+    (exclusions ?? []).map((e) => e.ingredient_id),
+  );
+  return {
+    excludedFlags: [...flags],
+    excludedIngredientIds: [...ingIds],
+  };
+}
+
+// Candidate pool ceiling — bounded for performance; familiar recipes are always
+// fetched too (below) so the repertoire half is complete regardless of this cap.
+const CANDIDATE_POOL_LIMIT = 300;
+
+const GENERATOR_RECIPE_FIELDS =
+  "id, proteins, cuisine_tags, flavor_notes, time_min, pcal_ratio, servings, popularity_score";
+
+// POST: generate an editable plan — pure SQL + deterministic scoring, no AI.
+// Thin: gather signals → fetch hard-filtered candidates → selectPlanRecipes → insert.
+// All judgement lives in the pure core (src/lib/plan-generator.ts).
+export const suggestPlan = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: { count: number; excludeRecipeIds?: string[] }) => input,
+  )
+  .handler(async ({ data: input }): Promise<PlanItem[]> => {
+    const supabase = makeClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) throw new Error("Not authenticated");
+    const uid = session.user.id;
+
+    // ── Gather signals (tapping user's taste; household union for dietary §9.7) ──
+    const [
+      flavorProfile,
+      { data: profile },
+      { data: cookProfile },
+      { data: cookRows },
+      { data: interactions },
+      { data: planItems },
+      dietary,
+    ] = await Promise.all([
+      _computeFlavorProfile(supabase, uid),
+      supabase.from("profiles").select("cook_style").eq("user_id", uid).maybeSingle(),
+      supabase
+        .from("user_cook_profile")
+        .select("explored_proteins")
+        .eq("user_id", uid)
+        .maybeSingle(),
+      supabase.from("cook_log").select("recipe_id, cooked_at").eq("user_id", uid),
+      supabase
+        .from("user_recipe_interactions")
+        .select("recipe_id")
+        .eq("user_id", uid)
+        .in("type", ["like", "save"]),
+      // Current plan items → exclude from suggestions (de-dupe in-plan).
+      (async () => {
+        const planId = await resolveActivePlanId(supabase, session);
+        return supabase.from("plan_items").select("recipe_id").eq("plan_id", planId);
+      })(),
+      gatherDietaryUnion(supabase, session),
+    ]);
+
+    // Repertoire (§9.1): per-recipe cook count + days since last cook. Familiar =
+    // cooked OR liked/saved.
+    const repertoire: Repertoire = new Map();
+    const familiarRecipeIds = new Set<string>();
+    const now = Date.now();
+    for (const row of cookRows ?? []) {
+      familiarRecipeIds.add(row.recipe_id);
+      const days = Math.max(
+        0,
+        (now - new Date(row.cooked_at).getTime()) / 86_400_000,
+      );
+      const entry = repertoire.get(row.recipe_id);
+      if (entry) {
+        entry.cookCount++;
+        if (days < entry.daysSinceLastCook) entry.daysSinceLastCook = days;
+      } else {
+        repertoire.set(row.recipe_id, { cookCount: 1, daysSinceLastCook: days });
+      }
+    }
+    for (const row of interactions ?? []) familiarRecipeIds.add(row.recipe_id);
+
+    const excludeRecipeIds = new Set<string>([
+      ...(planItems ?? []).map((p) => p.recipe_id),
+      ...(input.excludeRecipeIds ?? []),
+    ]);
+
+    // ── Hard filters (§9.4 — applied first, unconditionally) ─────────────────
+    const { excludedProteinSlugs, excludedRecipeIds } =
+      await computeRecipeExclusions(
+        supabase,
+        dietary.excludedFlags,
+        dietary.excludedIngredientIds,
+      );
+    // Hidden recipes are a hard exclude too.
+    const { data: hidden } = await supabase
+      .from("user_recipe_interactions")
+      .select("recipe_id")
+      .eq("user_id", uid)
+      .eq("type", "hide");
+    const hiddenIds = (hidden ?? []).map((h) => h.recipe_id);
+
+    function applyHardFilters<T>(q: T): T {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query = q as any;
+      // deleted_at IS NULL AND moderation_status='approved' AND
+      // (visibility IN ('system','public') OR owner_id = uid)  — §3.3.
+      query = query
+        .is("deleted_at", null)
+        .eq("moderation_status", "approved")
+        .or(`visibility.in.(system,public),owner_id.eq.${uid}`);
+      if (excludedProteinSlugs.length > 0)
+        query = query.not("proteins", "ov", `{${excludedProteinSlugs.join(",")}}`);
+      const blockedIds = [...new Set([...excludedRecipeIds, ...hiddenIds])];
+      if (blockedIds.length > 0)
+        query = query.not("id", "in", `(${blockedIds.join(",")})`);
+      return query as T;
+    }
+
+    // Bounded popularity-ordered pool + the complete familiar set (§3.3 / §9.4):
+    // both pass the SAME hard filter, so the familiar override beats popularity
+    // truncation but never the dietary/intolerance/hidden filter.
+    const familiarIdList = [...familiarRecipeIds];
+    const [{ data: popular }, familiarResult] = await Promise.all([
+      applyHardFilters(
+        supabase
+          .from("recipes")
+          .select(GENERATOR_RECIPE_FIELDS)
+          .order("popularity_score", { ascending: false })
+          .limit(CANDIDATE_POOL_LIMIT),
+      ),
+      familiarIdList.length > 0
+        ? applyHardFilters(
+            supabase
+              .from("recipes")
+              .select(GENERATOR_RECIPE_FIELDS)
+              .in("id", familiarIdList),
+          )
+        : Promise.resolve({ data: [] as unknown[] }),
+    ]);
+
+    const byId = new Map<string, GeneratorRecipe>();
+    for (const r of [
+      ...((popular ?? []) as GeneratorRecipe[]),
+      ...(((familiarResult as { data: unknown[] }).data ?? []) as GeneratorRecipe[]),
+    ]) {
+      byId.set(r.id, r);
+    }
+    const candidates = [...byId.values()];
+
+    const count =
+      input.count > 0
+        ? input.count
+        : defaultSuggestionCount(profile?.cook_style ?? null);
+
+    const selectedIds = selectPlanRecipes(
+      candidates,
+      {
+        flavorProfile,
+        cookStyle: profile?.cook_style ?? null,
+        exploredProteins: cookProfile?.explored_proteins ?? [],
+        familiarRecipeIds,
+        excludeRecipeIds,
+        repertoire,
+      },
+      count,
+    );
+
+    return insertRecipesIntoPlan(supabase, session, selectedIds);
   });
 
 // GET: preferred serving count for a recipe (null = never set)

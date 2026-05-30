@@ -48,14 +48,8 @@ import {
   saveDietaryPreferences,
 } from "../../../lib/supabase/profile-queries";
 import { useToast } from "../../../components/Toast";
+import { DIETARY_FLAGS } from "../../../lib/supabase/dietary-filter";
 import type { Recipe, DietaryMode } from "../../../types/db";
-
-const DIETARY_FLAGS: Record<DietaryMode, string[]> = {
-  none: [],
-  vegetarian: ["meat", "poultry", "fish", "shellfish"],
-  vegan: ["meat", "poultry", "fish", "shellfish", "dairy", "egg", "honey"],
-  pescatarian: ["meat", "poultry"],
-};
 
 // Muted pastel thumbnail colors per protein slug
 const PROTEIN_COLORS: Record<string, string> = {
