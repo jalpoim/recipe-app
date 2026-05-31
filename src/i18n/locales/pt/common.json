@@ -255,6 +255,10 @@
       "intent_leftover": "Usa o que tens"
     },
     "adjust": "Ajustar",
+    "selectedCount_one": "{{count}} selecionada",
+    "selectedCount_other": "{{count}} selecionadas",
+    "remove": "Eliminar",
+    "replace": "Substituir",
     "intent": {
       "proteins": "Proteínas",
       "variety": "Variedade",

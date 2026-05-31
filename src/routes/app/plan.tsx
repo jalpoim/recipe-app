@@ -140,13 +140,36 @@ function PlanItemCard({
   onRemove,
   onServingsChange,
   reason,
+  selectionMode = false,
+  selected = false,
+  onToggleSelect,
+  onLongPress,
 }: {
   item: PlanItemWithRecipe;
   onRemove: (id: string) => void;
   onServingsChange: (id: string, recipeId: string, v: number) => void;
   reason?: string;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  onLongPress?: (id: string) => void;
 }) {
   const { t } = useTranslation();
+  // Long-press → enter selection mode. Track a fired-flag so the click that
+  // follows pointerup doesn't also navigate.
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longFired = useRef(false);
+  const startPress = () => {
+    longFired.current = false;
+    pressTimer.current = setTimeout(() => {
+      longFired.current = true;
+      onLongPress?.(item.id);
+    }, 450);
+  };
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = null;
+  };
   const scale = item.portion_multiplier;
   const cal = Math.round(perServing(item.recipe, "calories") * scale);
   const pro = Math.round(perServing(item.recipe, "protein") * scale);
@@ -159,12 +182,27 @@ function PlanItemCard({
       "linear-gradient(135deg, #FEE9E1, #bbf7d0)");
 
   return (
-    <div className="relative rounded-2xl bg-white border border-[#F0F0EE] shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden">
-      {/* Full-card navigation link */}
+    <div
+      className={`relative rounded-2xl bg-white border shadow-sm active:scale-[0.98] hover:shadow-md transition-[transform,box-shadow] overflow-hidden ${
+        selected ? "border-[#F4623A] ring-2 ring-[#F4623A]/40" : "border-[#F0F0EE]"
+      }`}
+      onPointerDown={startPress}
+      onPointerUp={cancelPress}
+      onPointerLeave={cancelPress}
+      onPointerMove={cancelPress}
+    >
+      {/* Full-card navigation link — in selection mode it toggles instead of navigating */}
       <Link
         to="/app/library/$recipeId"
         params={{ recipeId: item.recipe_id }}
         search={{ from: "plan", planItemId: item.id }}
+        onClick={(e) => {
+          if (selectionMode || longFired.current) {
+            e.preventDefault();
+            longFired.current = false;
+            onToggleSelect?.(item.id);
+          }
+        }}
         className="flex h-[136px] focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
         aria-label={item.recipe.name}
       >
@@ -219,16 +257,33 @@ function PlanItemCard({
         </div>
       </Link>
 
-      {/* Remove button — top-right, above the link */}
-      <button
-        onClick={() => onRemove(item.id)}
-        aria-label={`Remover ${item.recipe.name} do plano`}
-        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
-      >
-        <X size={14} aria-hidden="true" />
-      </button>
+      {/* Selection checkmark (selection mode) */}
+      {selectionMode && (
+        <div
+          className={`absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center border-2 ${
+            selected
+              ? "bg-[#F4623A] border-[#F4623A] text-white"
+              : "bg-white/80 border-[#E5E7EB]"
+          }`}
+          aria-hidden="true"
+        >
+          {selected && <Check size={14} />}
+        </div>
+      )}
 
-      {/* Servings stepper — bottom-right, above the link */}
+      {/* Remove button — top-right, above the link (hidden in selection mode) */}
+      {!selectionMode && (
+        <button
+          onClick={() => onRemove(item.id)}
+          aria-label={`Remover ${item.recipe.name} do plano`}
+          className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full flex items-center justify-center text-[#9CA3AF] hover:text-[#DC2626] hover:bg-[#fee2e2] transition-colors focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+        >
+          <X size={14} aria-hidden="true" />
+        </button>
+      )}
+
+      {/* Servings stepper — bottom-right, above the link (hidden in selection mode) */}
+      {!selectionMode && (
       <div className="absolute bottom-2 right-2 z-10 flex items-center gap-1.5">
         <button
           onClick={() =>
@@ -264,6 +319,7 @@ function PlanItemCard({
           <Plus size={10} aria-hidden="true" />
         </button>
       </div>
+      )}
     </div>
   );
 }
@@ -1068,6 +1124,88 @@ function PlanPage() {
     onError: () => showToast(t("common.error"), "error"),
   });
 
+  // ── Multi-select (long-press) + Eliminar / Substituir (§11.5) ──────────────
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const enterSelect = (id: string) => {
+    setSelectMode(true);
+    setSelectedItemIds(new Set([id]));
+  };
+  const toggleSelect = (id: string) =>
+    setSelectedItemIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      if (next.size === 0) setSelectMode(false);
+      return next;
+    });
+  const exitSelect = () => {
+    setSelectMode(false);
+    setSelectedItemIds(new Set());
+  };
+
+  const bulkRemoveMutation = useMutation({
+    mutationFn: (ids: string[]) => removePlanItems({ data: ids }),
+    onMutate: async (ids) => {
+      await qc.cancelQueries({ queryKey: ["plan-items", planId] });
+      const prev = qc.getQueryData<PlanItemWithRecipe[]>(["plan-items", planId]);
+      qc.setQueryData<PlanItemWithRecipe[]>(
+        ["plan-items", planId],
+        (old) => old?.filter((i) => !ids.includes(i.id)) ?? [],
+      );
+      return { prev };
+    },
+    onError: (_e, _ids, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["plan-items", planId], ctx.prev);
+      showToast(t("common.error"), "error");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["plan-items", planId] });
+      qc.invalidateQueries({ queryKey: ["active-plan"] });
+    },
+  });
+
+  const replaceMutation = useMutation({
+    mutationFn: async (itemIds: string[]) => {
+      const removedRecipeIds = items
+        .filter((i) => itemIds.includes(i.id))
+        .map((i) => i.recipe_id);
+      await removePlanItems({ data: itemIds });
+      return suggestPlan({
+        data: {
+          count: itemIds.length,
+          intent,
+          excludeRecipeIds: [
+            ...recentBatchesRef.current.flat(),
+            ...removedRecipeIds,
+          ],
+        },
+      });
+    },
+    onSuccess: ({ items: newItems, reasons }) => {
+      const batch = newItems.map((i) => i.recipe_id);
+      recentBatchesRef.current = [...recentBatchesRef.current, batch].slice(-2);
+      setReasonByItemId((prev) => {
+        const next = { ...prev };
+        for (const it of newItems) {
+          const reason = reasons[it.recipe_id];
+          if (reason) next[it.id] = reason;
+        }
+        return next;
+      });
+      qc.invalidateQueries({ queryKey: ["plan-items", planId] });
+      qc.invalidateQueries({ queryKey: ["active-plan"] });
+      showToast(
+        newItems.length > 0
+          ? t("plan.suggestDone", { count: newItems.length })
+          : t("plan.suggestNone"),
+        newItems.length > 0 ? "success" : "error",
+      );
+    },
+    onError: () => showToast(t("common.error"), "error"),
+    onSettled: () => exitSelect(),
+  });
+
   if (isPlanLoading || isItemsLoading) return <PlanSkeleton />;
 
   return (
@@ -1196,6 +1334,10 @@ function PlanPage() {
                     <PlanItemCard
                       item={item}
                       reason={reasonByItemId[item.id]}
+                      selectionMode={selectMode}
+                      selected={selectedItemIds.has(item.id)}
+                      onToggleSelect={toggleSelect}
+                      onLongPress={enterSelect}
                       onRemove={(id) => removeMutation.mutate(id)}
                       onServingsChange={(id, recipeId, v) =>
                         itemMultMutation.mutate({ id, recipeId, mult: v })
@@ -1241,6 +1383,40 @@ function PlanPage() {
           </>
         )}
       </div>
+
+      {/* Multi-select action bar (§11.5) */}
+      {selectMode && (
+        <div className="fixed bottom-20 left-0 right-0 z-40 flex justify-center px-4">
+          <div className="w-full max-w-md flex items-center gap-2 rounded-2xl bg-white border border-[#E5E7EB] shadow-lg p-2">
+            <button
+              onClick={exitSelect}
+              className="px-3 py-2 rounded-xl text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {t("common.cancel")}
+            </button>
+            <span className="flex-1 text-xs text-[#9CA3AF] text-center">
+              {t("plan.selectedCount", { count: selectedItemIds.size })}
+            </span>
+            <button
+              onClick={() => {
+                bulkRemoveMutation.mutate([...selectedItemIds]);
+                exitSelect();
+              }}
+              disabled={selectedItemIds.size === 0}
+              className="px-3 py-2 rounded-xl text-sm font-semibold text-[#DC2626] hover:bg-[#fee2e2] transition-colors disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[#DC2626]/30 focus:outline-none"
+            >
+              {t("plan.remove")}
+            </button>
+            <button
+              onClick={() => replaceMutation.mutate([...selectedItemIds])}
+              disabled={selectedItemIds.size === 0 || replaceMutation.isPending}
+              className="px-3 py-2 rounded-xl text-sm font-semibold bg-[#F4623A] text-white hover:bg-[#D94F2B] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {replaceMutation.isPending ? t("plan.suggesting") : t("plan.replace")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

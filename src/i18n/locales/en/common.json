@@ -255,6 +255,10 @@
       "intent_leftover": "Uses what you have"
     },
     "adjust": "Adjust",
+    "selectedCount_one": "{{count}} selected",
+    "selectedCount_other": "{{count}} selected",
+    "remove": "Remove",
+    "replace": "Replace",
     "intent": {
       "proteins": "Proteins",
       "variety": "Variety",
