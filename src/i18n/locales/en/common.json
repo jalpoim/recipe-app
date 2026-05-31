@@ -250,7 +250,33 @@
       "top_cuisine": "From a cuisine you love",
       "flavor_match": "Flavours you love",
       "novel": "New for you",
-      "popular": "Popular right now"
+      "popular": "Popular right now",
+      "intent_protein": "As you asked",
+      "intent_leftover": "Uses what you have"
+    },
+    "adjust": "Adjust",
+    "intent": {
+      "proteins": "Proteins",
+      "variety": "Variety",
+      "tempo": "Time"
+    },
+    "family": {
+      "poultry": "Poultry",
+      "fish": "Fish",
+      "red_meat": "Meat",
+      "seafood": "Seafood",
+      "vegetarian": "Vegetarian",
+      "eggs": "Eggs"
+    },
+    "variety": {
+      "similar": "Similar",
+      "balanced": "Balanced",
+      "surprise": "Surprise me"
+    },
+    "tempo": {
+      "any": "Any",
+      "t30": "≤30 min",
+      "t45": "≤45 min"
     }
   },
   "shopping": {

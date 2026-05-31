@@ -46,9 +46,45 @@ export type ReasonCode =
   | "top_cuisine" // matches a cuisine you cook a lot
   | "flavor_match" // matches flavours you favour
   | "novel" // new-to-you (taste-adjacent but outside your usual)
-  | "popular"; // cold-start / popularity-led
+  | "popular" // cold-start / popularity-led
+  | "intent_protein" // filled to satisfy an explicit protein target (§11.4.1)
+  | "intent_leftover"; // filled to use a leftover ingredient (§11.4.3)
 
 export type SelectedRecipe = { id: string; reason: ReasonCode };
+
+// ─── Intent layer (F13 §11) — explicit, per-plan, HARD constraints ───────────
+// User-facing protein families → the protein slugs they cover (§11.4.1).
+export type ProteinFamily =
+  | "poultry"
+  | "fish"
+  | "seafood"
+  | "red_meat"
+  | "vegetarian"
+  | "eggs";
+
+export const PROTEIN_FAMILIES: Record<ProteinFamily, string[]> = {
+  poultry: ["chicken", "turkey", "duck"],
+  fish: ["fish", "salmon", "tuna"],
+  seafood: ["seafood"],
+  red_meat: ["beef", "pork", "lamb", "veal"],
+  vegetarian: ["tofu", "legumes"],
+  eggs: ["eggs"],
+};
+
+export type VarietyLevel = "similar" | "balanced" | "surprise";
+
+export type PlanIntent = {
+  // Hard minimums per protein family — these OVERRIDE the §9.2 protein cap.
+  proteinTargets?: { family: ProteinFamily; count: number }[];
+  variety?: VarietyLevel;
+  maxTime?: number | null;
+  // Leftover coverage groups (slice 3): each group is the set of candidate recipe
+  // ids that use one wanted ingredient; the core guarantees ≥1 pick per group
+  // where possible (best-effort coverage, §11.4.3). The server derives which
+  // groups went uncovered from the returned ids (honest fallback). Resolved
+  // server-side from the chosen ingredients.
+  coverageGroups?: { label: string; recipeIds: string[] }[];
+};
 
 // ─── Tunable weights (first-pass; tune with real usage data) ─────────────────
 // baseScore (§3.4) = cuisine·0.35 + flavor·0.30 + protein·0.10 + popularity·0.15
@@ -95,6 +131,31 @@ function familiarRatio(cookStyle: string | null): number {
   // null / unknown persona: a sane familiar lean. True cold-start users have an
   // empty familiar pool, so this only matters for pre-onboarding users with cooks.
   return 0.7;
+}
+
+// The variety dial (§11.4.2) overrides the persona defaults for one generation.
+// "similar" leans into the user's repertoire + favourite cuisines (more familiar,
+// looser cuisine cap so a cohesive favourite can repeat, gentler diversity push);
+// "surprise" pushes novelty + spread (more novel, tight cuisine cap, stronger MMR);
+// "balanced"/unset keeps the persona behaviour.
+function tuning(
+  cookStyle: string | null,
+  variety: VarietyLevel | undefined,
+): { familiarRatio: number; cuisineCap: number; lambda: number } {
+  const base = {
+    familiarRatio: familiarRatio(cookStyle),
+    cuisineCap: cuisineCap(cookStyle),
+    lambda: MMR_LAMBDA,
+  };
+  if (variety === "similar")
+    return {
+      familiarRatio: Math.max(base.familiarRatio, 0.8),
+      cuisineCap: 3,
+      lambda: 0.2,
+    };
+  if (variety === "surprise")
+    return { familiarRatio: Math.min(base.familiarRatio, 0.4), cuisineCap: 2, lambda: 0.6 };
+  return base;
 }
 
 // Persona-adaptive first-tap default count (§9.5). "Sugerir mais" adds +3/tap
@@ -232,11 +293,22 @@ type Caps = {
   cuisineCap: number;
 };
 
-function withinCaps(r: GeneratorRecipe, primaryProtein: string | null, caps: Caps): boolean {
+function withinCaps(
+  r: GeneratorRecipe,
+  primaryProtein: string | null,
+  caps: Caps,
+  enforceProtein: boolean,
+): boolean {
   for (const tag of r.cuisine_tags) {
     if ((caps.cuisine.get(tag) ?? 0) >= caps.cuisineCap) return false;
   }
-  if (primaryProtein && (caps.protein.get(primaryProtein) ?? 0) >= PROTEIN_CAP)
+  // Protein cap is skipped while filling an explicit protein target — intent
+  // overrides the §9.2 cap (§11.4.1).
+  if (
+    enforceProtein &&
+    primaryProtein &&
+    (caps.protein.get(primaryProtein) ?? 0) >= PROTEIN_CAP
+  )
     return false;
   return true;
 }
@@ -250,16 +322,26 @@ function bumpCaps(s: Scored, caps: Caps): void {
   }
 }
 
+type FillOpts = {
+  enforceCuisineCap: boolean;
+  enforceProteinCap: boolean;
+  lambda: number;
+  // When set, picks made by this fill are tagged with this reason (unless already
+  // tagged) — used to mark intent-driven slots (§11.4).
+  tagReason?: ReasonCode;
+  reasonById?: Map<string, ReasonCode>;
+};
+
 // Greedy MMR fill: repeatedly take the highest finalScore candidate from `pool`
-// that respects the caps (unless enforceCaps is false), until `quota` is met or
-// the pool is exhausted. Mutates `selected`, `caps`, and `taken`.
+// that respects the (optionally enforced) caps, until `quota` is met or the pool
+// is exhausted. Mutates `selected`, `caps`, `taken`, and `reasonById`.
 function greedyFill(
   pool: Scored[],
   quota: number,
   selected: Scored[],
   caps: Caps,
   taken: Set<string>,
-  enforceCaps: boolean,
+  opts: FillOpts,
 ): void {
   let picked = 0;
   while (picked < quota) {
@@ -267,9 +349,12 @@ function greedyFill(
     let bestScore = -Infinity;
     for (const cand of pool) {
       if (taken.has(cand.recipe.id)) continue;
-      if (enforceCaps && !withinCaps(cand.recipe, cand.primaryProtein, caps))
+      if (
+        opts.enforceCuisineCap &&
+        !withinCaps(cand.recipe, cand.primaryProtein, caps, opts.enforceProteinCap)
+      )
         continue;
-      const finalScore = cand.base - MMR_LAMBDA * maxSim(cand.recipe, selected);
+      const finalScore = cand.base - opts.lambda * maxSim(cand.recipe, selected);
       if (finalScore > bestScore) {
         bestScore = finalScore;
         best = cand;
@@ -279,6 +364,8 @@ function greedyFill(
     selected.push(best);
     taken.add(best.recipe.id);
     bumpCaps(best, caps);
+    if (opts.tagReason && opts.reasonById && !opts.reasonById.has(best.recipe.id))
+      opts.reasonById.set(best.recipe.id, opts.tagReason);
     picked++;
   }
 }
@@ -286,33 +373,41 @@ function greedyFill(
 /**
  * Select up to `count` recipe ids for a generated plan.
  *
- * Pipeline (§3.5, amended by §9):
+ * Pipeline (§3.5 / §9, extended by the F13 intent layer §11):
+ *  0. Apply the explicit HARD intent first: max-time filter, then reserve slots for
+ *     protein-family targets (§11.4.1) and leftover coverage groups (§11.4.3).
+ *     These honour the user's stated intent before any taste scoring.
  *  1. Drop excluded recipes (in-plan + recently suggested — §9.3).
  *  2. Score every candidate; FAMILIAR recipes also get the repertoire boost (§9.1).
- *  3. Split FAMILIAR / NOVEL; fill familiarCount from FAMILIAR and novelCount from
- *     NOVEL via greedy MMR under the variety caps (§9.2).
- *  4. Redistribute any shortfall to the other pool; if still short, top up from the
- *     combined remainder ignoring the familiar/novel boundary.
- *  5. If caps blocked filling `count`, relax them and fill the rest (§3.5 / §9.2).
+ *  3. Variety dial (§11.4.2) tunes familiar:novel ratio, cuisine cap and MMR λ.
+ *  4. Fill remaining slots FAMILIAR/NOVEL via greedy MMR under the caps; redistribute
+ *     shortfall; relax caps as a last resort (§3.5 / §9.2).
  *
  * @param rng inject a seeded rng for deterministic tests; defaults to Math.random.
- * @returns ordered recipe ids (selection order). Never includes excluded ids or
- *          duplicates; length ≤ count (fewer only when the pool is too small).
+ * @returns ordered {id, reason}; never excluded ids or duplicates; length ≤ count.
  */
 export function selectPlanRecipes(
   candidates: GeneratorRecipe[],
   signals: GeneratorSignals,
   count: number,
   rng: () => number = Math.random,
+  intent: PlanIntent = {},
 ): SelectedRecipe[] {
   if (count <= 0) return [];
 
-  const pool = candidates.filter((c) => !signals.excludeRecipeIds.has(c.id));
+  // HARD: max-time filter is part of the explicit intent (§11.4.4).
+  let pool = candidates.filter((c) => !signals.excludeRecipeIds.has(c.id));
+  if (intent.maxTime != null) {
+    const cap = intent.maxTime;
+    pool = pool.filter((c) => c.time_min != null && c.time_min <= cap);
+  }
   if (pool.length === 0) return [];
 
+  const tune = tuning(signals.cookStyle, intent.variety);
   const normPopularity = popularityNormaliser(pool);
   const jitterOf = () => (rng() - 0.5) * 2 * WEIGHTS.jitter; // ±jitter tiebreaker
 
+  const scoredById = new Map<string, Scored>();
   const scored: Scored[] = pool.map((r) => {
     const familiar = signals.familiarRecipeIds.has(r.id);
     let base =
@@ -323,48 +418,88 @@ export function selectPlanRecipes(
       personaNudge(r, signals.cookStyle) +
       jitterOf();
     if (familiar) base += WEIGHTS.repertoire * repertoireScore(r.id, signals.repertoire);
-    return {
-      recipe: r,
-      base,
-      familiar,
-      primaryProtein: r.proteins[0] ?? null,
-    };
+    const s: Scored = { recipe: r, base, familiar, primaryProtein: r.proteins[0] ?? null };
+    scoredById.set(r.id, s);
+    return s;
   });
 
-  const familiarPool = scored.filter((s) => s.familiar);
-  const novelPool = scored.filter((s) => !s.familiar);
-
   const target = Math.min(count, pool.length);
-  const familiarCount = Math.round(target * familiarRatio(signals.cookStyle));
-  const novelCount = target - familiarCount;
-
   const selected: Scored[] = [];
   const taken = new Set<string>();
+  const reasonById = new Map<string, ReasonCode>();
   const caps: Caps = {
     cuisine: new Map(),
     protein: new Map(),
-    cuisineCap: cuisineCap(signals.cookStyle),
+    cuisineCap: tune.cuisineCap,
   };
 
-  // Fill each pool to its quota under the caps.
-  greedyFill(familiarPool, familiarCount, selected, caps, taken, true);
-  greedyFill(novelPool, novelCount, selected, caps, taken, true);
-
-  // Redistribute shortfall across the boundary (§3.5): whatever quota one pool
-  // couldn't meet, the other tries to absorb. A single combined pass over the
-  // remaining scored set, still under caps, covers both directions at once.
-  if (selected.length < target) {
-    greedyFill(scored, target - selected.length, selected, caps, taken, true);
+  // ── 0a. Leftover coverage (§11.4.3): reserve ≥1 slot per group, best-effort.
+  // Cuisine cap still applies; protein cap relaxed (a leftover may need a 3rd of a
+  // protein). Uncovered groups are derived server-side from the returned ids.
+  for (const group of intent.coverageGroups ?? []) {
+    if (selected.length >= target) break;
+    if (group.recipeIds.some((id) => taken.has(id))) continue; // already covered
+    const groupPool = group.recipeIds
+      .map((id) => scoredById.get(id))
+      .filter((s): s is Scored => !!s);
+    greedyFill(groupPool, 1, selected, caps, taken, {
+      enforceCuisineCap: true,
+      enforceProteinCap: false,
+      lambda: tune.lambda,
+      tagReason: "intent_leftover",
+      reasonById,
+    });
   }
 
-  // Last resort: caps blocked filling `count` (sparse / monotone pool) — relax
-  // the caps and fill the rest so we still return a usable week (§3.5 / §9.2).
+  // ── 0b. Protein-family targets (§11.4.1): hard minimums that OVERRIDE the cap.
+  for (const tgt of intent.proteinTargets ?? []) {
+    if (selected.length >= target) break;
+    const slugs = new Set(PROTEIN_FAMILIES[tgt.family] ?? []);
+    const familyPool = scored.filter((s) =>
+      s.recipe.proteins.some((p) => slugs.has(p)),
+    );
+    const want = Math.min(tgt.count, target - selected.length);
+    greedyFill(familyPool, want, selected, caps, taken, {
+      enforceCuisineCap: true,
+      enforceProteinCap: false, // intent overrides the §9.2 protein cap
+      lambda: tune.lambda,
+      tagReason: "intent_protein",
+      reasonById,
+    });
+  }
+
+  // ── 1. Remaining slots: familiar/novel split via greedy MMR under the caps.
+  const remaining = target - selected.length;
+  if (remaining > 0) {
+    const familiarPool = scored.filter((s) => s.familiar);
+    const novelPool = scored.filter((s) => !s.familiar);
+    const familiarCount = Math.round(remaining * tune.familiarRatio);
+    const novelCount = remaining - familiarCount;
+    const fillOpts: FillOpts = {
+      enforceCuisineCap: true,
+      enforceProteinCap: true,
+      lambda: tune.lambda,
+    };
+    greedyFill(familiarPool, familiarCount, selected, caps, taken, fillOpts);
+    greedyFill(novelPool, novelCount, selected, caps, taken, fillOpts);
+    // Redistribute shortfall across the boundary (§3.5).
+    if (selected.length < target) {
+      greedyFill(scored, target - selected.length, selected, caps, taken, fillOpts);
+    }
+  }
+
+  // ── 2. Last resort: relax caps to fill `count` from whatever remains (§3.5/§9.2).
   if (selected.length < target) {
-    greedyFill(scored, target - selected.length, selected, caps, taken, false);
+    greedyFill(scored, target - selected.length, selected, caps, taken, {
+      enforceCuisineCap: false,
+      enforceProteinCap: false,
+      lambda: tune.lambda,
+    });
   }
 
   return selected.map((s) => ({
     id: s.recipe.id,
-    reason: deriveReason(s.recipe, s.familiar, signals),
+    reason:
+      reasonById.get(s.recipe.id) ?? deriveReason(s.recipe, s.familiar, signals),
   }));
 }

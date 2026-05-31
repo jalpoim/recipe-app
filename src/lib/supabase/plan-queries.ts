@@ -20,6 +20,7 @@ import {
   type GeneratorRecipe,
   type Repertoire,
   type ReasonCode,
+  type PlanIntent,
 } from "../plan-generator";
 
 // Result of suggestPlan: the inserted items plus the "why this" reason per recipe
@@ -607,7 +608,11 @@ const GENERATOR_RECIPE_FIELDS =
 // All judgement lives in the pure core (src/lib/plan-generator.ts).
 export const suggestPlan = createServerFn({ method: "POST" })
   .inputValidator(
-    (input: { count: number; excludeRecipeIds?: string[] }) => input,
+    (input: {
+      count: number;
+      excludeRecipeIds?: string[];
+      intent?: PlanIntent;
+    }) => input,
   )
   .handler(async ({ data: input }): Promise<SuggestPlanResult> => {
     const supabase = makeClient();
@@ -753,6 +758,8 @@ export const suggestPlan = createServerFn({ method: "POST" })
         repertoire,
       },
       count,
+      Math.random,
+      input.intent ?? {},
     );
 
     const items = await insertRecipesIntoPlan(

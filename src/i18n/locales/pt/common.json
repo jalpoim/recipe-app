@@ -250,7 +250,33 @@
       "top_cuisine": "Da tua cozinha favorita",
       "flavor_match": "Sabores que adoras",
       "novel": "Nova para ti",
-      "popular": "Popular agora"
+      "popular": "Popular agora",
+      "intent_protein": "Como pediste",
+      "intent_leftover": "Usa o que tens"
+    },
+    "adjust": "Ajustar",
+    "intent": {
+      "proteins": "Proteínas",
+      "variety": "Variedade",
+      "tempo": "Tempo"
+    },
+    "family": {
+      "poultry": "Aves",
+      "fish": "Peixe",
+      "red_meat": "Carne",
+      "seafood": "Marisco",
+      "vegetarian": "Vegetariano",
+      "eggs": "Ovos"
+    },
+    "variety": {
+      "similar": "Parecido",
+      "balanced": "Equilibrado",
+      "surprise": "Surpreende-me"
+    },
+    "tempo": {
+      "any": "Qualquer",
+      "t30": "≤30 min",
+      "t45": "≤45 min"
     }
   },
   "shopping": {

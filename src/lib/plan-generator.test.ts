@@ -453,6 +453,86 @@ describe("reason codes (F12a)", () => {
   });
 });
 
+// ─── §11 / F13 — intent layer ─────────────────────────────────────────────────
+describe("intent: protein targets (§11.4.1)", () => {
+  it("honours a protein-family minimum even against more-popular other proteins", () => {
+    const poultry = [0, 1].map((i) =>
+      recipe(`ch${i}`, { proteins: ["chicken"], cuisine_tags: [`pc${i}`], popularity_score: 1 }),
+    );
+    const beef = [0, 1, 2, 3].map((i) =>
+      recipe(`bf${i}`, { proteins: ["beef"], cuisine_tags: [`bc${i}`], popularity_score: 100 }),
+    );
+    const out = ids(
+      selectPlanRecipes([...beef, ...poultry], signals(), 4, rng(), {
+        proteinTargets: [{ family: "poultry", count: 2 }],
+      }),
+    );
+    const poultryIds = new Set(poultry.map((r) => r.id));
+    expect(out.filter((id) => poultryIds.has(id)).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("a protein target overrides the ≤2 protein cap", () => {
+    const chicken = [0, 1, 2, 3].map((i) =>
+      recipe(`ch${i}`, { proteins: ["chicken"], cuisine_tags: [`c${i}`], popularity_score: 50 }),
+    );
+    const out = ids(
+      selectPlanRecipes(chicken, signals(), 4, rng(), {
+        proteinTargets: [{ family: "poultry", count: 3 }],
+      }),
+    );
+    expect(out.filter((id) => id.startsWith("ch")).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("tags intent-filled picks with the intent_protein reason", () => {
+    const r = recipe("r", { proteins: ["salmon"], cuisine_tags: ["x"], popularity_score: 10 });
+    const out = selectPlanRecipes([r], signals(), 1, rng(), {
+      proteinTargets: [{ family: "fish", count: 1 }],
+    });
+    expect(out.find((s) => s.id === "r")?.reason).toBe("intent_protein");
+  });
+});
+
+describe("intent: max time (§11.4.4)", () => {
+  it("drops recipes over the time cap", () => {
+    const pool = [10, 20, 40, 50].map((tmin, i) =>
+      recipe(`r${i}`, { time_min: tmin, cuisine_tags: [`c${i}`], proteins: [`p${i}`], popularity_score: 50 }),
+    );
+    const out = ids(selectPlanRecipes(pool, signals(), 4, rng(), { maxTime: 30 }));
+    expect(out).toEqual(expect.arrayContaining(["r0", "r1"]));
+    expect(out).not.toContain("r2");
+    expect(out).not.toContain("r3");
+  });
+});
+
+describe("intent: variety dial (§11.4.2)", () => {
+  it("'similar' yields more familiar picks than 'surprise'", () => {
+    const familiar = uncappedPool("fam", 5);
+    const novel = uncappedPool("nov", 5);
+    const fam = new Set(familiar.map((r) => r.id));
+    const pool = [...familiar, ...novel];
+    const similar = ids(
+      selectPlanRecipes(pool, signals({ familiarRecipeIds: fam }), 5, rng(), { variety: "similar" }),
+    ).filter((id) => fam.has(id)).length;
+    const surprise = ids(
+      selectPlanRecipes(pool, signals({ familiarRecipeIds: fam }), 5, rng(), { variety: "surprise" }),
+    ).filter((id) => fam.has(id)).length;
+    expect(similar).toBeGreaterThan(surprise);
+  });
+});
+
+describe("intent: leftover coverage (§11.4.3)", () => {
+  it("guarantees a pick from a coverage group, even at low popularity", () => {
+    const leftover = recipe("lo", { cuisine_tags: ["x"], proteins: ["p"], popularity_score: 1 });
+    const others = uncappedPool("o", 5).map((r) => ({ ...r, popularity_score: 100 }));
+    const out = ids(
+      selectPlanRecipes([leftover, ...others], signals(), 3, rng(), {
+        coverageGroups: [{ label: "couve", recipeIds: ["lo"] }],
+      }),
+    );
+    expect(out).toContain("lo");
+  });
+});
+
 // ─── Guards ───────────────────────────────────────────────────────────────────
 describe("guards", () => {
   it("count ≤ 0 returns empty", () => {

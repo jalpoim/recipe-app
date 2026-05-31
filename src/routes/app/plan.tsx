@@ -41,7 +41,12 @@ import type {
   TopCookedRecipe,
 } from "../../lib/supabase/cook-log-queries";
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
-import { defaultSuggestionCount } from "../../lib/plan-generator";
+import {
+  defaultSuggestionCount,
+  type PlanIntent,
+  type ProteinFamily,
+  type VarietyLevel,
+} from "../../lib/plan-generator";
 import type {
   PlanItemWithRecipe,
   ActivePlanWithCount,
@@ -699,6 +704,142 @@ function FavouriteRow({
   );
 }
 
+// ---------- IntentPanel (F13 §11.3–11.4) ----------
+
+const PROTEIN_FAMILY_KEYS: ProteinFamily[] = [
+  "poultry",
+  "fish",
+  "red_meat",
+  "seafood",
+  "vegetarian",
+  "eggs",
+];
+const VARIETY_OPTIONS: VarietyLevel[] = ["similar", "balanced", "surprise"];
+const TEMPO_OPTIONS: { key: string; maxTime: number | null }[] = [
+  { key: "any", maxTime: null },
+  { key: "t30", maxTime: 30 },
+  { key: "t45", maxTime: 45 },
+];
+
+function IntentPanel({
+  intent,
+  onChange,
+}: {
+  intent: PlanIntent;
+  onChange: (i: PlanIntent) => void;
+}) {
+  const { t } = useTranslation();
+  const targets = intent.proteinTargets ?? [];
+  const countFor = (f: ProteinFamily) =>
+    targets.find((x) => x.family === f)?.count ?? 0;
+  const setCount = (f: ProteinFamily, n: number) => {
+    const others = targets.filter((x) => x.family !== f);
+    const next = n > 0 ? [...others, { family: f, count: n }] : others;
+    onChange({ ...intent, proteinTargets: next.length ? next : undefined });
+  };
+  const variety = intent.variety ?? "balanced";
+  const maxTime = intent.maxTime ?? null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 text-left">
+      {/* Protein mix */}
+      <div>
+        <p className="text-xs font-semibold text-[#6B7280] mb-2">
+          {t("plan.intent.proteins")}
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {PROTEIN_FAMILY_KEYS.map((f) => {
+            const n = countFor(f);
+            const active = n > 0;
+            return (
+              <div
+                key={f}
+                className={`flex items-center rounded-full text-xs font-medium border transition-colors ${
+                  active
+                    ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+                    : "border-[#E5E7EB] text-[#6B7280]"
+                }`}
+              >
+                <button
+                  onClick={() => setCount(f, active ? 0 : 1)}
+                  className="px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded-full"
+                >
+                  {t(`plan.family.${f}`)}
+                </button>
+                {active && (
+                  <span className="flex items-center gap-1 pr-1.5">
+                    <button
+                      onClick={() => setCount(f, n - 1)}
+                      aria-label={t("common.decrease", "−")}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60"
+                    >
+                      <Minus size={11} aria-hidden="true" />
+                    </button>
+                    <span className="w-3 text-center font-bold" aria-live="polite">
+                      {n}
+                    </span>
+                    <button
+                      onClick={() => setCount(f, Math.min(n + 1, 6))}
+                      aria-label={t("common.increase", "+")}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60"
+                    >
+                      <Plus size={11} aria-hidden="true" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Variety dial */}
+      <div>
+        <p className="text-xs font-semibold text-[#6B7280] mb-2">
+          {t("plan.intent.variety")}
+        </p>
+        <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
+          {VARIETY_OPTIONS.map((v) => (
+            <button
+              key={v}
+              onClick={() => onChange({ ...intent, variety: v })}
+              className={`flex-1 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                variety === v
+                  ? "bg-[#F4623A] text-white"
+                  : "text-[#6B7280] hover:bg-[#F3F4F6]"
+              }`}
+            >
+              {t(`plan.variety.${v}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Tempo */}
+      <div>
+        <p className="text-xs font-semibold text-[#6B7280] mb-2">
+          {t("plan.intent.tempo")}
+        </p>
+        <div className="flex gap-1.5">
+          {TEMPO_OPTIONS.map((o) => (
+            <button
+              key={o.key}
+              onClick={() => onChange({ ...intent, maxTime: o.maxTime })}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                maxTime === o.maxTime
+                  ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+                  : "border-[#E5E7EB] text-[#6B7280]"
+              }`}
+            >
+              {t(`plan.tempo.${o.key}`)}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ---------- PlanPage ----------
 
 function PlanPage() {
@@ -717,6 +858,25 @@ function PlanPage() {
   const [reasonByItemId, setReasonByItemId] = useState<Record<string, string>>(
     {},
   );
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  // Sticky per-plan intent (§11.7) — remembered across generations, client-side.
+  const [intent, setIntent] = useState<PlanIntent>(() => {
+    if (typeof localStorage === "undefined") return {};
+    try {
+      const raw = localStorage.getItem("plan_intent");
+      return raw ? (JSON.parse(raw) as PlanIntent) : {};
+    } catch {
+      return {};
+    }
+  });
+  const changeIntent = (next: PlanIntent) => {
+    setIntent(next);
+    try {
+      localStorage.setItem("plan_intent", JSON.stringify(next));
+    } catch {
+      /* ignore quota/availability errors */
+    }
+  };
 
   const { pullY: planPullY, isRefreshing: isPlanPtrRefreshing } =
     usePullToRefresh({
@@ -842,6 +1002,12 @@ function PlanPage() {
     [items],
   );
   const atMax = items.length >= PLAN_MAX_ITEMS;
+  // First-tap size, bumped up if protein targets ask for more than the default.
+  const intentMin = (intent.proteinTargets ?? []).reduce(
+    (a, x) => a + x.count,
+    0,
+  );
+  const genCount = Math.min(PLAN_MAX_ITEMS, Math.max(firstTapCount, intentMin));
 
   // Generate / "Sugerir mais" — direct insert + undo toast (§3.9).
   const suggestMutation = useMutation({
@@ -850,6 +1016,7 @@ function PlanPage() {
         data: {
           count: requested,
           excludeRecipeIds: recentBatchesRef.current.flat(),
+          intent,
         },
       }),
     onSuccess: ({ items: newItems, reasons }, requested) => {
@@ -961,15 +1128,29 @@ function PlanPage() {
         {items.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-[#6B7280] text-sm mb-5">{t("plan.empty")}</p>
-            <button
-              onClick={() => suggestMutation.mutate(firstTapCount)}
-              disabled={suggestMutation.isPending}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-            >
-              {suggestMutation.isPending
-                ? t("plan.suggesting")
-                : t("plan.suggest")}
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                onClick={() => suggestMutation.mutate(genCount)}
+                disabled={suggestMutation.isPending}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                {suggestMutation.isPending
+                  ? t("plan.suggesting")
+                  : t("plan.suggest")}
+              </button>
+              <button
+                onClick={() => setAdjustOpen((o) => !o)}
+                aria-expanded={adjustOpen}
+                className="px-3 py-2.5 rounded-xl text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                {t("plan.adjust")}
+              </button>
+            </div>
+            {adjustOpen && (
+              <div className="max-w-[340px] mx-auto">
+                <IntentPanel intent={intent} onChange={changeIntent} />
+              </div>
+            )}
             <div className="mt-3">
               <Link
                 to="/app/library"
