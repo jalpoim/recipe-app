@@ -38,67 +38,6 @@ export type SuggestPlanResult = {
 
 export type LeftoverSuggestion = { id: string; name: string };
 
-// GET: suggested leftover ingredients for the intent panel — the canonical
-// ingredients the user has cooked with most recently (≈ what they recently
-// shopped). Manual search covers ad-hoc buys (§11.4.3). One bounded scan + one
-// translation query; no N+1.
-export const fetchLeftoverSuggestions = createServerFn({ method: "GET" }).handler(
-  async (): Promise<LeftoverSuggestion[]> => {
-    const supabase = makeClient();
-    const lang = getLang();
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) return [];
-
-    const { data: cooks } = await supabase
-      .from("cook_log")
-      .select("recipe_id, cooked_at")
-      .eq("user_id", session.user.id)
-      .order("cooked_at", { ascending: false })
-      .limit(40);
-    const recipeIds = [...new Set((cooks ?? []).map((c) => c.recipe_id))].slice(0, 20);
-    if (recipeIds.length === 0) return [];
-
-    const { data: ings } = await supabase
-      .from("recipe_ingredients")
-      .select("ingredient_id, name")
-      .in("recipe_id", recipeIds)
-      .not("ingredient_id", "is", null);
-
-    const counts = new Map<string, { count: number; name: string }>();
-    for (const r of ings ?? []) {
-      if (!r.ingredient_id) continue;
-      const e = counts.get(r.ingredient_id);
-      if (e) e.count++;
-      else counts.set(r.ingredient_id, { count: 1, name: r.name ?? "" });
-    }
-    const top = [...counts.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 12);
-    const ids = top.map(([id]) => id);
-
-    let nameById = new Map<string, string>();
-    if (lang !== "pt" && ids.length > 0) {
-      const { data: trans } = await supabase
-        .from("ingredient_translations")
-        .select("ingredient_id, name")
-        .in("ingredient_id", ids)
-        .eq("language", lang);
-      nameById = new Map((trans ?? []).map((t) => [t.ingredient_id, t.name]));
-    } else if (ids.length > 0) {
-      const { data: trans } = await supabase
-        .from("ingredient_translations")
-        .select("ingredient_id, name")
-        .in("ingredient_id", ids)
-        .eq("language", "pt");
-      nameById = new Map((trans ?? []).map((t) => [t.ingredient_id, t.name]));
-    }
-
-    return top.map(([id, v]) => ({ id, name: nameById.get(id) ?? v.name }));
-  },
-);
-
 // GET: the ingredients the user actually checked off across their recent shopping
 // trips (cook_log_completions.checked_item_keys). item_key format is
 // `recipe:<planItemId>:<recipeIngredientId>`; custom items are skipped. We resolve

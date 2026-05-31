@@ -298,6 +298,10 @@
     "seedSkip": "Surprise me",
     "adjustTitle": "Adjust plan",
     "adjustSubtitle": "Personalize your suggestions",
+    "generate": "Generate plan",
+    "generateSubtitle": "Tell us what you feel like — or just generate and we'll handle it.",
+    "generateN": "Generate {{count}} recipes",
+    "addN": "Add {{count}} recipes",
     "adjustReset": "Reset"
   },
   "cuisines": {

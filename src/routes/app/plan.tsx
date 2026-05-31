@@ -1045,7 +1045,7 @@ function AdjustSheet({
         <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
         <Drawer.Content
           className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-[20px] bg-[#FAFAF8] outline-none"
-          aria-label={t("plan.adjustTitle")}
+          aria-label={t("plan.generate")}
         >
           <div className="flex justify-center pt-3 pb-1">
             <div
@@ -1056,10 +1056,10 @@ function AdjustSheet({
           <div className="flex items-start justify-between px-4 pt-1 pb-1">
             <div>
               <h2 className="text-base font-bold text-[#1A1A1A]">
-                {t("plan.adjustTitle")}
+                {t("plan.generate")}
               </h2>
               <p className="text-xs text-[#6B7280] mt-0.5">
-                {t("plan.adjustSubtitle")}
+                {t("plan.generateSubtitle")}
               </p>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -1426,6 +1426,10 @@ function PlanPage() {
   );
   const genCount =
     intentSum > 0 ? Math.min(PLAN_MAX_ITEMS, intentSum) : firstTapCount;
+  // "Sugerir mais": the chosen mix if specified, else a small top-up.
+  const moreCount = intentSum > 0 ? Math.min(PLAN_MAX_ITEMS, intentSum) : 3;
+  // Count shown on the sheet's single CTA — answers "why N" by being explicit.
+  const applyCount = items.length === 0 ? genCount : moreCount;
 
   // Cold-start taste seed (§11.1): prompt a brand-new user once before their first
   // generation so day-one suggestions are tailored, not random.
@@ -1442,7 +1446,7 @@ function PlanPage() {
   const handleAdjustApply = () => {
     setAdjustOpen(false);
     if (items.length === 0) startSuggest(genCount);
-    else suggestMutation.mutate(3);
+    else suggestMutation.mutate(moreCount);
   };
 
   // Generate / "Sugerir mais" — direct insert + undo toast (§3.9).
@@ -1620,25 +1624,17 @@ function PlanPage() {
           {!selectMode && (
             <div className="flex items-center gap-1">
               {items.length > 0 && (
-                <>
-                  <button
-                    onClick={() => suggestMutation.mutate(3)}
-                    disabled={suggestMutation.isPending || atMax}
-                    aria-label={t("plan.suggestMore")}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-                  >
-                    {suggestMutation.isPending
-                      ? t("plan.suggesting")
-                      : t("plan.suggestMore")}
-                  </button>
-                  <button
-                    onClick={() => setAdjustOpen(true)}
-                    aria-label={t("plan.adjust")}
-                    className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-                  >
-                    <SlidersHorizontal size={20} aria-hidden="true" />
-                  </button>
-                </>
+                <button
+                  onClick={() => setAdjustOpen(true)}
+                  disabled={suggestMutation.isPending || atMax}
+                  aria-label={t("plan.suggestMore")}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                >
+                  <SlidersHorizontal size={14} aria-hidden="true" />
+                  {suggestMutation.isPending
+                    ? t("plan.suggesting")
+                    : t("plan.suggestMore")}
+                </button>
               )}
               <button
                 onClick={() => setFavouritesOpen(true)}
@@ -1683,7 +1679,11 @@ function PlanPage() {
             intent.variety != null ||
             (intent.useIngredients?.length ?? 0) > 0
           }
-          applyLabel={items.length === 0 ? t("plan.suggest") : t("plan.suggestMore")}
+          applyLabel={
+            items.length === 0
+              ? t("plan.generateN", { count: applyCount })
+              : t("plan.addN", { count: applyCount })
+          }
           applyDisabled={
             suggestMutation.isPending || (items.length > 0 && atMax)
           }
@@ -1700,24 +1700,13 @@ function PlanPage() {
         {items.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-[#6B7280] text-sm mb-5">{t("plan.empty")}</p>
-            <div className="flex items-center justify-center gap-2">
-              <button
-                onClick={() => startSuggest(genCount)}
-                disabled={suggestMutation.isPending}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-              >
-                {suggestMutation.isPending
-                  ? t("plan.suggesting")
-                  : t("plan.suggest")}
-              </button>
-              <button
-                onClick={() => setAdjustOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[#6B7280] border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-              >
-                <SlidersHorizontal size={15} aria-hidden="true" />
-                {t("plan.adjust")}
-              </button>
-            </div>
+            <button
+              onClick={() => setAdjustOpen(true)}
+              disabled={suggestMutation.isPending}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {suggestMutation.isPending ? t("plan.suggesting") : t("plan.generate")}
+            </button>
             <div className="mt-3">
               <Link
                 to="/app/library"

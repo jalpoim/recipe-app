@@ -298,6 +298,10 @@
     "seedSkip": "Surpreende-me",
     "adjustTitle": "Ajustar plano",
     "adjustSubtitle": "Personaliza as sugestões",
+    "generate": "Gerar plano",
+    "generateSubtitle": "Diz-nos o que te apetece — ou gera já e tratamos do resto.",
+    "generateN": "Gerar {{count}} receitas",
+    "addN": "Adicionar {{count}} receitas",
     "adjustReset": "Repor"
   },
   "cuisines": {
