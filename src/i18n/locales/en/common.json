@@ -267,7 +267,8 @@
       "leftoversSearch": "Search ingredient…",
       "varietyHint": "From dishes you know to brand-new ones.",
       "leftoversEmpty": "You don't have any past shopping yet.",
-      "leftoversFrom": "From your past shopping"
+      "leftoversFrom": "From your past shopping",
+      "proteinsHint": "How many meals of each protein."
     },
     "leftoverMissing": "{{count}} added — couldn't fit: {{items}}",
     "family": {
@@ -281,7 +282,7 @@
     "variety": {
       "similar": "My usual",
       "balanced": "Balanced",
-      "surprise": "Surprise me"
+      "surprise": "Surprise"
     },
     "tempo": {
       "any": "Any",
@@ -296,7 +297,8 @@
     "seedGenerate": "Generate plan",
     "seedSkip": "Surprise me",
     "adjustTitle": "Adjust plan",
-    "adjustSubtitle": "Personalize your suggestions"
+    "adjustSubtitle": "Personalize your suggestions",
+    "adjustReset": "Reset"
   },
   "cuisines": {
     "portuguese": "Portuguese",

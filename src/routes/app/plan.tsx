@@ -840,11 +840,14 @@ function IntentPanel({
   ];
 
   return (
-    <div className="mt-4 rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 text-left">
+    <div className="space-y-5 text-left">
       {/* Protein mix */}
       <div>
-        <p className="text-xs font-semibold text-[#6B7280] mb-2">
+        <p className="text-xs font-semibold text-[#6B7280] mb-0.5">
           {t("plan.intent.proteins")}
+        </p>
+        <p className="text-[11px] text-[#6B7280] mb-2">
+          {t("plan.intent.proteinsHint")}
         </p>
         <div className="flex flex-wrap gap-1.5">
           {PROTEIN_FAMILY_KEYS.map((f) => {
@@ -861,18 +864,19 @@ function IntentPanel({
               >
                 <button
                   onClick={() => setCount(f, active ? 0 : 1)}
-                  className="px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded-full"
+                  aria-pressed={active}
+                  className="px-3.5 py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded-full"
                 >
                   {t(`plan.family.${f}`)}
                 </button>
                 {active && (
-                  <span className="flex items-center gap-1 pr-1.5">
+                  <span className="flex items-center gap-0.5 pr-1">
                     <button
                       onClick={() => setCount(f, n - 1)}
                       aria-label={t("common.decrease", "−")}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
                     >
-                      <Minus size={11} aria-hidden="true" />
+                      <Minus size={14} aria-hidden="true" />
                     </button>
                     <span className="w-3 text-center font-bold" aria-live="polite">
                       {n}
@@ -880,9 +884,9 @@ function IntentPanel({
                     <button
                       onClick={() => setCount(f, Math.min(n + 1, 6))}
                       aria-label={t("common.increase", "+")}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
                     >
-                      <Plus size={11} aria-hidden="true" />
+                      <Plus size={14} aria-hidden="true" />
                     </button>
                   </span>
                 )}
@@ -897,12 +901,18 @@ function IntentPanel({
         <p className="text-xs font-semibold text-[#6B7280] mb-2">
           {t("plan.intent.variety")}
         </p>
-        <div className="flex rounded-xl border border-[#E5E7EB] overflow-hidden">
+        <div
+          role="radiogroup"
+          aria-label={t("plan.intent.variety")}
+          className="flex rounded-xl border border-[#E5E7EB] overflow-hidden"
+        >
           {VARIETY_OPTIONS.map((v) => (
             <button
               key={v}
+              role="radio"
+              aria-checked={variety === v}
               onClick={() => onChange({ ...intent, variety: v })}
-              className={`flex-1 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+              className={`flex-1 py-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#F4623A]/40 ${
                 variety === v
                   ? "bg-[#F4623A] text-white"
                   : "text-[#6B7280] hover:bg-[#F3F4F6]"
@@ -912,7 +922,7 @@ function IntentPanel({
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-[#9CA3AF] mt-1.5">
+        <p className="text-[11px] text-[#6B7280] mt-1.5">
           {t("plan.intent.varietyHint")}
         </p>
       </div>
@@ -923,54 +933,59 @@ function IntentPanel({
           type="button"
           onClick={() => setLeftoversOpen((o) => !o)}
           aria-expanded={leftoversOpen}
-          className="flex w-full items-center justify-between text-xs font-semibold text-[#6B7280] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded"
+          className="flex w-full items-center justify-between py-1.5 text-xs font-semibold text-[#6B7280] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded"
         >
           <span>
             {t("plan.intent.leftovers")}
             {used.length > 0 ? ` · ${used.length}` : ""}
           </span>
           <ChevronDown
-            size={14}
+            size={16}
             aria-hidden="true"
             className={`transition-transform ${leftoversOpen ? "rotate-180" : ""}`}
           />
         </button>
         {leftoversOpen && (
           <div className="mt-2">
-            <p className="text-[11px] text-[#9CA3AF] mb-2">
-              {t("plan.intent.leftoversFrom")}
-            </p>
             {leftoverChips.length === 0 ? (
-              <p className="text-xs text-[#9CA3AF] mb-2">
+              <p className="text-xs text-[#6B7280] mb-2">
                 {t("plan.intent.leftoversEmpty")}
               </p>
             ) : (
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {leftoverChips.map((ing) => {
-                  const active = usedIds.has(ing.id);
-                  return (
-                    <button
-                      key={ing.id}
-                      onClick={() => toggleIng(ing)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-                        active
-                          ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
-                          : "border-[#E5E7EB] text-[#6B7280]"
-                      }`}
-                    >
-                      {active && <Check size={11} className="inline mr-1" aria-hidden="true" />}
-                      {ing.name}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <p className="text-[11px] text-[#6B7280] mb-2">
+                  {t("plan.intent.leftoversFrom")}
+                </p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {leftoverChips.map((ing) => {
+                    const active = usedIds.has(ing.id);
+                    return (
+                      <button
+                        key={ing.id}
+                        onClick={() => toggleIng(ing)}
+                        aria-pressed={active}
+                        className={`px-3.5 py-2.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                          active
+                            ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+                            : "border-[#E5E7EB] text-[#6B7280]"
+                        }`}
+                      >
+                        {active && (
+                          <Check size={11} className="inline mr-1" aria-hidden="true" />
+                        )}
+                        {ing.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
             <input
               type="text"
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               placeholder={t("plan.intent.leftoversSearch")}
-              className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+              className="w-full px-3 py-2.5 rounded-xl border border-[#E5E7EB] text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
             />
             {searchResults.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -984,7 +999,7 @@ function IntentPanel({
                         toggleIng({ id: r.id, name: r.name });
                         setTerm("");
                       }}
-                      className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                      className="px-3.5 py-2.5 rounded-full text-xs font-medium border border-dashed border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
                     >
                       + {r.name}
                     </button>
@@ -1006,6 +1021,8 @@ function AdjustSheet({
   intent,
   onChange,
   onApply,
+  onReset,
+  canReset,
   applyLabel,
   applyDisabled,
   applyPending,
@@ -1015,6 +1032,8 @@ function AdjustSheet({
   intent: PlanIntent;
   onChange: (i: PlanIntent) => void;
   onApply: () => void;
+  onReset: () => void;
+  canReset: boolean;
   applyLabel: string;
   applyDisabled: boolean;
   applyPending: boolean;
@@ -1039,20 +1058,30 @@ function AdjustSheet({
               <h2 className="text-base font-bold text-[#1A1A1A]">
                 {t("plan.adjustTitle")}
               </h2>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
+              <p className="text-xs text-[#6B7280] mt-0.5">
                 {t("plan.adjustSubtitle")}
               </p>
             </div>
-            <button
-              onClick={() => onOpenChange(false)}
-              aria-label={t("common.close")}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
-            >
-              <X size={16} aria-hidden="true" />
-            </button>
+            <div className="flex items-center gap-1 shrink-0">
+              {canReset && (
+                <button
+                  onClick={onReset}
+                  className="px-2.5 h-9 rounded-full text-xs font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                >
+                  {t("plan.adjustReset")}
+                </button>
+              )}
+              <button
+                onClick={() => onOpenChange(false)}
+                aria-label={t("common.close")}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
           <div
-            className="px-4 pb-2"
+            className="px-4 pb-2 pt-2"
             style={{ maxHeight: "68dvh", overflowY: "auto" }}
           >
             <IntentPanel intent={intent} onChange={onChange} />
@@ -1061,7 +1090,7 @@ function AdjustSheet({
             <button
               onClick={onApply}
               disabled={applyDisabled}
-              className="w-full py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              className="w-full min-h-[44px] py-3 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
             >
               {applyPending ? t("plan.suggesting") : applyLabel}
             </button>
@@ -1646,6 +1675,12 @@ function PlanPage() {
           intent={intent}
           onChange={changeIntent}
           onApply={handleAdjustApply}
+          onReset={() => changeIntent({})}
+          canReset={
+            (intent.proteinTargets?.length ?? 0) > 0 ||
+            intent.variety != null ||
+            (intent.useIngredients?.length ?? 0) > 0
+          }
           applyLabel={items.length === 0 ? t("plan.suggest") : t("plan.suggestMore")}
           applyDisabled={
             suggestMutation.isPending || (items.length > 0 && atMax)

@@ -267,7 +267,8 @@
       "leftoversSearch": "Procurar ingrediente…",
       "varietyHint": "De pratos que já conheces a pratos novos.",
       "leftoversEmpty": "Ainda não tens compras anteriores.",
-      "leftoversFrom": "Das tuas compras anteriores"
+      "leftoversFrom": "Das tuas compras anteriores",
+      "proteinsHint": "Quantas refeições de cada proteína."
     },
     "leftoverMissing": "{{count}} adicionadas — não coube: {{items}}",
     "family": {
@@ -281,7 +282,7 @@
     "variety": {
       "similar": "Do costume",
       "balanced": "Equilibrado",
-      "surprise": "Surpreende-me"
+      "surprise": "Surpresa"
     },
     "tempo": {
       "any": "Qualquer",
@@ -296,7 +297,8 @@
     "seedGenerate": "Gerar plano",
     "seedSkip": "Surpreende-me",
     "adjustTitle": "Ajustar plano",
-    "adjustSubtitle": "Personaliza as sugestões"
+    "adjustSubtitle": "Personaliza as sugestões",
+    "adjustReset": "Repor"
   },
   "cuisines": {
     "portuguese": "Portuguesa",
