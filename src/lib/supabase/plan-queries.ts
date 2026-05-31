@@ -918,7 +918,10 @@ export const suggestPlan = createServerFn({ method: "POST" })
       query = query
         .is("deleted_at", null)
         .eq("moderation_status", "approved")
-        .or(`visibility.in.(system,public),owner_id.eq.${uid}`);
+        .or(`visibility.in.(system,public),owner_id.eq.${uid}`)
+        // Meals only — exclude desserts/snacks/drinks/sides (F13). Unclassified
+        // (null) recipes are treated as meals so nothing is hidden by accident.
+        .or("course.is.null,course.not.in.(dessert,snack,drink,side)");
       if (excludedProteinSlugs.length > 0)
         query = query.not("proteins", "ov", `{${excludedProteinSlugs.join(",")}}`);
       const blockedIds = [...new Set([...excludedRecipeIds, ...hiddenIds])];

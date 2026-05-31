@@ -29,6 +29,8 @@ async function candidatePool(excludeProteins: string[]): Promise<GeneratorRecipe
     .is("deleted_at", null)
     .eq("moderation_status", "approved")
     .in("visibility", ["system", "public"])
+    // Meals only (F13) — exclude desserts/snacks/drinks/sides.
+    .or("course.is.null,course.not.in.(dessert,snack,drink,side)")
     .order("popularity_score", { ascending: false })
     .limit(300);
   if (excludeProteins.length > 0)

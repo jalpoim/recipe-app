@@ -745,6 +745,7 @@ export type Database = {
           carbs: number | null;
           cook_count: number;
           cooking_method: string | null;
+          course: string | null;
           created_at: string | null;
           cuisine_tags: string[];
           deleted_at: string | null;
@@ -781,6 +782,7 @@ export type Database = {
           carbs?: number | null;
           cook_count?: number;
           cooking_method?: string | null;
+          course?: string | null;
           created_at?: string | null;
           cuisine_tags?: string[];
           deleted_at?: string | null;
@@ -817,6 +819,7 @@ export type Database = {
           carbs?: number | null;
           cook_count?: number;
           cooking_method?: string | null;
+          course?: string | null;
           created_at?: string | null;
           cuisine_tags?: string[];
           deleted_at?: string | null;

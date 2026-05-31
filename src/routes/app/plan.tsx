@@ -1418,12 +1418,14 @@ function PlanPage() {
     [items],
   );
   const atMax = items.length >= PLAN_MAX_ITEMS;
-  // First-tap size, bumped up if protein targets ask for more than the default.
-  const intentMin = (intent.proteinTargets ?? []).reduce(
+  // When the user specifies a protein mix, the plan IS that mix — exact sum of the
+  // targets (capped). Otherwise the persona-adaptive default.
+  const intentSum = (intent.proteinTargets ?? []).reduce(
     (a, x) => a + x.count,
     0,
   );
-  const genCount = Math.min(PLAN_MAX_ITEMS, Math.max(firstTapCount, intentMin));
+  const genCount =
+    intentSum > 0 ? Math.min(PLAN_MAX_ITEMS, intentSum) : firstTapCount;
 
   // Cold-start taste seed (§11.1): prompt a brand-new user once before their first
   // generation so day-one suggestions are tailored, not random.
