@@ -42,7 +42,11 @@ import type {
   CookLogWithRecipe,
   TopCookedRecipe,
 } from "../../lib/supabase/cook-log-queries";
-import { fetchMyProfile } from "../../lib/supabase/profile-queries";
+import {
+  fetchMyProfile,
+  saveTasteSeed,
+  type TasteSeed,
+} from "../../lib/supabase/profile-queries";
 import {
   defaultSuggestionCount,
   type PlanIntent,
@@ -989,6 +993,157 @@ function IntentPanel({
   );
 }
 
+// ---------- TasteSeedSheet (F13 §11.1 cold-start) ----------
+
+const SEED_CUISINES = [
+  "portuguese", "italian", "japanese", "mexican", "indian", "thai",
+  "chinese", "french", "greek", "moroccan", "korean", "spanish",
+  "middle-eastern", "american", "brazilian", "vietnamese", "turkish", "german",
+];
+const SEED_FLAVORS = [
+  "earthy", "fresh", "rich", "aromatic", "umami", "salty",
+  "sweet", "bitter", "nutty", "sour", "smoky",
+];
+
+function toggleInSet(set: Set<string>, key: string): Set<string> {
+  const next = new Set(set);
+  if (next.has(key)) next.delete(key);
+  else next.add(key);
+  return next;
+}
+
+function TasteSeedSheet({
+  open,
+  onOpenChange,
+  existing,
+  onDone,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  existing: TasteSeed | null;
+  onDone: () => void;
+}) {
+  const { t } = useTranslation();
+  const qc = useQueryClient();
+  const [love, setLove] = useState<Set<string>>(new Set());
+  const [flavors, setFlavors] = useState<Set<string>>(new Set());
+  const [avoid, setAvoid] = useState<Set<string>>(new Set());
+
+  // Prefill from an existing seed when (re)opened.
+  useEffect(() => {
+    if (open) {
+      setLove(new Set(existing?.cuisines ?? []));
+      setFlavors(new Set(existing?.flavor_notes ?? []));
+      setAvoid(new Set(existing?.avoid ?? []));
+    }
+  }, [open, existing]);
+
+  const saveMut = useMutation({
+    mutationFn: (skip: boolean) =>
+      saveTasteSeed({
+        data: skip
+          ? { cuisines: [], flavorNotes: [], avoid: [] }
+          : {
+              cuisines: [...love],
+              flavorNotes: [...flavors],
+              avoid: [...avoid],
+            },
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my-profile"] });
+      onOpenChange(false);
+      onDone();
+    },
+  });
+
+  const chip = (label: string, active: boolean, onClick: () => void) => (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+        active
+          ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+          : "border-[#E5E7EB] text-[#6B7280]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-[20px] bg-[#FAFAF8] outline-none"
+          aria-label={t("plan.seedTitle")}
+        >
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="h-1 w-10 rounded-full bg-[#E5E7EB]" aria-hidden="true" />
+          </div>
+          <div className="px-4 pb-4" style={{ maxHeight: "80dvh", overflowY: "auto" }}>
+            <div className="py-3">
+              <h2 className="text-base font-bold text-[#1A1A1A]">
+                {t("plan.seedTitle")}
+              </h2>
+              <p className="mt-1 text-xs text-[#9CA3AF]">{t("plan.seedHint")}</p>
+            </div>
+
+            <p className="text-xs font-semibold text-[#6B7280] mb-2">
+              {t("plan.seedCuisines")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {SEED_CUISINES.map((c) =>
+                chip(t(`cuisines.${c}`), love.has(c), () =>
+                  setLove((s) => toggleInSet(s, c)),
+                ),
+              )}
+            </div>
+
+            <p className="text-xs font-semibold text-[#6B7280] mb-2">
+              {t("plan.seedFlavors")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {SEED_FLAVORS.map((f) =>
+                chip(t(`flavorNotes.${f}`), flavors.has(f), () =>
+                  setFlavors((s) => toggleInSet(s, f)),
+                ),
+              )}
+            </div>
+
+            <p className="text-xs font-semibold text-[#6B7280] mb-2">
+              {t("plan.seedAvoid")}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-5">
+              {SEED_CUISINES.filter((c) => !love.has(c)).map((c) =>
+                chip(t(`cuisines.${c}`), avoid.has(c), () =>
+                  setAvoid((s) => toggleInSet(s, c)),
+                ),
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => saveMut.mutate(true)}
+                disabled={saveMut.isPending}
+                className="flex-1 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                {t("plan.seedSkip")}
+              </button>
+              <button
+                onClick={() => saveMut.mutate(false)}
+                disabled={saveMut.isPending}
+                className="flex-1 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+              >
+                {t("plan.seedGenerate")}
+              </button>
+            </div>
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
+  );
+}
+
 // ---------- PlanPage ----------
 
 function PlanPage() {
@@ -1157,6 +1312,17 @@ function PlanPage() {
     0,
   );
   const genCount = Math.min(PLAN_MAX_ITEMS, Math.max(firstTapCount, intentMin));
+
+  // Cold-start taste seed (§11.1): prompt a brand-new user once before their first
+  // generation so day-one suggestions are tailored, not random.
+  const [seedSheetOpen, setSeedSheetOpen] = useState(false);
+  const tasteSeed = (profile as { taste_seed?: TasteSeed | null } | null | undefined)
+    ?.taste_seed ?? null;
+  const needsSeed = distinctCooks < 5 && !tasteSeed;
+  const startSuggest = (requested: number) => {
+    if (needsSeed) setSeedSheetOpen(true);
+    else suggestMutation.mutate(requested);
+  };
 
   // Generate / "Sugerir mais" — direct insert + undo toast (§3.9).
   const suggestMutation = useMutation({
@@ -1361,6 +1527,12 @@ function PlanPage() {
           planId={planId}
           planRecipeIds={planRecipeIds}
         />
+        <TasteSeedSheet
+          open={seedSheetOpen}
+          onOpenChange={setSeedSheetOpen}
+          existing={tasteSeed}
+          onDone={() => suggestMutation.mutate(genCount)}
+        />
 
         <PullIndicator
           pullY={planPullY}
@@ -1374,7 +1546,7 @@ function PlanPage() {
             <p className="text-[#6B7280] text-sm mb-5">{t("plan.empty")}</p>
             <div className="flex items-center justify-center gap-2">
               <button
-                onClick={() => suggestMutation.mutate(genCount)}
+                onClick={() => startSuggest(genCount)}
                 disabled={suggestMutation.isPending}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >

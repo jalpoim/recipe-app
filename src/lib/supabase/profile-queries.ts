@@ -104,6 +104,36 @@ export const completeOnboarding = createServerFn({ method: 'POST' })
     return { ok: true }
   })
 
+// Cold-start taste seed (F13 §11.1) — stored on profiles.taste_seed (jsonb).
+export type TasteSeed = {
+  cuisines: string[]
+  flavor_notes: string[]
+  avoid: string[]
+  set_at: string
+}
+
+export const saveTasteSeed = createServerFn({ method: 'POST' })
+  .inputValidator((input: { cuisines: string[]; flavorNotes: string[]; avoid: string[] }) => input)
+  .handler(async ({ data }) => {
+    const supabase = makeClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('Not authenticated')
+
+    const seed: TasteSeed = {
+      cuisines: data.cuisines,
+      flavor_notes: data.flavorNotes,
+      avoid: data.avoid,
+      set_at: new Date().toISOString(),
+    }
+    // taste_seed isn't in the generated types yet — cast the update payload.
+    const { error } = await supabase
+      .from('profiles')
+      .update({ taste_seed: seed } as unknown as Record<string, never>)
+      .eq('user_id', session.user.id)
+    if (error) throw new Error(error.message)
+    return { ok: true }
+  })
+
 export const fetchIngredientExclusions = createServerFn({ method: 'GET' }).handler(
   async (): Promise<string[]> => {
     const supabase = makeClient()

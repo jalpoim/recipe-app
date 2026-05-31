@@ -10,6 +10,8 @@ import type {
 } from "../../types/db";
 import { getLang, makeClient } from "./client-server";
 import { _computeFlavorProfile } from "./flavor-profile-queries";
+import type { FlavorProfile } from "./flavor-profile-queries";
+import type { TasteSeed } from "./profile-queries";
 import {
   computeRecipeExclusions,
   dietaryFlagsForProfile,
@@ -662,6 +664,54 @@ async function gatherDietaryUnion(
   };
 }
 
+// Build a synthetic flavor profile from the cold-start taste seed (§11.1/§11.4):
+// even-split cuisine breakdown, seeded flavour notes, heat from onboarding.
+function syntheticProfile(
+  seed: TasteSeed,
+  heatPref: number | null,
+): FlavorProfile {
+  const n = seed.cuisines.length;
+  return {
+    signatureIngredient: null,
+    signatureIngredientPlatformMultiple: 0,
+    topFlavorNotes: seed.flavor_notes ?? [],
+    avgHeatLevel: heatPref ?? 0,
+    cuisineBreakdown: seed.cuisines.map((cuisine) => ({
+      cuisine,
+      pct: n ? Math.round(100 / n) : 0,
+    })),
+    topProtein: null,
+    proteinVarietyCount: 0,
+    avgCookingTimeMin: null,
+    platformAvgCookingTimeMin: null,
+    distinctCuisines: n,
+    platformAvgCuisines: null,
+    lifetimeCookCount: 0,
+  };
+}
+
+// Blend the seed (stated) and computed (behavioural) profiles with seed weight w
+// (§11.1 decay 5→10 cooks). Cuisine pcts are a weighted union; flavour notes merge
+// seed-first; everything else comes from the behavioural profile.
+function blendProfiles(
+  seed: FlavorProfile,
+  computed: FlavorProfile,
+  w: number,
+): FlavorProfile {
+  const map = new Map<string, number>();
+  for (const c of seed.cuisineBreakdown)
+    map.set(c.cuisine, (map.get(c.cuisine) ?? 0) + w * c.pct);
+  for (const c of computed.cuisineBreakdown)
+    map.set(c.cuisine, (map.get(c.cuisine) ?? 0) + (1 - w) * c.pct);
+  const cuisineBreakdown = [...map.entries()]
+    .map(([cuisine, pct]) => ({ cuisine, pct: Math.round(pct) }))
+    .sort((a, b) => b.pct - a.pct);
+  const topFlavorNotes = [
+    ...new Set([...seed.topFlavorNotes, ...computed.topFlavorNotes]),
+  ].slice(0, 3);
+  return { ...computed, cuisineBreakdown, topFlavorNotes };
+}
+
 // Candidate pool ceiling — bounded for performance; familiar recipes are always
 // fetched too (below) so the repertoire half is complete regardless of this cap.
 const CANDIDATE_POOL_LIMIT = 300;
@@ -699,7 +749,18 @@ export const suggestPlan = createServerFn({ method: "POST" })
       dietary,
     ] = await Promise.all([
       _computeFlavorProfile(supabase, uid),
-      supabase.from("profiles").select("cook_style").eq("user_id", uid).maybeSingle(),
+      // taste_seed + heat_preference aren't in the generated types yet — cast.
+      supabase
+        .from("profiles")
+        .select("cook_style, taste_seed, heat_preference")
+        .eq("user_id", uid)
+        .maybeSingle() as unknown as Promise<{
+        data: {
+          cook_style: string | null;
+          taste_seed: TasteSeed | null;
+          heat_preference: number | null;
+        } | null;
+      }>,
       supabase
         .from("user_cook_profile")
         .select("explored_proteins")
@@ -837,15 +898,33 @@ export const suggestPlan = createServerFn({ method: "POST" })
         .filter((g) => g.recipeIds.length > 0);
     }
 
+    // Cold-start taste seed (§11.1): seed the SOFT taste layer while behaviour is
+    // thin. <5 cooks → computed is null → use the seed; 5–10 cooks → blend (seed
+    // weight decays 1→0); >10 → computed only. Never touches intent/hard filters.
+    const seed = profile?.taste_seed ?? null;
+    const seedHasTaste = !!seed && (seed.cuisines.length > 0 || seed.flavor_notes.length > 0);
+    let effectiveProfile = flavorProfile;
+    if (seedHasTaste) {
+      const seedProfile = syntheticProfile(seed!, profile?.heat_preference ?? null);
+      const cookCount = (cookRows ?? []).length;
+      if (!flavorProfile) effectiveProfile = seedProfile;
+      else if (cookCount < 10) {
+        const w = Math.max(0, Math.min(1, (10 - cookCount) / 5));
+        effectiveProfile = blendProfiles(seedProfile, flavorProfile, w);
+      }
+    }
+    const avoidCuisines = seed?.avoid ?? [];
+
     const selected = selectPlanRecipes(
       candidates,
       {
-        flavorProfile,
+        flavorProfile: effectiveProfile,
         cookStyle: profile?.cook_style ?? null,
         exploredProteins: cookProfile?.explored_proteins ?? [],
         familiarRecipeIds,
         excludeRecipeIds,
         repertoire,
+        avoidCuisines,
       },
       count,
       Math.random,

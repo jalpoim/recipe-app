@@ -533,6 +533,17 @@ describe("intent: leftover coverage (§11.4.3)", () => {
   });
 });
 
+describe("intent: avoid cuisines (§11.4)", () => {
+  it("soft-penalises an avoided cuisine so an equal non-avoided recipe wins", () => {
+    const avoided = recipe("av", { cuisine_tags: ["mexican"], popularity_score: 50 });
+    const ok = recipe("ok", { cuisine_tags: ["italian"], popularity_score: 50 });
+    const out = ids(
+      selectPlanRecipes([avoided, ok], signals({ avoidCuisines: ["mexican"] }), 1, rng()),
+    );
+    expect(out).toEqual(["ok"]);
+  });
+});
+
 // ─── Guards ───────────────────────────────────────────────────────────────────
 describe("guards", () => {
   it("count ≤ 0 returns empty", () => {

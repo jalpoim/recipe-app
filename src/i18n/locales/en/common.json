@@ -284,7 +284,47 @@
       "any": "Any",
       "t30": "≤30 min",
       "t45": "≤45 min"
-    }
+    },
+    "seedTitle": "To start, what are you in the mood for?",
+    "seedHint": "We only use this to start — it tunes as you cook.",
+    "seedCuisines": "Cuisines you love",
+    "seedFlavors": "Flavours you love",
+    "seedAvoid": "Avoid",
+    "seedGenerate": "Generate plan",
+    "seedSkip": "Surprise me"
+  },
+  "cuisines": {
+    "portuguese": "Portuguese",
+    "italian": "Italian",
+    "japanese": "Japanese",
+    "mexican": "Mexican",
+    "indian": "Indian",
+    "thai": "Thai",
+    "chinese": "Chinese",
+    "french": "French",
+    "greek": "Greek",
+    "moroccan": "Moroccan",
+    "korean": "Korean",
+    "spanish": "Spanish",
+    "middle-eastern": "Middle Eastern",
+    "american": "American",
+    "brazilian": "Brazilian",
+    "vietnamese": "Vietnamese",
+    "turkish": "Turkish",
+    "german": "German"
+  },
+  "flavorNotes": {
+    "earthy": "Earthy",
+    "fresh": "Fresh",
+    "rich": "Rich",
+    "aromatic": "Aromatic",
+    "umami": "Umami",
+    "salty": "Salty",
+    "sweet": "Sweet",
+    "bitter": "Bitter",
+    "nutty": "Nutty",
+    "sour": "Sour",
+    "smoky": "Smoky"
   },
   "shopping": {
     "completionBanner": "Shopping done",

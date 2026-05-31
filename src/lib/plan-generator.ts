@@ -37,6 +37,7 @@ export type GeneratorSignals = {
   familiarRecipeIds: Set<string>; // cooked OR liked/saved
   excludeRecipeIds: Set<string>; // already in plan + recently suggested (§9.3)
   repertoire: Repertoire; // §9.1 cook-frequency + recency
+  avoidCuisines?: string[]; // soft taste dislike (seed "avoid", §11.4) — penalised, not filtered
 };
 
 // Why a recipe was picked, surfaced to the user as a "why this" caption (F12a,
@@ -101,6 +102,7 @@ export const WEIGHTS = {
   repertoire: 0.25, // §9.1 — folded in for FAMILIAR recipes only (≥0.25)
   personaNudgeMax: 0.15,
   jitter: 0.05, // §9.3 — tiebreaker only, never the freshness engine
+  avoidPenalty: 0.3, // soft de-prioritisation for an avoided cuisine (§11.4)
 } as const;
 
 // MMR diversity penalty: finalScore = base − λ·maxSim(c, selected) (§3.5).
@@ -421,6 +423,11 @@ export function selectPlanRecipes(
       personaNudge(r, signals.cookStyle) +
       jitterOf();
     if (familiar) base += WEIGHTS.repertoire * repertoireScore(r.id, signals.repertoire);
+    if (
+      signals.avoidCuisines?.length &&
+      r.cuisine_tags.some((c) => signals.avoidCuisines!.includes(c))
+    )
+      base -= WEIGHTS.avoidPenalty;
     const s: Scored = { recipe: r, base, familiar, primaryProtein: r.proteins[0] ?? null };
     scoredById.set(r.id, s);
     return s;

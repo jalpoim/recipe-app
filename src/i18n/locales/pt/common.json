@@ -284,7 +284,47 @@
       "any": "Qualquer",
       "t30": "≤30 min",
       "t45": "≤45 min"
-    }
+    },
+    "seedTitle": "Para começar, o que te apetece?",
+    "seedHint": "Usamos isto só para começar — afina-se à medida que cozinhas.",
+    "seedCuisines": "Cozinhas que adoras",
+    "seedFlavors": "Sabores que adoras",
+    "seedAvoid": "Evitar",
+    "seedGenerate": "Gerar plano",
+    "seedSkip": "Surpreende-me"
+  },
+  "cuisines": {
+    "portuguese": "Portuguesa",
+    "italian": "Italiana",
+    "japanese": "Japonesa",
+    "mexican": "Mexicana",
+    "indian": "Indiana",
+    "thai": "Tailandesa",
+    "chinese": "Chinesa",
+    "french": "Francesa",
+    "greek": "Grega",
+    "moroccan": "Marroquina",
+    "korean": "Coreana",
+    "spanish": "Espanhola",
+    "middle-eastern": "Médio Oriente",
+    "american": "Americana",
+    "brazilian": "Brasileira",
+    "vietnamese": "Vietnamita",
+    "turkish": "Turca",
+    "german": "Alemã"
+  },
+  "flavorNotes": {
+    "earthy": "Terroso",
+    "fresh": "Fresco",
+    "rich": "Encorpado",
+    "aromatic": "Aromático",
+    "umami": "Umami",
+    "salty": "Salgado",
+    "sweet": "Doce",
+    "bitter": "Amargo",
+    "nutty": "Noz",
+    "sour": "Ácido",
+    "smoky": "Fumado"
   },
   "shopping": {
     "completionBanner": "Lista concluída",
