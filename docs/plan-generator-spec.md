@@ -368,10 +368,65 @@ The pure core already *decides why* each recipe is picked; today it discards tha
 | `src/routes/app/plan.tsx` | JIT taste-seed sheet; reason captions; optional contextual nudge |
 | i18n pt + en | `plan.reason.*`, taste-seed screen copy, contextual nudge copy |
 
-### 10.7 Open questions (resolve in grill)
-1. **Decay shape:** hard handoff at 5 cooks (v1) vs soft blend 5→10 — is the hard cliff acceptable, or does a user who answered the quiz feel a jarring shift once behaviour kicks in?
-2. **`avoid` semantics:** soft de-prioritisation vs hard exclude. (Allergy/intolerance stays hard via existing path; `avoid` is a *taste* dislike — leaning soft.)
-3. **Persist reasons?** Transient map (simplest) vs a `plan_items.source/reason` column (enables showing "why" later on the plan, survives reload). Spec §3.3 already floated an optional `plan_items.source` column.
-4. **Seed scope for households:** seed is per-tapping-user (taste = tapper, §9.7) — confirm we don't union seeds.
-5. **Re-elicitation:** can the user edit the seed later (profile page), and does editing it re-activate it as a prior even after the 5-cook handoff? (Leaning: editing sets a fresh prior that blends briefly.)
-6. **Reason granularity:** per-recipe caption vs one summary line for the batch ("Do teu repertório + 1 nova"). Per-recipe is more legible but busier on the plan list.
+### 10.7 Open questions
+- F12a (reason granularity, persist reasons) was resolved by shipping: per-recipe transient captions (no column). The remaining seed questions (decay, avoid, re-elicitation) are **superseded by §11**, which reframes the seed as one input to a larger intent model.
+
+---
+
+## 11. F13 — Intent-driven generation (GRILLED 2026-05-31)
+
+**Status:** grilled; ready to build. Supersedes the §10.3–10.4 "seed → decay to behaviour" framing. Decisions below are firm unless marked **[default — confirm in review]**.
+
+### 11.1 The model: two layers, neither "decays away"
+The earlier framing (stated seed that decays into behaviour) was wrong. Explicit signalling is **permanent, every-week steering**, not a cold-start crutch. Split generation into:
+
+- **Intent layer — explicit, per-plan, HARD.** What the user wants *this week*: protein mix ("2 peixe + 1 frango"), leftovers to use, variety level, max time, avoid-this-week. The generator **must satisfy these** within catalogue limits. Never decays — it's input given each generation.
+- **Taste layer — implicit, behavioural, SOFT.** Chooses *which* recipes fill the intent (sardinha vs. fish curry) from repertoire + flavour/cuisine affinity (the existing §3.4 + §9.1 scoring). Personalisation lives here.
+- **Cold-start taste seed (was F12b/c) = the initial state of the taste layer only.** Used while computed `flavorProfile` is null; soft-blends into the computed profile over cooks 5→10 **[default — confirm]**. It only ever influences the *soft* taste layer — it can never override explicit intent or hard dietary filters.
+
+Resolves the core frustration: *"I asked for 2 fish → I get 2 fish; behaviour only picks which fish."*
+
+### 11.2 Research basis
+- Per-meal **swap/regenerate** (not whole-plan regen) is the expected control; grocery list updates in place. [planeatai](https://planeatai.com/blog/best-apps-for-meal-planning-that-actually-work-2025)
+- **Presets + override + behaviour coexist** (HelloFresh: stated prefs honoured, algorithm blends past picks/ratings) — neither decays. [HelloFresh](https://support.hellofresh.com/hc/en-us/articles/115008769568-What-type-of-customized-plan-do-you-offer-)
+- People plan **weekly, from their repertoire OR the ingredients they already have**; **repetition is the norm**, variety is wanted but **decision fatigue** breaks plans. [French NutriNet](https://pmc.ncbi.nlm.nih.gov/articles/PMC5288891/) · [US households](https://outset.ai/resources/blog/meal-planning-habits-us-households)
+
+### 11.3 Control surface — progressive intent chips (GRILLED)
+- **One tap still generates** a great plan (behaviour + persona) — zero friction for "just hand me a plan."
+- An **"Ajustar"** affordance expands a **compact chip panel** (NOT the library filter sheet): protein mix, variety dial, "usar o que tenho", tempo. Power users steer; passive users ignore it.
+
+### 11.4 Intent controls (v1)
+1. **Protein mix — HARD minimums that override the §9.2 ≤2 protein cap.** Pick a family + count ("peixe ×2"). Families map to slug sets **[default — confirm]**: Frango/Aves `{chicken,turkey,duck}`, Peixe `{fish,salmon,tuna}`, Marisco `{seafood}`, Carne `{beef,pork,lamb,veal}`, Vegetariano `{tofu,legumes}`, Ovos `{eggs}`. Slot-fill: reserve N slots for the family, fill from that family by the taste layer; remaining slots free. Asking >2 of a family overrides the cap (explicit intent wins).
+2. **Variety dial** — `parecido · equilibrado · surpreende-me`. Maps to **[default — confirm]**: *parecido* → familiar share ↑ (floor ~0.8), cuisine cap ≤2, MMR λ ↓; *equilibrado* → persona defaults (current behaviour); *surpreende-me* → familiar share ↓ (~0.4), novel ↑, cuisine cap ≤2 to force spread, MMR λ ↑.
+3. **"Usar o que tenho" (leftovers) — v1-lite, GRILLED.** Pre-fill chips from **recent shopping-list items + suggested common staples**; allow **manual add** (ad-hoc buys). **Not a persistent pantry.** Semantics = **best-effort coverage + honest fallback**: guarantee ≥1 plan recipe per selected ingredient where the catalogue allows (respecting protein intent + dietary union); if one can't be placed, build the rest and surface "não coube: X". Coverage bounded by plan size.
+4. **Tempo** — max time cap (reuses the existing `time_min` filter).
+
+### 11.5 Per-item control — multi-select + replace (GRILLED)
+- **Long-press a plan card → selection mode** → select multiple → **Eliminar** (batch `removePlanItems`, §9.9) or **Substituir** (remove the selected + regenerate exactly that many via `suggestPlan` with the *current intent*, excluding in-plan + removed + recently-suggested ids). Single-item swap already exists via the recipe detail `?from=plan`.
+
+### 11.6 Generator changes (the real work)
+- Promote selection to **constraint-aware slot-filling**: honour protein-family minimums and leftover coverage as HARD slot reservations, then fill remaining slots with the existing MMR+taste pipeline. Hard dietary/intolerance union (§9.4/§9.7) still applies first and unconditionally.
+- New `suggestPlan` input: `{ count, intent?: { proteinTargets?: {family,count}[]; useIngredientIds?: string[]; variety?: 'similar'|'balanced'|'surprise'; maxTime?: number }, excludeRecipeIds? }`. Pure core gains an `intent` arg + slot-fill stage; returns `{id, reason}` (reason can now include `intent_protein` / `intent_leftover`).
+- Keep the pure core deterministic + unit-tested: add slot-fill, coverage, and "honest fallback" (unplaceable ingredient) test cases.
+
+### 11.7 Intent persistence **[default — confirm in review]**
+Remember the last intent as the default for the next generation (sticky, client-side), editable each time. Not stored server-side in v1.
+
+### 11.8 Files (anticipated)
+| File | Change |
+|---|---|
+| `src/lib/plan-generator.ts` (+ test) | `intent` arg; constraint-aware slot-fill; coverage + fallback; new reason codes |
+| `src/lib/supabase/plan-queries.ts` | `suggestPlan` accepts `intent`; resolve leftover ingredient ids → recipe candidates; shopping-list/staples source for pre-fill |
+| `src/routes/app/plan.tsx` | "Ajustar" chip panel; long-press multi-select + Eliminar/Substituir; "não coube" notice |
+| new: leftovers source query | recent shopping-list items + suggested staples for the pre-fill chips |
+| `profiles.taste_seed jsonb` (migration) | cold-start seed (cuisines + flavour notes + avoid), §10.3 — still the taste-layer initial state |
+| i18n pt + en | intent panel, variety dial, leftovers, multi-select, "não coube", cuisine labels (18, none exist yet) |
+
+### 11.9 Suggested build slices (de-risk; ship value early)
+1. **Intent: protein mix + variety + tempo** (chips + slot-fill in core) — the steering you most want, no new data deps.
+2. **Multi-select + Substituir** (reuses the slice-1 generator).
+3. **"Usar o que tenho"** (leftovers source + coverage slot-fill + fallback).
+4. **Cold-start taste seed** (the §10.3 picker, now feeding only the soft taste layer) + cuisine i18n labels.
+
+### 11.10 Still to confirm in review (not separately grilled)
+Protein-family slug mapping (§11.4.1), variety-dial algorithm mapping (§11.4.2), intent persistence (§11.7), taste-seed soft-blend window 5→10 (§11.1).
