@@ -319,3 +319,59 @@ F11 is a **manual, deliberate pick from your own history** — the same gesture 
 
 ### 9.11 Pre-launch data check (not a design decision)
 Validate **cold-start catalog coverage for strict diets** with a count query before launch: a brand-new vegan user's first "Sugerir plano" depends on enough `approved` vegan recipes across cuisines. §3.5's "relax caps before partial" self-heals variety, but a genuinely thin catalog still yields `suggestPartial` on a first impression.
+
+---
+
+## 10. F12 — "Why this" transparency + cold-start taste seed (PROPOSED — grill before build)
+
+**Status:** `proposed`. Captures two decided directions (2026-05-31). Pressure-test with `grill-me` before implementing; open questions are flagged in §10.7.
+
+### 10.0 Problem
+Two distinct gaps, both about *perception* and *cold-start quality*, not selection math:
+1. **"Feels random."** The generator returns instantly with no rationale, so even a well-tailored plan reads as arbitrary. The user's own profile page shows rich identity data, but it's disconnected from the suggestion moment.
+2. **Cold-start has no taste signal.** A brand-new user (and, arguably, a user with only 5–10 cooks) gets popularity-led suggestions that don't feel personal. Meal prep is **low-frequency** (a few cooks/week), so implicit learning is slow and cold start lasts *weeks*, not minutes — unlike high-frequency feeds (TikTok) that can rely on behaviour alone.
+
+### 10.1 Research basis (why this shape)
+- **Explanations raise trust + acceptance** (~19% acceptance lift with reasons); "because you…" makes logic legible. [Transparency in recommenders (CHI'02)](https://dlnext.acm.org/doi/10.1145/506443.506619) · [Explainable rec review](http://eprints.bournemouth.ac.uk/34805/1/Personalising_Explainable_Recommendation.pdf)
+- **Operational transparency / "labor illusion":** visible effort increases perceived value even at equal output. [Buell & Norton (HBS)](https://www.hbs.edu/faculty/Pages/item.aspx?num=40158)
+- **Attribute-level explicit elicitation is the standard cold-start fix;** hybrid (explicit at onboarding → implicit takes over) wins. [Attribute-aware elicitation](https://arxiv.org/html/2510.27342v1) · [Cold-start survey](https://www.mdpi.com/2076-3417/11/20/9608)
+- **Say/do gap is worst in food:** stated preferences are aspirational and weakly predict cooking behaviour → treat the seed as a **decaying prior**, not ground truth. [Say/do gap](https://cloud.army/why-stated-preferences-fail-the-saydo-gap-in-market/) · [Meal-preference DCE](https://pmc.ncbi.nlm.nih.gov/articles/PMC7708905/)
+- **Data-as-identity drives loyalty** (Spotify Wrapped; Yummly taste profile + "the more you save/rate, the better it gets"). [Yummly taste prefs](https://help.yummly.com/hc/en-us/articles/203454410-Taste-Preferences)
+
+### 10.2 F12a — "Why this" reason tags (highest ROI; no new data)
+The pure core already *decides why* each recipe is picked; today it discards that and returns bare ids. Surface it.
+- Extend the core to return a **reason per recipe** instead of just an id: `selectPlanRecipes(...) → { id: string; reason: ReasonCode }[]`. `ReasonCode ∈ { repertoire, top_protein, top_cuisine, flavor_match, novel, popular }`, derived from which term dominated that recipe's `baseScore` (familiar+repertoire → `repertoire`; cuisine/flavor dominant → `top_cuisine`/`flavor_match`; novel pool → `novel`; cold-start/popularity → `popular`).
+- `suggestPlan` returns the reason alongside each inserted `PlanItem` (e.g. a parallel `{ recipeId → reason }` map; do **not** require a schema column — keep it transient unless §10.7 decides to persist).
+- **UI:** a small caption on each generated plan item card (or a one-time post-generate review), e.g. `t("plan.reason.repertoire")` → "Do teu repertório", `reason.top_cuisine` with the cuisine label → "Cozinha japonesa — a tua favorita", `reason.novel` → "Nova para ti", `reason.popular` → "Popular agora". No emojis; theme via `[data-theme]`.
+- **Optional amplifier (F12a'):** brief operational-transparency sequence on the generate action ("A ver as tuas receitas cozinhadas… a juntar a tua cozinha favorita… a manter variedade") — labor illusion. Keep ≤ ~1s; respect reduced-motion.
+
+### 10.3 F12b — Just-in-time taste seed (cold-start elicitation)
+- **Trigger (JIT, not onboarding):** the **first** "Sugerir plano" tap by a cold-start user (computed `flavorProfile === null`, i.e. < 5 cooks) opens a **one-screen, recognition-based** picker before generating: *"Para começar, o que te apetece?"* — tap a few favourite **cuisines** (canonical slugs, labels via i18next `proteins.*`/`cuisines.*`), optional favourite **flavour notes**, optional **avoid**. **Skippable** ("Surpreende-me" → falls back to pure popularity). Asked at the moment of intent so it reads as part of the payoff, not an onboarding tax (onboarding already collects persona, dietary, intolerances, heat — do **not** add there).
+- **Stored** as a prior on the user: proposed `profiles.taste_seed jsonb` = `{ cuisines: string[], flavor_notes: string[], avoid: string[], set_at: timestamptz }` (RLS already self-scoped on `profiles`). Single-screen, re-editable later from the profile page (v2).
+- Frame the benefit (privacy paradox): "para te sugerirmos refeições que vais mesmo cozinhar" — never framed as data collection.
+
+### 10.4 F12c — Decaying prior in the generator
+- When computed `flavorProfile === null` (< 5 cooks) **and** a `taste_seed` exists, build a **synthetic `FlavorProfile`** from the seed: `cuisineBreakdown` = even split over seeded cuisines (e.g. each pct = round(100/n)); `topFlavorNotes` = seeded flavour notes; `topProtein = null`; `avgHeatLevel` from onboarding `heat_preference` if present. Feed this to `selectPlanRecipes` so day-one suggestions are tailored.
+- **Decay (revealed > stated):** once the **computed** profile exists (≥ 5 cooks) it takes over; the seed is no longer consulted for scoring. v1 = **hard handoff at the 5-cook threshold** (the point where `_computeFlavorProfile` stops returning null). v2 (optional) = soft blend over cooks 5→~10. Seed never overrides **hard dietary filters** (those remain the §9.4 union, unconditional).
+- `avoid` from the seed maps into the existing exclusion path (treat as soft de-prioritisation, NOT a hard filter — it's a stated dislike, not an allergy; a low score, not a ban) — confirm in grill (§10.7).
+
+### 10.5 F12d — Per-plan contextual nudge (optional, v2-leaning)
+- An optional one-tap "tune this week" on the generate action: proteins / max-time / "surpreende-me". Captures **current intent/context** (a better, say/do-gap-free signal than abstract taste) as a **transient** filter for that one generation — not stored. Mirrors Yummly's day/season context. Lower priority than F12a–c.
+
+### 10.6 Files (anticipated)
+| File | Change |
+|---|---|
+| `src/lib/plan-generator.ts` | return `{id, reason}[]`; accept an optional `seedProfile` / consume synthetic profile; reason derivation |
+| `src/lib/plan-generator.test.ts` | reason-code cases; seed-as-prior + decay handoff cases |
+| `src/lib/supabase/plan-queries.ts` | build synthetic profile from `taste_seed` when computed is null; thread reasons through `suggestPlan` |
+| `profiles.taste_seed jsonb` | new column (migration) — store the seed |
+| `src/routes/app/plan.tsx` | JIT taste-seed sheet; reason captions; optional contextual nudge |
+| i18n pt + en | `plan.reason.*`, taste-seed screen copy, contextual nudge copy |
+
+### 10.7 Open questions (resolve in grill)
+1. **Decay shape:** hard handoff at 5 cooks (v1) vs soft blend 5→10 — is the hard cliff acceptable, or does a user who answered the quiz feel a jarring shift once behaviour kicks in?
+2. **`avoid` semantics:** soft de-prioritisation vs hard exclude. (Allergy/intolerance stays hard via existing path; `avoid` is a *taste* dislike — leaning soft.)
+3. **Persist reasons?** Transient map (simplest) vs a `plan_items.source/reason` column (enables showing "why" later on the plan, survives reload). Spec §3.3 already floated an optional `plan_items.source` column.
+4. **Seed scope for households:** seed is per-tapping-user (taste = tapper, §9.7) — confirm we don't union seeds.
+5. **Re-elicitation:** can the user edit the seed later (profile page), and does editing it re-activate it as a prior even after the 5-cook handoff? (Leaning: editing sets a fresh prior that blends briefly.)
+6. **Reason granularity:** per-recipe caption vs one summary line for the batch ("Do teu repertório + 1 nova"). Per-recipe is more legible but busier on the plan list.
