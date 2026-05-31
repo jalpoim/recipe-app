@@ -101,8 +101,9 @@ export const fetchLeftoverSuggestions = createServerFn({ method: "GET" }).handle
 
 // GET: the ingredients the user actually checked off across their recent shopping
 // trips (cook_log_completions.checked_item_keys). item_key format is
-// `recipe:<recipeId>:<ingredientId>`; custom items are skipped. Powers the
-// "usar o que tenho" picker — what they really bought, not a cooked-recipe proxy.
+// `recipe:<planItemId>:<recipeIngredientId>`; custom items are skipped. We resolve
+// the recipe_ingredient row → its ingredient_id (what the generator matches on) and
+// translated name. Powers the "usar o que tenho" picker — what they really bought.
 export const fetchPastShoppingItems = createServerFn({ method: "GET" }).handler(
   async (): Promise<LeftoverSuggestion[]> => {
     const supabase = makeClient();
@@ -119,32 +120,57 @@ export const fetchPastShoppingItems = createServerFn({ method: "GET" }).handler(
       .order("completed_at", { ascending: false })
       .limit(20);
 
-    const seen = new Set<string>();
-    const ids: string[] = [];
+    // Recipe-ingredient ids from the keys, in recency order (first seen wins).
+    const seenRi = new Set<string>();
+    const riIds: string[] = [];
     for (const c of completions ?? []) {
       for (const key of c.checked_item_keys ?? []) {
         const parts = key.split(":");
         if (parts[0] !== "recipe" || parts.length < 3) continue;
-        const ingId = parts[2];
-        if (!ingId || seen.has(ingId)) continue;
-        seen.add(ingId);
-        ids.push(ingId);
+        const riId = parts[2];
+        if (!riId || seenRi.has(riId)) continue;
+        seenRi.add(riId);
+        riIds.push(riId);
       }
     }
-    const capped = ids.slice(0, 40);
-    if (capped.length === 0) return [];
+    const cappedRi = riIds.slice(0, 300);
+    if (cappedRi.length === 0) return [];
 
-    // Names from ingredient_translations: active language, falling back to pt.
+    // Resolve recipe_ingredient rows → ingredient_id (+ a fallback display name).
+    const { data: riRows } = await supabase
+      .from("recipe_ingredients")
+      .select("id, ingredient_id, name")
+      .in("id", cappedRi);
+    const riById = new Map(
+      (riRows ?? []).map((r) => [r.id, r] as const),
+    );
+
+    // Dedupe to distinct ingredient_ids, preserving recency order.
+    const seenIng = new Set<string>();
+    const ingredientIds: string[] = [];
+    const fallbackName = new Map<string, string>();
+    for (const riId of cappedRi) {
+      const row = riById.get(riId);
+      if (!row?.ingredient_id || seenIng.has(row.ingredient_id)) continue;
+      seenIng.add(row.ingredient_id);
+      ingredientIds.push(row.ingredient_id);
+      if (row.name) fallbackName.set(row.ingredient_id, row.name);
+    }
+    const ids = ingredientIds.slice(0, 40);
+    if (ids.length === 0) return [];
+
+    // Translated names: active language, falling back to pt, then the recipe's
+    // own ingredient name if no translation row exists.
     const nameById = new Map<string, string>();
     const lookupLang = lang !== "pt" ? lang : "pt";
     const { data: trans } = await supabase
       .from("ingredient_translations")
       .select("ingredient_id, name")
-      .in("ingredient_id", capped)
+      .in("ingredient_id", ids)
       .eq("language", lookupLang);
     for (const t of trans ?? []) nameById.set(t.ingredient_id, t.name);
     if (lang !== "pt") {
-      const missing = capped.filter((id) => !nameById.has(id));
+      const missing = ids.filter((id) => !nameById.has(id));
       if (missing.length > 0) {
         const { data: ptTrans } = await supabase
           .from("ingredient_translations")
@@ -156,9 +182,9 @@ export const fetchPastShoppingItems = createServerFn({ method: "GET" }).handler(
       }
     }
 
-    return capped
-      .filter((id) => nameById.has(id))
-      .map((id) => ({ id, name: nameById.get(id)! }));
+    return ids
+      .map((id) => ({ id, name: nameById.get(id) ?? fallbackName.get(id) ?? "" }))
+      .filter((x) => x.name.length > 0);
   },
 );
 
