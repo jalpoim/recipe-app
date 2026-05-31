@@ -262,8 +262,11 @@
     "intent": {
       "proteins": "Proteínas",
       "variety": "Variedade",
-      "tempo": "Tempo"
+      "tempo": "Tempo",
+      "leftovers": "Usar o que tenho",
+      "leftoversSearch": "Procurar ingrediente…"
     },
+    "leftoverMissing": "{{count}} adicionadas — não coube: {{items}}",
     "family": {
       "poultry": "Aves",
       "fish": "Peixe",

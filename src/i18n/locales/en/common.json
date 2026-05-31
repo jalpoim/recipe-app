@@ -262,8 +262,11 @@
     "intent": {
       "proteins": "Proteins",
       "variety": "Variety",
-      "tempo": "Time"
+      "tempo": "Time",
+      "leftovers": "Use what I have",
+      "leftoversSearch": "Search ingredient…"
     },
+    "leftoverMissing": "{{count}} added — couldn't fit: {{items}}",
     "family": {
       "poultry": "Poultry",
       "fish": "Fish",

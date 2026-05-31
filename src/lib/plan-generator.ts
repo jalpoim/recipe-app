@@ -78,11 +78,14 @@ export type PlanIntent = {
   proteinTargets?: { family: ProteinFamily; count: number }[];
   variety?: VarietyLevel;
   maxTime?: number | null;
-  // Leftover coverage groups (slice 3): each group is the set of candidate recipe
+  // Client-facing leftover selection (ingredient id + display label). The SERVER
+  // resolves these into `coverageGroups` (recipes that use each ingredient); the
+  // pure core only consumes `coverageGroups`.
+  useIngredients?: { id: string; name: string }[];
+  // Leftover coverage groups (§11.4.3): each group is the set of candidate recipe
   // ids that use one wanted ingredient; the core guarantees ≥1 pick per group
-  // where possible (best-effort coverage, §11.4.3). The server derives which
-  // groups went uncovered from the returned ids (honest fallback). Resolved
-  // server-side from the chosen ingredients.
+  // where possible (best-effort). The server derives which groups went uncovered
+  // from the returned ids (honest fallback). Resolved server-side.
   coverageGroups?: { label: string; recipeIds: string[] }[];
 };
 

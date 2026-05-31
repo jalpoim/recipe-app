@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMotion } from "../../lib/use-reduced-motion";
 import { usePullToRefresh } from "../../lib/use-pull-to-refresh";
@@ -29,7 +29,9 @@ import {
   archiveAndCreatePlan,
   addRecipeToPlan,
   suggestPlan,
+  fetchLeftoverSuggestions,
 } from "../../lib/supabase/plan-queries";
+import { searchIngredients } from "../../lib/supabase/recipe-queries";
 import {
   fetchCookLog,
   deleteCookLogEntry,
@@ -106,6 +108,15 @@ export const Route = createFileRoute("/app/plan")({
 });
 
 // ---------- helpers ----------
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
+}
 
 function perServing(
   r: Recipe,
@@ -784,7 +795,8 @@ function IntentPanel({
   intent: PlanIntent;
   onChange: (i: PlanIntent) => void;
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language?.startsWith("en") ? "en" : "pt";
   const targets = intent.proteinTargets ?? [];
   const countFor = (f: ProteinFamily) =>
     targets.find((x) => x.family === f)?.count ?? 0;
@@ -795,6 +807,34 @@ function IntentPanel({
   };
   const variety = intent.variety ?? "balanced";
   const maxTime = intent.maxTime ?? null;
+
+  // Leftovers (§11.4.3): suggested-from-recent chips + manual fuzzy search.
+  const used = intent.useIngredients ?? [];
+  const usedIds = new Set(used.map((u) => u.id));
+  const toggleIng = (ing: { id: string; name: string }) => {
+    const next = usedIds.has(ing.id)
+      ? used.filter((u) => u.id !== ing.id)
+      : [...used, ing];
+    onChange({ ...intent, useIngredients: next.length ? next : undefined });
+  };
+  const { data: suggestions = [] } = useQuery({
+    queryKey: ["leftover-suggestions"],
+    queryFn: () => fetchLeftoverSuggestions(),
+    staleTime: 5 * 60 * 1000,
+  });
+  const [term, setTerm] = useState("");
+  const debouncedTerm = useDebounce(term, 250);
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ["leftover-search", debouncedTerm, lang],
+    queryFn: () => searchIngredients({ data: { q: debouncedTerm, lang } }),
+    enabled: debouncedTerm.trim().length >= 2,
+    staleTime: 60 * 1000,
+  });
+  // Show selected first, then suggested-not-selected.
+  const leftoverChips = [
+    ...used,
+    ...suggestions.filter((s) => !usedIds.has(s.id)),
+  ];
 
   return (
     <div className="mt-4 rounded-2xl border border-[#E5E7EB] bg-white p-4 space-y-4 text-left">
@@ -891,6 +931,59 @@ function IntentPanel({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Leftovers — usar o que tenho */}
+      <div>
+        <p className="text-xs font-semibold text-[#6B7280] mb-2">
+          {t("plan.intent.leftovers")}
+        </p>
+        {leftoverChips.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {leftoverChips.map((ing) => {
+              const active = usedIds.has(ing.id);
+              return (
+                <button
+                  key={ing.id}
+                  onClick={() => toggleIng(ing)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                    active
+                      ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+                      : "border-[#E5E7EB] text-[#6B7280]"
+                  }`}
+                >
+                  {ing.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        <input
+          type="text"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder={t("plan.intent.leftoversSearch")}
+          className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+        />
+        {searchResults.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {searchResults
+              .filter((r) => !usedIds.has(r.id))
+              .slice(0, 6)
+              .map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => {
+                    toggleIng({ id: r.id, name: r.name });
+                    setTerm("");
+                  }}
+                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                >
+                  + {r.name}
+                </button>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1075,7 +1168,7 @@ function PlanPage() {
           intent,
         },
       }),
-    onSuccess: ({ items: newItems, reasons }, requested) => {
+    onSuccess: ({ items: newItems, reasons, uncoveredLeftovers }, requested) => {
       if (newItems.length === 0) {
         showToast(t("plan.suggestNone"), "error");
         return;
@@ -1096,10 +1189,16 @@ function PlanPage() {
       qc.invalidateQueries({ queryKey: ["plan-items", planId] });
       qc.invalidateQueries({ queryKey: ["active-plan"] });
       const partial = newItems.length < requested;
+      const baseMsg = partial
+        ? t("plan.suggestPartial", { count: newItems.length })
+        : t("plan.suggestDone", { count: newItems.length });
       showToast(
-        partial
-          ? t("plan.suggestPartial", { count: newItems.length })
-          : t("plan.suggestDone", { count: newItems.length }),
+        uncoveredLeftovers.length > 0
+          ? t("plan.leftoverMissing", {
+              count: newItems.length,
+              items: uncoveredLeftovers.join(", "),
+            })
+          : baseMsg,
         "success",
         {
           label: t("plan.suggestUndo"),
@@ -1182,7 +1281,7 @@ function PlanPage() {
         },
       });
     },
-    onSuccess: ({ items: newItems, reasons }) => {
+    onSuccess: ({ items: newItems, reasons, uncoveredLeftovers }) => {
       const batch = newItems.map((i) => i.recipe_id);
       recentBatchesRef.current = [...recentBatchesRef.current, batch].slice(-2);
       setReasonByItemId((prev) => {
@@ -1195,12 +1294,19 @@ function PlanPage() {
       });
       qc.invalidateQueries({ queryKey: ["plan-items", planId] });
       qc.invalidateQueries({ queryKey: ["active-plan"] });
-      showToast(
-        newItems.length > 0
-          ? t("plan.suggestDone", { count: newItems.length })
-          : t("plan.suggestNone"),
-        newItems.length > 0 ? "success" : "error",
-      );
+      if (newItems.length === 0) {
+        showToast(t("plan.suggestNone"), "error");
+      } else if (uncoveredLeftovers.length > 0) {
+        showToast(
+          t("plan.leftoverMissing", {
+            count: newItems.length,
+            items: uncoveredLeftovers.join(", "),
+          }),
+          "success",
+        );
+      } else {
+        showToast(t("plan.suggestDone", { count: newItems.length }), "success");
+      }
     },
     onError: () => showToast(t("common.error"), "error"),
     onSettled: () => exitSelect(),

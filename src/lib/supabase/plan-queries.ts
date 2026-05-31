@@ -29,7 +29,73 @@ import {
 export type SuggestPlanResult = {
   items: PlanItem[];
   reasons: Record<string, ReasonCode>;
+  // Leftover ingredient labels that no eligible recipe could cover (§11.4.3 honest
+  // fallback) — surfaced as a "não coube: …" notice.
+  uncoveredLeftovers: string[];
 };
+
+export type LeftoverSuggestion = { id: string; name: string };
+
+// GET: suggested leftover ingredients for the intent panel — the canonical
+// ingredients the user has cooked with most recently (≈ what they recently
+// shopped). Manual search covers ad-hoc buys (§11.4.3). One bounded scan + one
+// translation query; no N+1.
+export const fetchLeftoverSuggestions = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeftoverSuggestion[]> => {
+    const supabase = makeClient();
+    const lang = getLang();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data: cooks } = await supabase
+      .from("cook_log")
+      .select("recipe_id, cooked_at")
+      .eq("user_id", session.user.id)
+      .order("cooked_at", { ascending: false })
+      .limit(40);
+    const recipeIds = [...new Set((cooks ?? []).map((c) => c.recipe_id))].slice(0, 20);
+    if (recipeIds.length === 0) return [];
+
+    const { data: ings } = await supabase
+      .from("recipe_ingredients")
+      .select("ingredient_id, name")
+      .in("recipe_id", recipeIds)
+      .not("ingredient_id", "is", null);
+
+    const counts = new Map<string, { count: number; name: string }>();
+    for (const r of ings ?? []) {
+      if (!r.ingredient_id) continue;
+      const e = counts.get(r.ingredient_id);
+      if (e) e.count++;
+      else counts.set(r.ingredient_id, { count: 1, name: r.name ?? "" });
+    }
+    const top = [...counts.entries()]
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 12);
+    const ids = top.map(([id]) => id);
+
+    let nameById = new Map<string, string>();
+    if (lang !== "pt" && ids.length > 0) {
+      const { data: trans } = await supabase
+        .from("ingredient_translations")
+        .select("ingredient_id, name")
+        .in("ingredient_id", ids)
+        .eq("language", lang);
+      nameById = new Map((trans ?? []).map((t) => [t.ingredient_id, t.name]));
+    } else if (ids.length > 0) {
+      const { data: trans } = await supabase
+        .from("ingredient_translations")
+        .select("ingredient_id, name")
+        .in("ingredient_id", ids)
+        .eq("language", "pt");
+      nameById = new Map((trans ?? []).map((t) => [t.ingredient_id, t.name]));
+    }
+
+    return top.map(([id, v]) => ({ id, name: nameById.get(id) ?? v.name }));
+  },
+);
 
 // Service client for the household dietary-union read (§9.7): a member's profile
 // and ingredient exclusions are RLS-locked to their own row, so reading the
@@ -747,6 +813,30 @@ export const suggestPlan = createServerFn({ method: "POST" })
         ? input.count
         : defaultSuggestionCount(profile?.cook_style ?? null);
 
+    // Resolve leftover ingredients → coverage groups (recipes in the candidate
+    // pool that use each ingredient). The core guarantees ≥1 pick per group; we
+    // report any that couldn't be placed (§11.4.3 honest fallback).
+    const intent: PlanIntent = { ...(input.intent ?? {}) };
+    const useIngredients = input.intent?.useIngredients ?? [];
+    if (useIngredients.length > 0) {
+      const candidateIds = candidates.map((c) => c.id);
+      const { data: riRows } = await supabase
+        .from("recipe_ingredients")
+        .select("recipe_id, ingredient_id")
+        .in("ingredient_id", useIngredients.map((i) => i.id))
+        .in("recipe_id", candidateIds);
+      const byIngredient = new Map<string, string[]>();
+      for (const row of riRows ?? []) {
+        if (!row.ingredient_id) continue;
+        const list = byIngredient.get(row.ingredient_id) ?? [];
+        list.push(row.recipe_id);
+        byIngredient.set(row.ingredient_id, list);
+      }
+      intent.coverageGroups = useIngredients
+        .map((ing) => ({ label: ing.name, recipeIds: byIngredient.get(ing.id) ?? [] }))
+        .filter((g) => g.recipeIds.length > 0);
+    }
+
     const selected = selectPlanRecipes(
       candidates,
       {
@@ -759,8 +849,19 @@ export const suggestPlan = createServerFn({ method: "POST" })
       },
       count,
       Math.random,
-      input.intent ?? {},
+      intent,
     );
+
+    // Derive uncovered leftovers: a wanted ingredient with no recipe in the pool,
+    // or whose covering recipes none got selected.
+    const selectedIds = new Set(selected.map((s) => s.id));
+    const uncoveredLeftovers = useIngredients
+      .filter((ing) => {
+        const group = intent.coverageGroups?.find((g) => g.label === ing.name);
+        if (!group) return true; // no candidate recipe uses it at all
+        return !group.recipeIds.some((id) => selectedIds.has(id));
+      })
+      .map((ing) => ing.name);
 
     const items = await insertRecipesIntoPlan(
       supabase,
@@ -769,7 +870,7 @@ export const suggestPlan = createServerFn({ method: "POST" })
     );
     const reasons: Record<string, ReasonCode> = {};
     for (const s of selected) reasons[s.id] = s.reason;
-    return { items, reasons };
+    return { items, reasons, uncoveredLeftovers };
   });
 
 // GET: preferred serving count for a recipe (null = never set)
