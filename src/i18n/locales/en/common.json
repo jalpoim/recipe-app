@@ -241,7 +241,17 @@
     "suggestDone": "{{count}} recipes added",
     "suggestPartial": "Added {{count}} — couldn't find more that fit",
     "suggestNone": "No suggestions right now. Try the library.",
-    "suggestUndo": "Undo"
+    "suggestUndo": "Undo",
+    "suggestBasedOn": "Based on what you cook and like.",
+    "viewProfile": "See your profile",
+    "coldStartProgress": "Suggestions get personal as you cook. Mark recipes as cooked ({{count}}/5).",
+    "reason": {
+      "repertoire": "From your repertoire",
+      "top_cuisine": "From a cuisine you love",
+      "flavor_match": "Flavours you love",
+      "novel": "New for you",
+      "popular": "Popular right now"
+    }
   },
   "shopping": {
     "completionBanner": "Shopping done",

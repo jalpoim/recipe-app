@@ -39,6 +39,17 @@ export type GeneratorSignals = {
   repertoire: Repertoire; // §9.1 cook-frequency + recency
 };
 
+// Why a recipe was picked, surfaced to the user as a "why this" caption (F12a,
+// §10.2). Derived from which signal dominated the pick — see deriveReason.
+export type ReasonCode =
+  | "repertoire" // from your cooked/liked/saved history
+  | "top_cuisine" // matches a cuisine you cook a lot
+  | "flavor_match" // matches flavours you favour
+  | "novel" // new-to-you (taste-adjacent but outside your usual)
+  | "popular"; // cold-start / popularity-led
+
+export type SelectedRecipe = { id: string; reason: ReasonCode };
+
 // ─── Tunable weights (first-pass; tune with real usage data) ─────────────────
 // baseScore (§3.4) = cuisine·0.35 + flavor·0.30 + protein·0.10 + popularity·0.15
 //                    + personaNudge + jitter, plus repertoire·0.25 for FAMILIAR
@@ -151,6 +162,24 @@ function repertoireScore(id: string, repertoire: Repertoire): number {
   const freq = Math.min(1, entry.cookCount / 5);
   const recency = Math.max(0, 1 - entry.daysSinceLastCook / RECENCY_WINDOW_DAYS);
   return freq * recency;
+}
+
+// The user-facing "why this" reason for a pick (F12a). Familiar recipes come from
+// the user's own history; novel recipes are labelled by whichever taste signal
+// earned them, or as plain discovery when there's no taste signal (cold-start).
+function deriveReason(
+  r: GeneratorRecipe,
+  familiar: boolean,
+  signals: GeneratorSignals,
+): ReasonCode {
+  if (familiar) return "repertoire";
+  const fp = signals.flavorProfile;
+  if (!fp) return "popular"; // cold-start: no taste model yet
+  const cuisine = cuisineScore(r, fp);
+  const flavor = flavorScore(r, fp);
+  if (cuisine > 0 && cuisine >= flavor) return "top_cuisine";
+  if (flavor > 0) return "flavor_match";
+  return "novel"; // warm profile, but this pick is outside the usual cuisines/flavours
 }
 
 // ─── Internal scored-candidate shape ─────────────────────────────────────────
@@ -275,7 +304,7 @@ export function selectPlanRecipes(
   signals: GeneratorSignals,
   count: number,
   rng: () => number = Math.random,
-): string[] {
+): SelectedRecipe[] {
   if (count <= 0) return [];
 
   const pool = candidates.filter((c) => !signals.excludeRecipeIds.has(c.id));
@@ -334,5 +363,8 @@ export function selectPlanRecipes(
     greedyFill(scored, target - selected.length, selected, caps, taken, false);
   }
 
-  return selected.map((s) => s.recipe.id);
+  return selected.map((s) => ({
+    id: s.recipe.id,
+    reason: deriveReason(s.recipe, s.familiar, signals),
+  }));
 }

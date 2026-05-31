@@ -19,7 +19,16 @@ import {
   defaultSuggestionCount,
   type GeneratorRecipe,
   type Repertoire,
+  type ReasonCode,
 } from "../plan-generator";
+
+// Result of suggestPlan: the inserted items plus the "why this" reason per recipe
+// (F12a). Reasons are returned transiently for the UI to caption the new cards —
+// not persisted (see plan-generator-spec §10.7 Q3).
+export type SuggestPlanResult = {
+  items: PlanItem[];
+  reasons: Record<string, ReasonCode>;
+};
 
 // Service client for the household dietary-union read (§9.7): a member's profile
 // and ingredient exclusions are RLS-locked to their own row, so reading the
@@ -600,7 +609,7 @@ export const suggestPlan = createServerFn({ method: "POST" })
   .inputValidator(
     (input: { count: number; excludeRecipeIds?: string[] }) => input,
   )
-  .handler(async ({ data: input }): Promise<PlanItem[]> => {
+  .handler(async ({ data: input }): Promise<SuggestPlanResult> => {
     const supabase = makeClient();
     const {
       data: { session },
@@ -733,7 +742,7 @@ export const suggestPlan = createServerFn({ method: "POST" })
         ? input.count
         : defaultSuggestionCount(profile?.cook_style ?? null);
 
-    const selectedIds = selectPlanRecipes(
+    const selected = selectPlanRecipes(
       candidates,
       {
         flavorProfile,
@@ -746,7 +755,14 @@ export const suggestPlan = createServerFn({ method: "POST" })
       count,
     );
 
-    return insertRecipesIntoPlan(supabase, session, selectedIds);
+    const items = await insertRecipesIntoPlan(
+      supabase,
+      session,
+      selected.map((s) => s.id),
+    );
+    const reasons: Record<string, ReasonCode> = {};
+    for (const s of selected) reasons[s.id] = s.reason;
+    return { items, reasons };
   });
 
 // GET: preferred serving count for a recipe (null = never set)

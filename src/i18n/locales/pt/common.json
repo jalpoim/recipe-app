@@ -241,7 +241,17 @@
     "suggestDone": "{{count}} receitas adicionadas",
     "suggestPartial": "Adicionámos {{count}} — não encontrámos mais que encaixem",
     "suggestNone": "Sem sugestões de momento. Experimenta a biblioteca.",
-    "suggestUndo": "Anular"
+    "suggestUndo": "Anular",
+    "suggestBasedOn": "Baseado no que cozinhas e gostas.",
+    "viewProfile": "Ver o teu perfil",
+    "coldStartProgress": "As sugestões personalizam-se à medida que cozinhas. Marca receitas como cozinhadas ({{count}}/5).",
+    "reason": {
+      "repertoire": "Do teu repertório",
+      "top_cuisine": "Da tua cozinha favorita",
+      "flavor_match": "Sabores que adoras",
+      "novel": "Nova para ti",
+      "popular": "Popular agora"
+    }
   },
   "shopping": {
     "completionBanner": "Lista concluída",

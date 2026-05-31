@@ -34,6 +34,7 @@ import {
   fetchCookLog,
   deleteCookLogEntry,
   fetchTopCookedRecipes,
+  getDistinctCookedCount,
 } from "../../lib/supabase/cook-log-queries";
 import type {
   CookLogWithRecipe,
@@ -42,7 +43,6 @@ import type {
 import { fetchMyProfile } from "../../lib/supabase/profile-queries";
 import { defaultSuggestionCount } from "../../lib/plan-generator";
 import type {
-  PlanItem,
   PlanItemWithRecipe,
   ActivePlanWithCount,
   Recipe,
@@ -134,10 +134,12 @@ function PlanItemCard({
   item,
   onRemove,
   onServingsChange,
+  reason,
 }: {
   item: PlanItemWithRecipe;
   onRemove: (id: string) => void;
   onServingsChange: (id: string, recipeId: string, v: number) => void;
+  reason?: string;
 }) {
   const { t } = useTranslation();
   const scale = item.portion_multiplier;
@@ -203,6 +205,11 @@ function PlanItemCard({
                 {pro}g {t("recipe.proteinAbbr")}
               </span>
             </div>
+          )}
+          {reason && (
+            <span className="mt-1.5 text-[10px] font-semibold text-[#F4623A] leading-tight line-clamp-1">
+              {t(`plan.reason.${reason}`)}
+            </span>
           )}
         </div>
       </Link>
@@ -705,6 +712,11 @@ function PlanPage() {
   // Last 1–2 generated batches of recipe ids — passed back to suggestPlan as extra
   // excludes so "Sugerir mais" yields a fresh set, not the same top picks (§9.3).
   const recentBatchesRef = useRef<string[][]>([]);
+  // Transient "why this" reasons keyed by plan-item id (F12a). Not persisted —
+  // captions show right after generation and reset on reload (spec §10.7 Q3).
+  const [reasonByItemId, setReasonByItemId] = useState<Record<string, string>>(
+    {},
+  );
 
   const { pullY: planPullY, isRefreshing: isPlanPtrRefreshing } =
     usePullToRefresh({
@@ -817,6 +829,14 @@ function PlanPage() {
   });
   const firstTapCount = defaultSuggestionCount(profile?.cook_style ?? null);
 
+  // Distinct recipes cooked → drives the cold-start "it gets better" message
+  // (< 5 mirrors the flavor-profile threshold where personalization kicks in).
+  const { data: distinctCooks = 0 } = useQuery({
+    queryKey: ["cook-distinct-count"],
+    queryFn: () => getDistinctCookedCount(),
+    staleTime: 5 * 60 * 1000,
+  });
+
   const planRecipeIds = useMemo(
     () => new Set(items.map((i) => i.recipe_id)),
     [items],
@@ -832,7 +852,7 @@ function PlanPage() {
           excludeRecipeIds: recentBatchesRef.current.flat(),
         },
       }),
-    onSuccess: (newItems: PlanItem[], requested) => {
+    onSuccess: ({ items: newItems, reasons }, requested) => {
       if (newItems.length === 0) {
         showToast(t("plan.suggestNone"), "error");
         return;
@@ -841,6 +861,15 @@ function PlanPage() {
       const batch = newItems.map((i) => i.recipe_id);
       recentBatchesRef.current = [...recentBatchesRef.current, batch].slice(-2);
       const insertedIds = newItems.map((i) => i.id);
+      // Stash the "why this" reason per inserted item (F12a transparency caption).
+      setReasonByItemId((prev) => {
+        const next = { ...prev };
+        for (const it of newItems) {
+          const reason = reasons[it.recipe_id];
+          if (reason) next[it.id] = reason;
+        }
+        return next;
+      });
       qc.invalidateQueries({ queryKey: ["plan-items", planId] });
       qc.invalidateQueries({ queryKey: ["active-plan"] });
       const partial = newItems.length < requested;
@@ -856,6 +885,11 @@ function PlanPage() {
             recentBatchesRef.current = recentBatchesRef.current.filter(
               (b) => b !== batch,
             );
+            setReasonByItemId((prev) => {
+              const next = { ...prev };
+              for (const id of insertedIds) delete next[id];
+              return next;
+            });
             removePlanItems({ data: insertedIds }).then(() => {
               qc.invalidateQueries({ queryKey: ["plan-items", planId] });
               qc.invalidateQueries({ queryKey: ["active-plan"] });
@@ -945,6 +979,23 @@ function PlanPage() {
                 {t("plan.addRecipe")}
               </Link>
             </div>
+            {/* Personalization framing: tell cold-start users it improves, and warm
+                users that the plan is built from their data (links to the profile). */}
+            {distinctCooks < 5 ? (
+              <p className="mt-6 text-xs text-[#9CA3AF] max-w-[280px] mx-auto">
+                {t("plan.coldStartProgress", { count: distinctCooks })}
+              </p>
+            ) : (
+              <p className="mt-6 text-xs text-[#9CA3AF]">
+                {t("plan.suggestBasedOn")}{" "}
+                <Link
+                  to="/app/me"
+                  className="text-[#F4623A] font-medium hover:underline focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none rounded"
+                >
+                  {t("plan.viewProfile")}
+                </Link>
+              </p>
+            )}
           </div>
         ) : (
           <>
@@ -963,6 +1014,7 @@ function PlanPage() {
                   >
                     <PlanItemCard
                       item={item}
+                      reason={reasonByItemId[item.id]}
                       onRemove={(id) => removeMutation.mutate(id)}
                       onServingsChange={(id, recipeId, v) =>
                         itemMultMutation.mutate({ id, recipeId, mult: v })

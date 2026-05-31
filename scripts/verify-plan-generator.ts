@@ -134,7 +134,7 @@ async function main() {
   const rich = selectPlanRecipes(pool, {
     flavorProfile: fp, cookStyle: "optimizer", exploredProteins: sig.exploredProteins,
     familiarRecipeIds: sig.familiar, excludeRecipeIds: new Set(), repertoire: sig.repertoire,
-  }, 5);
+  }, 5).map((s) => s.id);
   const meta = await nameOf(pool.map((r) => r.id));
   report("RICH (optimizer, N=5)", rich, sig.familiar, meta);
 
@@ -142,7 +142,7 @@ async function main() {
   const more = selectPlanRecipes(pool, {
     flavorProfile: fp, cookStyle: "optimizer", exploredProteins: sig.exploredProteins,
     familiarRecipeIds: sig.familiar, excludeRecipeIds: new Set(rich), repertoire: sig.repertoire,
-  }, 3);
+  }, 3).map((s) => s.id);
   report("SUGERIR MAIS (+3, excluding batch 1)", more, sig.familiar, meta);
   const overlap = more.filter((id) => rich.includes(id));
   console.log(`  freshness: overlap with batch 1 = ${overlap.length} (expect 0)`);
@@ -151,7 +151,7 @@ async function main() {
   const cold = selectPlanRecipes(pool, {
     flavorProfile: null, cookStyle: "explorer", exploredProteins: [],
     familiarRecipeIds: new Set(), excludeRecipeIds: new Set(), repertoire: new Map(),
-  }, 6);
+  }, 6).map((s) => s.id);
   report("COLD-START (explorer, N=6, ≤2/cuisine)", cold, new Set(), meta);
 
   // 4. Strict dietary: vegan protein exclusion applied to the candidate fetch.
@@ -161,7 +161,7 @@ async function main() {
   const vegan = selectPlanRecipes(veganPool, {
     flavorProfile: null, cookStyle: "dietary", exploredProteins: [],
     familiarRecipeIds: new Set(), excludeRecipeIds: new Set(), repertoire: new Map(),
-  }, 5);
+  }, 5).map((s) => s.id);
   report("VEGAN (dietary, N=5)", vegan, new Set(), veganMeta);
   const leaked = vegan.flatMap((id) => veganMeta.get(id)?.proteins ?? []).filter((p: string) => veganExcl.includes(p));
   console.log(`  dietary safety: excluded proteins leaked = ${leaked.length} (expect 0)  poolSize=${veganPool.length}`);
