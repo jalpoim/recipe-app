@@ -264,7 +264,10 @@
       "variety": "Variedade",
       "tempo": "Tempo",
       "leftovers": "Usar o que tenho",
-      "leftoversSearch": "Procurar ingrediente…"
+      "leftoversSearch": "Procurar ingrediente…",
+      "varietyHint": "De pratos que já conheces a pratos novos.",
+      "leftoversEmpty": "Ainda não tens compras anteriores.",
+      "leftoversFrom": "Das tuas compras anteriores"
     },
     "leftoverMissing": "{{count}} adicionadas — não coube: {{items}}",
     "family": {
@@ -276,7 +279,7 @@
       "eggs": "Ovos"
     },
     "variety": {
-      "similar": "Parecido",
+      "similar": "Do costume",
       "balanced": "Equilibrado",
       "surprise": "Surpreende-me"
     },
@@ -291,7 +294,9 @@
     "seedFlavors": "Sabores que adoras",
     "seedAvoid": "Evitar",
     "seedGenerate": "Gerar plano",
-    "seedSkip": "Surpreende-me"
+    "seedSkip": "Surpreende-me",
+    "adjustTitle": "Ajustar plano",
+    "adjustSubtitle": "Personaliza as sugestões"
   },
   "cuisines": {
     "portuguese": "Portuguesa",

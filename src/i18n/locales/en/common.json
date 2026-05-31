@@ -264,7 +264,10 @@
       "variety": "Variety",
       "tempo": "Time",
       "leftovers": "Use what I have",
-      "leftoversSearch": "Search ingredient…"
+      "leftoversSearch": "Search ingredient…",
+      "varietyHint": "From dishes you know to brand-new ones.",
+      "leftoversEmpty": "You don't have any past shopping yet.",
+      "leftoversFrom": "From your past shopping"
     },
     "leftoverMissing": "{{count}} added — couldn't fit: {{items}}",
     "family": {
@@ -276,7 +279,7 @@
       "eggs": "Eggs"
     },
     "variety": {
-      "similar": "Similar",
+      "similar": "My usual",
       "balanced": "Balanced",
       "surprise": "Surprise me"
     },
@@ -291,7 +294,9 @@
     "seedFlavors": "Flavours you love",
     "seedAvoid": "Avoid",
     "seedGenerate": "Generate plan",
-    "seedSkip": "Surprise me"
+    "seedSkip": "Surprise me",
+    "adjustTitle": "Adjust plan",
+    "adjustSubtitle": "Personalize your suggestions"
   },
   "cuisines": {
     "portuguese": "Portuguese",

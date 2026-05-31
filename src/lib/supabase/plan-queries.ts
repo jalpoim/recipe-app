@@ -99,6 +99,69 @@ export const fetchLeftoverSuggestions = createServerFn({ method: "GET" }).handle
   },
 );
 
+// GET: the ingredients the user actually checked off across their recent shopping
+// trips (cook_log_completions.checked_item_keys). item_key format is
+// `recipe:<recipeId>:<ingredientId>`; custom items are skipped. Powers the
+// "usar o que tenho" picker — what they really bought, not a cooked-recipe proxy.
+export const fetchPastShoppingItems = createServerFn({ method: "GET" }).handler(
+  async (): Promise<LeftoverSuggestion[]> => {
+    const supabase = makeClient();
+    const lang = getLang();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session) return [];
+
+    const { data: completions } = await supabase
+      .from("cook_log_completions")
+      .select("checked_item_keys, completed_at")
+      .eq("user_id", session.user.id)
+      .order("completed_at", { ascending: false })
+      .limit(20);
+
+    const seen = new Set<string>();
+    const ids: string[] = [];
+    for (const c of completions ?? []) {
+      for (const key of c.checked_item_keys ?? []) {
+        const parts = key.split(":");
+        if (parts[0] !== "recipe" || parts.length < 3) continue;
+        const ingId = parts[2];
+        if (!ingId || seen.has(ingId)) continue;
+        seen.add(ingId);
+        ids.push(ingId);
+      }
+    }
+    const capped = ids.slice(0, 40);
+    if (capped.length === 0) return [];
+
+    // Names from ingredient_translations: active language, falling back to pt.
+    const nameById = new Map<string, string>();
+    const lookupLang = lang !== "pt" ? lang : "pt";
+    const { data: trans } = await supabase
+      .from("ingredient_translations")
+      .select("ingredient_id, name")
+      .in("ingredient_id", capped)
+      .eq("language", lookupLang);
+    for (const t of trans ?? []) nameById.set(t.ingredient_id, t.name);
+    if (lang !== "pt") {
+      const missing = capped.filter((id) => !nameById.has(id));
+      if (missing.length > 0) {
+        const { data: ptTrans } = await supabase
+          .from("ingredient_translations")
+          .select("ingredient_id, name")
+          .in("ingredient_id", missing)
+          .eq("language", "pt");
+        for (const t of ptTrans ?? [])
+          if (!nameById.has(t.ingredient_id)) nameById.set(t.ingredient_id, t.name);
+      }
+    }
+
+    return capped
+      .filter((id) => nameById.has(id))
+      .map((id) => ({ id, name: nameById.get(id)! }));
+  },
+);
+
 // Service client for the household dietary-union read (§9.7): a member's profile
 // and ingredient exclusions are RLS-locked to their own row, so reading the
 // partner's dietary constraints requires service-role. Used only for that read.

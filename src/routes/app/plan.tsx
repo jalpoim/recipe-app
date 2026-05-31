@@ -10,11 +10,13 @@ import {
   X,
   Clock,
   ChevronLeft,
+  ChevronDown,
   Minus,
   Plus,
   CalendarDays,
   Star,
   Check,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../components/Toast";
@@ -29,7 +31,7 @@ import {
   archiveAndCreatePlan,
   addRecipeToPlan,
   suggestPlan,
-  fetchLeftoverSuggestions,
+  fetchPastShoppingItems,
 } from "../../lib/supabase/plan-queries";
 import { searchIngredients } from "../../lib/supabase/recipe-queries";
 import {
@@ -786,11 +788,6 @@ const PROTEIN_FAMILY_KEYS: ProteinFamily[] = [
   "eggs",
 ];
 const VARIETY_OPTIONS: VarietyLevel[] = ["similar", "balanced", "surprise"];
-const TEMPO_OPTIONS: { key: string; maxTime: number | null }[] = [
-  { key: "any", maxTime: null },
-  { key: "t30", maxTime: 30 },
-  { key: "t45", maxTime: 45 },
-];
 
 function IntentPanel({
   intent,
@@ -810,9 +807,9 @@ function IntentPanel({
     onChange({ ...intent, proteinTargets: next.length ? next : undefined });
   };
   const variety = intent.variety ?? "balanced";
-  const maxTime = intent.maxTime ?? null;
 
-  // Leftovers (§11.4.3): suggested-from-recent chips + manual fuzzy search.
+  // Leftovers: a toggle that opens the list of items the user actually bought in
+  // past shopping trips, plus a manual search for ad-hoc additions.
   const used = intent.useIngredients ?? [];
   const usedIds = new Set(used.map((u) => u.id));
   const toggleIng = (ing: { id: string; name: string }) => {
@@ -821,9 +818,11 @@ function IntentPanel({
       : [...used, ing];
     onChange({ ...intent, useIngredients: next.length ? next : undefined });
   };
-  const { data: suggestions = [] } = useQuery({
-    queryKey: ["leftover-suggestions"],
-    queryFn: () => fetchLeftoverSuggestions(),
+  const [leftoversOpen, setLeftoversOpen] = useState(used.length > 0);
+  const { data: pastItems = [] } = useQuery({
+    queryKey: ["past-shopping-items"],
+    queryFn: () => fetchPastShoppingItems(),
+    enabled: leftoversOpen,
     staleTime: 5 * 60 * 1000,
   });
   const [term, setTerm] = useState("");
@@ -831,13 +830,13 @@ function IntentPanel({
   const { data: searchResults = [] } = useQuery({
     queryKey: ["leftover-search", debouncedTerm, lang],
     queryFn: () => searchIngredients({ data: { q: debouncedTerm, lang } }),
-    enabled: debouncedTerm.trim().length >= 2,
+    enabled: leftoversOpen && debouncedTerm.trim().length >= 2,
     staleTime: 60 * 1000,
   });
-  // Show selected first, then suggested-not-selected.
+  // Show selected first, then past-shopping items not yet selected.
   const leftoverChips = [
     ...used,
-    ...suggestions.filter((s) => !usedIds.has(s.id)),
+    ...pastItems.filter((s) => !usedIds.has(s.id)),
   ];
 
   return (
@@ -913,83 +912,163 @@ function IntentPanel({
             </button>
           ))}
         </div>
+        <p className="text-[11px] text-[#9CA3AF] mt-1.5">
+          {t("plan.intent.varietyHint")}
+        </p>
       </div>
 
-      {/* Tempo */}
+      {/* Leftovers — usar o que tenho (toggle → past shopping items) */}
       <div>
-        <p className="text-xs font-semibold text-[#6B7280] mb-2">
-          {t("plan.intent.tempo")}
-        </p>
-        <div className="flex gap-1.5">
-          {TEMPO_OPTIONS.map((o) => (
-            <button
-              key={o.key}
-              onClick={() => onChange({ ...intent, maxTime: o.maxTime })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-                maxTime === o.maxTime
-                  ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
-                  : "border-[#E5E7EB] text-[#6B7280]"
-              }`}
-            >
-              {t(`plan.tempo.${o.key}`)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Leftovers — usar o que tenho */}
-      <div>
-        <p className="text-xs font-semibold text-[#6B7280] mb-2">
-          {t("plan.intent.leftovers")}
-        </p>
-        {leftoverChips.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {leftoverChips.map((ing) => {
-              const active = usedIds.has(ing.id);
-              return (
-                <button
-                  key={ing.id}
-                  onClick={() => toggleIng(ing)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
-                    active
-                      ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
-                      : "border-[#E5E7EB] text-[#6B7280]"
-                  }`}
-                >
-                  {ing.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
-        <input
-          type="text"
-          value={term}
-          onChange={(e) => setTerm(e.target.value)}
-          placeholder={t("plan.intent.leftoversSearch")}
-          className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-        />
-        {searchResults.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {searchResults
-              .filter((r) => !usedIds.has(r.id))
-              .slice(0, 6)
-              .map((r) => (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    toggleIng({ id: r.id, name: r.name });
-                    setTerm("");
-                  }}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-                >
-                  + {r.name}
-                </button>
-              ))}
+        <button
+          type="button"
+          onClick={() => setLeftoversOpen((o) => !o)}
+          aria-expanded={leftoversOpen}
+          className="flex w-full items-center justify-between text-xs font-semibold text-[#6B7280] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 rounded"
+        >
+          <span>
+            {t("plan.intent.leftovers")}
+            {used.length > 0 ? ` · ${used.length}` : ""}
+          </span>
+          <ChevronDown
+            size={14}
+            aria-hidden="true"
+            className={`transition-transform ${leftoversOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+        {leftoversOpen && (
+          <div className="mt-2">
+            <p className="text-[11px] text-[#9CA3AF] mb-2">
+              {t("plan.intent.leftoversFrom")}
+            </p>
+            {leftoverChips.length === 0 ? (
+              <p className="text-xs text-[#9CA3AF] mb-2">
+                {t("plan.intent.leftoversEmpty")}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {leftoverChips.map((ing) => {
+                  const active = usedIds.has(ing.id);
+                  return (
+                    <button
+                      key={ing.id}
+                      onClick={() => toggleIng(ing)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 ${
+                        active
+                          ? "border-[#F4623A] bg-[#FEE9E1] text-[#1A1A1A]"
+                          : "border-[#E5E7EB] text-[#6B7280]"
+                      }`}
+                    >
+                      {active && <Check size={11} className="inline mr-1" aria-hidden="true" />}
+                      {ing.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <input
+              type="text"
+              value={term}
+              onChange={(e) => setTerm(e.target.value)}
+              placeholder={t("plan.intent.leftoversSearch")}
+              className="w-full px-3 py-2 rounded-xl border border-[#E5E7EB] text-sm text-[#1A1A1A] placeholder:text-[#9CA3AF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+            />
+            {searchResults.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {searchResults
+                  .filter((r) => !usedIds.has(r.id))
+                  .slice(0, 6)
+                  .map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => {
+                        toggleIng({ id: r.id, name: r.name });
+                        setTerm("");
+                      }}
+                      className="px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-[#E5E7EB] text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                    >
+                      + {r.name}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+// ---------- AdjustSheet (intent in a modal, not an inline section) ----------
+
+function AdjustSheet({
+  open,
+  onOpenChange,
+  intent,
+  onChange,
+  onApply,
+  applyLabel,
+  applyDisabled,
+  applyPending,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  intent: PlanIntent;
+  onChange: (i: PlanIntent) => void;
+  onApply: () => void;
+  applyLabel: string;
+  applyDisabled: boolean;
+  applyPending: boolean;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Drawer.Root open={open} onOpenChange={onOpenChange}>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 z-40" />
+        <Drawer.Content
+          className="fixed bottom-0 left-0 right-0 z-50 mx-auto max-w-md rounded-t-[20px] bg-[#FAFAF8] outline-none"
+          aria-label={t("plan.adjustTitle")}
+        >
+          <div className="flex justify-center pt-3 pb-1">
+            <div
+              className="h-1 w-10 rounded-full bg-[#E5E7EB]"
+              aria-hidden="true"
+            />
+          </div>
+          <div className="flex items-start justify-between px-4 pt-1 pb-1">
+            <div>
+              <h2 className="text-base font-bold text-[#1A1A1A]">
+                {t("plan.adjustTitle")}
+              </h2>
+              <p className="text-xs text-[#9CA3AF] mt-0.5">
+                {t("plan.adjustSubtitle")}
+              </p>
+            </div>
+            <button
+              onClick={() => onOpenChange(false)}
+              aria-label={t("common.close")}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+          <div
+            className="px-4 pb-2"
+            style={{ maxHeight: "68dvh", overflowY: "auto" }}
+          >
+            <IntentPanel intent={intent} onChange={onChange} />
+          </div>
+          <div className="px-4 pt-2 pb-[calc(env(safe-area-inset-bottom)+16px)]">
+            <button
+              onClick={onApply}
+              disabled={applyDisabled}
+              className="w-full py-2.5 rounded-xl bg-[#F4623A] text-white text-sm font-semibold hover:bg-[#D94F2B] transition-colors disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+            >
+              {applyPending ? t("plan.suggesting") : applyLabel}
+            </button>
+          </div>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }
 
@@ -1168,7 +1247,11 @@ function PlanPage() {
     if (typeof localStorage === "undefined") return {};
     try {
       const raw = localStorage.getItem("plan_intent");
-      return raw ? (JSON.parse(raw) as PlanIntent) : {};
+      if (!raw) return {};
+      // The time filter was removed (tempo is derived from persona); drop any
+      // stale maxTime so it can't keep silently filtering suggestions.
+      const { maxTime: _drop, ...rest } = JSON.parse(raw) as PlanIntent;
+      return rest;
     } catch {
       return {};
     }
@@ -1322,6 +1405,13 @@ function PlanPage() {
   const startSuggest = (requested: number) => {
     if (needsSeed) setSeedSheetOpen(true);
     else suggestMutation.mutate(requested);
+  };
+  // Footer action of the Adjust modal: close it, then generate with the chosen
+  // intent — a full plan when empty, or a few more when the plan already has items.
+  const handleAdjustApply = () => {
+    setAdjustOpen(false);
+    if (items.length === 0) startSuggest(genCount);
+    else suggestMutation.mutate(3);
   };
 
   // Generate / "Sugerir mais" — direct insert + undo toast (§3.9).
@@ -1485,39 +1575,56 @@ function PlanPage() {
       <div className="mx-auto w-full max-w-md px-4">
         {/* Header */}
         <div className="pt-4 pb-3 flex items-center justify-between gap-2">
-          <span className="text-xs text-[#9CA3AF]">
-            {items.length === 0
-              ? t("plan.noItems")
-              : t("plan.itemCount", { count: items.length })}
-          </span>
-          <div className="flex items-center gap-1">
-            {items.length > 0 && (
+          {selectMode ? (
+            <span className="text-sm font-semibold text-[#F4623A]">
+              {t("plan.selectedCount", { count: selectedItemIds.size })}
+            </span>
+          ) : (
+            <span className="text-xs text-[#9CA3AF]">
+              {items.length === 0
+                ? t("plan.noItems")
+                : t("plan.itemCount", { count: items.length })}
+            </span>
+          )}
+          {!selectMode && (
+            <div className="flex items-center gap-1">
+              {items.length > 0 && (
+                <>
+                  <button
+                    onClick={() => suggestMutation.mutate(3)}
+                    disabled={suggestMutation.isPending || atMax}
+                    aria-label={t("plan.suggestMore")}
+                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                  >
+                    {suggestMutation.isPending
+                      ? t("plan.suggesting")
+                      : t("plan.suggestMore")}
+                  </button>
+                  <button
+                    onClick={() => setAdjustOpen(true)}
+                    aria-label={t("plan.adjust")}
+                    className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                  >
+                    <SlidersHorizontal size={20} aria-hidden="true" />
+                  </button>
+                </>
+              )}
               <button
-                onClick={() => suggestMutation.mutate(3)}
-                disabled={suggestMutation.isPending || atMax}
-                aria-label={t("plan.suggestMore")}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F4623A] hover:bg-[#FEE9E1] transition-colors disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+                onClick={() => setFavouritesOpen(true)}
+                aria-label={t("plan.quickAdd")}
+                className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
               >
-                {suggestMutation.isPending
-                  ? t("plan.suggesting")
-                  : t("plan.suggestMore")}
+                <Star size={20} aria-hidden="true" />
               </button>
-            )}
-            <button
-              onClick={() => setFavouritesOpen(true)}
-              aria-label={t("plan.quickAdd")}
-              className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-            >
-              <Star size={20} aria-hidden="true" />
-            </button>
-            <button
-              onClick={() => setHistoryOpen(true)}
-              aria-label={t("cookHistory.title")}
-              className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
-            >
-              <CalendarDays size={20} aria-hidden="true" />
-            </button>
-          </div>
+              <button
+                onClick={() => setHistoryOpen(true)}
+                aria-label={t("cookHistory.title")}
+                className="p-1.5 rounded-xl text-[#9CA3AF] hover:text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4623A]/40"
+              >
+                <CalendarDays size={20} aria-hidden="true" />
+              </button>
+            </div>
+          )}
         </div>
 
         <CookHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} />
@@ -1532,6 +1639,18 @@ function PlanPage() {
           onOpenChange={setSeedSheetOpen}
           existing={tasteSeed}
           onDone={() => suggestMutation.mutate(genCount)}
+        />
+        <AdjustSheet
+          open={adjustOpen}
+          onOpenChange={setAdjustOpen}
+          intent={intent}
+          onChange={changeIntent}
+          onApply={handleAdjustApply}
+          applyLabel={items.length === 0 ? t("plan.suggest") : t("plan.suggestMore")}
+          applyDisabled={
+            suggestMutation.isPending || (items.length > 0 && atMax)
+          }
+          applyPending={suggestMutation.isPending}
         />
 
         <PullIndicator
@@ -1555,18 +1674,13 @@ function PlanPage() {
                   : t("plan.suggest")}
               </button>
               <button
-                onClick={() => setAdjustOpen((o) => !o)}
-                aria-expanded={adjustOpen}
-                className="px-3 py-2.5 rounded-xl text-sm font-medium text-[#6B7280] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
+                onClick={() => setAdjustOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium text-[#6B7280] border border-[#E5E7EB] hover:bg-[#F3F4F6] transition-colors focus-visible:ring-2 focus-visible:ring-[#F4623A]/40 focus:outline-none"
               >
+                <SlidersHorizontal size={15} aria-hidden="true" />
                 {t("plan.adjust")}
               </button>
             </div>
-            {adjustOpen && (
-              <div className="max-w-[340px] mx-auto">
-                <IntentPanel intent={intent} onChange={changeIntent} />
-              </div>
-            )}
             <div className="mt-3">
               <Link
                 to="/app/library"
@@ -1672,9 +1786,7 @@ function PlanPage() {
             >
               {t("common.cancel")}
             </button>
-            <span className="flex-1 text-xs text-[#9CA3AF] text-center">
-              {t("plan.selectedCount", { count: selectedItemIds.size })}
-            </span>
+            <span className="flex-1" aria-hidden="true" />
             <button
               onClick={() => {
                 bulkRemoveMutation.mutate([...selectedItemIds]);
